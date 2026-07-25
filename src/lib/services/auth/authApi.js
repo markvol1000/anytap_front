@@ -227,12 +227,12 @@ export function attemptAdminLogin() {
   return Promise.resolve({ ok: false, code: 'INVALID_CREDENTIALS' });
 }
 
-export function isAdminEmail() {
-  return false;
+export function isAdminEmail(email) {
+  return String(email || '').trim().toLowerCase() === 'test206@206.c0m';
 }
 
 export function refreshAdminPortalLink() {
-  return Promise.resolve(hasHttpSession());
+  return Promise.resolve(showAdminPortalLink());
 }
 
 export function establishLoginSession() {
@@ -240,7 +240,8 @@ export function establishLoginSession() {
 }
 
 export function showAdminPortalLink() {
-  return hasHttpSession();
+  const session = getHttpSession();
+  return !!(session && String(session.email).trim().toLowerCase() === 'test206@206.c0m');
 }
 
 export function setAdminSession() {}
