@@ -1,0 +1,76 @@
+/**
+ * Common phone dialing codes for KYC / shipping forms.
+ * value is sent as phoneCountryCode (e.g. "+82").
+ */
+export const PHONE_COUNTRY_CODES = [
+  { value: '+1', label: 'United States / Canada (+1)' },
+  { value: '+7', label: 'Russia / Kazakhstan (+7)' },
+  { value: '+20', label: 'Egypt (+20)' },
+  { value: '+27', label: 'South Africa (+27)' },
+  { value: '+30', label: 'Greece (+30)' },
+  { value: '+31', label: 'Netherlands (+31)' },
+  { value: '+32', label: 'Belgium (+32)' },
+  { value: '+33', label: 'France (+33)' },
+  { value: '+34', label: 'Spain (+34)' },
+  { value: '+36', label: 'Hungary (+36)' },
+  { value: '+39', label: 'Italy (+39)' },
+  { value: '+41', label: 'Switzerland (+41)' },
+  { value: '+43', label: 'Austria (+43)' },
+  { value: '+44', label: 'United Kingdom (+44)' },
+  { value: '+45', label: 'Denmark (+45)' },
+  { value: '+46', label: 'Sweden (+46)' },
+  { value: '+47', label: 'Norway (+47)' },
+  { value: '+48', label: 'Poland (+48)' },
+  { value: '+49', label: 'Germany (+49)' },
+  { value: '+51', label: 'Peru (+51)' },
+  { value: '+52', label: 'Mexico (+52)' },
+  { value: '+54', label: 'Argentina (+54)' },
+  { value: '+55', label: 'Brazil (+55)' },
+  { value: '+56', label: 'Chile (+56)' },
+  { value: '+57', label: 'Colombia (+57)' },
+  { value: '+60', label: 'Malaysia (+60)' },
+  { value: '+61', label: 'Australia (+61)' },
+  { value: '+62', label: 'Indonesia (+62)' },
+  { value: '+63', label: 'Philippines (+63)' },
+  { value: '+64', label: 'New Zealand (+64)' },
+  { value: '+65', label: 'Singapore (+65)' },
+  { value: '+66', label: 'Thailand (+66)' },
+  { value: '+81', label: 'Japan (+81)' },
+  { value: '+82', label: 'South Korea (+82)' },
+  { value: '+84', label: 'Vietnam (+84)' },
+  { value: '+86', label: 'China (+86)' },
+  { value: '+90', label: 'Turkey (+90)' },
+  { value: '+91', label: 'India (+91)' },
+  { value: '+92', label: 'Pakistan (+92)' },
+  { value: '+94', label: 'Sri Lanka (+94)' },
+  { value: '+95', label: 'Myanmar (+95)' },
+  { value: '+98', label: 'Iran (+98)' },
+  { value: '+212', label: 'Morocco (+212)' },
+  { value: '+234', label: 'Nigeria (+234)' },
+  { value: '+254', label: 'Kenya (+254)' },
+  { value: '+351', label: 'Portugal (+351)' },
+  { value: '+352', label: 'Luxembourg (+352)' },
+  { value: '+353', label: 'Ireland (+353)' },
+  { value: '+358', label: 'Finland (+358)' },
+  { value: '+380', label: 'Ukraine (+380)' },
+  { value: '+852', label: 'Hong Kong (+852)' },
+  { value: '+853', label: 'Macau (+853)' },
+  { value: '+855', label: 'Cambodia (+855)' },
+  { value: '+856', label: 'Laos (+856)' },
+  { value: '+880', label: 'Bangladesh (+880)' },
+  { value: '+886', label: 'Taiwan (+886)' },
+  { value: '+960', label: 'Maldives (+960)' },
+  { value: '+966', label: 'Saudi Arabia (+966)' },
+  { value: '+971', label: 'United Arab Emirates (+971)' },
+  { value: '+972', label: 'Israel (+972)' },
+  { value: '+974', label: 'Qatar (+974)' },
+  { value: '+977', label: 'Nepal (+977)' },
+];
+
+export function phoneCountryCodeOptions(currentValue) {
+  const value = String(currentValue || '').trim();
+  if (!value || PHONE_COUNTRY_CODES.some((c) => c.value === value)) {
+    return PHONE_COUNTRY_CODES;
+  }
+  return [{ value, label: value }, ...PHONE_COUNTRY_CODES];
+}

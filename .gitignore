@@ -1,0 +1,7 @@
+node_modules
+dist
+.DS_Store
+*.local
+
+# Original Claude export (migrated to src/; kept locally)
+Anytap 홈페이지 최종/

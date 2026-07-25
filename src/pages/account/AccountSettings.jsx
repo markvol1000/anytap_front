@@ -1,0 +1,361 @@
+// ===== My Page — premium fintech hub (not a traditional settings list) =====
+
+import { useState, useCallback } from 'react';
+import { Icon } from '../../components/ui.jsx';
+import * as A from '../../lib/account-data.js';
+
+const QUICK_ACCESS = [
+  {
+    label: 'Profile',
+    desc: 'View and update your personal details',
+    icon: 'user',
+    screen: 'profile',
+  },
+  {
+    label: 'KYC Verification',
+    desc: 'Identity and compliance status',
+    icon: 'shield',
+    action: 'kyc',   // not a route — handled by handleQuickAccess
+  },
+  {
+    label: 'Referral',
+    desc: 'Invite friends and earn rewards',
+    icon: 'gift',
+    screen: 'referral',
+  },
+  {
+    label: 'Support',
+    desc: 'Get help from our team',
+    icon: 'messageCircle',
+    screen: 'support',
+  },
+];
+
+// Security + Notifications + planned (Language, Appearance) — same on mobile and desktop
+const SETTINGS_ITEMS = [
+  { label: 'Security', icon: 'lock', screen: 'security' },
+  { label: 'Notifications', icon: 'bell', screen: 'notifications' },
+  { label: 'Language', icon: 'globe', screen: 'language' },
+  { label: 'Appearance', icon: 'palette', screen: 'appearance' },
+];
+
+function initialsFromName(name = '') {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+function kycBadge(accountState, kycStatusDef) {
+  const status = accountState?.kycStatus ?? 'pending';
+  const map = {
+    approved: { tone: 'success', label: 'Verified' },
+    pending: { tone: 'warn', label: 'Not Verified' },
+    under_review: { tone: 'warn', label: 'Under Review' },
+    rejected: { tone: 'danger', label: 'Rejected' },
+  };
+  return map[status] ?? { tone: 'neutral', label: kycStatusDef?.label ?? 'Unknown' };
+}
+
+function referralBadge(referralContext) {
+  if (referralContext?.isPartner) return { tone: 'brand', label: 'Partner' };
+  if (referralContext?.isPending) return { tone: 'warn', label: 'Pending' };
+  return { tone: 'neutral', label: 'Member' };
+}
+
+function profileMeta(s) {
+  const memberSince = A.PROFILE_FIELDS.find((f) => f.label === 'Member since')?.value ?? '—';
+  // TODO: userId should come from accountState (Supabase user.id) when real auth is wired
+  const userId = s.accountState?.userId ?? 'AT-000000';
+  return { memberSince, userId };
+}
+
+function MyBadge({ tone, label }) {
+  return (
+    <span className={`portal-my__badge portal-my__badge--${tone}`}>
+      {label}
+    </span>
+  );
+}
+
+function QuickAccessTileMob({ label, icon, onClick }) {
+  return (
+    <button type="button" className="portal-my__tile" onClick={onClick}>
+      <span className="portal-my__tile-icon" aria-hidden="true">
+        <Icon name={icon} size={22} stroke={1.75} />
+      </span>
+      <span className="portal-my__tile-label">{label}</span>
+    </button>
+  );
+}
+
+function QuickAccessCardDesk({ label, desc, icon, onClick }) {
+  return (
+    <button type="button" className="portal-my-desk__action" onClick={onClick}>
+      <span className="portal-my-desk__action-icon" aria-hidden="true">
+        <Icon name={icon} size={24} stroke={1.75} />
+      </span>
+      <span className="portal-my-desk__action-body">
+        <span className="portal-my-desk__action-title">{label}</span>
+        <span className="portal-my-desk__action-desc">{desc}</span>
+      </span>
+      <span className="portal-my-desk__action-arrow" aria-hidden="true">
+        <Icon name="chevron" size={18} stroke={2} />
+      </span>
+    </button>
+  );
+}
+
+function SettingsRowMob({ label, icon, onClick, danger = false }) {
+  return (
+    <button
+      type="button"
+      className={`portal-my__row${danger ? ' portal-my__row--danger' : ''}`}
+      onClick={onClick}>
+      <span className="portal-my__row-icon" aria-hidden="true">
+        <Icon name={icon} size={18} stroke={1.75} />
+      </span>
+      <span className="portal-my__row-label">{label}</span>
+      {!danger && <Icon name="chevron" size={16} stroke={2} />}
+    </button>
+  );
+}
+
+function SettingsRowDesk({ label, icon, onClick, danger = false, href }) {
+  const className = `portal-my-desk__list-row${danger ? ' portal-my-desk__list-row--danger' : ''}`;
+
+  if (href) {
+    return (
+      <a href={href} className={className}>
+        <span className="portal-my-desk__list-icon" aria-hidden="true">
+          <Icon name={icon} size={22} stroke={1.75} />
+        </span>
+        <span className="portal-my-desk__list-label">{label}</span>
+        {!danger && <Icon name="chevron" size={16} stroke={2} />}
+      </a>
+    );
+  }
+
+  return (
+    <button type="button" className={className} onClick={onClick}>
+      <span className="portal-my-desk__list-icon" aria-hidden="true">
+        <Icon name={icon} size={22} stroke={1.75} />
+      </span>
+      <span className="portal-my-desk__list-label">{label}</span>
+      {!danger && <Icon name="chevron" size={16} stroke={2} />}
+    </button>
+  );
+}
+
+function ProfileSummaryMob({ name, email, kyc, referral }) {
+  return (
+    <section className="portal-my__summary" aria-label="Account summary">
+      <div className="portal-my__avatar" aria-hidden="true">
+        {initialsFromName(name)}
+      </div>
+      <div className="portal-my__identity">
+        <h1 className="portal-my__name">{name}</h1>
+        <p className="portal-my__email">{email}</p>
+        <div className="portal-my__badges">
+          <MyBadge tone={kyc.tone} label={kyc.label} />
+          <MyBadge tone={referral.tone} label={referral.label} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProfileSummaryDesk({ name, email, kyc, referral, memberSince, userId, onEdit }) {
+  return (
+    <section className="portal-my-desk__profile" aria-label="Profile summary">
+      <div className="portal-my-desk__profile-top">
+        <div className="portal-my-desk__avatar" aria-hidden="true">
+          {initialsFromName(name)}
+        </div>
+        <div className="portal-my-desk__profile-head">
+          <h1 className="portal-my-desk__name">{name}</h1>
+          <p className="portal-my-desk__email">{email}</p>
+          <div className="portal-my__badges portal-my-desk__badges">
+            <MyBadge tone={kyc.tone} label={kyc.label} />
+            <MyBadge tone={referral.tone} label={referral.label} />
+          </div>
+        </div>
+      </div>
+      <dl className="portal-my-desk__meta">
+        <div className="portal-my-desk__meta-row">
+          <dt>Member since</dt>
+          <dd>{memberSince}</dd>
+        </div>
+        <div className="portal-my-desk__meta-row">
+          <dt>User ID</dt>
+          <dd className="portal-my-desk__meta-mono">{userId}</dd>
+        </div>
+      </dl>
+      <button type="button" className="portal-my-desk__edit-btn" onClick={onEdit}>
+        Edit Profile
+      </button>
+    </section>
+  );
+}
+
+export function AccountSettings({ s }) {
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  const name = String(s.accountState?.name || '').trim() || 'Not set';
+  const email = String(s.accountState?.email || '').trim() || 'Not set';
+  const kyc = kycBadge(s.accountState, s.kycStatusDef);
+  const referral = referralBadge(s.referralContext);
+  const { memberSince, userId } = profileMeta(s);
+
+  const handleQuickAccess = useCallback((item) => {
+    if (item.action === 'kyc') {
+      s.go(s.kycApproved ? 'profile' : 'kyc');
+      return;
+    }
+    s.go(item.screen);
+  }, [s.go, s.kycApproved]);
+
+  const handleSettings = useCallback((item) => {
+    if (item.screen === 'language' || item.screen === 'appearance') {
+      s.showToast?.(`${item.label} settings coming soon`);
+      return;
+    }
+    s.go(item.screen);
+  }, [s.go, s.showToast]);
+
+  const handleEditProfile = useCallback(() => {
+    s.showToast?.('Edit profile coming soon');
+  }, [s.showToast]);
+
+  const confirmDeleteAccount = useCallback(() => {
+    s.showToast('Account deletion request submitted');
+    setDeleteConfirm(false);
+  }, [s.showToast]);
+
+  return (
+    <div className="portal-my">
+      {/* Mobile — unchanged layout */}
+      <div className="portal-my-mob">
+        <ProfileSummaryMob name={name} email={email} kyc={kyc} referral={referral} />
+
+        <section className="portal-my__section" aria-labelledby="portal-my-quick">
+          <h2 id="portal-my-quick" className="portal-my__section-title">Quick Access</h2>
+          <div className="portal-my__grid">
+            {QUICK_ACCESS.map((item) => (
+              <QuickAccessTileMob
+                key={item.label}
+                label={item.label}
+                icon={item.icon}
+                onClick={() => handleQuickAccess(item)}
+              />
+            ))}
+          </div>
+        </section>
+
+        <section className="portal-my__section" aria-labelledby="portal-my-settings">
+          <h2 id="portal-my-settings" className="portal-my__section-title">Settings</h2>
+          <div className="portal-my__list">
+            {SETTINGS_ITEMS.map((item) => (
+              <SettingsRowMob
+                key={item.label}
+                label={item.label}
+                icon={item.icon}
+                onClick={() => handleSettings(item)}
+              />
+            ))}
+          </div>
+        </section>
+
+        <section className="portal-my__section portal-my__section--account" aria-labelledby="portal-my-account">
+          <h2 id="portal-my-account" className="portal-my__section-title">Account</h2>
+          <div className="portal-my__list portal-my__list--account">
+            <SettingsRowMob label="Log Out" icon="logOut" onClick={s.logout} />
+            {deleteConfirm ? (
+              <div style={{ padding: '10px 0' }}>
+                <p style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 10 }}>
+                  Delete your account? This cannot be undone.
+                </p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" className="portal-btn-secondary" style={{ flex: 1 }}
+                    onClick={() => setDeleteConfirm(false)}>Cancel</button>
+                  <button type="button" className="portal-my__row portal-my__row--danger" style={{ flex: 1, justifyContent: 'center' }}
+                    onClick={confirmDeleteAccount}>Confirm Delete</button>
+                </div>
+              </div>
+            ) : (
+              <SettingsRowMob label="Delete Account" icon="trash" onClick={() => setDeleteConfirm(true)} danger />
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* Desktop — two-column premium layout */}
+      <div className="portal-my-desk">
+        <div className="portal-my-desk__layout">
+          <ProfileSummaryDesk
+            name={name}
+            email={email}
+            kyc={kyc}
+            referral={referral}
+            memberSince={memberSince}
+            userId={userId}
+            onEdit={handleEditProfile}
+          />
+
+          <section className="portal-my-desk__panel portal-my-desk__quick" aria-labelledby="portal-my-desk-quick">
+            <h2 id="portal-my-desk-quick" className="portal-my-desk__panel-title">Quick Access</h2>
+            <div className="portal-my-desk__action-grid">
+              {QUICK_ACCESS.map((item) => (
+                <QuickAccessCardDesk
+                  key={item.label}
+                  label={item.label}
+                  desc={item.desc}
+                  icon={item.icon}
+                  onClick={() => handleQuickAccess(item)}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section className="portal-my-desk__panel portal-my-desk__settings" aria-labelledby="portal-my-desk-settings">
+            <h2 id="portal-my-desk-settings" className="portal-my-desk__panel-title">Settings</h2>
+            <div className="portal-my-desk__list">
+              {SETTINGS_ITEMS.map((item) => (
+                <SettingsRowDesk
+                  key={item.label}
+                  label={item.label}
+                  icon={item.icon}
+                  onClick={() => handleSettings(item)}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section className="portal-my-desk__panel portal-my-desk__account" aria-labelledby="portal-my-desk-account">
+            <h2 id="portal-my-desk-account" className="portal-my-desk__panel-title">Account</h2>
+            <div className="portal-my-desk__list">
+              <SettingsRowDesk label="Privacy Policy" icon="fileText" href="/privacy" />
+              <SettingsRowDesk label="Terms of Service" icon="fileText" href="/terms" />
+              <SettingsRowDesk label="Log Out" icon="logOut" onClick={s.logout} />
+              {deleteConfirm ? (
+                <div style={{ padding: '10px 0' }}>
+                  <p style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 10 }}>
+                    Delete your account? This cannot be undone.
+                  </p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" className="portal-btn-secondary" style={{ flex: 1 }}
+                      onClick={() => setDeleteConfirm(false)}>Cancel</button>
+                    <button type="button" className="portal-my-desk__list-row portal-my-desk__list-row--danger" style={{ flex: 1, justifyContent: 'center' }}
+                      onClick={confirmDeleteAccount}>Confirm Delete</button>
+                  </div>
+                </div>
+              ) : (
+                <SettingsRowDesk label="Delete Account" icon="trash" onClick={() => setDeleteConfirm(true)} danger />
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}

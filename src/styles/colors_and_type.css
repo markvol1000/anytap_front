@@ -1,0 +1,84 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Anytap type foundations — Red Hat Display + Text (Pretendard for CJK fallback)
+   Tokens: design-system.css · Components: styles.css
+   ────────────────────────────────────────────────────────────────────────── */
+
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+@import "./design-system.css";
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Base type rules
+   ────────────────────────────────────────────────────────────────────────── */
+html { font-family: var(--font-sans); }
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-weight: var(--fw-regular);
+  color: var(--fg-default);
+  background:
+    radial-gradient(1100px 520px at 8% -12%, rgba(255, 85, 0, 0.05), transparent 58%),
+    radial-gradient(900px 480px at 92% -8%, rgba(47, 111, 209, 0.04), transparent 55%),
+    var(--bg-canvas);
+  letter-spacing: var(--tracking-snug);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern", "liga";
+}
+
+/* ─── Semantic type classes ────────────────────────────────────────────── */
+.t-display-2xl { font-family: var(--font-display); font-size: var(--fs-display-2xl); line-height: var(--lh-display); font-weight: var(--fw-extrabold); letter-spacing: var(--tracking-tightest); }
+.t-display-xl  { font-family: var(--font-display); font-size: var(--fs-display-xl);  line-height: var(--lh-display); font-weight: var(--fw-extrabold); letter-spacing: var(--tracking-tightest); }
+.t-display-lg  { font-family: var(--font-display); font-size: var(--fs-display-lg);  line-height: var(--lh-display); font-weight: var(--fw-bold);      letter-spacing: var(--tracking-tight); }
+.t-display-md  { font-family: var(--font-display); font-size: var(--fs-display-md);  line-height: var(--lh-display); font-weight: var(--fw-bold);      letter-spacing: var(--tracking-tight); }
+
+.t-h1 { font-family: var(--font-display); font-size: var(--fs-h1); line-height: var(--lh-heading); font-weight: var(--fw-bold);     letter-spacing: var(--tracking-tight); }
+.t-h2 { font-family: var(--font-display); font-size: var(--fs-h2); line-height: var(--lh-heading); font-weight: var(--fw-bold);     letter-spacing: var(--tracking-snug);  }
+.t-h3 { font-size: var(--fs-h3); line-height: var(--lh-heading); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-snug);  }
+.t-h4 { font-size: var(--fs-h4); line-height: var(--lh-heading); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-snug);  }
+
+.t-body-lg { font-size: var(--fs-body-lg); line-height: var(--lh-body); font-weight: var(--fw-regular); }
+.t-body    { font-size: var(--fs-body);    line-height: var(--lh-body); font-weight: var(--fw-regular); }
+.t-body-sm { font-size: var(--fs-body-sm); line-height: var(--lh-body); font-weight: var(--fw-regular); }
+.t-caption { font-size: var(--fs-caption); line-height: var(--lh-tight); font-weight: var(--fw-regular); color: var(--fg-muted); }
+.t-micro   { font-size: var(--fs-micro);   line-height: var(--lh-tight); font-weight: var(--fw-medium); }
+.t-eyebrow { font-size: var(--fs-caption); line-height: var(--lh-tight); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-eyebrow); text-transform: uppercase; color: var(--fg-muted); }
+
+.t-mono    { font-family: var(--font-mono); font-feature-settings: "calt" 0; }
+.t-number  { font-feature-settings: "tnum", "lnum"; } /* tabular figures for tables/prices */
+
+/* ─── Heading defaults (so plain HTML looks correct) ───────────────────── */
+h1 { font-family: var(--font-display); font-size: var(--fs-h1); line-height: var(--lh-heading); font-weight: var(--fw-bold); letter-spacing: var(--tracking-tight); margin: 0; }
+h2 { font-family: var(--font-display); font-size: var(--fs-h2); line-height: var(--lh-heading); font-weight: var(--fw-bold); letter-spacing: var(--tracking-snug); margin: 0; }
+h3 { font-size: var(--fs-h3); line-height: var(--lh-heading); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-snug); margin: 0; }
+h4 { font-size: var(--fs-h4); line-height: var(--lh-heading); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-snug); margin: 0; }
+p  { margin: 0; }
+
+a       { color: var(--fg-link); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 2px; }
+a.btn:hover,
+a.topbar__brand:hover,
+a.mobnav__card:hover,
+a.mobnav__row:hover,
+a.mobnav__login:hover,
+a.mobnav__signup:hover,
+a.mobnav__cta:hover,
+a.mobile-cta-bar:hover,
+a.navitem__link:hover,
+a.navmenu__item:hover { text-decoration: none; }
+
+code, pre, kbd, samp { font-family: var(--font-mono); font-size: 0.92em; }
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+  transition: opacity 140ms var(--ease-standard);
+}
+input:focus::placeholder,
+textarea:focus::placeholder {
+  opacity: 0;
+}
+
+::selection { background: rgba(255, 85, 0, 0.18); color: inherit; }

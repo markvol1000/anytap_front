@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Anytap — homepage compare</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; background: #1a1a1a; color: #fff; }
+      .bar {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        padding: 10px 16px; background: #252525; border-bottom: 1px solid #3a3a3a;
+        flex-wrap: wrap;
+      }
+      .bar h1 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+      .bar p { margin: 0; font-size: 12px; color: #a09790; }
+      .labels {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+        background: #2e2e2e; border-bottom: 1px solid #3a3a3a;
+      }
+      .labels span {
+        padding: 8px 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+        text-transform: uppercase; color: #d4cbc1;
+      }
+      .labels span + span { border-left: 1px solid #3a3a3a; }
+      .labels .tag--new { color: #ff7733; }
+      .labels .tag--v2 { color: #e88828; }
+      .panes { display: grid; grid-template-columns: 1fr 1fr; height: calc(100% - 88px); }
+      .pane { position: relative; min-width: 0; }
+      .pane + .pane { border-left: 2px solid #3a3a3a; }
+      iframe { width: 100%; height: 100%; border: 0; background: #f8f6f4; }
+      .links { display: flex; gap: 10px; flex-wrap: wrap; }
+      .links a {
+        font-size: 12px; font-weight: 600; color: #ff7733; text-decoration: none;
+        padding: 6px 12px; border-radius: 999px; border: 1px solid #5a3480; background: #3b1b5e;
+      }
+      .links a:hover { background: #5a3480; }
+      @media (max-width: 900px) {
+        .panes, .labels { grid-template-columns: 1fr; }
+        .pane + .pane { border-left: 0; border-top: 2px solid #3a3a3a; }
+        .labels span + span { border-left: 0; border-top: 1px solid #3a3a3a; }
+        .panes { height: auto; }
+        .pane { height: 70vh; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <div>
+        <h1>Homepage compare</h1>
+        <p>Left = current SPA · Right = v2 (Babel MPA). Run <code>npm run dev:v2</code> for v2.</p>
+      </div>
+      <nav class="links" aria-label="Open in new tab">
+        <a href="/" target="_blank" rel="noopener">Current SPA</a>
+        <a href="http://localhost:5174/index.html" target="_blank" rel="noopener">V2 only</a>
+      </nav>
+    </header>
+    <div class="labels" aria-hidden="true">
+      <span class="tag--new">Current — Vite SPA (#FF5500)</span>
+      <span class="tag--v2">V2 — Babel MPA (#e88828)</span>
+    </div>
+    <div class="panes">
+      <div class="pane">
+        <iframe src="/" title="Current SPA homepage" loading="lazy"></iframe>
+      </div>
+      <div class="pane">
+        <iframe src="http://localhost:5174/index.html" title="Homepage v2" loading="lazy"></iframe>
+      </div>
+    </div>
+  </body>
+</html>

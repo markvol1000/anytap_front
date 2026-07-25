@@ -1,0 +1,254 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Anytap Design System — tokens (single source of truth)
+   Components: styles.css · Typography utilities: colors_and_type.css
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─── Brand ─────────────────────────────────────────────────────────── */
+  --brand-primary:        #ff5500;
+  --brand-primary-hover:  #ff7733;
+  --brand-primary-strong: #ff5500;
+  --brand-primary-pale:   #fff0eb;
+  --brand-primary-tint:   #ffe4d9;
+  --brand-secondary:      #3b1b5e;
+  --brand-secondary-hover:#5a3480;
+  --brand-secondary-pale: rgba(59, 27, 94, 0.08);
+  --brand-rgb:            255, 85, 0;
+  --brand-secondary-rgb:  59, 27, 94;
+  --brand-navy:           #0f172a;
+  --brand-orange-vivid:   var(--brand-primary);
+
+  /* Legacy aliases — prefer --brand-* in new code */
+  --anytap-orange:        var(--brand-primary);
+  --anytap-orange-hover:  var(--brand-primary-hover);
+  --anytap-orange-strong: var(--brand-primary);
+  --anytap-orange-soft:   var(--brand-primary-pale);
+  --anytap-orange-tint:   var(--brand-primary-tint);
+  --anytap-ink:           var(--ink);
+
+  /* Secondary accents (step flows, charts) */
+  --acc-blue:   #2f6fd1;  --acc-blue-soft:   #e8f0fb;
+  --acc-green:  #1f8a5b;  --acc-green-soft:  #e4f4ec;
+  --acc-violet: #6d4ad6;  --acc-violet-soft: #efeafb;
+  --acc-teal:   #0e9aa7;  --acc-teal-soft:   #e2f4f5;
+  --acc-rose:   #d6477a;  --acc-rose-soft:   #fbe9f0;
+
+  /* ─── Typography families ─────────────────────────────────────────────── */
+  --font-cjk:
+    "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR",
+    "Malgun Gothic", sans-serif;
+  --font-sans:
+    "Red Hat Text", var(--font-cjk), -apple-system, BlinkMacSystemFont,
+    system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-display:
+    "Red Hat Display", var(--font-cjk), -apple-system, BlinkMacSystemFont,
+    system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-mono:
+    "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Monaco, Consolas,
+    "Liberation Mono", monospace;
+
+  /* ─── Type scale ──────────────────────────────────────────────────────── */
+  --fs-display-2xl: 72px;
+  --fs-display-xl:  56px;
+  --fs-display-lg:  44px;
+  --fs-display-md:  36px;
+  --fs-h1:          32px;
+  --fs-h2:          26px;
+  --fs-h3:          22px;
+  --fs-h4:          18px;
+  --fs-body-lg:     17px;
+  --fs-body:        15px;
+  --fs-body-sm:     13px;
+  --fs-caption:     12px;
+  --fs-micro:       11px;
+
+  /* Activity / transaction list rows */
+  --portal-tx-title-size: var(--fs-body);
+  --portal-tx-amt-size:   var(--fs-body);
+  --portal-tx-when-size:  var(--fs-caption);
+
+  --lh-display: 1.18;
+  --lh-heading: 1.30;
+  --lh-body:    1.55;
+  --lh-tight:   1.40;
+
+  --fw-thin:       100;
+  --fw-extralight: 200;
+  --fw-light:      300;
+  --fw-regular:    400;
+  --fw-medium:     500;
+  --fw-semibold:   600;
+  --fw-bold:       700;
+  --fw-extrabold:  800;
+  --fw-black:      900;
+
+  --tracking-tightest: -0.04em;
+  --tracking-tight:    -0.02em;
+  --tracking-snug:     -0.01em;
+  --tracking-normal:    0;
+  --tracking-wide:      0.02em;
+  --tracking-eyebrow:   0.08em;
+
+  /* ─── Neutrals ────────────────────────────────────────────────────────── */
+  --paper:    #ffffff;
+  --gray-00:  #f8f6f4;
+  --gray-50:  #f3f0ec;
+  --gray-100: #eae5df;
+  --gray-200: #d4cbc1;
+  --gray-300: #b8aea3;
+  --gray-400: #a09790;
+  --gray-500: #8a8179;
+  --gray-600: #6b6057;
+  --gray-700: #4a433c;
+  --gray-800: #2e2a26;
+  --gray-900: #1f1c19;
+  --ink:      #1a1a1a;
+
+  /* ─── Semantic colors ───────────────────────────────────────────────────── */
+  --accent-50:  #eef2ff;
+  --accent-100: #dde6ff;
+  --accent-200: #b8c9ff;
+  --accent-300: #8aa6ff;
+  --accent-400: #5b7fff;
+  --accent-500: #3257f0;
+  --accent-600: #2240c8;
+  --accent-700: #1a309a;
+  --accent-800: #142475;
+
+  --success-50:  #ecfdf3;
+  --success-500: #16a34a;
+  --success-700: #117a36;
+
+  --warning-50:  #fff8eb;
+  --warning-500: #f59e0b;
+  --warning-700: #b06906;
+
+  --danger-50:   #fef1f1;
+  --danger-500:  #e5484d;
+  --danger-700:  #b1262b;
+
+  --info-50:     #eef6ff;
+  --info-500:    #2f80ed;
+
+  /* ─── Surfaces & foreground ─────────────────────────────────────────────── */
+  --bg-canvas:    var(--gray-00);
+  --bg-auth-canvas:
+    radial-gradient(ellipse 90% 70% at 8% 12%, rgba(var(--brand-rgb), 0.11), transparent 52%),
+    radial-gradient(ellipse 80% 60% at 92% 88%, rgba(var(--brand-secondary-rgb), 0.09), transparent 50%),
+    radial-gradient(ellipse 60% 45% at 50% 50%, rgba(255, 255, 255, 0.9), transparent 70%),
+    var(--bg-canvas);
+  --bg-surface:   var(--paper);
+  --bg-subtle:    var(--gray-50);
+  --bg-muted:     var(--gray-100);
+  --bg-inverse:   var(--ink);
+  --surface-elevated: var(--paper);
+  --surface-muted:    #f5f3f0;
+
+  --fg-default:   var(--ink);
+  --fg-strong:    var(--gray-900);
+  --fg-muted:     var(--gray-600);
+  --fg-subtle:    var(--gray-500);
+  --fg-disabled:  var(--gray-400);
+  --placeholder:  var(--gray-400);
+  --fg-on-accent: var(--paper);
+  --fg-inverse:   var(--paper);
+  --fg-link:      var(--brand-primary);
+
+  /* ─── Borders ───────────────────────────────────────────────────────────── */
+  --border-subtle:  rgba(26, 26, 26, 0.06);
+  --border-default: rgba(26, 26, 26, 0.10);
+  --border-strong:  rgba(26, 26, 26, 0.16);
+  --border-focus:   var(--brand-primary);
+
+  /* ─── Radius — premium fintech (restrained corners) ───────────────────── */
+  --radius-btn:     10px;   /* Buttons */
+  --radius-input:   10px;   /* Inputs, selects, textareas */
+  --radius-card:    16px;   /* Content cards */
+  --radius-wallet:  16px;   /* Wallet card surfaces */
+  --radius-payment: 16px;   /* Debit / payment card artwork */
+  --radius-panel:   12px;   /* Containers, panels, list shells */
+  --radius-modal:   18px;   /* Dialogs & modals */
+  --radius-sheet:   20px;   /* Bottom sheets */
+  --radius-pill:    999px;  /* Badges, filter chips */
+  --radius-full:    50%;    /* Avatars, icon circles */
+
+  /* Scale aliases — map to semantic tokens */
+  --radius-xs:  6px;
+  --radius-sm:  var(--radius-btn);
+  --radius-md:  var(--radius-input);
+  --radius-lg:  var(--radius-panel);
+  --radius-xl:  var(--radius-card);
+  --radius-2xl: var(--radius-sheet);
+  --radius-info: var(--radius-panel);
+  --input-radius: var(--radius-input);
+
+  /* ─── Elevation ─────────────────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px rgba(15, 15, 25, 0.03);
+  --shadow-sm: 0 1px 2px rgba(15, 15, 25, 0.04), 0 6px 16px rgba(15, 15, 25, 0.04);
+  --shadow-md: 0 2px 6px rgba(15, 15, 25, 0.04), 0 14px 32px rgba(15, 15, 25, 0.06);
+  --shadow-lg: 0 4px 12px rgba(15, 15, 25, 0.05), 0 28px 56px rgba(15, 15, 25, 0.08);
+  --shadow-xl: 0 8px 20px rgba(15, 15, 25, 0.06), 0 40px 80px rgba(15, 15, 25, 0.10);
+  --ring-focus:     0 0 0 4px rgba(255, 85, 0, 0.14);
+  --ring-focus-ink: 0 0 0 4px rgba(26, 26, 26, 0.07);
+  --input-focus-border: var(--ink);
+  --gradient-ink: linear-gradient(145deg, #16161c 0%, var(--ink) 100%);
+  --gradient-ink-glow: radial-gradient(circle at 90% 10%, rgba(var(--brand-rgb), 0.4), transparent 45%);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23A09790' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  --select-chevron-size: 16px;
+  --select-chevron-inset: 18px;
+  --select-padding-right: 48px;
+
+  /* ─── Controls & glass ──────────────────────────────────────────────────── */
+  --control-h:    48px;
+  --control-h-lg: 56px;
+
+  /* Button height — portal / account / marketing CTAs (exclude header nav) */
+  --btn-h:        var(--control-h);
+  --btn-h-sm:     40px;
+  --btn-px:       16px;
+  --btn-px-md:    20px;
+
+  --glass-bg:           rgba(255, 255, 255, 0.55);
+  --glass-bg-strong:    rgba(255, 255, 255, 0.68);
+  --glass-border:       rgba(255, 255, 255, 0.72);
+  --glass-border-outer: rgba(26, 26, 26, 0.10);
+  --glass-blur:         blur(28px) saturate(195%) brightness(1.08) contrast(1.03);
+  --glass-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.90),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.35),
+    0 10px 36px rgba(15, 15, 25, 0.10),
+    0 2px 8px rgba(15, 15, 25, 0.05);
+
+  /* ─── Spacing (4pt grid) ───────────────────────────────────────────────── */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ─── Layout ────────────────────────────────────────────────────────────── */
+  --max-w: 1440px;
+  --gutter-x: 24px;
+
+  /* ─── Motion ────────────────────────────────────────────────────────────── */
+  --ease-standard:  cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring:    cubic-bezier(0.22, 1.16, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 260ms;
+}
+
+@media (max-width: 899px) {
+  :root {
+    --gutter-x: 12px;
+  }
+}

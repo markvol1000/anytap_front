@@ -1,0 +1,68 @@
+import {
+  Airplane,
+  ArrowsLeftRight,
+  Bank,
+  Briefcase,
+  ChartLineUp,
+  CheckCircle,
+  Code,
+  Coins,
+  Cpu,
+  CreditCard,
+  DeviceMobile,
+  Envelope,
+  Eye,
+  GameController,
+  Gear,
+  Globe,
+  House,
+  Lightning,
+  Lock,
+  PlugsConnected,
+  Receipt,
+  RocketLaunch,
+  ShieldCheck,
+  Stack,
+  Storefront,
+  User,
+  Users,
+  Wallet,
+} from '@phosphor-icons/react';
+
+/** IconCards · industry tiles — Phosphor duotone (same family as step-icon.js) */
+const FEATURE_ICONS = {
+  gamepad: GameController,
+  store: Storefront,
+  code: Code,
+  bank: Bank,
+  chart: ChartLineUp,
+  layers: Stack,
+  globe: Globe,
+  shield: ShieldCheck,
+  zap: Lightning,
+  plane: Airplane,
+  briefcase: Briefcase,
+  phone: DeviceMobile,
+  checkCircle: CheckCircle,
+  coins: Coins,
+  swap: ArrowsLeftRight,
+  wallet: Wallet,
+  api: PlugsConnected,
+  creditCard: CreditCard,
+  eye: Eye,
+  cpu: Cpu,
+  lock: Lock,
+  users: Users,
+  user: User,
+  receipt: Receipt,
+  rocket: RocketLaunch,
+  home: House,
+  settings: Gear,
+  mail: Envelope,
+};
+
+function resolveFeatureIcon(name) {
+  return FEATURE_ICONS[name] ?? null;
+}
+
+export { FEATURE_ICONS, resolveFeatureIcon };

@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Anytap Card Guide — 3단 안내서</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;700;800;900&family=Red+Hat+Text:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #0f172a;
+      --navy-deep: #0a1220;
+      --navy-mid: #1e293b;
+      --navy-soft: #334155;
+      --orange: #ff5500;
+      --orange-soft: #ff7733;
+      --orange-pale: #fff0eb;
+      --paper: #f7f4ef;
+      --paper-white: #ffffff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --panel-w: 99mm;
+      --sheet-w: 297mm;
+      --sheet-h: 210mm;
+      --card-w: 85.6mm;
+      --card-h: 53.98mm;
+      --font-display: "Red Hat Display", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      --font-body: "Red Hat Text", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    body {
+      font-family: var(--font-body);
+      background: #1a1f2c;
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 32px 24px 64px;
+    }
+
+    .screen-ui {
+      max-width: 1180px;
+      margin: 0 auto 28px;
+      color: #e2e8f0;
+    }
+    .screen-ui h1 {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+    .screen-ui p {
+      margin-top: 8px;
+      color: #94a3b8;
+      font-size: 15px;
+      line-height: 1.5;
+      max-width: 62ch;
+    }
+    .screen-ui .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 85, 0, 0.14);
+      color: #ffb089;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .chip--navy {
+      background: rgba(148, 163, 184, 0.16);
+      color: #cbd5e1;
+    }
+    .sheet-label {
+      max-width: 1180px;
+      margin: 0 auto 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .sheet-wrap {
+      max-width: 1180px;
+      margin: 0 auto 40px;
+      filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.35));
+    }
+
+    .sheet {
+      width: var(--sheet-w);
+      height: var(--sheet-h);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background: var(--paper-white);
+      position: relative;
+      overflow: hidden;
+      transform-origin: top left;
+    }
+
+    /* Screen scale to fit viewport */
+    @media screen {
+      .sheet-wrap { overflow: auto; }
+      .sheet {
+        transform: scale(var(--preview-scale, 0.95));
+        margin-bottom: calc(var(--sheet-h) * (var(--preview-scale, 0.95) - 1));
+        margin-right: calc(var(--sheet-w) * (var(--preview-scale, 0.95) - 1));
+      }
+    }
+
+    .panel {
+      position: relative;
+      overflow: hidden;
+      padding: 14mm 10mm;
+      border-right: 0.3pt dashed rgba(15, 23, 42, 0.18);
+    }
+    .panel:last-child { border-right: none; }
+    .panel--navy {
+      background:
+        radial-gradient(120% 80% at 0% 100%, rgba(255, 85, 0, 0.22), transparent 55%),
+        radial-gradient(90% 70% at 110% -10%, rgba(255, 119, 51, 0.18), transparent 50%),
+        linear-gradient(165deg, var(--navy-deep) 0%, var(--navy) 48%, #152238 100%);
+      color: #fff;
+    }
+    .panel--paper {
+      background:
+        linear-gradient(180deg, #fff 0%, var(--paper) 100%);
+    }
+    .panel--orange {
+      background:
+        radial-gradient(90% 70% at 100% 0%, rgba(255, 255, 255, 0.18), transparent 50%),
+        linear-gradient(145deg, #ff6a1a 0%, var(--orange) 55%, #e04800 100%);
+      color: #fff;
+    }
+
+    .fold-mark {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 0;
+      border-left: 0.35pt dashed rgba(15, 23, 42, 0.22);
+      z-index: 5;
+      pointer-events: none;
+    }
+    .sheet--outside .fold-mark,
+    .panel--navy + .panel .fold-mark { border-color: rgba(255, 255, 255, 0.22); }
+
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-mark img {
+      height: 22px;
+      width: auto;
+      display: block;
+      filter: brightness(0) invert(1);
+    }
+    .brand-mark--dark img { filter: none; }
+    .brand-word {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.03em;
+      color: inherit;
+    }
+    .brand-word span { color: var(--orange); }
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--orange);
+    }
+    .panel--navy .eyebrow,
+    .panel--orange .eyebrow { color: #ffd0bc; }
+
+    .display {
+      font-family: var(--font-display);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.12;
+    }
+    .lede {
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .panel--navy .lede,
+    .panel--orange .lede { color: rgba(255, 255, 255, 0.78); }
+
+    .step {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 8px;
+      align-items: start;
+      margin-top: 10px;
+    }
+    .step__num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--orange);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-display);
+    }
+    .step__title {
+      font-family: var(--font-display);
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .step__body {
+      font-size: 10.5px;
+      line-height: 1.45;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .panel--navy .step__body { color: rgba(255, 255, 255, 0.7); }
+
+    .bullet {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin-top: 8px;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    .bullet::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      margin-top: 5px;
+      border-radius: 50%;
+      background: var(--orange);
+      flex: 0 0 auto;
+    }
+
+    .footer-mini {
+      position: absolute;
+      left: 10mm;
+      right: 10mm;
+      bottom: 10mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9px;
+      letter-spacing: 0.04em;
+      opacity: 0.7;
+    }
+
+    /* ─── Cover panel ─── */
+    .cover {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .cover__hero {
+      margin-top: 28mm;
+    }
+    .cover__title {
+      font-size: 34px;
+      margin-top: 14px;
+      max-width: 9ch;
+    }
+    .cover__accent {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 6px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .cover__strip {
+      height: 8mm;
+      margin: 0 -10mm -14mm;
+      background: linear-gradient(90deg, var(--orange), #ff8a4c);
+    }
+
+    /* ─── Center panel: card slits + copy ─── */
+    .center {
+      height: 100%;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 6mm;
+      align-items: center;
+    }
+    .center__copy .display { font-size: 18px; }
+    .center__note {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(15, 23, 42, 0.1);
+      font-size: 10px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .center__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 14px;
+      padding: 5px 10px;
+      border-radius: 8px;
+      background: var(--orange-pale);
+      color: var(--orange);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* Card pocket with corner die-cuts (칼집) */
+    .card-pocket {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 85.6 / 53.98;
+      max-width: 78mm;
+      margin: 0 auto;
+    }
+    .card-pocket__guide {
+      position: absolute;
+      inset: 0;
+      border: 0.5pt dashed rgba(15, 23, 42, 0.25);
+      border-radius: 3.2mm;
+      background:
+        repeating-linear-gradient(
+          -45deg,
+          rgba(15, 23, 42, 0.03),
+          rgba(15, 23, 42, 0.03) 2px,
+          transparent 2px,
+          transparent 6px
+        );
+    }
+    .card-pocket__card {
+      position: absolute;
+      inset: 1.2mm;
+      border-radius: 2.8mm;
+      overflow: hidden;
+      box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.12),
+        0 12px 28px -10px rgba(15, 23, 42, 0.35);
+      background: #111;
+    }
+    .card-pocket__card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Corner slits (칼집) — diagonal die-cuts at four corners */
+    .slit {
+      position: absolute;
+      width: 9mm;
+      height: 1.1mm;
+      z-index: 4;
+      pointer-events: none;
+      background: linear-gradient(90deg, transparent 0%, #fff 8%, #fff 92%, transparent 100%);
+      box-shadow:
+        0 0 0 0.28mm var(--navy),
+        0 0.4mm 0 rgba(15, 23, 42, 0.12);
+      border-radius: 1px;
+    }
+    .slit--tl { top: 3.8mm; left: 1.2mm; transform: rotate(45deg); transform-origin: center; }
+    .slit--tr { top: 3.8mm; right: 1.2mm; transform: rotate(-45deg); transform-origin: center; }
+    .slit--bl { bottom: 3.8mm; left: 1.2mm; transform: rotate(-45deg); transform-origin: center; }
+    .slit--br { bottom: 3.8mm; right: 1.2mm; transform: rotate(45deg); transform-origin: center; }
+
+    /* Paper flaps over card corners (visual of tucked corners) */
+    .slit-flap {
+      position: absolute;
+      width: 8mm;
+      height: 8mm;
+      z-index: 5;
+      pointer-events: none;
+      background: linear-gradient(135deg, rgba(247, 244, 239, 0.97) 48%, transparent 50%);
+    }
+    .slit-flap--tl { top: 0; left: 0; border-top-left-radius: 3.2mm; }
+    .slit-flap--tr { top: 0; right: 0; border-top-right-radius: 3.2mm; background: linear-gradient(-135deg, rgba(247, 244, 239, 0.97) 48%, transparent 50%); }
+    .slit-flap--bl { bottom: 0; left: 0; border-bottom-left-radius: 3.2mm; background: linear-gradient(45deg, rgba(247, 244, 239, 0.97) 48%, transparent 50%); }
+    .slit-flap--br { bottom: 0; right: 0; border-bottom-right-radius: 3.2mm; background: linear-gradient(-45deg, rgba(247, 244, 239, 0.97) 48%, transparent 50%); }
+
+    .pocket-caption {
+      margin-top: 5mm;
+      text-align: center;
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--navy-soft);
+    }
+    .pocket-caption span {
+      display: inline-block;
+      padding: 3px 8px;
+      border: 1px solid rgba(15, 23, 42, 0.15);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Die-cut production note (screen only) */
+    .die-note {
+      margin-top: 4mm;
+      font-size: 9px;
+      line-height: 1.4;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .qr-box {
+      width: 28mm;
+      height: 28mm;
+      border: 1.5px solid rgba(255, 255, 255, 0.35);
+      border-radius: 4px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(#fff, #fff) center / 70% 70% no-repeat;
+      position: relative;
+      overflow: hidden;
+    }
+    .qr-box::before {
+      content: "QR";
+      font-family: var(--font-display);
+      font-weight: 800;
+      color: var(--navy);
+      font-size: 14px;
+      letter-spacing: 0.08em;
+    }
+    .support-block {
+      margin-top: auto;
+      padding-top: 12mm;
+    }
+    .support-block a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    .panel-stack {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .rule {
+      height: 1px;
+      background: rgba(15, 23, 42, 0.1);
+      margin: 12px 0;
+    }
+    .panel--navy .rule { background: rgba(255, 255, 255, 0.15); }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .stat {
+      padding: 10px 10px 9px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .stat__v {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .stat__l {
+      margin-top: 2px;
+      font-size: 9.5px;
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .panel-tag {
+      position: absolute;
+      top: 6mm;
+      right: 6mm;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.45;
+    }
+    @media print {
+      .panel-tag { display: none !important; }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+      }
+      .screen-ui,
+      .sheet-label,
+      .no-print { display: none !important; }
+      .sheet-wrap {
+        margin: 0;
+        filter: none;
+        page-break-after: always;
+      }
+      .sheet-wrap:last-child { page-break-after: auto; }
+      .sheet {
+        transform: none !important;
+        margin: 0 !important;
+        box-shadow: none;
+      }
+      @page {
+        size: A4 landscape;
+        margin: 0;
+      }
+    }
+
+    @media screen and (max-width: 1100px) {
+      :root { --preview-scale: 0.72; }
+    }
+    @media screen and (max-width: 820px) {
+      :root { --preview-scale: 0.48; }
+      body { padding: 20px 12px 40px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="screen-ui no-print">
+    <h1>Anytap 3단 신용카드 안내서</h1>
+    <p>
+      A4 가로 3단 접지 · 펼침면 가운데 패널 좌측 카드 칼집(네 모서리) · 우측 안내 카피.
+      컬러: Navy <code>#0F172A</code> + Orange <code>#FF5500</code>. 인쇄 시 Ctrl/Cmd+P → A4 Landscape, 여백 없음.
+    </p>
+    <div class="meta">
+      <span class="chip">Inside · 가운데 칼집</span>
+      <span class="chip chip--navy">Outside · 커버</span>
+      <span class="chip chip--navy">99 × 210mm × 3</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════ INSIDE (펼침면) ═══════════════ -->
+  <div class="sheet-label no-print">
+    <span>Inside · 펼침면</span>
+    <span>좌 · 중(카드+설명) · 우</span>
+  </div>
+  <div class="sheet-wrap" id="inside">
+    <section class="sheet sheet--inside" aria-label="Trifold inside">
+      <!-- Left panel -->
+      <article class="panel panel--navy panel-stack">
+        <span class="panel-tag">Panel 1</span>
+        <div class="brand-mark">
+          <img src="../assets/anytap-logo.png" alt="Anytap" />
+        </div>
+        <p class="eyebrow" style="margin-top: 18px;">Getting started</p>
+        <h2 class="display" style="font-size: 22px; margin-top: 8px;">카드 수령 후<br />3분 활성화</h2>
+        <p class="lede">앱에서 카드 번호를 등록하면 지갑이 열립니다. 충전 후 Visa 가맹점에서 바로 사용하세요.</p>
+
+        <div style="margin-top: 14px;">
+          <div class="step">
+            <div class="step__num">1</div>
+            <div>
+              <div class="step__title">Activate</div>
+              <div class="step__body">앱 → Card → 카드 번호 입력</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step__num">2</div>
+            <div>
+              <div class="step__title">Top Up</div>
+              <div class="step__body">USDT / USDC로 잔액 충전</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step__num">3</div>
+            <div>
+              <div class="step__title">Spend</div>
+              <div class="step__body">전 세계 Visa 가맹점 · 모바일 페이</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-mini">
+          <span>anytap.com</span>
+          <span>INSIDE L</span>
+        </div>
+      </article>
+
+      <!-- Center panel: card left + description right -->
+      <article class="panel panel--paper">
+        <span class="panel-tag">Panel 2 · Center</span>
+        <div class="center">
+          <div class="center__card">
+            <div class="card-pocket" aria-label="Card die-cut pocket">
+              <div class="card-pocket__guide"></div>
+              <div class="card-pocket__card">
+                <img src="../assets/cards/black_card.png" alt="Anytap Visa Card" />
+              </div>
+              <!-- Corner paper flaps + diagonal slits (칼집) -->
+              <span class="slit-flap slit-flap--tl" aria-hidden="true"></span>
+              <span class="slit-flap slit-flap--tr" aria-hidden="true"></span>
+              <span class="slit-flap slit-flap--bl" aria-hidden="true"></span>
+              <span class="slit-flap slit-flap--br" aria-hidden="true"></span>
+              <span class="slit slit--tl" title="Die-cut slit TL"></span>
+              <span class="slit slit--tr" title="Die-cut slit TR"></span>
+              <span class="slit slit--bl" title="Die-cut slit BL"></span>
+              <span class="slit slit--br" title="Die-cut slit BR"></span>
+            </div>
+            <div class="pocket-caption"><span>Corner slits · 칼집 4곳</span></div>
+            <p class="die-note no-print">인쇄·재단 시 카드 모서리 대각 칼집 타발</p>
+          </div>
+
+          <div class="center__copy">
+            <p class="eyebrow">Your card</p>
+            <h2 class="display" style="margin-top: 6px;">여기에<br />카드가<br />고정됩니다</h2>
+            <p class="lede" style="color: var(--muted);">
+              네 모서리 칼집에 카드를 끼워 보관하세요. 사용 시 꺼내 결제하고, 다시 꽂아 두면 됩니다.
+            </p>
+            <div class="center__badge">ISO 85.6 × 54mm</div>
+            <p class="center__note">
+              Anytap Visa · Physical Card<br />
+              분실 시 앱에서 즉시 동결 가능
+            </p>
+          </div>
+        </div>
+      </article>
+
+      <!-- Right panel -->
+      <article class="panel panel--paper panel-stack">
+        <span class="panel-tag">Panel 3</span>
+        <p class="eyebrow">Why Anytap</p>
+        <h2 class="display" style="font-size: 20px; margin-top: 8px;">암호화폐로<br />실생활 결제</h2>
+        <p class="lede">은행 계좌 없이 신청하고, 스테이블코인으로 충전한 뒤 어디서나 사용합니다.</p>
+
+        <div class="rule"></div>
+
+        <div class="bullet"><div><strong>Visa 전용</strong><br /><span style="color:var(--muted);font-size:10.5px;">전 세계 가맹점 · ATM</span></div></div>
+        <div class="bullet"><div><strong>Virtual + Physical</strong><br /><span style="color:var(--muted);font-size:10.5px;">모바일 페이 · 실물 카드</span></div></div>
+        <div class="bullet"><div><strong>실시간 보안</strong><br /><span style="color:var(--muted);font-size:10.5px;">앱에서 동결 · 한도 관리</span></div></div>
+
+        <div style="margin-top: auto; padding-top: 16px;">
+          <p class="eyebrow">Need help?</p>
+          <p style="margin-top: 6px; font-size: 12px; font-weight: 600;">support@anytap.com</p>
+          <p style="margin-top: 4px; font-size: 11px; color: var(--muted);">Help Center · anytap.com</p>
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <!-- ═══════════════ OUTSIDE (겉면) ═══════════════ -->
+  <div class="sheet-label no-print">
+    <span>Outside · 겉면 (인쇄 시 뒷면)</span>
+    <span>뒷면 · 날개 · 표지</span>
+  </div>
+  <div class="sheet-wrap" id="outside">
+    <section class="sheet sheet--outside" aria-label="Trifold outside">
+      <!-- Outside left = back cover when folded -->
+      <article class="panel panel--navy panel-stack">
+        <span class="panel-tag">Back</span>
+        <p class="eyebrow">Support</p>
+        <h2 class="display" style="font-size: 20px; margin-top: 8px;">언제나<br />옆에서</h2>
+        <p class="lede">카드 활성화, 충전, 보안 설정은 앱과 웹에서 동일하게 이용할 수 있습니다.</p>
+
+        <div class="stat-row">
+          <div class="stat">
+            <div class="stat__v">24/7</div>
+            <div class="stat__l">App control</div>
+          </div>
+          <div class="stat">
+            <div class="stat__v">Visa</div>
+            <div class="stat__l">Worldwide</div>
+          </div>
+        </div>
+
+        <div class="support-block">
+          <div class="qr-box" aria-hidden="true"></div>
+          <p style="margin-top: 10px; font-size: 11px; opacity: 0.85;">Scan to open Anytap</p>
+        </div>
+
+        <div class="footer-mini">
+          <span>© Anytap</span>
+          <span>OUTSIDE L</span>
+        </div>
+      </article>
+
+      <!-- Outside middle = flap -->
+      <article class="panel panel--paper panel-stack">
+        <span class="panel-tag">Flap</span>
+        <p class="eyebrow">Quick tips</p>
+        <h2 class="display" style="font-size: 18px; margin-top: 8px;">안전하게<br />사용하기</h2>
+
+        <div class="rule"></div>
+        <div class="bullet"><div>PIN은 다른 사람과 공유하지 마세요</div></div>
+        <div class="bullet"><div>의심 거래 시 앱에서 즉시 Freeze</div></div>
+        <div class="bullet"><div>해외 이용 전 앱 알림을 켜 두세요</div></div>
+        <div class="bullet"><div>실물 카드는 칼집에 보관하세요</div></div>
+
+        <div style="margin-top: auto;">
+          <div style="height: 4px; width: 42px; background: var(--orange); border-radius: 2px;"></div>
+          <p style="margin-top: 10px; font-size: 10.5px; color: var(--muted); line-height: 1.5;">
+            본 안내서는 실물 카드와 함께 제공됩니다. 약관 및 수수료는 anytap.com에서 확인하세요.
+          </p>
+        </div>
+      </article>
+
+      <!-- Outside right = FRONT COVER when folded -->
+      <article class="panel panel--navy">
+        <span class="panel-tag">Cover</span>
+        <div class="cover">
+          <div class="brand-mark">
+            <img src="../assets/anytap-logo.png" alt="Anytap" />
+          </div>
+
+          <div class="cover__hero">
+            <p class="eyebrow">Card welcome kit</p>
+            <h1 class="display cover__title">Your<br /><span style="color: var(--orange);">Card</span><br />Guide</h1>
+            <p class="lede" style="max-width: 22ch;">실물 카드 안내서 · 활성화부터 결제까지</p>
+            <span class="cover__accent">3-Panel Brochure</span>
+          </div>
+
+          <div>
+            <p style="font-size: 11px; opacity: 0.75; margin-bottom: 14px;">Navy · Orange edition</p>
+            <div class="cover__strip"></div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      function fit() {
+        var sheet = document.querySelector(".sheet");
+        if (!sheet) return;
+        var wrap = sheet.parentElement;
+        var avail = Math.min(window.innerWidth - 48, 1120);
+        var scale = Math.min(1, avail / sheet.offsetWidth);
+        document.documentElement.style.setProperty("--preview-scale", String(scale));
+      }
+      fit();
+      window.addEventListener("resize", fit);
+    })();
+  </script>
+</body>
+</html>

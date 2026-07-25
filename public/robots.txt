@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+Disallow: /account
+Disallow: /account/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /login
+Disallow: /sign-up
+Disallow: /forgot-password
+Disallow: /demo
+Disallow: /demo/
+Disallow: /kyc
+
+Sitemap: https://anytap.io/sitemap.xml

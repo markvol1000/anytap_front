@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anytap — Website IA Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f6fa; color: #222; }
+
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar { width: 280px; background: #1a1d2e; color: #cdd4f0; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .main { flex: 1; padding: 32px; overflow-y: auto; max-width: 960px; }
+
+  .sidebar-header { padding: 24px 20px 16px; border-bottom: 1px solid #2d3250; }
+  .sidebar-header h1 { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.5px; }
+  .sidebar-header p { font-size: 11px; color: #7a82a8; margin-top: 4px; }
+  .sidebar-section { padding: 12px 0; border-bottom: 1px solid #2d3250; }
+  .sidebar-section-title { font-size: 10px; font-weight: 600; color: #7a82a8; letter-spacing: 1.2px; text-transform: uppercase; padding: 0 20px 8px; }
+  .nav-item { display: block; padding: 7px 20px; font-size: 13px; color: #cdd4f0; cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; text-decoration: none; }
+  .nav-item:hover { background: #2d3250; color: #fff; }
+  .nav-item.active { background: #2d3250; color: #ff7733; border-left-color: #ff5500; font-weight: 600; }
+  .nav-item.sub { padding-left: 32px; font-size: 12px; color: #9aa3c5; }
+  .nav-item.sub:hover { color: #fff; }
+  .nav-item.sub.active { color: #ff7733; }
+  .nav-path { display: block; font-size: 10px; color: #5a6280; margin-top: 1px; font-weight: 400; }
+
+  .page-header { margin-bottom: 28px; }
+  .page-header h2 { font-size: 24px; font-weight: 700; color: #1a1d2e; }
+  .page-header p { font-size: 13px; color: #666; margin-top: 6px; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .stats-row { display: flex; gap: 14px; margin-bottom: 28px; flex-wrap: wrap; }
+  .stat-card { background: #fff; border-radius: 10px; padding: 16px 20px; flex: 1; min-width: 130px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+  .stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.8px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: #1a1d2e; margin-top: 4px; }
+  .stat-sub { font-size: 11px; color: #ff5500; margin-top: 2px; }
+
+  .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); margin-bottom: 20px; overflow: hidden; }
+  .card-header { padding: 16px 20px; border-bottom: 1px solid #eef0f6; display: flex; align-items: center; gap: 10px; }
+  .card-header h3 { font-size: 15px; font-weight: 600; color: #1a1d2e; }
+  .card-id { font-size: 11px; font-weight: 700; color: #ff5500; background: #fff0eb; padding: 2px 8px; border-radius: 4px; }
+  .card-body { padding: 18px 20px; }
+
+  .ia-tree { list-style: none; }
+  .ia-tree li { font-size: 13px; line-height: 1.7; color: #333; padding: 2px 0; }
+  .ia-tree .lvl-1 { font-weight: 700; color: #1a1d2e; margin-top: 10px; }
+  .ia-tree .lvl-1:first-child { margin-top: 0; }
+  .ia-tree .lvl-2 { padding-left: 16px; color: #444; }
+  .ia-tree .lvl-3 { padding-left: 32px; color: #666; font-size: 12px; }
+  .ia-tree .path { font-size: 11px; color: #999; font-family: ui-monospace, monospace; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #fff0eb; color: #c44a00; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 10px 12px; text-align: left; border-bottom: 2px solid #ffe4d9; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f0f2f5; color: #333; vertical-align: top; }
+  tr:hover td { background: #fffbfa; }
+  tr:last-child td { border-bottom: none; }
+  .mono { font-family: ui-monospace, monospace; font-size: 12px; color: #666; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge-page { background: #e8eaff; color: #5c6bc0; }
+  .badge-section { background: #f0f2f5; color: #555; }
+  .badge-portal { background: #e8f5e9; color: #2e7d32; }
+  .badge-auth { background: #fff3e0; color: #e65100; }
+  .badge-legal { background: #f3e5f5; color: #6a1b9a; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <h1>Anytap</h1>
+    <p>Website IA Dashboard · titles only</p>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Overview</div>
+    <a class="nav-item active" onclick="show('overview')">📋 Site Overview</a>
+    <a class="nav-item" onclick="show('sitemap')">🗺 Full Sitemap</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">0. Global</div>
+    <a class="nav-item" onclick="show('chrome')">0.1 Header &amp; Footer</a>
+    <a class="nav-item" onclick="show('error')">0.2 404</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">1. Home</div>
+    <a class="nav-item" onclick="show('home')">1.1 Landing <span class="nav-path">/</span></a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">2. Card</div>
+    <a class="nav-item sub" onclick="show('card-how')">2.1 How to Use</a>
+    <a class="nav-item sub" onclick="show('card-who')">2.2 Who Can Apply</a>
+    <a class="nav-item sub" onclick="show('card-benefits')">2.3 Card Benefits</a>
+    <a class="nav-item sub" onclick="show('card-apply')">2.4 Card Application</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">3. Payment</div>
+    <a class="nav-item sub" onclick="show('pay-why')">3.1 Why Crypto Pay</a>
+    <a class="nav-item sub" onclick="show('pay-how')">3.2 How It Works</a>
+    <a class="nav-item sub" onclick="show('pay-biz')">3.3 For Business</a>
+    <a class="nav-item sub" onclick="show('merchant')">3.4 Merchant Apply</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">4. Innovation</div>
+    <a class="nav-item sub" onclick="show('inno-tech')">4.1 Our Tech Stack</a>
+    <a class="nav-item sub" onclick="show('inno-vision')">4.2 Web3 Vision</a>
+    <a class="nav-item sub" onclick="show('inno-market')">4.3 Market Outlook</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">5. Referral</div>
+    <a class="nav-item sub" onclick="show('ref-why')">5.1 Why Referral</a>
+    <a class="nav-item sub" onclick="show('ref-earn')">5.2 Earn More</a>
+    <a class="nav-item sub" onclick="show('ref-apply')">5.3 Apply Now</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">6–9. Other Marketing</div>
+    <a class="nav-item" onclick="show('security')">6. Security</a>
+    <a class="nav-item" onclick="show('auth')">7. Auth</a>
+    <a class="nav-item" onclick="show('company')">8. Company &amp; Support</a>
+    <a class="nav-item" onclick="show('legal')">9. Legal</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">10. Account Portal</div>
+    <a class="nav-item" onclick="show('portal')">10.1 Dashboard</a>
+    <a class="nav-item sub" onclick="show('portal-card')">10.2 My Card</a>
+    <a class="nav-item sub" onclick="show('portal-topup')">10.3 Top Up / History</a>
+    <a class="nav-item sub" onclick="show('portal-referral')">10.4 Referral</a>
+    <a class="nav-item sub" onclick="show('portal-settings')">10.5 Account Settings</a>
+  </div>
+</nav>
+
+<main class="main">
+
+<!-- OVERVIEW -->
+<div id="overview" class="section active">
+  <div class="page-header">
+    <h2>Site Overview</h2>
+    <p>현재 구현된 Anytap 마케팅 사이트 + 계정 포털 IA (타이틀만)</p>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">Top-level Areas</div><div class="stat-value">11</div><div class="stat-sub">Home · Card · Payment · …</div></div>
+    <div class="stat-card"><div class="stat-label">Marketing Pages</div><div class="stat-value">28</div><div class="stat-sub">Including auth &amp; legal</div></div>
+    <div class="stat-card"><div class="stat-label">Portal Screens</div><div class="stat-value">12</div><div class="stat-sub">/account/*</div></div>
+    <div class="stat-card"><div class="stat-label">Stack</div><div class="stat-value">Vite</div><div class="stat-sub">React + React Router</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-id">IA</span><h3>1-depth Navigation (Header)</h3></div>
+    <div class="card-body">
+      <ul class="ia-tree">
+        <li class="lvl-1">Card</li>
+        <li class="lvl-2">How to Use · Who Can Apply · Card Benefits · Apply for Card</li>
+        <li class="lvl-1">Payment</li>
+        <li class="lvl-2">Why Crypto Pay · How It Works · For Business · Merchant Apply</li>
+        <li class="lvl-1">Innovation</li>
+        <li class="lvl-2">Our Tech Stack · Web3 Vision · Market Outlook</li>
+        <li class="lvl-1">Referral</li>
+        <li class="lvl-2">Why Referral · Earn More · Apply Now</li>
+        <li class="lvl-1">Security</li>
+        <li class="lvl-1">CTA — Log in · Get your card</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SITEMAP -->
+<div id="sitemap" class="section">
+  <div class="page-header">
+    <h2>Full Sitemap</h2>
+    <p>모든 라우트와 페이지 타이틀</p>
+  </div>
+  <div class="card"><div class="card-body" style="padding:0">
+    <table>
+      <thead><tr><th>ID</th><th>Type</th><th>Title</th><th>Path</th></tr></thead>
+      <tbody>
+        <tr><td>1.1</td><td><span class="badge badge-page">PAGE</span></td><td><strong>Home (Landing)</strong></td><td class="mono">/</td></tr>
+        <tr><td>2.1</td><td><span class="badge badge-page">PAGE</span></td><td>How to Use</td><td class="mono">/card-how-to-use</td></tr>
+        <tr><td>2.2</td><td><span class="badge badge-page">PAGE</span></td><td>Who Can Apply</td><td class="mono">/card-who-can-apply</td></tr>
+        <tr><td>2.3</td><td><span class="badge badge-page">PAGE</span></td><td>Card Benefits</td><td class="mono">/card-benefits</td></tr>
+        <tr><td>2.4</td><td><span class="badge badge-page">PAGE</span></td><td>Card Application</td><td class="mono">/card-application</td></tr>
+        <tr><td>2.5</td><td><span class="badge badge-auth">AUTH</span></td><td>Apply Card (→ Sign Up)</td><td class="mono">/apply-card</td></tr>
+        <tr><td>3.1</td><td><span class="badge badge-page">PAGE</span></td><td>Why Crypto Pay</td><td class="mono">/payment-why</td></tr>
+        <tr><td>3.2</td><td><span class="badge badge-page">PAGE</span></td><td>How It Works</td><td class="mono">/payment-how</td></tr>
+        <tr><td>3.3</td><td><span class="badge badge-page">PAGE</span></td><td>For Business</td><td class="mono">/payment-business</td></tr>
+        <tr><td>3.4</td><td><span class="badge badge-page">PAGE</span></td><td>Merchant Apply</td><td class="mono">/merchant-apply</td></tr>
+        <tr><td>3.5</td><td><span class="badge badge-page">PAGE</span></td><td>Merchant Application Form</td><td class="mono">/merchant-apply/form</td></tr>
+        <tr><td>4.1</td><td><span class="badge badge-page">PAGE</span></td><td>Our Tech Stack</td><td class="mono">/innovation-tech</td></tr>
+        <tr><td>4.2</td><td><span class="badge badge-page">PAGE</span></td><td>Web3 Vision</td><td class="mono">/innovation-vision</td></tr>
+        <tr><td>4.3</td><td><span class="badge badge-page">PAGE</span></td><td>Market Outlook</td><td class="mono">/innovation-market</td></tr>
+        <tr><td>5.1</td><td><span class="badge badge-page">PAGE</span></td><td>Why Referral</td><td class="mono">/referral-why</td></tr>
+        <tr><td>5.2</td><td><span class="badge badge-page">PAGE</span></td><td>Earn More</td><td class="mono">/referral-earn</td></tr>
+        <tr><td>5.3</td><td><span class="badge badge-page">PAGE</span></td><td>Referral Apply</td><td class="mono">/referral-apply</td></tr>
+        <tr><td>6</td><td><span class="badge badge-page">PAGE</span></td><td>Security</td><td class="mono">/security</td></tr>
+        <tr><td>7.1</td><td><span class="badge badge-auth">AUTH</span></td><td>Sign In</td><td class="mono">/login</td></tr>
+        <tr><td>7.2</td><td><span class="badge badge-auth">AUTH</span></td><td>Create Your Account</td><td class="mono">/sign-up</td></tr>
+        <tr><td>7.3</td><td><span class="badge badge-auth">AUTH</span></td><td>Check your inbox</td><td class="mono">/sign-up/verify</td></tr>
+        <tr><td>7.4</td><td><span class="badge badge-auth">AUTH</span></td><td>Reset password</td><td class="mono">/forgot-password</td></tr>
+        <tr><td>8.1</td><td><span class="badge badge-page">PAGE</span></td><td>About</td><td class="mono">/about</td></tr>
+        <tr><td>8.2</td><td><span class="badge badge-page">PAGE</span></td><td>Contact support</td><td class="mono">/contact</td></tr>
+        <tr><td>9.1</td><td><span class="badge badge-legal">LEGAL</span></td><td>Privacy Policy</td><td class="mono">/privacy</td></tr>
+        <tr><td>9.2</td><td><span class="badge badge-legal">LEGAL</span></td><td>Terms of Service</td><td class="mono">/terms</td></tr>
+        <tr><td>9.3</td><td><span class="badge badge-legal">LEGAL</span></td><td>Cookie Policy</td><td class="mono">/cookies</td></tr>
+        <tr><td>9.4</td><td><span class="badge badge-legal">LEGAL</span></td><td>Risk Disclosure Statement</td><td class="mono">/disclosure</td></tr>
+        <tr><td>10.1</td><td><span class="badge badge-portal">PORTAL</span></td><td>Dashboard</td><td class="mono">/account</td></tr>
+        <tr><td>10.2</td><td><span class="badge badge-portal">PORTAL</span></td><td>My Card</td><td class="mono">/account/card</td></tr>
+        <tr><td>10.2a</td><td><span class="badge badge-portal">PORTAL</span></td><td>Apply for a Card</td><td class="mono">/account/card/apply</td></tr>
+        <tr><td>10.3</td><td><span class="badge badge-portal">PORTAL</span></td><td>Top Up</td><td class="mono">/account/topup</td></tr>
+        <tr><td>10.3a</td><td><span class="badge badge-portal">PORTAL</span></td><td>Top Up History</td><td class="mono">/account/history</td></tr>
+        <tr><td>10.3b</td><td><span class="badge badge-portal">PORTAL</span></td><td>Card Activity</td><td class="mono">/account/transactions</td></tr>
+        <tr><td>10.4</td><td><span class="badge badge-portal">PORTAL</span></td><td>Referral</td><td class="mono">/account/referral</td></tr>
+        <tr><td>10.5</td><td><span class="badge badge-portal">PORTAL</span></td><td>Account</td><td class="mono">/account/settings</td></tr>
+        <tr><td>10.5a</td><td><span class="badge badge-portal">PORTAL</span></td><td>Profile</td><td class="mono">/account/settings/profile</td></tr>
+        <tr><td>10.5b</td><td><span class="badge badge-portal">PORTAL</span></td><td>Security</td><td class="mono">/account/settings/security</td></tr>
+        <tr><td>10.5c</td><td><span class="badge badge-portal">PORTAL</span></td><td>Notifications</td><td class="mono">/account/settings/notifications</td></tr>
+        <tr><td>10.5d</td><td><span class="badge badge-portal">PORTAL</span></td><td>Customer Support</td><td class="mono">/account/settings/support</td></tr>
+        <tr><td>0.2</td><td><span class="badge badge-page">PAGE</span></td><td>Page not found</td><td class="mono">*</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+</div>
+
+<!-- GLOBAL CHROME -->
+<div id="chrome" class="section">
+  <div class="page-header"><h2>0.1 Header &amp; Footer</h2><p class="mono">src/components/chrome.jsx · src/lib/nav.js</p></div>
+  <div class="card"><div class="card-header"><span class="card-id">0.1</span><h3>Site Header (Topbar)</h3></div><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Logo → Home</li>
+    <li class="lvl-1">Main Nav — Card · Payment · Innovation · Referral · Security</li>
+    <li class="lvl-1">CTA — Log in · Get your card</li>
+    <li class="lvl-1">Mobile — Bottom CTA bar (Home, Card pages only)</li>
+  </ul></div></div>
+  <div class="card"><div class="card-header"><span class="card-id">0.1</span><h3>Site Footer</h3></div><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Brand tagline</li>
+    <li class="lvl-1">Nav columns — Card · Payment · Innovation · Referral · Security (same as header)</li>
+    <li class="lvl-1">Company — About · Contact Us · Sign Up · Log In</li>
+    <li class="lvl-1">Legal — Terms of Service · Privacy Policy · Cookie Policy · Risk Disclosure</li>
+    <li class="lvl-1">Copyright · Social links</li>
+  </ul></div></div>
+</div>
+
+<div id="error" class="section">
+  <div class="page-header"><h2>0.2 404</h2><p class="mono">*</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Page not found</li>
+    <li class="lvl-2">Back to home</li>
+  </ul></div></div>
+</div>
+
+<!-- HOME -->
+<div id="home" class="section">
+  <div class="page-header"><h2>1.1 Home (Landing)</h2><p class="mono">/</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — Spend Crypto Anywhere.</li>
+    <li class="lvl-1">Trust Bar — Global BINs · Supported Coins · Stablecoin Market · Risk Rules</li>
+    <li class="lvl-1">What Anytap does — Crypto that spends like everyday money.</li>
+    <li class="lvl-2">Phone mock — Create account</li>
+    <li class="lvl-2">Phone mock — Verify identity</li>
+    <li class="lvl-2">Phone mock — Top up</li>
+    <li class="lvl-1">Card features — Why Anytap Card?</li>
+    <li class="lvl-2">Never stops working</li>
+    <li class="lvl-2">Tap to pay anywhere</li>
+    <li class="lvl-2">Instant top-up</li>
+    <li class="lvl-1">How it works — From wallet to payment in four simple steps.</li>
+    <li class="lvl-2">1 Create Account</li>
+    <li class="lvl-2">2 Verify Identity (KYC)</li>
+    <li class="lvl-2">3 Get Your Card</li>
+    <li class="lvl-2">4 Top Up &amp; Spend</li>
+    <li class="lvl-1">Mobile pay — Pay with your phone. No card needed.</li>
+  </ul></div></div>
+</div>
+
+<!-- CARD PAGES -->
+<div id="card-how" class="section">
+  <div class="page-header"><h2>2.1 How to Use</h2><p class="mono">/card-how-to-use</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — Get your card in 4 simple steps</li>
+    <li class="lvl-1">Issuance — From sign-up to spending</li>
+    <li class="lvl-2">Sign Up · Complete KYC · Get Virtual &amp; Physical Card · Top Up &amp; Spend</li>
+    <li class="lvl-1">Top up — How to add money</li>
+    <li class="lvl-1">Mobile pay — Add it to your phone wallet</li>
+  </ul></div></div>
+</div>
+
+<div id="card-who" class="section">
+  <div class="page-header"><h2>2.2 Who Can Apply</h2><p class="mono">/card-who-can-apply</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — Who is Anytap Card for?</li>
+    <li class="lvl-1">Eligibility — Application requirements</li>
+    <li class="lvl-1">Who it's for — Made for these people</li>
+    <li class="lvl-2">Travelers · Digital nomads · Investors · Expats</li>
+    <li class="lvl-1">Card specs — Virtual vs physical</li>
+  </ul></div></div>
+</div>
+
+<div id="card-benefits" class="section">
+  <div class="page-header"><h2>2.3 Card Benefits</h2><p class="mono">/card-benefits</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — Why Anytap Card?</li>
+    <li class="lvl-1">Key benefits — Five reasons it stands out</li>
+    <li class="lvl-1">BIN redundancy — Never stops working</li>
+    <li class="lvl-1">Comparison — Anytap vs typical competitors</li>
+    <li class="lvl-1">Where to use — Online and offline, everywhere</li>
+  </ul></div></div>
+</div>
+
+<div id="card-apply" class="section">
+  <div class="page-header"><h2>2.4 Card Application</h2><p class="mono">/card-application</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — Apply for your Anytap Card</li>
+    <li class="lvl-1">Form — Account</li>
+    <li class="lvl-1">Form — Identity (KYC)</li>
+    <li class="lvl-1">Form — Card</li>
+    <li class="lvl-1">Success — Application received</li>
+  </ul></div></div>
+</div>
+
+<!-- PAYMENT -->
+<div id="pay-why" class="section">
+  <div class="page-header"><h2>3.1 Why Crypto Pay</h2><p class="mono">/payment-why</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — The future of business payments is here</li>
+    <li class="lvl-1">The problem — What traditional payments cost you</li>
+    <li class="lvl-1">The advantages — Three reasons to accept crypto</li>
+    <li class="lvl-1">Best fit — Industries that benefit most</li>
+  </ul></div></div>
+</div>
+
+<div id="pay-how" class="section">
+  <div class="page-header"><h2>3.2 How It Works</h2><p class="mono">/payment-how</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — Simple integration. Instant payments.</li>
+    <li class="lvl-1">Payment flow — From checkout to settlement</li>
+    <li class="lvl-1">Supported coins — 350+ cryptocurrencies, 10+ chains</li>
+    <li class="lvl-1">Integration — Connect the way that fits</li>
+  </ul></div></div>
+</div>
+
+<div id="pay-biz" class="section">
+  <div class="page-header"><h2>3.3 For Business</h2><p class="mono">/payment-business</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — Built for businesses that move fast</li>
+    <li class="lvl-1">Why adopt — What merchants get</li>
+    <li class="lvl-1">How merchant onboarding works — Apply and go live in days</li>
+  </ul></div></div>
+</div>
+
+<div id="merchant" class="section">
+  <div class="page-header"><h2>3.4 Merchant Apply</h2><p class="mono">/merchant-apply · /merchant-apply/form</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Landing — Turn your customers' crypto into revenue</li>
+    <li class="lvl-2">What you get — Why partner with Anytap Pay</li>
+    <li class="lvl-2">Merchant application — Tell us about your business</li>
+    <li class="lvl-1">Form page — Merchant application</li>
+    <li class="lvl-2">Tell us about your business (15 questions)</li>
+    <li class="lvl-2">Success — Application received</li>
+  </ul></div></div>
+</div>
+
+<!-- INNOVATION -->
+<div id="inno-tech" class="section">
+  <div class="page-header"><h2>4.1 Our Tech Stack</h2><p class="mono">/innovation-tech</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — Infrastructure you can trust</li>
+    <li class="lvl-1">Licensed &amp; certified — Backed by regulated infrastructure</li>
+    <li class="lvl-1">Risk management — A 3-layer risk control system</li>
+  </ul></div></div>
+</div>
+
+<div id="inno-vision" class="section">
+  <div class="page-header"><h2>4.2 Web3 Vision</h2><p class="mono">/innovation-vision</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — Borderless — spend crypto, anywhere, anytime</li>
+    <li class="lvl-1">Roadmap — Anytap's three phases</li>
+    <li class="lvl-1">The shift — A new way to pay, built on stablecoins</li>
+  </ul></div></div>
+</div>
+
+<div id="inno-market" class="section">
+  <div class="page-header"><h2>4.3 Market Outlook</h2><p class="mono">/innovation-market</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — The market is ready. The gap is real.</li>
+    <li class="lvl-1">Key data — The numbers behind the moment</li>
+    <li class="lvl-1">Why Anytap — Why Anytap is chosen</li>
+  </ul></div></div>
+</div>
+
+<!-- REFERRAL -->
+<div id="ref-why" class="section">
+  <div class="page-header"><h2>5.1 Why Referral</h2><p class="mono">/referral-why</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — Share Anytap. Earn while you sleep.</li>
+    <li class="lvl-1">Overview — It's not about selling cards</li>
+    <li class="lvl-1">Cumulative earnings — Earn More Scenarios (Premium — Top Tier)</li>
+  </ul></div></div>
+</div>
+
+<div id="ref-earn" class="section">
+  <div class="page-header"><h2>5.2 Earn More</h2><p class="mono">/referral-earn</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — Two tiers. One goal: maximize your earnings.</li>
+    <li class="lvl-1">Tiers — Commission Comparison by Tier</li>
+    <li class="lvl-1">What is Top-Up Fee Income?</li>
+    <li class="lvl-1">Competitive edge — Anytap vs competitors</li>
+    <li class="lvl-1">Simulation — Monthly earnings simulation</li>
+    <li class="lvl-1">Upgrade — How to reach Premium</li>
+    <li class="lvl-1">Settlement — How and when you get paid</li>
+  </ul></div></div>
+</div>
+
+<div id="ref-apply" class="section">
+  <div class="page-header"><h2>5.3 Apply Now</h2><p class="mono">/referral-apply</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — Join the Anytap Referral Program</li>
+    <li class="lvl-1">How it works — From application to code</li>
+    <li class="lvl-1">Application — Tell us about you</li>
+  </ul></div></div>
+</div>
+
+<!-- SECURITY -->
+<div id="security" class="section">
+  <div class="page-header"><h2>6. Security</h2><p class="mono">/security</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Hero — Your crypto. Our responsibility.</li>
+    <li class="lvl-1">Risk control — Triple-layered risk control</li>
+    <li class="lvl-1">KYC / AML — Fully compliant by design</li>
+    <li class="lvl-1">Privacy — Your data, protected</li>
+    <li class="lvl-1">External partners — Backed by leading security partners</li>
+    <li class="lvl-1">CTA — 24/7 monitoring. Always watching.</li>
+  </ul></div></div>
+</div>
+
+<!-- AUTH -->
+<div id="auth" class="section">
+  <div class="page-header"><h2>7. Auth</h2><p class="mono">/login · /sign-up · /sign-up/verify · /forgot-password · /apply-card</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Sign In <span class="path">/login</span></li>
+    <li class="lvl-1">Create Your Account <span class="path">/sign-up</span></li>
+    <li class="lvl-2">→ redirects to /account on success</li>
+    <li class="lvl-1">Check your inbox <span class="path">/sign-up/verify</span></li>
+    <li class="lvl-1">Reset password <span class="path">/forgot-password</span></li>
+    <li class="lvl-2">Success — Check your email</li>
+    <li class="lvl-1">Apply Card alias <span class="path">/apply-card</span> → same as Sign Up</li>
+  </ul></div></div>
+</div>
+
+<!-- COMPANY -->
+<div id="company" class="section">
+  <div class="page-header"><h2>8. Company &amp; Support</h2><p class="mono">/about · /contact</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">About — The fintech operator connecting crypto and everyday life</li>
+    <li class="lvl-2">Our mission — "We hold crypto — so why is it still so hard to spend?"</li>
+    <li class="lvl-2">One platform, two engines — Card issuance + payment gateway</li>
+    <li class="lvl-2">Global footprint — Operating across three regions</li>
+    <li class="lvl-1">Contact — Contact support</li>
+    <li class="lvl-2">Success — Message sent</li>
+  </ul></div></div>
+</div>
+
+<!-- LEGAL -->
+<div id="legal" class="section">
+  <div class="page-header"><h2>9. Legal</h2><p class="mono">/privacy · /terms · /cookies · /disclosure</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Privacy Policy</li>
+    <li class="lvl-1">Terms of Service</li>
+    <li class="lvl-1">Cookie Policy</li>
+    <li class="lvl-1">Risk Disclosure Statement</li>
+  </ul></div></div>
+</div>
+
+<!-- PORTAL -->
+<div id="portal" class="section">
+  <div class="page-header"><h2>10.1 Dashboard</h2><p class="mono">/account</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Greeting — Welcome back, {name}</li>
+    <li class="lvl-1">Card Status (issuance progress)</li>
+    <li class="lvl-1">Overview (balance · card preview)</li>
+    <li class="lvl-1">Deposit Wallet</li>
+    <li class="lvl-1">Referral (summary)</li>
+    <li class="lvl-1">Recent Activity</li>
+    <li class="lvl-1">Bottom nav — Dashboard · My Card · Top Up · History · Referral · Account</li>
+  </ul></div></div>
+</div>
+
+<div id="portal-card" class="section">
+  <div class="page-header"><h2>10.2 My Card</h2><p class="mono">/account/card · /account/card/apply</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">My Card — View and manage your Anytap cards</li>
+    <li class="lvl-2">Virtual / Physical tabs</li>
+    <li class="lvl-2">Card Details — Security verification required</li>
+    <li class="lvl-2">Card Details — Card Number · Expiry · CVV</li>
+    <li class="lvl-2">Apple Pay · Google Pay · Change PIN · Activate Card</li>
+    <li class="lvl-1">Apply for a Card <span class="path">/account/card/apply</span></li>
+    <li class="lvl-2">Step 1 — Choose Your Card</li>
+    <li class="lvl-2">Step 2 — Verify Your Identity</li>
+    <li class="lvl-2">Step 3 — Application Submitted</li>
+    <li class="lvl-1">Card Activity <span class="path">/account/transactions</span></li>
+  </ul></div></div>
+</div>
+
+<div id="portal-topup" class="section">
+  <div class="page-header"><h2>10.3 Top Up / History</h2><p class="mono">/account/topup · /account/history</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Top Up — Add funds to your card with USDT</li>
+    <li class="lvl-1">Top Up History — Track each deposit through the credit flow</li>
+  </ul></div></div>
+</div>
+
+<div id="portal-referral" class="section">
+  <div class="page-header"><h2>10.4 Referral</h2><p class="mono">/account/referral</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Referral — Invite friends and earn rewards</li>
+    <li class="lvl-2">Your referral code</li>
+  </ul></div></div>
+</div>
+
+<div id="portal-settings" class="section">
+  <div class="page-header"><h2>10.5 Account Settings</h2><p class="mono">/account/settings/*</p></div>
+  <div class="card"><div class="card-body"><ul class="ia-tree">
+    <li class="lvl-1">Account — Manage your profile and preferences</li>
+    <li class="lvl-2">Profile</li>
+    <li class="lvl-2">Security</li>
+    <li class="lvl-2">Notifications</li>
+    <li class="lvl-2">Customer Support</li>
+    <li class="lvl-2">Log Out</li>
+  </ul></div></div>
+</div>
+
+</main>
+</div>
+
+<script>
+function show(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    const onclick = n.getAttribute('onclick') || '';
+    if (onclick.includes("'" + id + "'")) n.classList.add('active');
+  });
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
