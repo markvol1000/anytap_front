@@ -257,12 +257,32 @@ export async function terminateCard() {
   apiNotImplemented(SVC, 'terminateCard', 'Use card status update or backend terminate endpoint when available.');
 }
 
-export async function getWallets() {
-  apiNotImplemented(SVC, 'getWallets', 'No GET /admin/wallets on ALB yet.');
+function mapWalletRow(u) {
+  return {
+    id: u.userId || u.id,
+    memberId: u.userId || u.id,
+    memberName: u.loginId || u.email || 'Unknown',
+    address: u.cregisWalletAddress || '-',
+    balance: u.balance || 0,
+    status: (u.status || 'ACTIVE').toLowerCase(),
+    created: u.createdDate || '-'
+  };
 }
 
-export async function getWalletById() {
-  apiNotImplemented(SVC, 'getWalletById', 'No admin wallet detail endpoint on ALB yet.');
+export async function getWallets(params = {}) {
+  const rawList = asArray(await apiGet('/admin/wallets'));
+  const mapped = rawList.map(mapWalletRow);
+  return paginateLocal(mapped, params, ['address', 'memberName', 'memberId']);
+}
+
+export async function getWalletById(id) {
+  const u = await apiGet(`/admin/wallets/${encodeURIComponent(id)}`);
+  if (!u) return null;
+  return {
+    ...mapWalletRow(u),
+    recentDeposits: [],
+    recentTopUps: []
+  };
 }
 
 export async function lockWallet() {
@@ -273,8 +293,19 @@ export async function unlockWallet() {
   apiNotImplemented(SVC, 'unlockWallet', 'No admin wallet unlock endpoint on ALB yet.');
 }
 
-export async function getTransactions() {
-  apiNotImplemented(SVC, 'getTransactions', 'No GET /admin/transactions on ALB yet.');
+export async function getTransactions(params = {}) {
+  const rawList = asArray(await apiGet('/admin/transactions'));
+  const mapped = rawList.map(t => ({
+    id: t.id || String(t.id),
+    memberId: t.userId,
+    memberName: t.loginId || 'Unknown',
+    kind: t.transactionType || t.type || 'deposit',
+    amount: t.amount || 0,
+    wallet: t.toAddress || '-',
+    status: (t.status || 'success').toLowerCase(),
+    date: t.createdDate || '-'
+  }));
+  return paginateLocal(mapped, params, ['kind', 'memberName', 'memberId']);
 }
 
 export async function exportTransactionsCsv() {

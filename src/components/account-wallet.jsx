@@ -14,7 +14,7 @@ import { RecentActivitySection } from './account-activity.jsx';
 import * as A from '../lib/account-data.js';
 import * as W from '../utils/wallet-data.js';
 import { resolveWalletBalance, resolveWalletAddress } from '../lib/api/display-data.js';
-import { chargeCard, fetchSystemAddress } from '../lib/services/accountService.js';
+import { chargeCard, fetchSystemAddress, withdrawToExternal } from '../lib/services/accountService.js';
 
 function WalletMyCardsList({ cards, selectedId, onSelect, onManageCards }) {
   if (!cards.length) {
@@ -895,11 +895,18 @@ export function AccountWallet({ s }) {
     }
   };
 
-  const finishSend = () => {
-    closeConfirm();
-    setSendAddress('');
-    setSendAmount('');
-    s.showToast('Transfer submitted!');
+  const finishSend = async () => {
+    try {
+      await withdrawToExternal(sendVal, sendAddress, password);
+      closeConfirm();
+      setSendAddress('');
+      setSendAmount('');
+      s.showToast('Transfer submitted successfully!');
+      s.refresh?.();
+    } catch (err) {
+      console.error('Failed to send USDT', err);
+      s.showToast(err?.message || 'Failed to submit transfer');
+    }
   };
 
   if (!s.walletExists) {

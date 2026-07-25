@@ -612,6 +612,23 @@ export async function unfreezeCard(cardId = null) {
   return { ok: true, data: res };
 }
 
+/** Withdraw USDT from Cregis wallet to external address */
+export async function withdrawToExternal(amount, address, password) {
+  const session = getHttpSession();
+  if (!session?.userId) throw new Error('Not authenticated');
+
+  const payload = {
+    userId: session.userId,
+    toAddress: address,
+    amount: Number(amount),
+    password: password,
+  };
+
+  const res = await apiPost('/cregis/user/withdraw', payload);
+  await refreshSessionFromUser(session.userId);
+  return { ok: true, data: res };
+}
+
 export function getAccountScenarios() {
   return {};
 }
