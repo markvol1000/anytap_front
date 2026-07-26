@@ -155,6 +155,7 @@ function LoginPage() {
               onChange={(e) => { setEmail(e.target.value); clearErrors(); }}
               autoComplete="email"
               required
+              maxLength={255}
             />
             {showEmailHint && (
               <p className="login-screen__hint">{fieldHint}</p>
@@ -383,6 +384,7 @@ function SignUpPage() {
               onChange={(e) => { setEmail(e.target.value); clearSignupErrors(); }}
               autoComplete="email"
               required
+              maxLength={255}
             />
             {showEmailHint && (
               <p className="login-screen__hint">

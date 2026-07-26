@@ -110,7 +110,7 @@ async function isLoginIdTaken(loginId) {
 /** Allocate a unique loginId derived from email. */
 export async function ensureAvailableLoginId(email) {
   const base = baseLoginIdFromEmail(email);
-  const trimmed = base.slice(0, 50);
+  const trimmed = base.slice(0, 255);
   if (trimmed.length < 8) {
     throw new Error('Email must be at least 8 characters long');
   }
