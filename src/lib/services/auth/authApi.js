@@ -28,7 +28,7 @@ export const SIGNUP_CODE_TTL_MS = 10 * 60 * 1000;
 const SIGNUP_PENDING_KEY = 'anytap_signup_pending';
 
 export function loginIdOk(loginId) {
-  return /^[a-zA-Z0-9._-]{8,32}$/.test(String(loginId || '').trim());
+  return /^[a-zA-Z0-9._@-]{8,50}$/.test(String(loginId || '').trim());
 }
 
 function mapLoginError(err) {
