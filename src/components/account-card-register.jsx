@@ -77,6 +77,7 @@ export function AccountCardRegister({ s }) {
       }
       setActivatedCard(result.card);
       s.showToast?.('Card activated successfully');
+      await s.reloadAccount?.();
     } finally {
       setLoading(false);
     }
@@ -86,7 +87,10 @@ export function AccountCardRegister({ s }) {
     return (
       <RegisterSuccess
         card={activatedCard}
-        onDone={() => s.go('card')}
+        onDone={async () => {
+          await s.reloadAccount?.();
+          s.go('card');
+        }}
       />
     );
   }

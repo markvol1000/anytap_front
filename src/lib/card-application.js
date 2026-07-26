@@ -217,10 +217,27 @@ export function getScenarioApplication(scenarioKey, accountState) {
   };
 }
 
+export const KYC_COUNTRIES = [
+  { code: 'KR', label: 'South Korea' },
+  { code: 'US', label: 'United States' },
+  { code: 'JP', label: 'Japan' },
+  { code: 'SG', label: 'Singapore' },
+  { code: 'HK', label: 'Hong Kong' },
+  { code: 'GB', label: 'United Kingdom' },
+  { code: 'CA', label: 'Canada' },
+  { code: 'AU', label: 'Australia' },
+  { code: 'CN', label: 'China' },
+  { code: 'VN', label: 'Vietnam' },
+  { code: 'PH', label: 'Philippines' },
+  { code: 'TH', label: 'Thailand' },
+];
+
 export const EMPTY_KYC_FORM = {
+  firstName: '',
+  lastName: '',
   fullName: '',
   dateOfBirth: '',
-  nationality: '',
+  nationality: 'KR',
   idDocType: 'Passport',
   idDocNumber: '',
   phoneCountryCode: '+1',
@@ -228,6 +245,15 @@ export const EMPTY_KYC_FORM = {
   idFrontFile: null,
   idBackFile: null,
   selfieFile: null,
+  gender: 'M',
+  country: 'KR',
+  state: '',
+  city: '',
+  addressLine1: '',
+  postalCode: '',
+  annualSalary: '50000 USD',
+  accountPurpose: 'Living Expense',
+  expectedMonthlyVolume: '5000 USD',
 };
 
 export const EMPTY_SHIPPING = {
@@ -244,18 +270,29 @@ export const EMPTY_SHIPPING = {
 
 export function isKycFormValid(form, { requireFiles = false } = {}) {
   const hasValues = Boolean(
-    form.fullName?.trim()
+    form.firstName?.trim()
+    && form.lastName?.trim()
     && form.dateOfBirth
     && form.nationality?.trim()
     && form.idDocType
     && form.idDocNumber?.trim()
     && form.phoneCountryCode?.trim()
-    && form.phoneNumber?.trim(),
+    && form.phoneNumber?.trim()
+    && form.gender
+    && form.country?.trim()
+    && form.state?.trim()
+    && form.city?.trim()
+    && form.addressLine1?.trim()
+    && form.postalCode?.trim()
+    && form.annualSalary
+    && form.accountPurpose
+    && form.expectedMonthlyVolume,
   );
   if (!hasValues) return false;
 
-  const nameOk = /^[a-zA-Z0-9\s.-]+$/.test(form.fullName.trim());
-  if (!nameOk) return false;
+  const firstNameOk = /^[a-zA-Z\s.-]+$/.test(form.firstName.trim());
+  const lastNameOk = /^[a-zA-Z\s.-]+$/.test(form.lastName.trim());
+  if (!firstNameOk || !lastNameOk) return false;
 
   const phoneDigits = form.phoneNumber.replace(/[^\d]/g, '');
   if (phoneDigits.length < 7 || phoneDigits.length > 15) return false;

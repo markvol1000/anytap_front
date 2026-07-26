@@ -95,9 +95,7 @@ export function resolveMemberDisplayName(source = {}) {
  */
 export function hasCompletedKycProfile(accountState = {}) {
   const status = String(accountState.kycStatus || accountState.status || '').toLowerCase();
-  if (['approved', 'completed', 'active'].includes(status)) return true;
-  if (resolveMemberDisplayName(accountState)) return true;
-  return !!accountState.wasabiHolderId;
+  return ['approved', 'completed', 'active'].includes(status);
 }
 
 export function resolveMemberCountry(source = {}) {

@@ -53,7 +53,8 @@ function StickyFoot({ secondaryLabel, primaryLabel, primaryDisabled, onSecondary
 export function AccountKyc({ s }) {
   const [kycForm, setKycForm] = useState({
     ...C.EMPTY_KYC_FORM,
-    fullName: s.accountState?.name ?? '',
+    firstName: '',
+    lastName: '',
   });
   const [kycSubmitting, setKycSubmitting] = useState(false);
   const [kycAwaitingReview, setKycAwaitingReview] = useState(false);
@@ -77,21 +78,76 @@ export function AccountKyc({ s }) {
   const handleVerify = async () => {
     if (kycSubmitting) return;
 
-    const fullName = String(kycForm.fullName || '').trim();
-    if (!fullName) {
-      s.showToast('Please enter your full legal name.');
+    const firstName = String(kycForm.firstName || '').trim();
+    if (!firstName) {
+      s.showToast('Please enter your English first name.');
       return;
     }
-    if (!/^[a-zA-Z0-9\s.-]+$/.test(fullName)) {
-      s.showToast('Please enter your full legal name in English alphabets and numbers only.');
+    if (!/^[a-zA-Z\s.-]+$/.test(firstName)) {
+      s.showToast('First name only supports English alphabets.');
+      return;
+    }
+    const lastName = String(kycForm.lastName || '').trim();
+    if (!lastName) {
+      s.showToast('Please enter your English last name.');
+      return;
+    }
+    if (!/^[a-zA-Z\s.-]+$/.test(lastName)) {
+      s.showToast('Last name only supports English alphabets.');
+      return;
+    }
+
+    const invalidPattern = /\b(test|sandbox|mock)\b/i;
+    if (invalidPattern.test(firstName) || invalidPattern.test(lastName)) {
+      s.showToast('Please enter your real legal name. "Test", "Sandbox", or "Mock" names are not allowed.');
       return;
     }
     if (!kycForm.dateOfBirth) {
       s.showToast('Please select your date of birth.');
       return;
     }
+    const birthDate = new Date(kycForm.dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    if (age < 18 || age > 100) {
+      s.showToast('Please ensure that the date range is between 18 - 100 years from the current year.');
+      return;
+    }
     if (!kycForm.nationality?.trim()) {
       s.showToast('Please enter your nationality.');
+      return;
+    }
+    const countryPattern = /^[a-zA-Z]{2}$/;
+    if (!countryPattern.test(kycForm.nationality.trim())) {
+      s.showToast('Please enter your 2-letter ISO country code for Nationality (e.g. KR, US).');
+      return;
+    }
+    if (!kycForm.country?.trim()) {
+      s.showToast('Please enter your country.');
+      return;
+    }
+    if (!countryPattern.test(kycForm.country.trim())) {
+      s.showToast('Please enter your 2-letter ISO country code for Country of Residence (e.g. KR, US).');
+      return;
+    }
+    if (!kycForm.state?.trim()) {
+      s.showToast('Please enter your state or region.');
+      return;
+    }
+    if (!kycForm.city?.trim()) {
+      s.showToast('Please enter your city.');
+      return;
+    }
+    if (!kycForm.addressLine1?.trim()) {
+      s.showToast('Please enter your address.');
+      return;
+    }
+    if (!kycForm.postalCode?.trim()) {
+      s.showToast('Please enter your postal code.');
       return;
     }
     if (!kycForm.idDocType) {
@@ -134,8 +190,14 @@ export function AccountKyc({ s }) {
       }
       setKycRetryOpen(false);
       s.showToast('Identity submitted for verification');
-    } catch {
-      s.showToast('Could not submit verification. Please try again.');
+    } catch (err) {
+      const fallbackMsg = 'Verification failed. Please check your input fields and try again.';
+      const errMsg = err?.message || err?.response?.data?.message || fallbackMsg;
+      if (errMsg.includes('Exception') || errMsg.includes('java.') || errMsg.length > 80) {
+        s.showToast(fallbackMsg);
+      } else {
+        s.showToast(errMsg);
+      }
     } finally {
       setKycSubmitting(false);
     }
@@ -192,15 +254,80 @@ export function AccountKyc({ s }) {
             <p className="capply-kyc-notice__body">{C.KYC_IDENTITY_NOTICE.body}</p>
           </div>
           <div className="capply-form">
-            <FormField label="Full legal name">
-              <input className="capply-input" value={kycForm.fullName} onChange={(e) => setKyc('fullName', e.target.value)} />
+            <div className="capply-form__row">
+              <FormField label="First name (English)">
+                <input className="capply-input" value={kycForm.firstName} onChange={(e) => setKyc('firstName', e.target.value)} placeholder="e.g. Gildong" />
+              </FormField>
+              <FormField label="Last name (English)">
+                <input className="capply-input" value={kycForm.lastName} onChange={(e) => setKyc('lastName', e.target.value)} placeholder="e.g. Hong" />
+              </FormField>
+            </div>
+            <div className="capply-form__row">
+              <FormField label="Date of birth">
+                <input className="capply-input" type="date" value={kycForm.dateOfBirth} onChange={(e) => setKyc('dateOfBirth', e.target.value)} />
+              </FormField>
+              <FormField label="Gender">
+                <select className="capply-input" value={kycForm.gender} onChange={(e) => setKyc('gender', e.target.value)}>
+                  <option value="M">Male</option>
+                  <option value="F">Female</option>
+                </select>
+              </FormField>
+            </div>
+            <div className="capply-form__row">
+              <FormField label="Nationality">
+                <select className="capply-input" value={kycForm.nationality} onChange={(e) => setKyc('nationality', e.target.value)}>
+                  {C.KYC_COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+                </select>
+              </FormField>
+              <FormField label="Country of Residence">
+                <select className="capply-input" value={kycForm.country} onChange={(e) => setKyc('country', e.target.value)}>
+                  {C.KYC_COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+                </select>
+              </FormField>
+            </div>
+            <div className="capply-form__row">
+              <FormField label="State / Region">
+                <input className="capply-input" value={kycForm.state} onChange={(e) => setKyc('state', e.target.value)} placeholder="e.g. Seoul" />
+              </FormField>
+              <FormField label="City">
+                <input className="capply-input" value={kycForm.city} onChange={(e) => setKyc('city', e.target.value)} placeholder="e.g. Gangnam-gu" />
+              </FormField>
+            </div>
+            <div className="capply-form__row">
+              <FormField label="Street Address">
+                <input className="capply-input" value={kycForm.addressLine1} onChange={(e) => setKyc('addressLine1', e.target.value)} placeholder="e.g. Gangnam-daero 123" />
+              </FormField>
+              <FormField label="Postal Code">
+                <input className="capply-input" value={kycForm.postalCode} onChange={(e) => setKyc('postalCode', e.target.value)} placeholder="e.g. 06123" />
+              </FormField>
+            </div>
+            <FormField label="Annual Salary">
+              <select className="capply-input" value={kycForm.annualSalary} onChange={(e) => setKyc('annualSalary', e.target.value)}>
+                <option value="10000 USD">Under 10,000 USD</option>
+                <option value="30000 USD">10,000 - 30,000 USD</option>
+                <option value="50000 USD">30,000 - 50,000 USD</option>
+                <option value="100000 USD">50,000 - 100,000 USD</option>
+                <option value="200000 USD">Over 100,000 USD</option>
+              </select>
             </FormField>
-            <FormField label="Date of birth">
-              <input className="capply-input" type="date" value={kycForm.dateOfBirth} onChange={(e) => setKyc('dateOfBirth', e.target.value)} />
-            </FormField>
-            <FormField label="Nationality">
-              <input className="capply-input" value={kycForm.nationality} onChange={(e) => setKyc('nationality', e.target.value)} placeholder="e.g. United States" />
-            </FormField>
+            <div className="capply-form__row">
+              <FormField label="Purpose of Account">
+                <select className="capply-input" value={kycForm.accountPurpose} onChange={(e) => setKyc('accountPurpose', e.target.value)}>
+                  <option value="Living Expense">Living Expense</option>
+                  <option value="Savings">Savings</option>
+                  <option value="Investment">Investment</option>
+                  <option value="Business">Business</option>
+                </select>
+              </FormField>
+              <FormField label="Expected Monthly Volume">
+                <select className="capply-input" value={kycForm.expectedMonthlyVolume} onChange={(e) => setKyc('expectedMonthlyVolume', e.target.value)}>
+                  <option value="1000 USD">Under 1,000 USD</option>
+                  <option value="5000 USD">1,000 - 5,000 USD</option>
+                  <option value="10000 USD">5,000 - 10,000 USD</option>
+                  <option value="50000 USD">Over 10,000 USD</option>
+                </select>
+              </FormField>
+            </div>
             <FormField label="ID document type">
               <select className="capply-input" value={kycForm.idDocType} onChange={(e) => setKyc('idDocType', e.target.value)}>
                 {C.ID_DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}

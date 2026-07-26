@@ -227,9 +227,23 @@ function buildContextFromSession(session, cardInfo = null, activityItems = [], c
       : `${cardBalanceUsdt.toFixed(2)} USDT`)
     : '—';
 
+  let cardVariant = session.cardType || 'virtual';
+  if (cardInfo?.cardTypeId) {
+    const cid = Number(cardInfo.cardTypeId);
+    if (cid === 111059) cardVariant = 'physical';
+    else if (cid === 111032) cardVariant = 'virtual';
+  } else if (cardNo) {
+    const cleanNo = cardNo.replace(/\D/g, '');
+    if (cleanNo.startsWith('493875')) {
+      cardVariant = 'virtual';
+    } else if (cleanNo.length >= 6) {
+      cardVariant = 'physical';
+    }
+  }
+
   let userCards = showLiveCard ? [{
     id: `card-${session.userId}`,
-    variant: 'virtual',
+    variant: cardVariant,
     last4,
     balance: cardBalanceLabel,
     status: cardFrozen || cardStatus === 'frozen' ? 'frozen' : (cardStatus === 'issued' ? 'issued' : 'active'),
@@ -470,6 +484,7 @@ async function refreshSessionFromUser(userId) {
       kycStatus: user.kycStatus || user.status || undefined,
       status: user.status || user.kycStatus || undefined,
       cardStatus,
+      cardType: user.cardType || undefined,
       walletExists: user.walletExists === true || !!user.cregisWalletAddress,
       cregisWalletAddress: user.cregisWalletAddress || undefined,
       needsActivation: (cardStatus === 'active' || cardStatus === 'frozen') ? false : (user.needsActivation === true),
@@ -524,21 +539,28 @@ export async function submitKycApplication(form = {}) {
     return { ok: true, resubmitted: true };
   }
 
-  const nameData = parseFullName(form.fullName);
-
   // Prefer member card/holder registration. Temp-user cardholder API only works pre-signup.
   const data = await apiPost(
     `/cards/${encodeURIComponent(session.userId)}/register`,
     { 
       email: session.email, 
-      firstName: nameData.firstName,
-      lastName: nameData.lastName,
+      firstName: (form.firstName || '').trim(),
+      lastName: (form.lastName || '').trim(),
       mobile: form.phoneNumber || '',
       areaCode: form.phoneCountryCode || '+82',
       birthday: form.dateOfBirth || '',
       nationality: form.nationality || 'KR',
       idNumber: form.idDocNumber || '',
       idType: form.idDocType || 'PASSPORT',
+      gender: form.gender || 'M',
+      country: form.country || '',
+      state: form.state || '',
+      city: form.city || '',
+      addressLine1: form.addressLine1 || '',
+      postalCode: form.postalCode || '',
+      annualSalary: form.annualSalary || '50000 USD',
+      accountPurpose: form.accountPurpose || 'Living Expense',
+      expectedMonthlyVolume: form.expectedMonthlyVolume || '5000 USD',
       ...filePayload 
     },
   );
@@ -737,4 +759,21 @@ export async function revealCardDetails(code) {
 
 export function getAccountScenarios() {
   return {};
+}
+
+export async function bindExistingCard(form) {
+  const session = getHttpSession();
+  if (!session?.userId) throw new Error('Not authenticated');
+
+  const res = await apiPost(`/cards/${encodeURIComponent(session.userId)}/bind-existing`, {
+    cardNumber: form.cardNumber,
+    expiry: form.expiry,
+  });
+  
+  patchHttpSession({ 
+    cardId: res?.data?.cardId || form.cardNumber.replace(/\s/g, ''),
+    cardStatus: 'active',
+  });
+  await refreshSessionFromUser(session.userId);
+  return { ok: true, data: res };
 }
