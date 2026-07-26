@@ -543,6 +543,18 @@ export async function submitKycApplication(form = {}) {
   return { ok: true, data };
 }
 
+function parseFullName(fullName) {
+  const name = String(fullName || '').trim();
+  if (!name) return { firstName: 'Gildong', lastName: 'Hong' };
+  const parts = name.split(/\s+/);
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: 'Hong' };
+  }
+  const lastName = parts[parts.length - 1];
+  const firstName = parts.slice(0, parts.length - 1).join(' ');
+  return { firstName, lastName };
+}
+
 /** Register / issue Wasabi card after KYC when needed. */
 export async function submitCardApplication({ cardType, shipping, kycForm } = {}) {
   const session = getHttpSession();
@@ -562,9 +574,14 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
   }
 
   if (!cardInfo && mapCardStatus(session.cardStatus) === 'not_issued') {
+    const nameData = parseFullName(shipping?.recipientName || session?.name || session?.fullName || '');
     const payload = { 
       email: session.email,
-      cardType: cardType || 'virtual'
+      cardType: cardType || 'virtual',
+      firstName: nameData.firstName,
+      lastName: nameData.lastName,
+      mobile: shipping?.phoneNumber || '',
+      areaCode: shipping?.phoneCountryCode || '+82',
     };
     if (kycForm?.idFrontFile || kycForm?.idFrontId) {
       const files = await resolveKycFileIds(kycForm);
