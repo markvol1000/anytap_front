@@ -307,6 +307,52 @@ export async function fetchCardTransactions(userId, { pageNum = 1, pageSize = 50
   }
 }
 
+export async function fetchLocalTransactions(userId) {
+  if (!userId) return [];
+  try {
+    const data = await apiGet(`/cards/${encodeURIComponent(userId)}/local-transactions`);
+    if (!Array.isArray(data)) return [];
+    return data.map((tx) => {
+      let kind = 'wallet_topup';
+      let title = 'Wallet Deposit';
+      let incoming = true;
+      const type = String(tx.txType || '').toUpperCase();
+      if (type === 'DEPOSIT') {
+        kind = 'wallet_topup';
+        title = 'Wallet Deposit';
+        incoming = true;
+      } else if (type === 'CARD_CHARGE') {
+        kind = 'card_topup';
+        title = 'Card Top Up';
+        incoming = false;
+      } else if (type === 'WITHDRAW') {
+        kind = 'wallet_withdraw';
+        title = 'Transfer Sent';
+        incoming = false;
+      }
+      const status = String(tx.status || 'SUCCESS').toLowerCase();
+      return {
+        id: tx.txId || `local-${Date.now()}-${Math.random()}`,
+        title: title,
+        at: tx.createdAt,
+        amount: Number(tx.amount || 0),
+        incoming: incoming,
+        failed: status === 'failed',
+        kind: kind,
+        status: status === 'success' ? 'completed' : status,
+        txId: tx.txId,
+        reference: tx.txId ? tx.txId.slice(0, 10).toUpperCase() : '',
+        description: tx.description || '',
+      };
+    });
+  } catch (err) {
+    if (err?.status !== 400 && err?.status !== 404) {
+      console.warn('[accountApi] local transactions', err);
+    }
+    return [];
+  }
+}
+
 export async function fetchAccountContext() {
   const rawSession = getHttpSession();
   if (!rawSession?.userId) throw new Error('Not authenticated');
@@ -351,8 +397,12 @@ export async function fetchAccountContext() {
     const cardNo = String(cardInfo?.cardNo || cardInfo?.balanceInfo?.cardNo || '');
     const last4 = cardNo.replace(/\D/g, '').slice(-4) || cardNo.slice(-4) || '';
     if (!demoLocked) {
-      const txRes = await fetchCardTransactions(session.userId, { last4 });
-      activityItems = txRes?.items || [];
+      const [txRes, localTxs] = await Promise.all([
+        fetchCardTransactions(session.userId, { last4 }),
+        fetchLocalTransactions(session.userId),
+      ]);
+      const cardTxs = txRes?.items || [];
+      activityItems = [...localTxs, ...cardTxs];
     }
   } catch (err) {
     console.warn('[accountApi] fetch transactions fallback', err);
@@ -627,6 +677,24 @@ export async function withdrawToExternal(amount, address, password) {
   const res = await apiPost('/cregis/user/withdraw', payload);
   await refreshSessionFromUser(session.userId);
   return { ok: true, data: res };
+}
+
+/** Send card unlock OTP code via email */
+export async function sendCardSecureCode() {
+  const session = getHttpSession();
+  if (!session?.userId) throw new Error('Not authenticated');
+
+  const res = await apiPost(`/cards/${encodeURIComponent(session.userId)}/send-secure-code`);
+  return { ok: true, data: res };
+}
+
+/** Reveal card full details from Wasabi using secure OTP code */
+export async function revealCardDetails(code) {
+  const session = getHttpSession();
+  if (!session?.userId) throw new Error('Not authenticated');
+
+  const res = await apiPost(`/cards/${encodeURIComponent(session.userId)}/reveal-details`, { code });
+  return { ok: true, data: res?.data || res };
 }
 
 export function getAccountScenarios() {
