@@ -254,7 +254,7 @@ export function isKycFormValid(form, { requireFiles = false } = {}) {
   );
   if (!hasValues) return false;
 
-  const nameOk = /^[a-zA-Z\s.-]+$/.test(form.fullName.trim());
+  const nameOk = /^[a-zA-Z0-9\s.-]+$/.test(form.fullName.trim());
   if (!nameOk) return false;
 
   const phoneDigits = form.phoneNumber.replace(/[^\d]/g, '');

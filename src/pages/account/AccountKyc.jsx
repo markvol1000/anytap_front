@@ -82,8 +82,8 @@ export function AccountKyc({ s }) {
       s.showToast('Please enter your full legal name.');
       return;
     }
-    if (!/^[a-zA-Z\s.-]+$/.test(fullName)) {
-      s.showToast('Please enter your full legal name in English alphabets only.');
+    if (!/^[a-zA-Z0-9\s.-]+$/.test(fullName)) {
+      s.showToast('Please enter your full legal name in English alphabets and numbers only.');
       return;
     }
     if (!kycForm.dateOfBirth) {
@@ -250,7 +250,7 @@ export function AccountKyc({ s }) {
       <StickyFoot
         secondaryLabel="Cancel"
         primaryLabel={showForm ? 'Verify Identity' : 'Back to Home'}
-        primaryDisabled={(showForm && !C.isKycFormValid(kycForm, { requireFiles: isHttpApi })) || kycSubmitting}
+        primaryDisabled={kycSubmitting}
         onSecondary={goHome}
         onPrimary={showForm ? handleVerify : goHome}
         loading={kycSubmitting}

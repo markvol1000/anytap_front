@@ -59,7 +59,8 @@ function loginIdVariantsFromLocal(localPart) {
 export function baseLoginIdFromEmail(email) {
   const normalized = String(email || '').trim().toLowerCase();
   if (SEED_EMAIL_LOGIN_IDS[normalized]) return SEED_EMAIL_LOGIN_IDS[normalized];
-  return normalized;
+  const local = normalized.split('@')[0].toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'user';
+  return loginIdVariantsFromLocal(local)[0] || `${local}anytap`.slice(0, 32);
 }
 
 function loadLoginIdMap() {
@@ -110,11 +111,14 @@ async function isLoginIdTaken(loginId) {
 /** Allocate a unique loginId derived from email. */
 export async function ensureAvailableLoginId(email) {
   const base = baseLoginIdFromEmail(email);
-  const trimmed = base.slice(0, 255);
-  if (trimmed.length < 8) {
-    throw new Error('Email must be at least 8 characters long');
+  for (let i = 0; i < 100; i += 1) {
+    const suffix = i === 0 ? '' : String(i);
+    const trimmed = `${base.slice(0, Math.max(8, 32 - suffix.length))}${suffix}`.slice(0, 32);
+    if (trimmed.length < 8) continue;
+    const taken = await isLoginIdTaken(trimmed);
+    if (!taken) return trimmed;
   }
-  return trimmed;
+  throw new Error('Could not allocate login ID');
 }
 
 export function resolveLoginIdForAuth(emailOrLoginId) {

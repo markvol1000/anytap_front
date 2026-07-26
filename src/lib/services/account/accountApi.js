@@ -524,10 +524,23 @@ export async function submitKycApplication(form = {}) {
     return { ok: true, resubmitted: true };
   }
 
+  const nameData = parseFullName(form.fullName);
+
   // Prefer member card/holder registration. Temp-user cardholder API only works pre-signup.
   const data = await apiPost(
     `/cards/${encodeURIComponent(session.userId)}/register`,
-    { email: session.email, ...filePayload },
+    { 
+      email: session.email, 
+      firstName: nameData.firstName,
+      lastName: nameData.lastName,
+      mobile: form.phoneNumber || '',
+      areaCode: form.phoneCountryCode || '+82',
+      birthday: form.dateOfBirth || '',
+      nationality: form.nationality || 'KR',
+      idNumber: form.idDocNumber || '',
+      idType: form.idDocType || 'PASSPORT',
+      ...filePayload 
+    },
   );
 
   patchHttpSession({
@@ -582,6 +595,10 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
       lastName: nameData.lastName,
       mobile: shipping?.phoneNumber || '',
       areaCode: shipping?.phoneCountryCode || '+82',
+      birthday: kycForm?.dateOfBirth || '',
+      nationality: kycForm?.nationality || session?.nationality || 'KR',
+      idNumber: kycForm?.idDocNumber || '',
+      idType: kycForm?.idDocType || 'PASSPORT',
     };
     if (kycForm?.idFrontFile || kycForm?.idFrontId) {
       const files = await resolveKycFileIds(kycForm);
@@ -589,6 +606,10 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
         idFrontId: files.idFrontId,
         ...(files.idBackId ? { idBackId: files.idBackId } : {}),
         ...(files.selfieId ? { selfieId: files.selfieId } : {}),
+        birthday: kycForm.dateOfBirth,
+        nationality: kycForm.nationality,
+        idNumber: kycForm.idDocNumber,
+        idType: mapWasabiIdType(kycForm.idDocType),
       });
     }
 
