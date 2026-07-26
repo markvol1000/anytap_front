@@ -243,7 +243,7 @@ export const EMPTY_SHIPPING = {
 };
 
 export function isKycFormValid(form, { requireFiles = false } = {}) {
-  const base = Boolean(
+  const hasValues = Boolean(
     form.fullName?.trim()
     && form.dateOfBirth
     && form.nationality?.trim()
@@ -252,8 +252,19 @@ export function isKycFormValid(form, { requireFiles = false } = {}) {
     && form.phoneCountryCode?.trim()
     && form.phoneNumber?.trim(),
   );
-  if (!requireFiles) return base;
-  return base && Boolean(form.idFrontFile || form.idFrontId);
+  if (!hasValues) return false;
+
+  const nameOk = /^[a-zA-Z\s.-]+$/.test(form.fullName.trim());
+  if (!nameOk) return false;
+
+  const phoneDigits = form.phoneNumber.replace(/[^\d]/g, '');
+  if (phoneDigits.length < 7 || phoneDigits.length > 15) return false;
+
+  const idNumberOk = /^[a-zA-Z0-9-]+$/.test(form.idDocNumber.trim()) && form.idDocNumber.trim().length >= 5;
+  if (!idNumberOk) return false;
+
+  if (!requireFiles) return true;
+  return Boolean(form.idFrontFile || form.idFrontId);
 }
 
 export function isShippingValid(form) {

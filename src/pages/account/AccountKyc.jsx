@@ -77,8 +77,13 @@ export function AccountKyc({ s }) {
   const handleVerify = async () => {
     if (kycSubmitting) return;
 
-    if (!kycForm.fullName?.trim()) {
+    const fullName = String(kycForm.fullName || '').trim();
+    if (!fullName) {
       s.showToast('Please enter your full legal name.');
+      return;
+    }
+    if (!/^[a-zA-Z\s.-]+$/.test(fullName)) {
+      s.showToast('Please enter your full legal name in English alphabets only.');
       return;
     }
     if (!kycForm.dateOfBirth) {
@@ -93,12 +98,24 @@ export function AccountKyc({ s }) {
       s.showToast('Please select an ID document type.');
       return;
     }
-    if (!kycForm.idDocNumber?.trim()) {
+    const idDocNumber = String(kycForm.idDocNumber || '').trim();
+    if (!idDocNumber) {
       s.showToast('Please enter your ID document number.');
       return;
     }
-    if (!kycForm.phoneCountryCode?.trim() || !kycForm.phoneNumber?.trim()) {
+    if (!/^[a-zA-Z0-9-]+$/.test(idDocNumber) || idDocNumber.length < 5) {
+      s.showToast('Please enter a valid ID document number (minimum 5 alphanumeric characters).');
+      return;
+    }
+    const phoneCountryCode = String(kycForm.phoneCountryCode || '').trim();
+    const phoneNumber = String(kycForm.phoneNumber || '').trim();
+    if (!phoneCountryCode || !phoneNumber) {
       s.showToast('Please enter your phone number.');
+      return;
+    }
+    const phoneDigits = phoneNumber.replace(/[^\d]/g, '');
+    if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+      s.showToast('Please enter a valid phone number (7 to 15 digits).');
       return;
     }
     if (isHttpApi && !kycForm.idFrontFile && !kycForm.idFrontId) {
