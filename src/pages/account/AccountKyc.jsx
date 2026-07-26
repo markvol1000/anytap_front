@@ -75,7 +75,37 @@ export function AccountKyc({ s }) {
   const goApply = () => s.go('cardApply');
 
   const handleVerify = async () => {
-    if (!C.isKycFormValid(kycForm, { requireFiles: isHttpApi }) || kycSubmitting) return;
+    if (kycSubmitting) return;
+
+    if (!kycForm.fullName?.trim()) {
+      s.showToast('Please enter your full legal name.');
+      return;
+    }
+    if (!kycForm.dateOfBirth) {
+      s.showToast('Please select your date of birth.');
+      return;
+    }
+    if (!kycForm.nationality?.trim()) {
+      s.showToast('Please enter your nationality.');
+      return;
+    }
+    if (!kycForm.idDocType) {
+      s.showToast('Please select an ID document type.');
+      return;
+    }
+    if (!kycForm.idDocNumber?.trim()) {
+      s.showToast('Please enter your ID document number.');
+      return;
+    }
+    if (!kycForm.phoneCountryCode?.trim() || !kycForm.phoneNumber?.trim()) {
+      s.showToast('Please enter your phone number.');
+      return;
+    }
+    if (isHttpApi && !kycForm.idFrontFile && !kycForm.idFrontId) {
+      s.showToast('Please upload the front image of your ID document.');
+      return;
+    }
+
     setKycSubmitting(true);
     try {
       if (isHttpApi) {
