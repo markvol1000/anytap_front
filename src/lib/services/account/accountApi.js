@@ -429,9 +429,75 @@ export async function fetchReferralContext() {
   return null;
 }
 
+async function compressImageIfNeeded(file, maxBytes = 2 * 1024 * 1024) {
+  if (!file) return file;
+  if (file.size <= maxBytes) return file;
+  if (!file.type.startsWith('image/')) return file;
+
+  try {
+    let compressed = await compressOnce(file, 2048, 0.75);
+    if (compressed.size > maxBytes) {
+      compressed = await compressOnce(file, 1200, 0.6);
+    }
+    if (compressed.size > maxBytes) {
+      compressed = await compressOnce(file, 800, 0.5);
+    }
+    return compressed;
+  } catch (err) {
+    console.error('[accountApi] Image compression failed, returning original file', err);
+    return file;
+  }
+}
+
+function compressOnce(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Canvas toBlob returned null'));
+            return;
+          }
+          const compressed = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          resolve(compressed);
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = () => reject(new Error('Failed to load image element'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
 async function uploadKycDocument(file, docType) {
   if (!file) return '';
-  const data = await apiUpload('/files/upload', file, { query: { docType } });
+  const processedFile = await compressImageIfNeeded(file);
+  const data = await apiUpload('/files/upload', processedFile, { query: { docType } });
   return data?.fileId || data?.id || data?.file_id || '';
 }
 

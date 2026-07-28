@@ -178,20 +178,6 @@ export function AccountKyc({ s }) {
       s.showToast('Please upload the front image of your ID document.');
       return;
     }
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-    if (kycForm.idFrontFile && kycForm.idFrontFile.size > MAX_FILE_SIZE) {
-      s.showToast('ID document front image exceeds the 10MB limit. Please upload a smaller image.');
-      return;
-    }
-    if (kycForm.idBackFile && kycForm.idBackFile.size > MAX_FILE_SIZE) {
-      s.showToast('ID document back image exceeds the 10MB limit. Please upload a smaller image.');
-      return;
-    }
-    if (kycForm.selfieFile && kycForm.selfieFile.size > MAX_FILE_SIZE) {
-      s.showToast('Selfie image exceeds the 10MB limit. Please upload a smaller image.');
-      return;
-    }
-
     setKycSubmitting(true);
     try {
       if (isHttpApi) {
@@ -206,7 +192,7 @@ export function AccountKyc({ s }) {
     } catch (err) {
       const fallbackMsg = 'Verification failed. Please check your input fields and try again.';
       const errMsg = err?.message || err?.response?.data?.message || fallbackMsg;
-      if (errMsg.includes('Exception') || errMsg.includes('java.') || errMsg.length > 80) {
+      if ((errMsg.includes('Exception') || errMsg.includes('java.') || errMsg.length > 120) && !errMsg.toLowerCase().includes('size')) {
         s.showToast(fallbackMsg);
       } else {
         s.showToast(errMsg);
@@ -369,9 +355,8 @@ export function AccountKyc({ s }) {
               facing="environment"
               file={kycForm.idFrontFile}
               onChange={(file) => {
-                if (file && file.size > 10 * 1024 * 1024) {
-                  s.showToast('ID document front image exceeds the 10MB limit. Please upload a smaller image.');
-                  return;
+                if (file && file.size > 2 * 1024 * 1024) {
+                  s.showToast('Image is larger than 2MB. We will automatically compress it upon submission.');
                 }
                 setKyc('idFrontFile', file);
               }}
@@ -381,9 +366,8 @@ export function AccountKyc({ s }) {
               facing="environment"
               file={kycForm.idBackFile}
               onChange={(file) => {
-                if (file && file.size > 10 * 1024 * 1024) {
-                  s.showToast('ID document back image exceeds the 10MB limit. Please upload a smaller image.');
-                  return;
+                if (file && file.size > 2 * 1024 * 1024) {
+                  s.showToast('Image is larger than 2MB. We will automatically compress it upon submission.');
                 }
                 setKyc('idBackFile', file);
               }}
@@ -394,9 +378,8 @@ export function AccountKyc({ s }) {
               accept="image/jpeg,image/png,image/webp"
               file={kycForm.selfieFile}
               onChange={(file) => {
-                if (file && file.size > 10 * 1024 * 1024) {
-                  s.showToast('Selfie image exceeds the 10MB limit. Please upload a smaller image.');
-                  return;
+                if (file && file.size > 2 * 1024 * 1024) {
+                  s.showToast('Image is larger than 2MB. We will automatically compress it upon submission.');
                 }
                 setKyc('selfieFile', file);
               }}
