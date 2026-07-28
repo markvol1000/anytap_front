@@ -178,6 +178,19 @@ export function AccountKyc({ s }) {
       s.showToast('Please upload the front image of your ID document.');
       return;
     }
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (kycForm.idFrontFile && kycForm.idFrontFile.size > MAX_FILE_SIZE) {
+      s.showToast('ID document front image exceeds the 10MB limit. Please upload a smaller image.');
+      return;
+    }
+    if (kycForm.idBackFile && kycForm.idBackFile.size > MAX_FILE_SIZE) {
+      s.showToast('ID document back image exceeds the 10MB limit. Please upload a smaller image.');
+      return;
+    }
+    if (kycForm.selfieFile && kycForm.selfieFile.size > MAX_FILE_SIZE) {
+      s.showToast('Selfie image exceeds the 10MB limit. Please upload a smaller image.');
+      return;
+    }
 
     setKycSubmitting(true);
     try {
@@ -355,20 +368,38 @@ export function AccountKyc({ s }) {
               required
               facing="environment"
               file={kycForm.idFrontFile}
-              onChange={(file) => setKyc('idFrontFile', file)}
+              onChange={(file) => {
+                if (file && file.size > 10 * 1024 * 1024) {
+                  s.showToast('ID document front image exceeds the 10MB limit. Please upload a smaller image.');
+                  return;
+                }
+                setKyc('idFrontFile', file);
+              }}
             />
             <KycDocField
               label="ID document back (optional)"
               facing="environment"
               file={kycForm.idBackFile}
-              onChange={(file) => setKyc('idBackFile', file)}
+              onChange={(file) => {
+                if (file && file.size > 10 * 1024 * 1024) {
+                  s.showToast('ID document back image exceeds the 10MB limit. Please upload a smaller image.');
+                  return;
+                }
+                setKyc('idBackFile', file);
+              }}
             />
             <KycDocField
               label="Selfie (optional)"
               facing="user"
               accept="image/jpeg,image/png,image/webp"
               file={kycForm.selfieFile}
-              onChange={(file) => setKyc('selfieFile', file)}
+              onChange={(file) => {
+                if (file && file.size > 10 * 1024 * 1024) {
+                  s.showToast('Selfie image exceeds the 10MB limit. Please upload a smaller image.');
+                  return;
+                }
+                setKyc('selfieFile', file);
+              }}
             />
           </div>
         </>
