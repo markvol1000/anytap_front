@@ -187,7 +187,17 @@ export function TransactionDetailsDrawer({ tx, onClose, onCopyTxId, copyState })
             <DetailRow label="Card Number">{maskedCard}</DetailRow>
           )}
           <DetailRow label="Reference Number">{tx.reference ?? '—'}</DetailRow>
-
+          {tx.txId && (
+            <DetailRow label="Transaction ID">
+              <span className="portal-tx-detail__mono">{tx.txId}</span>
+              <button
+                type="button"
+                className="portal-tx-detail__copy"
+                onClick={() => onCopyTxId(tx.txId)}>
+                {copyState === tx.txId ? 'Copied' : 'Copy'}
+              </button>
+            </DetailRow>
+          )}
           {network && (
             <DetailRow label="Network">{network}</DetailRow>
           )}

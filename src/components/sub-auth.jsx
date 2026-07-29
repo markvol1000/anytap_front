@@ -8,6 +8,12 @@ import { API_MODE, isHttpApi } from '../lib/api/config.js';
 import { AUTH_ERRORS, SIGNUP_ERRORS, SIGNUP_VERIFY } from '../utils/auth-messages.js';
 import { useAuthToast } from '../hooks/useAuthToast.js';
 import { englishFormProps, englishFieldProps, handleEnglishSubmit } from '../utils/formValidation.js';
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_POLICY_HINT,
+  validatePasswordPolicy,
+} from '../lib/password-policy.ts';
 
 const AUTH_PW_ICON = 22;
 
@@ -155,7 +161,6 @@ function LoginPage() {
               onChange={(e) => { setEmail(e.target.value); clearErrors(); }}
               autoComplete="email"
               required
-              maxLength={255}
             />
             {showEmailHint && (
               <p className="login-screen__hint">{fieldHint}</p>
@@ -274,12 +279,9 @@ function SignUpPage() {
       valid = false;
     }
 
-    if (!passwordVal) {
-      nextHints.password = SIGNUP_ERRORS.PASSWORD_REQUIRED.hint;
-      nextErrors.password = true;
-      valid = false;
-    } else if (passwordVal.length < 8) {
-      nextHints.password = SIGNUP_ERRORS.PASSWORD_SHORT.hint;
+    const passwordCheck = validatePasswordPolicy(passwordVal);
+    if (!passwordCheck.ok) {
+      nextHints.password = SIGNUP_ERRORS[passwordCheck.code].hint;
       nextErrors.password = true;
       valid = false;
     }
@@ -384,7 +386,6 @@ function SignUpPage() {
               onChange={(e) => { setEmail(e.target.value); clearSignupErrors(); }}
               autoComplete="email"
               required
-              maxLength={255}
             />
             {showEmailHint && (
               <p className="login-screen__hint">
@@ -400,14 +401,18 @@ function SignUpPage() {
               visible={showPw}
               error={errors.password}
               onToggle={() => setShowPw((v) => !v)}
-              onChange={(e) => { setPassword(e.target.value); clearSignupErrors(); }}
+              onChange={(e) => {
+                setPassword(e.target.value.slice(0, PASSWORD_MAX_LENGTH));
+                clearSignupErrors();
+              }}
               autoComplete="new-password"
               required
-              minLength={8}
+              minLength={PASSWORD_MIN_LENGTH}
+              maxLength={PASSWORD_MAX_LENGTH}
             />
-            {showPasswordHint && (
-              <p className="login-screen__hint">{hints.password}</p>
-            )}
+            <p className={`login-screen__hint${showPasswordHint ? '' : ' login-screen__hint--muted'}`}>
+              {showPasswordHint ? hints.password : PASSWORD_POLICY_HINT}
+            </p>
           </div>
           <div className="login-screen__field">
             <OutlinePasswordInputAuth

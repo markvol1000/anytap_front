@@ -337,7 +337,11 @@ export function AccountCardApply({ s }) {
     setSubmitting(true);
     try {
       const fee = C.getCardIssuanceFee(cardType);
-      const kycForm = { fullName: s.accountState.name ?? '' };
+      const splitName = C.splitFullName(s.accountState.name ?? '');
+      const kycForm = {
+        ...splitName,
+        fullName: C.composeFullName({ ...splitName, fullName: s.accountState.name ?? '' }),
+      };
       if (isHttpApi) {
         const result = await s.submitCardApplication({ cardType, shipping });
         await s.reloadAccount?.();

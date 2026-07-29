@@ -217,44 +217,53 @@ export function getScenarioApplication(scenarioKey, accountState) {
   };
 }
 
-export const KYC_COUNTRIES = [
-  { code: 'KR', label: 'South Korea' },
-  { code: 'US', label: 'United States' },
-  { code: 'JP', label: 'Japan' },
-  { code: 'SG', label: 'Singapore' },
-  { code: 'HK', label: 'Hong Kong' },
-  { code: 'GB', label: 'United Kingdom' },
-  { code: 'CA', label: 'Canada' },
-  { code: 'AU', label: 'Australia' },
-  { code: 'CN', label: 'China' },
-  { code: 'VN', label: 'Vietnam' },
-  { code: 'PH', label: 'Philippines' },
-  { code: 'TH', label: 'Thailand' },
-];
-
 export const EMPTY_KYC_FORM = {
-  firstName: '',
   lastName: '',
+  firstName: '',
   fullName: '',
   dateOfBirth: '',
-  nationality: 'KR',
+  nationality: '',
   idDocType: 'Passport',
   idDocNumber: '',
+  idDocExpiry: '',
   phoneCountryCode: '+1',
   phoneNumber: '',
   idFrontFile: null,
   idBackFile: null,
   selfieFile: null,
-  gender: 'M',
-  country: 'KR',
-  state: '',
-  city: '',
-  addressLine1: '',
-  postalCode: '',
-  annualSalary: '50000 USD',
-  accountPurpose: 'Living Expense',
-  expectedMonthlyVolume: '5000 USD',
 };
+
+/** Join first + last for display / profile storage. Falls back to fullName. */
+export function composeFullName({ firstName, lastName, fullName } = {}) {
+  const composed = [firstName, lastName]
+    .map((part) => String(part || '').trim())
+    .filter(Boolean)
+    .join(' ');
+  return composed || String(fullName || '').trim();
+}
+
+/** Best-effort split of a stored full name into first / last. */
+export function splitFullName(name = '') {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { firstName: '', lastName: '' };
+  if (parts.length === 1) return { firstName: parts[0], lastName: '' };
+  return {
+    firstName: parts.slice(0, -1).join(' '),
+    lastName: parts[parts.length - 1],
+  };
+}
+
+/** True when the ID/passport expiry date is set and not in the past. */
+export function isIdDocExpiryValid(value) {
+  const raw = String(value || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return false;
+  const [y, m, d] = raw.split('-').map(Number);
+  const expiry = new Date(y, m - 1, d);
+  if (Number.isNaN(expiry.getTime())) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return expiry >= today;
+}
 
 export const EMPTY_SHIPPING = {
   recipientName: '',
@@ -268,40 +277,25 @@ export const EMPTY_SHIPPING = {
   phoneNumber: '',
 };
 
-export function isKycFormValid(form, { requireFiles = false } = {}) {
-  const hasValues = Boolean(
-    form.firstName?.trim()
-    && form.lastName?.trim()
+export function isKycFormValid(form, { requireFiles = true } = {}) {
+  const hasSplitName = Boolean(form.firstName?.trim() && form.lastName?.trim());
+  const hasLegacyName = Boolean(form.fullName?.trim());
+  const base = Boolean(
+    (hasSplitName || hasLegacyName)
     && form.dateOfBirth
     && form.nationality?.trim()
     && form.idDocType
     && form.idDocNumber?.trim()
+    && isIdDocExpiryValid(form.idDocExpiry)
     && form.phoneCountryCode?.trim()
-    && form.phoneNumber?.trim()
-    && form.gender
-    && form.country?.trim()
-    && form.state?.trim()
-    && form.city?.trim()
-    && form.addressLine1?.trim()
-    && form.postalCode?.trim()
-    && form.annualSalary
-    && form.accountPurpose
-    && form.expectedMonthlyVolume,
+    && form.phoneNumber?.trim(),
   );
-  if (!hasValues) return false;
-
-  const firstNameOk = /^[a-zA-Z\s.-]+$/.test(form.firstName.trim());
-  const lastNameOk = /^[a-zA-Z\s.-]+$/.test(form.lastName.trim());
-  if (!firstNameOk || !lastNameOk) return false;
-
-  const phoneDigits = form.phoneNumber.replace(/[^\d]/g, '');
-  if (phoneDigits.length < 7 || phoneDigits.length > 15) return false;
-
-  const idNumberOk = /^[a-zA-Z0-9-]+$/.test(form.idDocNumber.trim()) && form.idDocNumber.trim().length >= 5;
-  if (!idNumberOk) return false;
-
-  if (!requireFiles) return true;
-  return Boolean(form.idFrontFile || form.idFrontId);
+  if (!requireFiles) return base;
+  return base && Boolean(
+    (form.idFrontFile || form.idFrontId)
+    && (form.idBackFile || form.idBackId)
+    && (form.selfieFile || form.selfieId),
+  );
 }
 
 export function isShippingValid(form) {

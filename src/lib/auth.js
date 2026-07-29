@@ -69,7 +69,7 @@ export function attemptAdminLogin(email, password) {
 }
 
 export function isAdminEmail(email) {
-  return String(email || '').trim().toLowerCase() === 'test206@206.c0m';
+  return email.trim().toLowerCase() === MOCK_ADMIN_LOGIN.email;
 }
 
 export function setAdminSession(email = MOCK_ADMIN_LOGIN.email) {

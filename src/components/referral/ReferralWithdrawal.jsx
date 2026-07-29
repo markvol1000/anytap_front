@@ -15,11 +15,7 @@ export function ReferralWithdrawal({ availableBalance, minWithdrawalUsdt, onWith
       </dl>
 
       <div className="portal-ref-dash__withdraw-actions">
-        <button
-          type="button"
-          className="portal-btn-primary"
-          disabled={Number(availableBalance) < Number(minWithdrawalUsdt)}
-          onClick={onWithdraw}>
+        <button type="button" className="portal-btn-primary" onClick={onWithdraw}>
           Withdraw Rewards
         </button>
         <button type="button" className="portal-btn-secondary" onClick={onViewHistory}>

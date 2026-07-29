@@ -76,12 +76,20 @@ export function bindMemberProfileToUser(userId) {
   writeBoundUserId(id);
 }
 
+function composeNameParts(source = {}) {
+  const first = String(source.firstName || '').trim();
+  const last = String(source.lastName || '').trim();
+  return [first, last].filter(Boolean).join(' ');
+}
+
 /** Prefer saved profile → session fields. No email-local-part inventing. */
 export function resolveMemberDisplayName(source = {}) {
   const profile = getMemberProfile();
   return String(
-    source.name
+    composeNameParts(source)
+    || source.name
     || source.fullName
+    || composeNameParts(profile)
     || profile.name
     || profile.fullName
     || '',
@@ -95,7 +103,9 @@ export function resolveMemberDisplayName(source = {}) {
  */
 export function hasCompletedKycProfile(accountState = {}) {
   const status = String(accountState.kycStatus || accountState.status || '').toLowerCase();
-  return ['approved', 'completed', 'active'].includes(status);
+  if (['approved', 'completed', 'active'].includes(status)) return true;
+  if (resolveMemberDisplayName(accountState)) return true;
+  return !!accountState.wasabiHolderId;
 }
 
 export function resolveMemberCountry(source = {}) {
@@ -120,8 +130,13 @@ export function formatMemberPhone(source = {}) {
 /** Apply KYC form values to local profile + return patch for http session. */
 export function profilePatchFromKycForm(form = {}) {
   const patch = {};
-  const name = String(form.fullName || '').trim();
+  const firstName = String(form.firstName || '').trim();
+  const lastName = String(form.lastName || '').trim();
+  const name = [firstName, lastName].filter(Boolean).join(' ')
+    || String(form.fullName || '').trim();
   if (name) patch.name = name;
+  if (firstName) patch.firstName = firstName;
+  if (lastName) patch.lastName = lastName;
   const country = String(form.nationality || '').trim();
   if (country) {
     patch.country = country;
@@ -131,6 +146,12 @@ export function profilePatchFromKycForm(form = {}) {
   if (phoneCountryCode) patch.phoneCountryCode = phoneCountryCode;
   const phoneNumber = String(form.phoneNumber || '').trim();
   if (phoneNumber) patch.phoneNumber = phoneNumber;
+  const idDocExpiry = String(form.idDocExpiry || '').trim();
+  if (idDocExpiry) patch.idDocExpiry = idDocExpiry;
+  const idDocType = String(form.idDocType || '').trim();
+  if (idDocType) patch.idDocType = idDocType;
+  const idDocNumber = String(form.idDocNumber || '').trim();
+  if (idDocNumber) patch.idDocNumber = idDocNumber;
   if (Object.keys(patch).length) patchMemberProfile(patch);
   return patch;
 }

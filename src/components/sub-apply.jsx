@@ -63,7 +63,8 @@ function ApplyCardPage() {
               <div className="aform__sec">Account</div>
               <div className="aform__grid">
                 <FormField label="Email" req><input type="email" required placeholder="Enter your email" /></FormField>
-                <FormField label="Full legal name" req><input type="text" required placeholder="Enter your full legal name" /></FormField>
+                <FormField label="Last name" req><input type="text" required placeholder="Surname" autoComplete="family-name" /></FormField>
+                <FormField label="First name" req><input type="text" required placeholder="Given name" autoComplete="given-name" /></FormField>
                 <FormField label="Date of birth" req><input type="text" required placeholder="MM / DD / YYYY" lang="en" inputMode="numeric" /></FormField>
                 <FormField label="Country / Region" req>
                   <select required defaultValue=""><option value="" disabled>Select…</option><option>United States</option><option>Singapore</option><option>United Arab Emirates</option><option>United Kingdom</option><option>Vietnam</option><option>Japan</option><option>Other</option></select>

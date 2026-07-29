@@ -89,8 +89,3 @@ export function isValidSend(amount, available = MOCK_WALLET_BALANCE) {
   const v = parseFloat(amount);
   return !Number.isNaN(v) && v >= MIN_SEND && v <= available;
 }
-
-export function isValidTronAddress(address) {
-  const trimmed = String(address || '').trim();
-  return /^T[a-zA-Z0-9]{33}$/.test(trimmed);
-}

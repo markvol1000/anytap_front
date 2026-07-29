@@ -28,7 +28,7 @@ export const SIGNUP_CODE_TTL_MS = 10 * 60 * 1000;
 const SIGNUP_PENDING_KEY = 'anytap_signup_pending';
 
 export function loginIdOk(loginId) {
-  return /^[a-zA-Z0-9._@-]{8,255}$/.test(String(loginId || '').trim());
+  return /^[a-zA-Z0-9._-]{8,32}$/.test(String(loginId || '').trim());
 }
 
 function mapLoginError(err) {
@@ -227,12 +227,12 @@ export function attemptAdminLogin() {
   return Promise.resolve({ ok: false, code: 'INVALID_CREDENTIALS' });
 }
 
-export function isAdminEmail(email) {
-  return String(email || '').trim().toLowerCase() === 'test206@206.c0m';
+export function isAdminEmail() {
+  return false;
 }
 
 export function refreshAdminPortalLink() {
-  return Promise.resolve(showAdminPortalLink());
+  return Promise.resolve(hasHttpSession());
 }
 
 export function establishLoginSession() {
@@ -240,8 +240,7 @@ export function establishLoginSession() {
 }
 
 export function showAdminPortalLink() {
-  const session = getHttpSession();
-  return !!(session && String(session.email).trim().toLowerCase() === 'test206@206.c0m');
+  return hasHttpSession();
 }
 
 export function setAdminSession() {}

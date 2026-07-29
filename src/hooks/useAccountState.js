@@ -23,7 +23,6 @@ export function useAccountState() {
   // ── UI state ──────────────────────────────────────────────────────────────
   const [homeLoading, setHomeLoading] = useState(true);
   const [toast, setToast] = useState('');
-  const [tempDeduct, setTempDeduct] = useState(0);
 
   // ── Card state ────────────────────────────────────────────────────────────
   const [cardTab, setCardTab] = useState('virtual');
@@ -46,11 +45,6 @@ export function useAccountState() {
   const [remoteContext, setRemoteContext] = useState(null);
   const [remoteReferral, setRemoteReferral] = useState(null);
   const [remoteLoading, setRemoteLoading] = useState(() => isHttpApi && hasHttpSession());
-
-  useEffect(() => {
-    setTempDeduct(0);
-  }, [remoteContext]);
-
   const [profileTick, setProfileTick] = useState(0);
   const [kycGateOpen, setKycGateOpen] = useState(false);
 
@@ -422,8 +416,7 @@ export function useAccountState() {
     // Account data — TODO: replace with Supabase + Wasabi + Cregis
     accountState, mockContext, kycStatusDef, cardStatusDef,
     referralContext, applyReferralPartner, requestReferralWithdrawal,
-    reloadAccount, refresh: reloadAccount, deductWalletBalance: (amount) => setTempDeduct((v) => v + amount),
-    submitKycApplication: submitKycApplicationApi, submitCardApplication: submitCardApplicationApi,
+    reloadAccount, submitKycApplication: submitKycApplicationApi, submitCardApplication: submitCardApplicationApi,
     // Derived flags
     kycApproved, cardHasNumber, cardIsActive, preIssue, cardApplicationPending, cardDimmed,
     profileReady,
@@ -432,7 +425,7 @@ export function useAccountState() {
     // Activity data
     activityItems: mockContext.activityItems,
     topUpHistory: mockContext.topUpHistory,
-    walletBalance: Math.max(0, mockContext.wallet.balanceUsdt - tempDeduct),
+    walletBalance: mockContext.wallet.balanceUsdt,
     walletExists: mockContext.wallet.exists,
     cardApplications: mockContext.cardApplications,
     flowState: mockContext.flowState,
