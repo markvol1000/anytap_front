@@ -72,6 +72,15 @@ export function AccountKyc({ s }) {
 
   const setKyc = (key, val) => setKycForm((f) => ({ ...f, [key]: val }));
 
+  const handleAddressChange = (key, rawValue) => {
+    const invalidCharPattern = /[^a-zA-Z0-9\s-]/;
+    if (invalidCharPattern.test(rawValue)) {
+      s.showToast("Address only supports English alphabets, numbers, hyphens(-), and spaces. Special characters (,.#/) and Korean are not allowed.");
+    }
+    const cleaned = rawValue.replace(/[^a-zA-Z0-9\s-]/g, '');
+    setKyc(key, cleaned);
+  };
+
   const goHome = () => s.go('home');
   const goApply = () => s.go('cardApply');
 
@@ -138,12 +147,24 @@ export function AccountKyc({ s }) {
       s.showToast('Please enter your state or region.');
       return;
     }
+    if (!/^[a-zA-Z0-9\s-]+$/.test(kycForm.state.trim())) {
+      s.showToast('State/Region only supports English alphabets, numbers, hyphens(-), and spaces. Special characters (,.#/) are not allowed.');
+      return;
+    }
     if (!kycForm.city?.trim()) {
       s.showToast('Please enter your city.');
       return;
     }
+    if (!/^[a-zA-Z0-9\s-]+$/.test(kycForm.city.trim())) {
+      s.showToast('City only supports English alphabets, numbers, hyphens(-), and spaces. Special characters (,.#/) are not allowed.');
+      return;
+    }
     if (!kycForm.addressLine1?.trim()) {
       s.showToast('Please enter your address.');
+      return;
+    }
+    if (!/^[a-zA-Z0-9\s-]+$/.test(kycForm.addressLine1.trim())) {
+      s.showToast('Street Address only supports English alphabets, numbers, hyphens(-), and spaces. Special characters (,.#/) are not allowed.');
       return;
     }
     if (!kycForm.postalCode?.trim()) {
@@ -286,15 +307,15 @@ export function AccountKyc({ s }) {
             </div>
             <div className="capply-form__row">
               <FormField label="State / Region">
-                <input className="capply-input" value={kycForm.state} onChange={(e) => setKyc('state', e.target.value)} placeholder="e.g. Seoul" />
+                <input className="capply-input" value={kycForm.state} onChange={(e) => handleAddressChange('state', e.target.value)} placeholder="e.g. Seoul" />
               </FormField>
               <FormField label="City">
-                <input className="capply-input" value={kycForm.city} onChange={(e) => setKyc('city', e.target.value)} placeholder="e.g. Gangnam-gu" />
+                <input className="capply-input" value={kycForm.city} onChange={(e) => handleAddressChange('city', e.target.value)} placeholder="e.g. Gangnam-gu" />
               </FormField>
             </div>
             <div className="capply-form__row">
               <FormField label="Street Address">
-                <input className="capply-input" value={kycForm.addressLine1} onChange={(e) => setKyc('addressLine1', e.target.value)} placeholder="e.g. Gangnam-daero 123" />
+                <input className="capply-input" value={kycForm.addressLine1} onChange={(e) => handleAddressChange('addressLine1', e.target.value)} placeholder="e.g. Gangnam-daero 123" />
               </FormField>
               <FormField label="Postal Code">
                 <input className="capply-input" value={kycForm.postalCode} onChange={(e) => setKyc('postalCode', e.target.value)} placeholder="e.g. 06123" />

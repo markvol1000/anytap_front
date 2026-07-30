@@ -84,7 +84,8 @@ export function saveEmailLoginId(email, loginId) {
 
 export function getLoginIdForEmail(email) {
   const normalized = String(email || '').trim().toLowerCase();
-  return loadLoginIdMap()[normalized] || SEED_EMAIL_LOGIN_IDS[normalized] || '';
+  if (SEED_EMAIL_LOGIN_IDS[normalized]) return SEED_EMAIL_LOGIN_IDS[normalized];
+  return normalized;
 }
 
 /** Reverse lookup: stored email for a loginId (same browser). */
@@ -125,8 +126,7 @@ export function resolveLoginIdForAuth(emailOrLoginId) {
   const input = String(emailOrLoginId || '').trim();
   if (!input) return '';
   if (input.includes('@')) {
-    const mapped = getLoginIdForEmail(input);
-    return mapped || baseLoginIdFromEmail(input);
+    return input.toLowerCase();
   }
   return input;
 }
