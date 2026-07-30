@@ -354,20 +354,20 @@ export function formatActivityWhen(isoOrDate, options = {}) {
   const d = parseActivityDate(isoOrDate);
   if (!d) return '';
 
-  if (style === 'grouped-time') return formatActivityTime(d);
-  if (style === 'grouped-row') return formatMonthDay(d);
+  if (style === 'grouped-time') return `${formatMonthDay(d)} · ${formatActivityTime(d)}`;
+  if (style === 'grouped-row') return `${formatMonthDay(d)} · ${formatActivityTime(d)}`;
 
   const bucket = getActivityDateBucket(d, now);
 
   if (style === 'compact') {
-    if (bucket === 'today') return formatActivityTime(d);
+    if (bucket === 'today') return `Today · ${formatActivityTime(d)}`;
     if (bucket === 'yesterday') return 'Yesterday';
     if (bucket === 'prior') return formatMonthDayYear(d);
     return formatMonthDay(d);
   }
 
   // standard
-  if (bucket === 'today') return formatActivityTime(d);
+  if (bucket === 'today') return `Today · ${formatActivityTime(d)}`;
   if (bucket === 'yesterday') return `Yesterday · ${formatActivityTime(d)}`;
   if (bucket === 'week') {
     const weekday = d.toLocaleDateString(DISPLAY_LOCALE, { weekday: 'short' });

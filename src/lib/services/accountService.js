@@ -40,6 +40,21 @@ export async function chargeCard(amount, cardId = null) {
   return { ok: true };
 }
 
+export async function withdrawToExternal(amount, address, password) {
+  if (isHttpApi) return api.withdrawToExternal(amount, address, password);
+  return { ok: true };
+}
+
+export async function sendCardSecureCode() {
+  if (isHttpApi) return api.sendCardSecureCode();
+  return { ok: true };
+}
+
+export async function revealCardDetails(code) {
+  if (isHttpApi) return api.revealCardDetails(code);
+  return { ok: true, data: { cardNo: '4111111111111111', cvv: '123', expiry: '12/29' } };
+}
+
 export async function freezeCard(cardId = null) {
   if (isHttpApi) return api.freezeCard(cardId);
   return { ok: true };

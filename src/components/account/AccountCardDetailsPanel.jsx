@@ -6,13 +6,34 @@
 
 import { useState } from 'react';
 import * as A from '../../lib/account-data.js';
+import { sendCardSecureCode, revealCardDetails } from '../../lib/services/accountService.js';
 
 export function AccountCardDetailsPanel({ s }) {
   const [verifyCode, setVerifyCode] = useState('');
   const [verifyLoading, setVerifyLoading] = useState(false);
+  const [revealedDetails, setRevealedDetails] = useState(null);
   const card = s.currentCard;
-  // TODO: Fetch fullNumber from Wasabi API on demand (never stored in DB)
-  const fullNumber = card?.fullNumber ?? A.MOCK_CARD.fullNumber;
+
+  // Compute card fields based on revealed details or fallback
+  const fullNumber = revealedDetails?.cardNo 
+    || revealedDetails?.cardNumber 
+    || card?.fullNumber 
+    || A.MOCK_CARD.fullNumber;
+
+  let rawExpiry = revealedDetails?.expiry 
+    || revealedDetails?.expireDate 
+    || revealedDetails?.expiryDate 
+    || card?.expiry 
+    || '12/29';
+  if (typeof rawExpiry === 'string' && rawExpiry.length === 4 && !rawExpiry.includes('/')) {
+    rawExpiry = rawExpiry.slice(0, 2) + '/' + rawExpiry.slice(2);
+  }
+  const expiry = rawExpiry;
+
+  const cvv = revealedDetails?.cvv 
+    || revealedDetails?.cvv2 
+    || card?.cvv 
+    || '123';
 
   if (!s.cardHasNumber || !card) return null;
 
@@ -22,26 +43,39 @@ export function AccountCardDetailsPanel({ s }) {
     s.setShowCvv(false);
     s.setVerifyCodeSent(false);
     setVerifyCode('');
+    setRevealedDetails(null);
   };
 
-  // TODO: Send real OTP via Supabase Auth or custom email service
-  const sendVerifyCode = () => {
-    s.setVerifyCodeSent(true);
-    s.showToast(`Verification code sent to ${s.accountState.email}`);
+  const sendVerifyCode = async () => {
+    try {
+      await sendCardSecureCode();
+      s.setVerifyCodeSent(true);
+      s.showToast(`Verification code sent to ${s.accountState.email}`);
+    } catch (err) {
+      s.showToast(err.message || 'Failed to send verification code');
+    }
   };
 
-  const confirmVerifyCode = () => {
+  const confirmVerifyCode = async () => {
     if (verifyCode.trim().length < 6) {
       s.showToast('Enter the 6-digit code from your email');
       return;
     }
     setVerifyLoading(true);
-    // TODO: Verify OTP against Supabase or custom verification endpoint
-    setTimeout(() => {
+    try {
+      const res = await revealCardDetails(verifyCode);
+      if (res?.ok) {
+        setRevealedDetails(res.data);
+        s.setIsCardDetailVerified(true);
+        s.showToast('Identity verified');
+      } else {
+        s.showToast(res?.message || 'Verification failed');
+      }
+    } catch (err) {
+      s.showToast(err.message || 'Verification failed');
+    } finally {
       setVerifyLoading(false);
-      s.setIsCardDetailVerified(true);
-      s.showToast('Identity verified');
-    }, 700);
+    }
   };
 
   // Initial state: show "View Card Info" button
@@ -117,12 +151,12 @@ export function AccountCardDetailsPanel({ s }) {
         </div>
         <div className="portal-info__row">
           <span className="portal-info__k">Expiry</span>
-          <span className="portal-info__v portal-info__v--mono">{card.expiry}</span>
+          <span className="portal-info__v portal-info__v--mono">{expiry}</span>
         </div>
         <div className="portal-info__row">
           <span className="portal-info__k">CVV</span>
           <span className="portal-info__v portal-info__v--mono">
-            {s.showCvv ? card.cvv : '***'}
+            {s.showCvv ? cvv : '***'}
           </span>
         </div>
       </div>

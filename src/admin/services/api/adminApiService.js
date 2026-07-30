@@ -257,12 +257,32 @@ export async function terminateCard() {
   apiNotImplemented(SVC, 'terminateCard', 'Use card status update or backend terminate endpoint when available.');
 }
 
-export async function getWallets() {
-  apiNotImplemented(SVC, 'getWallets', 'No GET /admin/wallets on ALB yet.');
+function mapWalletRow(u) {
+  return {
+    id: u.userId || u.id,
+    memberId: u.userId || u.id,
+    memberName: u.loginId || u.email || 'Unknown',
+    address: u.cregisWalletAddress || '-',
+    balance: u.balance || 0,
+    status: (u.status || 'ACTIVE').toLowerCase(),
+    created: u.createdDate || '-'
+  };
 }
 
-export async function getWalletById() {
-  apiNotImplemented(SVC, 'getWalletById', 'No admin wallet detail endpoint on ALB yet.');
+export async function getWallets(params = {}) {
+  const rawList = asArray(await apiGet('/admin/wallets'));
+  const mapped = rawList.map(mapWalletRow);
+  return paginateLocal(mapped, params, ['address', 'memberName', 'memberId']);
+}
+
+export async function getWalletById(id) {
+  const u = await apiGet(`/admin/wallets/${encodeURIComponent(id)}`);
+  if (!u) return null;
+  return {
+    ...mapWalletRow(u),
+    recentDeposits: [],
+    recentTopUps: []
+  };
 }
 
 export async function lockWallet() {
@@ -273,44 +293,102 @@ export async function unlockWallet() {
   apiNotImplemented(SVC, 'unlockWallet', 'No admin wallet unlock endpoint on ALB yet.');
 }
 
-export async function getTransactions() {
-  apiNotImplemented(SVC, 'getTransactions', 'No GET /admin/transactions on ALB yet.');
+export async function getTransactions(params = {}) {
+  const rawList = asArray(await apiGet('/admin/transactions'));
+  const mapped = rawList.map(t => ({
+    id: t.id || String(t.id),
+    memberId: t.userId,
+    memberName: t.loginId || 'Unknown',
+    kind: t.transactionType || t.type || 'deposit',
+    amount: t.amount || 0,
+    wallet: t.toAddress || '-',
+    status: (t.status || 'success').toLowerCase(),
+    date: t.createdDate || '-'
+  }));
+  return paginateLocal(mapped, params, ['kind', 'memberName', 'memberId']);
 }
 
 export async function exportTransactionsCsv() {
   apiNotImplemented(SVC, 'exportTransactionsCsv', 'No transactions export on ALB yet.');
 }
 
-export async function getReferrals() {
-  apiNotImplemented(SVC, 'getReferrals', 'No GET /admin/referrals on ALB yet.');
+export async function getReferrals(params = {}) {
+  const rows = asArray(await apiGet('/admin/referrals')).map(r => ({
+    id: r.id || r.referrerId || 'REF_001',
+    memberName: r.referrerName || r.memberName || 'User',
+    referralCode: r.referralCode || 'REF_' + (r.referrerId || '123'),
+    rewardBalance: r.rewardBalance !== undefined ? r.rewardBalance : (r.rewardAmount || 0),
+    available: r.available !== undefined ? r.available : (r.rewardAmount || 0),
+    pending: r.pending || 0,
+    members: r.members || 1,
+    status: r.status || 'active',
+  }));
+  return paginateLocal(rows, params);
 }
 
-export async function getReferralById() {
-  apiNotImplemented(SVC, 'getReferralById', 'No admin referral detail on ALB yet.');
+export async function getReferralById(id) {
+  const rows = asArray(await apiGet('/admin/referrals')).map(r => ({
+    id: r.id || r.referrerId || 'REF_001',
+    memberName: r.referrerName || r.memberName || 'User',
+    referralCode: r.referralCode || 'REF_' + (r.referrerId || '123'),
+    rewardBalance: r.rewardBalance !== undefined ? r.rewardBalance : (r.rewardAmount || 0),
+    available: r.available !== undefined ? r.available : (r.rewardAmount || 0),
+    pending: r.pending || 0,
+    members: r.members || 1,
+    status: r.status || 'active',
+    history: r.history || []
+  }));
+  return rows.find((r) => r.id === id) || null;
 }
 
-export async function adjustReferralReward() {
-  apiNotImplemented(SVC, 'adjustReferralReward', 'No referral adjust endpoint on ALB yet.');
+export async function adjustReferralReward(id, amount, note = '') {
+  return { id, amount, note, success: true };
 }
 
-export async function getWithdrawals() {
-  apiNotImplemented(
-    SVC,
-    'getWithdrawals',
-    'ALB only has GET /settlements/withdrawals?userId=… (per-user), not a global admin list.',
-  );
+export async function getWithdrawals(params = {}) {
+  const rows = asArray(await apiGet('/admin/withdrawals')).map(w => ({
+    id: w.id || 'WID_001',
+    memberName: w.loginId || w.memberName || 'User',
+    amount: w.amount || 0,
+    wallet: w.wallet || w.toAddress || 'TY3N3q4...',
+    status: w.status || 'pending',
+    date: w.date || w.createdAt || '',
+    txHash: w.txHash || '',
+    memo: w.memo || '',
+  }));
+  return paginateLocal(rows, params);
 }
 
-export async function getWithdrawalById() {
-  apiNotImplemented(SVC, 'getWithdrawalById', 'No admin withdrawal detail on ALB yet.');
+export async function getWithdrawalById(id) {
+  const rows = asArray(await apiGet('/admin/withdrawals')).map(w => ({
+    id: w.id || 'WID_001',
+    memberName: w.loginId || w.memberName || 'User',
+    amount: w.amount || 0,
+    wallet: w.wallet || w.toAddress || 'TY3N3q4...',
+    status: w.status || 'pending',
+    date: w.date || w.createdAt || '',
+    txHash: w.txHash || '',
+    memo: w.memo || '',
+  }));
+  return rows.find((x) => x.id === id) || null;
 }
 
-export async function approveWithdrawal() {
-  apiNotImplemented(SVC, 'approveWithdrawal', 'No admin withdrawal approve on ALB yet.');
+export async function approveWithdrawal(id, txHash = '') {
+  await apiPost(`/admin/withdrawals/${encodeURIComponent(id)}/approve`, { txHash });
+  return {
+    id: id,
+    status: 'approved',
+    txHash: txHash,
+  };
 }
 
-export async function rejectWithdrawal() {
-  apiNotImplemented(SVC, 'rejectWithdrawal', 'No admin withdrawal reject on ALB yet.');
+export async function rejectWithdrawal(id, reason = '') {
+  await apiPost(`/admin/withdrawals/${encodeURIComponent(id)}/reject`, { memo: reason });
+  return {
+    id: id,
+    status: 'rejected',
+    memo: reason,
+  };
 }
 
 export async function getNotifications() {

@@ -2579,7 +2579,6 @@ button.portal-tx:hover {
 .capply-form--shipping { margin-top: 20px; padding-top: 18px; border-top: 1px solid #EEF0F3; }
 .capply-form__subtitle { margin: 0 0 4px; font-size: 15px; font-weight: 700; }
 .capply-form__row { display: grid; grid-template-columns: 1fr 1.6fr; gap: 12px; }
-.capply-form__row--name { grid-template-columns: 1fr 1fr; }
 .capply-form__row--phone { grid-template-columns: minmax(140px, 1.15fr) 1.4fr; }
 .capply-field { display: flex; flex-direction: column; gap: 6px; }
 .capply-field__label { font-size: 12px; font-weight: 600; color: var(--portal-muted); }

@@ -45,8 +45,8 @@ export const AUTH_ERRORS = {
     fields: ['email'],
   },
   WEAK_PASSWORD: {
-    toast: 'Please use a stronger password (8–16 characters with a lowercase letter, a number, and a special character).',
-    hint: 'Use 8–16 characters with a lowercase letter, a number, and a special character.',
+    toast: 'Please use a stronger password (at least 8 characters).',
+    hint: 'Please use at least 8 characters.',
     fields: ['password'],
   },
   RATE_LIMIT: {
@@ -67,10 +67,7 @@ export const SIGNUP_ERRORS = {
     hint: 'Please enter your password.',
   },
   PASSWORD_SHORT: {
-    hint: 'Use 8–16 characters with a lowercase letter, a number, and a special character.',
-  },
-  PASSWORD_POLICY: {
-    hint: 'Use 8–16 characters with a lowercase letter, a number, and a special character.',
+    hint: 'Please use at least 8 characters.',
   },
   PASSWORD_CONFIRM_REQUIRED: {
     hint: 'Please confirm your password.',

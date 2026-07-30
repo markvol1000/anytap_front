@@ -1,9 +1,7 @@
-/** B2B pre-issued card registration — validation helpers (mock). */
-// TODO: Wasabi API — validate pre-issued card + activation request
-// TODO: Cregis API — link activated card to user wallet
-// TODO: Wasabi merchant account mapping on successful activation
+/** B2B pre-issued card registration — validation helpers (Real API-driven). */
 
 import { CARD_BINS } from './card-application.js';
+import { bindExistingCard } from './services/account/accountApi.js';
 
 export const REGISTER_ERROR_MESSAGES = {
   invalid_number: 'Invalid card number. Check the 16-digit number on your card.',
@@ -15,16 +13,6 @@ export const REGISTER_ERROR_MESSAGES = {
   password_weak: 'Enter a 4-digit password.',
   expiry_invalid: 'Enter a valid expiry date (MM/YY).',
 };
-
-/** Demo pre-issued cards for mock activation */
-export const MOCK_PREISSUED_CARDS = [
-  { number: '4937240123456789', last4: '6789', expiry: '12/28', variant: 'physical', label: 'Physical Visa' },
-  { number: '4938759876543210', last4: '3210', expiry: '06/27', variant: 'virtual', label: 'Virtual Visa' },
-  { number: '4937240000000002', last4: '0002', expiry: '01/24', variant: 'physical', label: 'Physical Visa' },
-];
-
-/** Forces activation_failed for QA */
-export const MOCK_FAIL_ACTIVATION_NUMBER = '4937240000000004';
 
 const REGISTER_BINS = new Set(Object.values(CARD_BINS));
 
@@ -61,25 +49,14 @@ export function validateRegisterForm(form, existingCards = []) {
   const number = normalizeCardNumber(form.cardNumber);
   const expiry = String(form.expiry ?? '').trim();
 
-  if (number.length !== 16 || !hasKnownRegisterBin(number)) {
+  if (number.length !== 16) {
     errors.cardNumber = REGISTER_ERROR_MESSAGES.invalid_number;
-  } else if (number === MOCK_FAIL_ACTIVATION_NUMBER) {
-    errors.form = REGISTER_ERROR_MESSAGES.activation_failed;
   } else {
-    const preissued = MOCK_PREISSUED_CARDS.find((c) => c.number === number);
-    if (!preissued) {
-      errors.cardNumber = REGISTER_ERROR_MESSAGES.not_found;
-    } else if (existingCards.some((c) => c.last4 === preissued.last4)) {
-      errors.cardNumber = REGISTER_ERROR_MESSAGES.duplicate;
-    } else {
-      const expDate = parseExpiry(expiry);
-      if (!expDate) {
-        errors.expiry = REGISTER_ERROR_MESSAGES.expiry_invalid;
-      } else if (expDate < new Date()) {
-        errors.expiry = REGISTER_ERROR_MESSAGES.expired;
-      } else if (preissued.expiry && expiry !== preissued.expiry) {
-        errors.expiry = 'Expiry date does not match this card.';
-      }
+    const expDate = parseExpiry(expiry);
+    if (!expDate) {
+      errors.expiry = REGISTER_ERROR_MESSAGES.expiry_invalid;
+    } else if (expDate < new Date()) {
+      errors.expiry = REGISTER_ERROR_MESSAGES.expired;
     }
   }
 
@@ -95,51 +72,59 @@ export function validateRegisterForm(form, existingCards = []) {
 }
 
 /**
- * Mock activation — returns resolved card payload on success.
+ * Real activation — calls backend API to bind the card.
  * @returns {Promise<{ ok: true, card: object } | { ok: false, code: string, message: string }>}
  */
-export function activatePreissuedCard(form, existingCards = []) {
-  return new Promise((resolve) => {
-    window.setTimeout(() => {
-      const errors = validateRegisterForm(form, existingCards);
-      const firstError = errors.form
-        ?? errors.cardNumber
-        ?? errors.expiry
-        ?? errors.password
-        ?? errors.confirmPassword;
+export async function activatePreissuedCard(form, existingCards = []) {
+  const errors = validateRegisterForm(form, existingCards);
+  const firstError = errors.form
+    ?? errors.cardNumber
+    ?? errors.expiry
+    ?? errors.password
+    ?? errors.confirmPassword;
 
-      if (firstError) {
-        const code = errors.form
-          ? 'activation_failed'
-          : errors.cardNumber?.includes('already')
-            ? 'duplicate'
-            : errors.cardNumber?.includes('not found')
-              ? 'not_found'
-              : errors.cardNumber
-                ? 'invalid_number'
-                : errors.expiry?.includes('expired')
-                  ? 'expired'
-                  : 'activation_failed';
-        resolve({ ok: false, code, message: firstError, fieldErrors: errors });
-        return;
-      }
+  if (firstError) {
+    const code = errors.form
+      ? 'activation_failed'
+      : errors.cardNumber?.includes('already')
+        ? 'duplicate'
+        : errors.cardNumber
+          ? 'invalid_number'
+          : errors.expiry?.includes('expired')
+            ? 'expired'
+            : 'activation_failed';
+    return { ok: false, code, message: firstError, fieldErrors: errors };
+  }
 
-      const number = normalizeCardNumber(form.cardNumber);
-      const preissued = MOCK_PREISSUED_CARDS.find((c) => c.number === number);
-
-      resolve({
-        ok: true,
-        card: {
-          id: `card-reg-${preissued.last4}-${Date.now()}`,
-          last4: preissued.last4,
-          variant: preissued.variant,
-          label: preissued.label,
-          status: 'active',
-          balance: '$0.00',
-          network: 'Visa',
-          isPrimary: existingCards.length === 0,
-        },
-      });
-    }, 900);
-  });
+  try {
+    const res = await bindExistingCard(form);
+    const number = normalizeCardNumber(form.cardNumber);
+    const last4 = number.slice(-4);
+    
+    // Determine card variant by card BIN rules
+    const variant = number.startsWith('493875') ? 'virtual' : 'physical';
+    const label = variant === 'virtual' ? 'Virtual Card' : 'Physical Card';
+    
+    return {
+      ok: true,
+      card: {
+        id: res?.data?.cardId || `card-reg-${last4}-${Date.now()}`,
+        last4: last4,
+        variant: variant,
+        label: label,
+        status: 'active',
+        balance: '$0.00',
+        network: 'Visa',
+        isPrimary: existingCards.length === 0,
+      },
+    };
+  } catch (err) {
+    const fallbackMsg = 'Failed to bind card. Please check the card details and try again.';
+    const errMsg = err?.message || err?.response?.data?.message || fallbackMsg;
+    return {
+      ok: false,
+      code: 'activation_failed',
+      message: errMsg.includes('Exception') ? fallbackMsg : errMsg,
+    };
+  }
 }

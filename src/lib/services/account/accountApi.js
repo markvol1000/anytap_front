@@ -227,9 +227,23 @@ function buildContextFromSession(session, cardInfo = null, activityItems = [], c
       : `${cardBalanceUsdt.toFixed(2)} USDT`)
     : '—';
 
+  let cardVariant = session.cardType || 'virtual';
+  if (cardInfo?.cardTypeId) {
+    const cid = Number(cardInfo.cardTypeId);
+    if (cid === 111059) cardVariant = 'physical';
+    else if (cid === 111032) cardVariant = 'virtual';
+  } else if (cardNo) {
+    const cleanNo = cardNo.replace(/\D/g, '');
+    if (cleanNo.startsWith('493875')) {
+      cardVariant = 'virtual';
+    } else if (cleanNo.length >= 6) {
+      cardVariant = 'physical';
+    }
+  }
+
   let userCards = showLiveCard ? [{
     id: `card-${session.userId}`,
-    variant: 'virtual',
+    variant: cardVariant,
     last4,
     balance: cardBalanceLabel,
     status: cardFrozen || cardStatus === 'frozen' ? 'frozen' : (cardStatus === 'issued' ? 'issued' : 'active'),
@@ -307,6 +321,52 @@ export async function fetchCardTransactions(userId, { pageNum = 1, pageSize = 50
   }
 }
 
+export async function fetchLocalTransactions(userId) {
+  if (!userId) return [];
+  try {
+    const data = await apiGet(`/cards/${encodeURIComponent(userId)}/local-transactions`);
+    if (!Array.isArray(data)) return [];
+    return data.map((tx) => {
+      let kind = 'wallet_topup';
+      let title = 'Wallet Deposit';
+      let incoming = true;
+      const type = String(tx.txType || '').toUpperCase();
+      if (type === 'DEPOSIT') {
+        kind = 'wallet_topup';
+        title = 'Wallet Deposit';
+        incoming = true;
+      } else if (type === 'CARD_CHARGE') {
+        kind = 'card_topup';
+        title = 'Card Top Up';
+        incoming = false;
+      } else if (type === 'WITHDRAW') {
+        kind = 'wallet_withdraw';
+        title = 'Transfer Sent';
+        incoming = false;
+      }
+      const status = String(tx.status || 'SUCCESS').toLowerCase();
+      return {
+        id: tx.txId || `local-${Date.now()}-${Math.random()}`,
+        title: title,
+        at: tx.createdAt,
+        amount: Number(tx.amount || 0),
+        incoming: incoming,
+        failed: status === 'failed',
+        kind: kind,
+        status: status === 'success' ? 'completed' : status,
+        txId: tx.txId,
+        reference: tx.txId ? tx.txId.slice(0, 10).toUpperCase() : '',
+        description: tx.description || '',
+      };
+    });
+  } catch (err) {
+    if (err?.status !== 400 && err?.status !== 404) {
+      console.warn('[accountApi] local transactions', err);
+    }
+    return [];
+  }
+}
+
 export async function fetchAccountContext() {
   const rawSession = getHttpSession();
   if (!rawSession?.userId) throw new Error('Not authenticated');
@@ -351,8 +411,12 @@ export async function fetchAccountContext() {
     const cardNo = String(cardInfo?.cardNo || cardInfo?.balanceInfo?.cardNo || '');
     const last4 = cardNo.replace(/\D/g, '').slice(-4) || cardNo.slice(-4) || '';
     if (!demoLocked) {
-      const txRes = await fetchCardTransactions(session.userId, { last4 });
-      activityItems = txRes?.items || [];
+      const [txRes, localTxs] = await Promise.all([
+        fetchCardTransactions(session.userId, { last4 }),
+        fetchLocalTransactions(session.userId),
+      ]);
+      const cardTxs = txRes?.items || [];
+      activityItems = [...localTxs, ...cardTxs];
     }
   } catch (err) {
     console.warn('[accountApi] fetch transactions fallback', err);
@@ -365,9 +429,75 @@ export async function fetchReferralContext() {
   return null;
 }
 
+async function compressImageIfNeeded(file, maxBytes = 2 * 1024 * 1024) {
+  if (!file) return file;
+  if (file.size <= maxBytes) return file;
+  if (!file.type.startsWith('image/')) return file;
+
+  try {
+    let compressed = await compressOnce(file, 2048, 0.75);
+    if (compressed.size > maxBytes) {
+      compressed = await compressOnce(file, 1200, 0.6);
+    }
+    if (compressed.size > maxBytes) {
+      compressed = await compressOnce(file, 800, 0.5);
+    }
+    return compressed;
+  } catch (err) {
+    console.error('[accountApi] Image compression failed, returning original file', err);
+    return file;
+  }
+}
+
+function compressOnce(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Canvas toBlob returned null'));
+            return;
+          }
+          const compressed = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          resolve(compressed);
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = () => reject(new Error('Failed to load image element'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
 async function uploadKycDocument(file, docType) {
   if (!file) return '';
-  const data = await apiUpload('/files/upload', file, { query: { docType } });
+  const processedFile = await compressImageIfNeeded(file);
+  const data = await apiUpload('/files/upload', processedFile, { query: { docType } });
   return data?.fileId || data?.id || data?.file_id || '';
 }
 
@@ -382,18 +512,8 @@ async function resolveKycFileIds(form = {}) {
   }
   const idBackId = form.idBackId
     || (form.idBackFile ? await uploadKycDocument(form.idBackFile, idType) : '');
-  if (!idBackId) {
-    const err = new Error('ID document back image is required');
-    err.code = 'MISSING_ID_BACK';
-    throw err;
-  }
   const selfieId = form.selfieId
     || (form.selfieFile ? await uploadKycDocument(form.selfieFile, 'SELFIE') : '');
-  if (!selfieId) {
-    const err = new Error('Face photo is required');
-    err.code = 'MISSING_SELFIE';
-    throw err;
-  }
   return { idType, idFrontId, idBackId, selfieId };
 }
 
@@ -430,6 +550,7 @@ async function refreshSessionFromUser(userId) {
       kycStatus: user.kycStatus || user.status || undefined,
       status: user.status || user.kycStatus || undefined,
       cardStatus,
+      cardType: user.cardType || undefined,
       walletExists: user.walletExists === true || !!user.cregisWalletAddress,
       cregisWalletAddress: user.cregisWalletAddress || undefined,
       needsActivation: (cardStatus === 'active' || cardStatus === 'frozen') ? false : (user.needsActivation === true),
@@ -472,8 +593,8 @@ export async function submitKycApplication(form = {}) {
   const { idType, idFrontId, idBackId, selfieId } = await resolveKycFileIds(form);
   const filePayload = {
     idFrontId,
-    idBackId,
-    selfieId,
+    ...(idBackId ? { idBackId } : {}),
+    ...(selfieId ? { selfieId } : {}),
   };
 
   const kycStatus = mapKycStatus(session.kycStatus);
@@ -487,7 +608,27 @@ export async function submitKycApplication(form = {}) {
   // Prefer member card/holder registration. Temp-user cardholder API only works pre-signup.
   const data = await apiPost(
     `/cards/${encodeURIComponent(session.userId)}/register`,
-    { email: session.email, ...filePayload },
+    { 
+      email: session.email, 
+      firstName: (form.firstName || '').trim(),
+      lastName: (form.lastName || '').trim(),
+      mobile: form.phoneNumber || '',
+      areaCode: form.phoneCountryCode || '+82',
+      birthday: form.dateOfBirth || '',
+      nationality: form.nationality || 'KR',
+      idNumber: form.idDocNumber || '',
+      idType: form.idDocType || 'PASSPORT',
+      gender: form.gender || 'M',
+      country: form.country || '',
+      state: form.state || '',
+      city: form.city || '',
+      addressLine1: form.addressLine1 || '',
+      postalCode: form.postalCode || '',
+      annualSalary: form.annualSalary || '50000 USD',
+      accountPurpose: form.accountPurpose || 'Living Expense',
+      expectedMonthlyVolume: form.expectedMonthlyVolume || '5000 USD',
+      ...filePayload 
+    },
   );
 
   patchHttpSession({
@@ -497,11 +638,22 @@ export async function submitKycApplication(form = {}) {
     idType,
     phoneCountryCode: form.phoneCountryCode,
     phoneNumber: form.phoneNumber,
-    idDocExpiry: form.idDocExpiry || undefined,
     ...profilePatch,
   });
   await refreshSessionFromUser(session.userId);
   return { ok: true, data };
+}
+
+function parseFullName(fullName) {
+  const name = String(fullName || '').trim();
+  if (!name) return { firstName: 'Gildong', lastName: 'Hong' };
+  const parts = name.split(/\s+/);
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: 'Hong' };
+  }
+  const lastName = parts[parts.length - 1];
+  const firstName = parts.slice(0, parts.length - 1).join(' ');
+  return { firstName, lastName };
 }
 
 /** Register / issue Wasabi card after KYC when needed. */
@@ -523,16 +675,29 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
   }
 
   if (!cardInfo && mapCardStatus(session.cardStatus) === 'not_issued') {
+    const nameData = parseFullName(shipping?.recipientName || session?.name || session?.fullName || '');
     const payload = { 
       email: session.email,
-      cardType: cardType || 'virtual'
+      cardType: cardType || 'virtual',
+      firstName: nameData.firstName,
+      lastName: nameData.lastName,
+      mobile: shipping?.phoneNumber || '',
+      areaCode: shipping?.phoneCountryCode || '+82',
+      birthday: kycForm?.dateOfBirth || '',
+      nationality: kycForm?.nationality || session?.nationality || 'KR',
+      idNumber: kycForm?.idDocNumber || '',
+      idType: kycForm?.idDocType || 'PASSPORT',
     };
     if (kycForm?.idFrontFile || kycForm?.idFrontId) {
       const files = await resolveKycFileIds(kycForm);
       Object.assign(payload, {
         idFrontId: files.idFrontId,
-        idBackId: files.idBackId,
-        selfieId: files.selfieId,
+        ...(files.idBackId ? { idBackId: files.idBackId } : {}),
+        ...(files.selfieId ? { selfieId: files.selfieId } : {}),
+        birthday: kycForm.dateOfBirth,
+        nationality: kycForm.nationality,
+        idNumber: kycForm.idDocNumber,
+        idType: mapWasabiIdType(kycForm.idDocType),
       });
     }
 
@@ -623,6 +788,58 @@ export async function unfreezeCard(cardId = null) {
   return { ok: true, data: res };
 }
 
+/** Withdraw USDT from Cregis wallet to external address */
+export async function withdrawToExternal(amount, address, password) {
+  const session = getHttpSession();
+  if (!session?.userId) throw new Error('Not authenticated');
+
+  const payload = {
+    userId: session.userId,
+    toAddress: address,
+    amount: Number(amount),
+    password: password,
+  };
+
+  const res = await apiPost('/cregis/user/withdraw', payload);
+  await refreshSessionFromUser(session.userId);
+  return { ok: true, data: res };
+}
+
+/** Send card unlock OTP code via email */
+export async function sendCardSecureCode() {
+  const session = getHttpSession();
+  if (!session?.userId) throw new Error('Not authenticated');
+
+  const res = await apiPost(`/cards/${encodeURIComponent(session.userId)}/send-secure-code`);
+  return { ok: true, data: res };
+}
+
+/** Reveal card full details from Wasabi using secure OTP code */
+export async function revealCardDetails(code) {
+  const session = getHttpSession();
+  if (!session?.userId) throw new Error('Not authenticated');
+
+  const res = await apiPost(`/cards/${encodeURIComponent(session.userId)}/reveal-details`, { code });
+  return { ok: true, data: res?.data || res };
+}
+
 export function getAccountScenarios() {
   return {};
+}
+
+export async function bindExistingCard(form) {
+  const session = getHttpSession();
+  if (!session?.userId) throw new Error('Not authenticated');
+
+  const res = await apiPost(`/cards/${encodeURIComponent(session.userId)}/bind-existing`, {
+    cardNumber: form.cardNumber,
+    expiry: form.expiry,
+  });
+  
+  patchHttpSession({ 
+    cardId: res?.data?.cardId || form.cardNumber.replace(/\s/g, ''),
+    cardStatus: 'active',
+  });
+  await refreshSessionFromUser(session.userId);
+  return { ok: true, data: res };
 }

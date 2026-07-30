@@ -14,7 +14,7 @@ import { RecentActivitySection } from './account-activity.jsx';
 import * as A from '../lib/account-data.js';
 import * as W from '../utils/wallet-data.js';
 import { resolveWalletBalance, resolveWalletAddress } from '../lib/api/display-data.js';
-import { chargeCard, fetchSystemAddress } from '../lib/services/accountService.js';
+import { chargeCard, fetchSystemAddress, withdrawToExternal } from '../lib/services/accountService.js';
 
 function WalletMyCardsList({ cards, selectedId, onSelect, onManageCards }) {
   if (!cards.length) {
@@ -378,6 +378,7 @@ function WalletSendFlow({
 }
 
 function WalletTopUpSide({
+  s,
   selectedCard,
   topUpAmount,
   setTopUpAmount,
@@ -386,7 +387,9 @@ function WalletTopUpSide({
 }) {
   if (!selectedCard) return null;
 
-  const canSubmit = W.hasTopUpAmountEntered(topUpAmount);
+  const walletBal = resolveWalletBalance(s.walletBalance);
+  const topUpVal = parseFloat(topUpAmount) || 0;
+  const canSubmit = W.isValidTopUp(topUpAmount) && (topUpVal + W.GAS_FEE_CHARGE <= walletBal);
 
   return (
     <>
@@ -445,6 +448,7 @@ function WalletTopUpPanel({
 
   const side = (
     <WalletTopUpSide
+      s={s}
       selectedCard={selectedCard}
       topUpAmount={topUpAmount}
       setTopUpAmount={setTopUpAmount}
@@ -785,6 +789,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
     try {
       const topUpVal = parseFloat(amount) || 0;
       await chargeCard(topUpVal, card?.cardId || card?.id);
+      s.deductWalletBalance?.(topUpVal + W.GAS_FEE_CHARGE);
       onClose();
       s.showToast('Top up complete!');
       s.refresh?.();
@@ -829,7 +834,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
           <button
             type="button"
             className="portal-btn-primary portal-wallet-sheet__btn"
-            disabled={!W.isValidTopUp(amount)}
+            disabled={!W.isValidTopUp(amount) || (parseFloat(amount) || 0) + W.GAS_FEE_CHARGE > resolveWalletBalance(s.walletBalance)}
             onClick={handleConfirm}>
             {W.topUpCtaLabel(amount)}
           </button>
@@ -885,6 +890,7 @@ export function AccountWallet({ s }) {
   const finishCharge = async () => {
     try {
       await chargeCard(topUpVal, selectedCard?.cardId || selectedCard?.id);
+      s.deductWalletBalance?.(topUpVal + W.GAS_FEE_CHARGE);
       closeConfirm();
       setTopUpAmount('');
       s.showToast('Card charged successfully!');
@@ -895,11 +901,19 @@ export function AccountWallet({ s }) {
     }
   };
 
-  const finishSend = () => {
-    closeConfirm();
-    setSendAddress('');
-    setSendAmount('');
-    s.showToast('Transfer submitted!');
+  const finishSend = async () => {
+    try {
+      await withdrawToExternal(sendVal, sendAddress, password);
+      s.deductWalletBalance?.(sendVal + W.GAS_FEE_SEND);
+      closeConfirm();
+      setSendAddress('');
+      setSendAmount('');
+      s.showToast('Transfer submitted successfully!');
+      s.refresh?.();
+    } catch (err) {
+      console.error('Failed to send USDT', err);
+      s.showToast(err?.message || 'Failed to submit transfer');
+    }
   };
 
   if (!s.walletExists) {
@@ -985,7 +999,7 @@ export function AccountWallet({ s }) {
               <button
                 type="button"
                 className="portal-btn-primary portal-wallet-send__cta"
-                disabled={!sendAddress.trim() || !W.isValidSend(sendAmount)}
+                disabled={!W.isValidTronAddress(sendAddress) || !W.isValidSend(sendAmount, walletBal)}
                 onClick={() => setConfirmSend(true)}>
                 Confirm Send
               </button>
@@ -1058,7 +1072,7 @@ export function AccountWallet({ s }) {
                 <button
                   type="button"
                   className="portal-btn-primary portal-wallet-send__cta"
-                  disabled={!sendAddress.trim() || !W.isValidSend(sendAmount)}
+                  disabled={!W.isValidTronAddress(sendAddress) || !W.isValidSend(sendAmount, walletBal)}
                   onClick={() => setConfirmSend(true)}>
                   Confirm Send
                 </button>
