@@ -65,6 +65,11 @@ export async function unfreezeCard(cardId = null) {
   return { ok: true };
 }
 
+export async function activatePhysicalCard(cardNo, pin, activeCode) {
+  if (isHttpApi) return api.activatePhysicalCard(cardNo, pin, activeCode);
+  return { ok: true };
+}
+
 export function getAccountScenarios() {
   if (isHttpApi) return api.getAccountScenarios();
   return mock.buildAccountScenarios();

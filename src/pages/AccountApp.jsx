@@ -36,6 +36,7 @@ import { PwaInstallPrompt } from '../components/PwaInstallPrompt.jsx';
 import { PortalStateGuide } from '../components/account/PortalStateGuide.jsx';
 import { KycRequiredModal } from '../components/account/KycRequiredModal.jsx';
 import { resolvePortalScreenGate } from '../lib/portal-screen-gate.js';
+import { PhysicalCardActivateSheet } from '../components/account/PhysicalCardActivateSheet.jsx';
 
 import * as A from '../lib/account-data.js';
 import '../styles/account.css';
@@ -197,6 +198,7 @@ function AccountPortal() {
       <AccountToast msg={s.toast} />
       <ReceiveSheet s={s} open={s.receiveOpen} onClose={s.closeReceive} />
       <QuickTopUpSheet s={s} card={s.quickTopUpCard} open={!!s.quickTopUpCard} onClose={s.closeQuickTopUp} />
+      <PhysicalCardActivateSheet s={s} open={s.activePhysicalCardOpen} onClose={s.closeActivePhysical} />
     </div>
   );
 }

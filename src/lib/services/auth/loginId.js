@@ -59,7 +59,8 @@ function loginIdVariantsFromLocal(localPart) {
 export function baseLoginIdFromEmail(email) {
   const normalized = String(email || '').trim().toLowerCase();
   if (SEED_EMAIL_LOGIN_IDS[normalized]) return SEED_EMAIL_LOGIN_IDS[normalized];
-  const local = normalized.split('@')[0].toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'user';
+  if (normalized.includes('@')) return normalized;
+  const local = normalized.toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'user';
   return loginIdVariantsFromLocal(local)[0] || `${local}anytap`.slice(0, 32);
 }
 
@@ -111,6 +112,14 @@ async function isLoginIdTaken(loginId) {
 
 /** Allocate a unique loginId derived from email. */
 export async function ensureAvailableLoginId(email) {
+  const normalized = String(email || '').trim().toLowerCase();
+  if (normalized.includes('@')) {
+    const taken = await isLoginIdTaken(normalized);
+    if (taken) {
+      throw new Error('This email is already registered.');
+    }
+    return normalized;
+  }
   const base = baseLoginIdFromEmail(email);
   for (let i = 0; i < 100; i += 1) {
     const suffix = i === 0 ? '' : String(i);

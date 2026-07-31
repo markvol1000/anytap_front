@@ -132,16 +132,16 @@ export function AccountCardRegister({ s }) {
           />
         </RegisterField>
 
-        <RegisterField label="Password (4 digits)" error={fieldErrors.password}>
+        <RegisterField label="Password (6 digits)" error={fieldErrors.password}>
           <input
             className="cregister-input cregister-input--mono"
             type="password"
             inputMode="numeric"
             autoComplete="new-password"
-            maxLength={4}
-            placeholder="••••"
+            maxLength={6}
+            placeholder="••••••"
             value={form.password}
-            onChange={(e) => setField('password', e.target.value.replace(/\D/g, '').slice(0, 4))}
+            onChange={(e) => setField('password', e.target.value.replace(/\D/g, '').slice(0, 6))}
           />
         </RegisterField>
 
@@ -151,10 +151,10 @@ export function AccountCardRegister({ s }) {
             type="password"
             inputMode="numeric"
             autoComplete="new-password"
-            maxLength={4}
-            placeholder="••••"
+            maxLength={6}
+            placeholder="••••••"
             value={form.confirmPassword}
-            onChange={(e) => setField('confirmPassword', e.target.value.replace(/\D/g, '').slice(0, 4))}
+            onChange={(e) => setField('confirmPassword', e.target.value.replace(/\D/g, '').slice(0, 6))}
           />
         </RegisterField>
       </div>

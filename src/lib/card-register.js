@@ -10,7 +10,7 @@ export const REGISTER_ERROR_MESSAGES = {
   not_found: 'Card not found. Verify the number or contact support.',
   activation_failed: 'Activation failed. Please try again or contact support.',
   password_mismatch: 'Passwords do not match.',
-  password_weak: 'Enter a 4-digit password.',
+  password_weak: 'Enter a 6-digit password.',
   expiry_invalid: 'Enter a valid expiry date (MM/YY).',
 };
 
@@ -61,7 +61,7 @@ export function validateRegisterForm(form, existingCards = []) {
   }
 
   const pin = String(form.password ?? '');
-  if (!/^\d{4}$/.test(pin)) {
+  if (!/^\d{6}$/.test(pin)) {
     errors.password = REGISTER_ERROR_MESSAGES.password_weak;
   }
   if (pin !== String(form.confirmPassword ?? '')) {

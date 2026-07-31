@@ -38,6 +38,17 @@ export function useAccountState() {
   const [walletTab, setWalletTab] = useState('charge');
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [quickTopUpCard, setQuickTopUpCard] = useState(null);
+  const [activePhysicalCardOpen, setActivePhysicalCardOpen] = useState(false);
+  const [activePhysicalTargetCard, setActivePhysicalTargetCard] = useState(null);
+
+  const openActivePhysical = useCallback((card) => {
+    setActivePhysicalTargetCard(card);
+    setActivePhysicalCardOpen(true);
+  }, []);
+  const closeActivePhysical = useCallback(() => {
+    setActivePhysicalCardOpen(false);
+    setActivePhysicalTargetCard(null);
+  }, []);
 
   // ── Dev/mock scenario ─────────────────────────────────────────────────────
   // TODO: Remove scenarioKey entirely when real auth/API is wired
@@ -268,9 +279,9 @@ export function useAccountState() {
     if (def.nextScreen) go(def.nextScreen);
     else if (def.cta === 'Start KYC') go('kyc');
     else if (def.cta === 'Contact Support') go('support');
-    else if (def.cta === 'Activate Card') showToast('Card activation coming soon');
+    else if (def.cta === 'Activate Card') openActivePhysical(currentCard);
     else if (def.cta === 'Track Delivery') showToast('Tracking link coming soon');
-  }, [copy, go, showToast, walletAddress]);
+  }, [copy, go, showToast, walletAddress, openActivePhysical, currentCard]);
 
   const handleSecondaryCta = useCallback((def) => {
     if (def.secondaryAction === 'copyAddress') {
@@ -279,9 +290,9 @@ export function useAccountState() {
         return;
       }
       copy(walletAddress, 'Address copied');
-    } else if (def.secondaryAction === 'activate') showToast('Card activation coming soon');
+    } else if (def.secondaryAction === 'activate') openActivePhysical(currentCard);
     else if (def.secondaryAction === 'viewCard') go('card');
-  }, [copy, go, showToast, walletAddress]);
+  }, [copy, go, showToast, walletAddress, openActivePhysical, currentCard]);
 
   // ── Referral ──────────────────────────────────────────────────────────────
   const applyReferralPartner = useCallback(async () => {
@@ -458,5 +469,6 @@ export function useAccountState() {
     receiveOpen, openReceive, closeReceive,
     quickTopUpCard, openQuickTopUp, closeQuickTopUp,
     openCardDetails,
+    activePhysicalCardOpen, activePhysicalTargetCard, openActivePhysical, closeActivePhysical,
   };
 }

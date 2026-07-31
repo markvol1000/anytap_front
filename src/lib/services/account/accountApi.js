@@ -843,3 +843,20 @@ export async function bindExistingCard(form) {
   await refreshSessionFromUser(session.userId);
   return { ok: true, data: res };
 }
+
+export async function activatePhysicalCard(cardNo, pin, activeCode) {
+  const session = getHttpSession();
+  if (!session?.userId) throw new Error('Not authenticated');
+
+  const res = await apiPost(`/cards/${encodeURIComponent(session.userId)}/activate-physical`, {
+    cardNo,
+    pin,
+    activeCode,
+  });
+
+  patchHttpSession({
+    cardStatus: 'active',
+  });
+  await refreshSessionFromUser(session.userId);
+  return { ok: true, data: res };
+}
