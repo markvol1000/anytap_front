@@ -341,14 +341,8 @@ function SignUpPage() {
             clearSignupErrors();
 
             if (isHttpApi) {
-              let loginIdVal;
-              try {
-                loginIdVal = await ensureAvailableLoginId(result.emailVal);
-                saveEmailLoginId(result.emailVal, loginIdVal);
-              } catch {
-                showToast('Could not create account ID. Please try again.');
-                return;
-              }
+              const loginIdVal = result.emailVal;
+              saveEmailLoginId(result.emailVal, loginIdVal);
               const sent = await sendVerificationEmail({
                 email: result.emailVal,
                 password: result.passwordVal,
