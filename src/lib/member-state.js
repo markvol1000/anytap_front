@@ -52,7 +52,7 @@ export const B2B_STATE = {
  * @returns {MemberStateId}
  */
 export function resolveMemberState(accountState) {
-  const { cardStatus, needsActivation } = accountState || {};
+  const { cardStatus, needsActivation, hasActiveCard } = accountState || {};
   const status = String(accountState?.kycStatus || 'pending').toLowerCase();
 
   if (status === 'under_review' || status === 'rejected') {
@@ -67,6 +67,7 @@ export function resolveMemberState(accountState) {
     return MEMBER_STATE.KYC_REQUIRED;
   }
 
+  if (hasActiveCard) return MEMBER_STATE.CARD_ACTIVE;
   if (cardStatus === 'not_issued') return MEMBER_STATE.CARD_APPLY_READY;
   // `applied` is the ALB synonym for application_review after /cards/{id}/register.
   if (['deposit_received', 'creating', 'shipping', 'application_review', 'applied'].includes(cardStatus)) {

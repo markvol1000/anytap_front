@@ -81,7 +81,7 @@ function resolveCardStatusForUi(session, cardInfo) {
   const cardStatusFromWasabi = String(cardInfo?.status || '').toLowerCase();
   const cardFrozen = cardStatusFromWasabi === 'frozen' || cardInfo?.blocked === true;
 
-  let isPhysical = session.cardType === 'physical';
+  let isPhysical = session.cardType === 'physical' || cardInfo?.cardType === 'physical';
   if (cardInfo?.cardTypeId) {
     const cid = Number(cardInfo.cardTypeId);
     if (cid === 111059 || cid === 111095) isPhysical = true;
@@ -286,6 +286,7 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
     kycStatus,
     cardStatus,
     needsActivation,
+    hasActiveCard: userCards.some(c => c.status === 'active' || c.status === 'frozen'),
     cardCount: userCards.length || undefined,
     walletExists,
     walletBalance: walletBalanceUsdt,
