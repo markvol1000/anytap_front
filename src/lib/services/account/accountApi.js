@@ -26,6 +26,7 @@ import { getEmailForLoginId } from '../auth/loginId.js';
 
 function mapKycStatus(status) {
   const s = String(status || '').toUpperCase();
+  if (s === 'PENDING_WALLET') return 'pending_wallet';
   // ALB Wasabi webhook sets Users.kycStatus / status to ACTIVE on approve.
   if (s === 'COMPLETED' || s === 'APPROVED' || s === 'ACTIVE') return 'approved';
   if (s === 'FAILED' || s === 'REJECTED') return 'rejected';
@@ -90,13 +91,22 @@ function resolveCardStatusForUi(session, cardInfo) {
   if (!demoLocked) {
     if (cardFrozen) return 'frozen';
     
-    // For physical cards, 'issued' status must remain 'issued' so the user is prompted to activate it.
+    // For physical cards, onboarding/issuing statuses must return their actual state instead of defaulting to 'active'.
     const isIssued = cardStatus === 'issued' || cardStatusFromWasabi === 'issued';
     if (isPhysical && isIssued) {
       return 'issued';
     }
 
+    const isIssuing = ['application_review', 'applied', 'deposit_received', 'creating', 'shipping'].includes(cardStatusFromWasabi)
+                   || ['application_review', 'applied', 'deposit_received', 'creating', 'shipping'].includes(cardStatus);
+    if (isPhysical && isIssuing) {
+      return cardStatusFromWasabi || cardStatus;
+    }
+
     if (cardInfo && (cardNo || cardInfo.cardTypeId || cardInfo.status)) {
+      if (isPhysical) {
+        return cardStatusFromWasabi || cardStatus;
+      }
       return 'active';
     }
     if (cardStatus === 'active' || cardStatus === 'issued') {
@@ -189,10 +199,10 @@ async function fetchCregisWalletBalance(userId) {
 function buildContextFromSession(session, cardInfoList = [], activityItems = [], cregisBalance = null) {
   const demoLocked = session.demoLockState === true;
   const kycStatus = mapKycStatus(session.kycStatus || session.status);
-  const kycApproved = kycStatus === 'approved';
+  const kycApproved = kycStatus === 'approved' || kycStatus === 'pending_wallet';
   const email = session.email || getEmailForLoginId(session.loginId) || '';
   // Show KYC fields once submitted (approved or under review); hide while still pending.
-  const showProfileFields = kycApproved || kycStatus === 'under_review';
+  const showProfileFields = kycApproved || kycStatus === 'under_review' || kycStatus === 'pending_wallet';
   const name = showProfileFields
     ? resolveMemberDisplayName({ ...session, email })
     : '';
@@ -707,6 +717,16 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
       nationality: kycForm?.nationality || session?.nationality || 'KR',
       idNumber: kycForm?.idDocNumber || '',
       idType: kycForm?.idDocType || 'PASSPORT',
+      // Shipping Address Info
+      shippingRecipientName: shipping?.recipientName || '',
+      shippingCountry: shipping?.country || '',
+      shippingState: shipping?.state || '',
+      shippingCity: shipping?.city || '',
+      shippingAddressLine1: shipping?.addressLine1 || '',
+      shippingAddressLine2: shipping?.addressLine2 || '',
+      shippingPostalCode: shipping?.postalCode || '',
+      shippingPhoneCountryCode: shipping?.phoneCountryCode || '',
+      shippingPhoneNumber: shipping?.phoneNumber || '',
     };
     if (kycForm?.idFrontFile || kycForm?.idFrontId) {
       const files = await resolveKycFileIds(kycForm);
@@ -728,8 +748,8 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
         payload,
       );
     } catch (err) {
-      // Holder may already exist from KYC — keep local application_review for UI.
-      console.warn('[accountApi] card register', err);
+      console.error('[accountApi] card register failed', err);
+      throw err;
     }
 
     patchHttpSession({
@@ -878,5 +898,17 @@ export async function activatePhysicalCard(cardNo, pin, activeCode) {
     cardStatus: 'active',
   });
   await refreshSessionFromUser(session.userId);
+  return { ok: true, data: res };
+}
+
+export async function updatePhysicalCardPin(cardNo, pin) {
+  const session = getHttpSession();
+  if (!session?.userId) throw new Error('Not authenticated');
+
+  const res = await apiPost(`/cards/${encodeURIComponent(session.userId)}/update-pin`, {
+    cardNo,
+    pin,
+  });
+
   return { ok: true, data: res };
 }

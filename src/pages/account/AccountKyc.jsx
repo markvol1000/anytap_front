@@ -82,7 +82,7 @@ export function AccountKyc({ s }) {
   };
 
   const goHome = () => s.go('home');
-  const goApply = () => s.go('cardApply');
+  const goRegister = () => s.go('cardRegister');
 
   const handleVerify = async () => {
     if (kycSubmitting) return;
@@ -247,10 +247,7 @@ export function AccountKyc({ s }) {
       s.showToast('Please upload the front image of your ID document.');
       return;
     }
-    if (isHttpApi && kycForm.idDocType !== 'PASSPORT' && !kycForm.idBackFile && !kycForm.idBackId) {
-      s.showToast('Please upload the back image of your ID document.');
-      return;
-    }
+
     if (isHttpApi && !kycForm.selfieFile && !kycForm.selfieId) {
       s.showToast('Please upload a selfie photo.');
       return;
@@ -285,15 +282,15 @@ export function AccountKyc({ s }) {
         <div className="capply-alert">
           <p><strong>Identity verified</strong></p>
           <p className="capply-alert__sub">
-            Your profile is unlocked. You can apply for a card next.
+            Your profile is unlocked. You can register your card next.
           </p>
         </div>
         <StickyFoot
           secondaryLabel="Back to Home"
-          primaryLabel="Apply Card"
+          primaryLabel="Register Card"
           primaryDisabled={false}
           onSecondary={goHome}
-          onPrimary={goApply}
+          onPrimary={goRegister}
         />
       </div>
     );
@@ -439,8 +436,7 @@ export function AccountKyc({ s }) {
               }}
             />
             <KycDocField
-              label={kycForm.idDocType === 'PASSPORT' ? "ID document back (optional)" : "ID document back (required)"}
-              required={kycForm.idDocType !== 'PASSPORT'}
+              label="ID document back (optional)"
               facing="environment"
               file={kycForm.idBackFile}
               onChange={(file) => {

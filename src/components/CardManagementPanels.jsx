@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Icon } from './ui.jsx';
 import { AccountToggle } from './account/AccountToggle.jsx';
-import { freezeCard, unfreezeCard } from '../lib/services/accountService.js';
+import { freezeCard, unfreezeCard, updatePhysicalCardPin } from '../lib/services/accountService.js';
+import { PhysicalCardChangePinSheet } from './account/PhysicalCardChangePinSheet.jsx';
 import * as A from '../lib/account-data.js';
 
 const SECURITY_ROWS = [
@@ -104,34 +105,57 @@ export function CardSecurityControls({ card, s, className = '' }) {
   );
 }
 
-export function CardManagementActions({ s, className = '' }) {
+export function CardManagementActions({ card, s, className = '' }) {
+  const [showChangePin, setShowChangePin] = useState(false);
+
+  const isPhysical = card?.cardType === 'physical' || card?.variant === 'physical';
+
+  const onPinChangeClick = () => {
+    if (!isPhysical) {
+      s?.showToast?.('PIN change is only available for physical cards.');
+      return;
+    }
+    setShowChangePin(true);
+  };
+
   return (
-    <section
-      className={`portal-card-mgmt__actions${className ? ` ${className}` : ''}`}
-      aria-label="Card actions">
-      <div className="portal-card-mgmt__panel">
-        <button
-          type="button"
-          className="portal-card-mgmt__action-row"
-          onClick={() => s?.showToast?.('Change PIN coming soon')}>
-          <span className="portal-card-mgmt__action-icon" aria-hidden="true">
-            <Icon name="lock" size={18} stroke={1.75} />
-          </span>
-          <span className="portal-card-mgmt__action-label">Change PIN</span>
-          <Icon name="chevron" size={18} stroke={2} className="portal-card-mgmt__action-chevron" />
-        </button>
-        <button
-          type="button"
-          className="portal-card-mgmt__action-row portal-card-mgmt__action-row--danger"
-          onClick={() => s?.showToast?.('Report lost or stolen — contact support')}>
-          <span className="portal-card-mgmt__action-icon portal-card-mgmt__action-icon--danger" aria-hidden="true">
-            <Icon name="flag" size={18} stroke={1.75} />
-          </span>
-          <span className="portal-card-mgmt__action-label">Report lost or stolen</span>
-          <Icon name="chevron" size={18} stroke={2} className="portal-card-mgmt__action-chevron" />
-        </button>
-      </div>
-    </section>
+    <>
+      <section
+        className={`portal-card-mgmt__actions${className ? ` ${className}` : ''}`}
+        aria-label="Card actions">
+        <div className="portal-card-mgmt__panel">
+          <button
+            type="button"
+            className="portal-card-mgmt__action-row"
+            onClick={onPinChangeClick}>
+            <span className="portal-card-mgmt__action-icon" aria-hidden="true">
+              <Icon name="lock" size={18} stroke={1.75} />
+            </span>
+            <span className="portal-card-mgmt__action-label">Change PIN</span>
+            <Icon name="chevron" size={18} stroke={2} className="portal-card-mgmt__action-chevron" />
+          </button>
+          <button
+            type="button"
+            className="portal-card-mgmt__action-row portal-card-mgmt__action-row--danger"
+            onClick={() => s?.showToast?.('Report lost or stolen — contact support')}>
+            <span className="portal-card-mgmt__action-icon portal-card-mgmt__action-icon--danger" aria-hidden="true">
+              <Icon name="flag" size={18} stroke={1.75} />
+            </span>
+            <span className="portal-card-mgmt__action-label">Report lost or stolen</span>
+            <Icon name="chevron" size={18} stroke={2} className="portal-card-mgmt__action-chevron" />
+          </button>
+        </div>
+      </section>
+
+      {showChangePin && (
+        <PhysicalCardChangePinSheet
+          s={s}
+          card={card}
+          open={showChangePin}
+          onClose={() => setShowChangePin(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -198,7 +222,7 @@ export function CardMobileManagementPanel({ card, s }) {
     <div className="portal-card-mgmt portal-card-mgmt--mob">
       <CardSecurityControls card={card} s={s} />
       <CardSpendingLimits card={card} />
-      <CardManagementActions s={s} />
+      <CardManagementActions card={card} s={s} />
     </div>
   );
 }
@@ -210,7 +234,7 @@ export function CardDesktopManagementPanel({ card, s }) {
     <aside className="portal-card-mgmt portal-mycards-desk-info" aria-label="Card management">
       <CardSecurityControls card={card} s={s} />
       <CardSpendingLimits card={card} />
-      <CardManagementActions s={s} />
+      <CardManagementActions card={card} s={s} />
     </aside>
   );
 }

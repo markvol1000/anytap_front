@@ -6,6 +6,8 @@ import { useTweaks, TweaksPanel, TweakSection, TweakColor } from './tweaks-panel
 import { showAdminPortalLink, hasMemberSession, refreshAdminPortalLink } from '../lib/services/authService.js';
 import { PwaInstallPrompt } from './PwaInstallPrompt.jsx';
 import { ScrollToTop } from './ScrollToTop.jsx';
+import { IssuanceDepositPanel } from './account-wallet.jsx';
+import * as W from '../utils/wallet-data.js';
 
 const BRAND_ACCENT = '#ff5500';
 const LEGACY_AMBER_ACCENTS = new Set(['#e88828', '#d6741a', '#e04d00']);
@@ -43,6 +45,7 @@ function SiteHeader({
   memberNavItems = [],
   memberNavActive,
   onMemberNav,
+  s = null,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -53,6 +56,7 @@ function SiteHeader({
   const [mobileAcc, setMobileAcc] = useState(null);
   const [showAdminPortal, setShowAdminPortal] = useState(showAdminPortalLink);
   const [isLoggedIn, setIsLoggedIn] = useState(hasMemberSession);
+  const [showDeposit, setShowDeposit] = useState(false);
   const closeTimer = useRef(null);
 
   const closeNav = () => {
@@ -192,6 +196,17 @@ function SiteHeader({
             )}
             {member ? (
               <>
+                <button
+                  type="button"
+                  className="topbar__bell topbar__bell--deposit"
+                  style={{ marginRight: '8px', color: 'var(--brand-primary)', position: 'relative' }}
+                  onClick={() => setShowDeposit(true)}
+                  aria-label="Deposit">
+                  <Icon name="creditCard" size={18} />
+                  {s && W.showsIssuanceDepositWallet(s.accountState?.cardStatus) && (
+                    <span className="topbar__bell-badge" style={{ background: '#E53E3E', width: '8px', height: '8px', minWidth: '8px', top: '2px', right: '2px' }} />
+                  )}
+                </button>
                 <button
                   type="button"
                   className="topbar__bell"
@@ -353,6 +368,22 @@ function SiteHeader({
           </div>
         </div>
       </div>
+      {showDeposit && s && (
+        <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Deposit QR">
+          <button type="button" className="portal-sheet__backdrop" onClick={() => setShowDeposit(false)} aria-label="Close" />
+          <div className="portal-sheet__panel portal-wallet-sheet portal-wallet-sheet--receive" style={{ padding: '24px', maxWidth: '480px', maxHeight: 'min(96vh, 820px)' }}>
+            <div className="portal-sheet__head" style={{ marginBottom: '16px' }}>
+              <h3 className="portal-sheet__title">
+                {W.showsIssuanceDepositWallet(s.accountState?.cardStatus) ? 'Pay Issuance Fee' : 'Deposit USDT'}
+              </h3>
+              <button type="button" className="portal-sheet__close" onClick={() => setShowDeposit(false)} aria-label="Close">
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+            <IssuanceDepositPanel s={s} />
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -1219,15 +1219,30 @@ export function AccountMyCards({ s }) {
           slideHeadHint={walletAllFull ? `Maximum ${A.MAX_CARDS_PER_USER} cards issued` : undefined}
         />
 
-        {!s.cardIsActive && s.accountState.cardStatus !== 'active' && (
+        {!s.cardIsActive && s.accountState.cardStatus !== 'active' && s.accountState.cardStatus !== 'issued' && (
           <AccountDashStatusInline s={s} />
         )}
 
         {selectedCard && (
           <div className="portal-mycards-info">
-            <CardInformationPanel card={selectedCard} s={s} />
-            <CardMobileManagementPanel card={selectedCard} s={s} />
-            {showWalletActions && <CardMobileWalletActions s={s} />}
+            {selectedCard.status === 'issued' ? (
+              <div style={{ padding: '0 16px', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  className="portal-btn-primary"
+                  style={{ width: '100%', height: '48px', borderRadius: '12px', fontSize: '15px', fontWeight: '600' }}
+                  onClick={() => s.openActivePhysical(selectedCard)}
+                >
+                  Activate Card
+                </button>
+              </div>
+            ) : (
+              <>
+                <CardInformationPanel card={selectedCard} s={s} />
+                <CardMobileManagementPanel card={selectedCard} s={s} />
+                {showWalletActions && <CardMobileWalletActions s={s} />}
+              </>
+            )}
           </div>
         )}
 

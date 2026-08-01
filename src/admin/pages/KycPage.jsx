@@ -86,7 +86,7 @@ export function KycPage() {
                   { key: 'memberEmail', label: 'Email' },
                   { key: 'country', label: 'Country' },
                   { key: 'documentType', label: 'Document' },
-                  { key: 'submittedAt', label: 'Submitted' },
+                  { key: 'submittedAt', label: 'Submitted', render: (r) => formatAdminDate(r.submittedAt) },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
                 ]}
                 rows={list.items || []}

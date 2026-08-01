@@ -265,6 +265,7 @@ function DashboardCardSection({ s }) {
   const isPreCardApply = [
     'kyc_required',
     'kyc_pending',
+    'pending_wallet',
     'card_apply_ready',
   ].includes(view.memberState);
   const displayCard = selectedCard ?? (isPreCardApply ? null : A.previewCardTemplate(s.accountState.kycStatus));

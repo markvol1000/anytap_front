@@ -136,9 +136,8 @@ export function CardQuickActionGroup({ s, card, activeId = null, className = '',
     return [
       ...base,
       { id: 'cardDetails', label: 'Card Info', icon: 'fileText' },
-      { id: 'freeze', label: isFrozen ? 'Unfreeze' : 'Freeze Card', icon: isFrozen ? 'lockOpen' : 'lock' },
     ];
-  }, [isFrozen, isSummary]);
+  }, [isSummary]);
 
   if (!card) return null;
 

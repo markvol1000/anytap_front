@@ -575,7 +575,9 @@ function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onC
 
 export function IssuanceDepositPanel({ s, className = '' }) {
   const [systemAddress, setSystemAddress] = useState('');
-  const amount = W.resolveIssuanceDepositAmount(s.accountState);
+  const status = s.accountState?.cardStatus;
+  const isIssuance = W.showsIssuanceDepositWallet(status);
+  const amount = isIssuance ? W.resolveIssuanceDepositAmount(s.accountState) : null;
 
   useEffect(() => {
     fetchSystemAddress().then((addr) => {
@@ -584,11 +586,7 @@ export function IssuanceDepositPanel({ s, className = '' }) {
   }, []);
 
   const address = s.accountState?.issuanceDepositAddress || systemAddress || W.resolveIssuanceDepositAddress(s.accountState);
-  const status = s.accountState?.cardStatus;
-  if (!W.showsIssuanceDepositWallet(status) || amount == null) return null;
-
-
-  const paid = status === 'deposit_received' || status === 'creating';
+  const paid = isIssuance && (status === 'deposit_received' || status === 'creating');
 
   return (
     <section
@@ -597,28 +595,32 @@ export function IssuanceDepositPanel({ s, className = '' }) {
         paid ? 'portal-issuance-deposit--paid' : '',
         className,
       ].filter(Boolean).join(' ')}
-      aria-label="Card issuance deposit">
+      aria-label="Card deposit">
       <div className="portal-issuance-deposit__head">
-        <p className="portal-issuance-deposit__eyebrow">Card issuance fee</p>
+        <p className="portal-issuance-deposit__eyebrow">{isIssuance ? 'Card issuance fee' : 'USDT Deposit'}</p>
         {paid ? (
           <p className="portal-issuance-deposit__badge" role="status">Payment received</p>
         ) : null}
         <h2 className="portal-issuance-deposit__title">
           {paid
             ? `Deposit confirmed · ${amount} ${W.ISSUANCE_DEPOSIT_CURRENCY}`
-            : `Deposit ${amount} ${W.ISSUANCE_DEPOSIT_CURRENCY}`}
+            : isIssuance
+              ? `Deposit ${amount} ${W.ISSUANCE_DEPOSIT_CURRENCY}`
+              : 'Deposit USDT'}
         </h2>
         <p className="portal-issuance-deposit__body">
           {paid
             ? 'Your 100 USDT issuance fee is confirmed. Card preparation is in progress — do not send again.'
-            : 'Send exactly this amount via TRC-20. This deposit wallet stays visible until your card ships.'}
+            : isIssuance
+              ? 'Send exactly this amount via TRC-20. This deposit wallet stays visible until your card ships.'
+              : 'Send USDT (TRC-20) to fund your wallet balance.'}
         </p>
       </div>
 
       {!paid ? (
         <div className="portal-qrbox portal-issuance-deposit__qrbox">
           <div className="portal-qr" dangerouslySetInnerHTML={{ __html: A.buildQR() }} />
-          <p className="portal-issuance-deposit__qr-label">Issuance deposit address</p>
+          <p className="portal-issuance-deposit__qr-label">USDT Deposit Address (TRC-20)</p>
           <div className="portal-addr">{address || 'Loading system wallet...'}</div>
           <button
             type="button"
@@ -649,19 +651,23 @@ export function IssuanceDepositPanel({ s, className = '' }) {
             {W.WALLET_NETWORK}
           </span>
         </div>
-        <div className="portal-meta">
-          <span className="portal-meta__k">Amount</span>
-          <span className="portal-meta__v">{amount} {W.ISSUANCE_DEPOSIT_CURRENCY}</span>
-        </div>
-        <div className="portal-meta">
-          <span className="portal-meta__k">Status</span>
-          <span className="portal-meta__v">{paid ? 'Received' : 'Awaiting deposit'}</span>
-        </div>
+        {isIssuance && (
+          <>
+            <div className="portal-meta">
+              <span className="portal-meta__k">Amount</span>
+              <span className="portal-meta__v">{amount} {W.ISSUANCE_DEPOSIT_CURRENCY}</span>
+            </div>
+            <div className="portal-meta">
+              <span className="portal-meta__k">Status</span>
+              <span className="portal-meta__v">{paid ? 'Received' : 'Awaiting deposit'}</span>
+            </div>
+          </>
+        )}
       </div>
 
       {!paid ? (
         <p className="portal-issuance-deposit__note" role="note">
-          Only send USDT on TRC-20. Other networks or assets may be lost. Personal spending wallet opens after you register your card.
+          Only send USDT on TRC-20. Other networks or assets may be lost. {isIssuance ? 'Personal spending wallet opens after you register your card.' : ''}
         </p>
       ) : null}
     </section>
@@ -669,9 +675,19 @@ export function IssuanceDepositPanel({ s, className = '' }) {
 }
 
 export function ReceiveSheet({ s, open, onClose }) {
+  const [systemAddress, setSystemAddress] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      fetchSystemAddress().then((addr) => {
+        setSystemAddress(addr);
+      });
+    }
+  }, [open]);
+
   if (!open) return null;
 
-  const address = resolveWalletAddress(s.mockContext?.wallet?.address);
+  const address = systemAddress || W.resolveIssuanceDepositAddress(s.accountState);
 
   return (
     <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Receive USDT">
@@ -692,8 +708,8 @@ export function ReceiveSheet({ s, open, onClose }) {
           <>
             <div className="portal-qrbox portal-wallet-receive-qr">
               <div className="portal-qr" dangerouslySetInnerHTML={{ __html: A.buildQR() }} />
-              <p className="portal-wallet-receive-qr__label">Your Deposit Address</p>
-              <div className="portal-addr">{address}</div>
+              <p className="portal-wallet-receive-qr__label">Deposit Address</p>
+              <div className="portal-addr">{address || 'Loading system wallet...'}</div>
               <button type="button" className="portal-btn-primary portal-wallet-receive-qr__copy" onClick={() => s.copy(address, 'Address copied')}>
                 Copy Address
               </button>

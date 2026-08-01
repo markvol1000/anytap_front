@@ -258,6 +258,15 @@ export async function activateMember(id) {
   return updateMember(id, { accountStatus: 'active' });
 }
 
+export async function retryCregisWallet(id) {
+  await delay();
+  return updateMember(id, { 
+    cregisWalletAddress: 'TDVjFu6CQRrhoFcg1mNVjD' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+    accountStatus: 'active',
+    status: 'ACTIVE'
+  });
+}
+
 export async function deleteMember(id) {
   await delay();
   store.members = store.members.filter((m) => m.id !== id);

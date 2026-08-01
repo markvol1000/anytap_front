@@ -53,26 +53,6 @@ function DashboardCardSlider({ s }) {
   const showPager = sliderSlots.length > 1;
   const showMaxHint = cardCount >= A.MAX_CARDS_PER_USER;
 
-  if (s.cardApplicationPending || W.showsIssuanceDepositWallet(s.accountState?.cardStatus)) {
-    const paid = ['deposit_received', 'creating'].includes(s.accountState?.cardStatus);
-    return (
-      <div className="portal-dash-wf__slider portal-dash-wf__slider--empty portal-dash-wf__slider--pending">
-        <div className="debit-card debit-card--dash-placeholder debit-card--dash-pending" aria-live="polite">
-          <span className="debit-card__empty-plus" aria-hidden="true">
-            <Icon name="clock" size={32} stroke={1.75} />
-          </span>
-          <span className="debit-card__empty-label">
-            {paid ? 'Issuing your card' : 'Awaiting issuance deposit'}
-          </span>
-          <span className="debit-card__empty-sub">
-            {paid
-              ? 'Deposit received — card preparation in progress.'
-              : 'Deposit 100 USDT to the address above to continue.'}
-          </span>
-        </div>
-      </div>
-    );
-  }
 
   if (cardCount === 0) {
     return (
@@ -232,11 +212,6 @@ function DashboardWalletQuickActions({ onTopUpCard, onSendExternal, canTopUpCard
 }
 
 function DashboardWalletPanel({ s, onTopUpCard, onSendExternal, canTopUpCard }) {
-  if (W.showsIssuanceDepositWallet(s.accountState?.cardStatus)) {
-    return (
-      <IssuanceDepositPanel s={s} className="portal-dash-wf__wallet portal-dash-wf__wallet--issuance" />
-    );
-  }
 
   if (!s.walletExists) {
     return (

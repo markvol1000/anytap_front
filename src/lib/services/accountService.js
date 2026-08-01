@@ -70,6 +70,11 @@ export async function activatePhysicalCard(cardNo, pin, activeCode) {
   return { ok: true };
 }
 
+export async function updatePhysicalCardPin(cardNo, pin) {
+  if (isHttpApi) return api.updatePhysicalCardPin(cardNo, pin);
+  return { ok: true };
+}
+
 export function getAccountScenarios() {
   if (isHttpApi) return api.getAccountScenarios();
   return mock.buildAccountScenarios();

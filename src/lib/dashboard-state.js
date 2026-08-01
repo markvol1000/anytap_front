@@ -10,10 +10,9 @@ import {
 export const DASHBOARD_JOURNEY = [
   'Account',
   'KYC',
-  'Apply Card',
-  'Issuing',
-  'Activate',
-  'Active',
+  'Register Card',
+  'Activating',
+  'Activated',
 ];
 
 const QA = (label, icon, opts = {}) => ({ label, icon, ...opts });
@@ -45,7 +44,7 @@ export function resolveDashboardCardDisplay(memberState, accountState, userCards
   const cs = accountState?.cardStatus;
   const hasCards = userCards.length > 0;
 
-  if (['kyc_required', 'kyc_pending', 'card_apply_ready'].includes(memberState)) {
+  if (['kyc_required', 'kyc_pending', 'pending_wallet', 'card_apply_ready'].includes(memberState)) {
     return 'none';
   }
 

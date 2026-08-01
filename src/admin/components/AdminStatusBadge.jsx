@@ -19,6 +19,7 @@ const STATUS_MAP = {
   member: { label: 'Member', tone: 'info' },
   maintenance: { label: 'Maintenance', tone: 'danger' },
   issued: { label: 'Issued', tone: 'info' },
+  pending_wallet: { label: 'Pending Wallet', tone: 'warning' },
 };
 
 export function AdminStatusBadge({ status, label }) {

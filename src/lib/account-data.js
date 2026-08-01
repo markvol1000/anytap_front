@@ -391,6 +391,11 @@ export const KYC_STATUS_DEFS = {
     cta: 'Start KYC',
     nextScreen: 'kyc',
   },
+  pending_wallet: {
+    label: 'KYC Verified (Pending Wallet)',
+    message: 'Your identity has been verified. Allocating your wallet address...',
+    cta: null,
+  },
   under_review: {
     label: 'Under Review',
     message: 'Your identity is being verified.',
@@ -425,7 +430,8 @@ export const ISSUANCE_STEPS = [
 
 /** Step states for dashboard status panel — completed | active | pending */
 export function getIssuanceStepStates(kycStatus, cardStatus) {
-  if (kycStatus !== 'approved') {
+  const isKycOk = kycStatus === 'approved' || kycStatus === 'pending_wallet';
+  if (!isKycOk) {
     return ISSUANCE_STEPS.map((label, i) => ({
       label,
       state: i === 0 ? 'active' : 'pending',

@@ -72,8 +72,6 @@ function AccountNav({ s, variant }) {
 
 // ─── Screen router ────────────────────────────────────────────────────────────
 function AccountMain({ s }) {
-  if (s.screen === 'home') return <AccountHome s={s} />;
-
   const gate = resolvePortalScreenGate(s.screen, s.accountState);
   if (gate.mode === 'guide') {
     return (
@@ -86,6 +84,7 @@ function AccountMain({ s }) {
     );
   }
 
+  if (s.screen === 'home') return <AccountHome s={s} />;
   if (s.screen === 'card') return <AccountCardView s={s} />;
   if (s.screen === 'cardApply') return <AccountCardApply s={s} />;
   if (s.screen === 'kyc') return <AccountKyc s={s} />;
@@ -129,6 +128,7 @@ function AccountPortal() {
         <div className="portal-topbar-wrap">
           <SiteHeader
             member
+            s={s}
             memberName={s.profileReady ? (s.accountState?.name || '') : ''}
             loginId={s.accountState?.loginId || ''}
             unreadNotifications={resolveUnreadNotifications(A.MOCK_UNREAD_NOTIFICATIONS)}
@@ -168,7 +168,7 @@ function AccountPortal() {
                 title={pageMeta.title}
                 breadcrumb={pageMeta.breadcrumb}
                 actions={
-                  s.screen === 'card' ? (
+                  (s.screen === 'card' && s.accountState?.kycStatus !== 'pending_wallet' && s.accountState?.status !== 'PENDING_WALLET') ? (
                     <CardOnboardingActions s={s} layout="header" />
                   ) : null
                 }

@@ -36,6 +36,24 @@ function formatTxStatus(tx) {
 }
 
 export function CardsDesktopInfoPanel({ card, s }) {
+  if (card && card.status === 'issued') {
+    return (
+      <div style={{ padding: '24px', background: 'var(--portal-paper)', borderRadius: 'var(--radius-card)', border: '1px solid var(--portal-border)' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '12px' }}>Card Issued</h3>
+        <p style={{ fontSize: '14px', color: 'var(--portal-muted)', lineHeight: '1.5', marginBottom: '20px' }}>
+          Your card has been issued. Click the button below to set your PIN and activate it.
+        </p>
+        <button
+          type="button"
+          className="portal-btn-primary"
+          style={{ width: '100%', height: '48px', borderRadius: '12px', fontSize: '15px', fontWeight: '600' }}
+          onClick={() => s.openActivePhysical(card)}
+        >
+          Activate Card
+        </button>
+      </div>
+    );
+  }
   return (
     <>
       <CardInformationPanel card={card} s={s} className="portal-card-info--desk" />

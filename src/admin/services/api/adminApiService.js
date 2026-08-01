@@ -424,4 +424,8 @@ export async function getDailySummary() {
   return apiGet('/admin/analytics/daily-summary');
 }
 
+export async function retryCregisWallet(userId) {
+  return apiPost(`/admin/members/${encodeURIComponent(userId)}/retry-wallet`);
+}
+
 export { MAX_CARDS_PER_MEMBER };

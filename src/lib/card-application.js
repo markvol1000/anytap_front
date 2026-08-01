@@ -124,13 +124,15 @@ export function generateApplicationNumber() {
 }
 
 export function mapKycApplyStatus(kycStatus) {
+  const s = String(kycStatus || '').toLowerCase();
   const map = {
     pending: 'pending',
     under_review: 'under_review',
     approved: 'approved',
     rejected: 'rejected',
+    pending_wallet: 'approved',
   };
-  return map[kycStatus] ?? 'not_started';
+  return map[s] ?? 'not_started';
 }
 
 export function mapPaymentStatusFromCard(cardStatus) {

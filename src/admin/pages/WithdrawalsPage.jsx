@@ -8,7 +8,7 @@ import {
   AdminDetailSection,
   AdminSplitLayout,
 } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge, formatUsdt } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAdminDate, formatUsdt } from '../components/AdminStatusBadge.jsx';
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
@@ -91,7 +91,7 @@ export function WithdrawalsPage() {
                   { key: 'amount', label: 'Amount', render: (r) => formatUsdt(r.amount) },
                   { key: 'wallet', label: 'Wallet' },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
-                  { key: 'date', label: 'Date' },
+                  { key: 'date', label: 'Date', render: (r) => formatAdminDate(r.date) },
                 ]}
                 rows={list.items}
                 selectedId={selectedId}
@@ -117,7 +117,7 @@ export function WithdrawalsPage() {
                   <AdminDetailRow label="Amount" value={formatUsdt(detail.amount)} />
                   <AdminDetailRow label="Wallet" value={detail.wallet} />
                   <AdminDetailRow label="Status" value={<AdminStatusBadge status={detail.status} />} />
-                  <AdminDetailRow label="Date" value={detail.date} />
+                  <AdminDetailRow label="Date" value={formatAdminDate(detail.date)} />
                   {detail.txHash ? <AdminDetailRow label="Tx hash" value={detail.txHash} /> : null}
                   {detail.memo ? <AdminDetailRow label="Memo" value={detail.memo} /> : null}
                 </AdminDetailSection>

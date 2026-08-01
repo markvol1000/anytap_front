@@ -10,6 +10,7 @@ import { hasCompletedKycProfile } from './member-profile.js';
 export const MEMBER_STATE = {
   KYC_REQUIRED: 'kyc_required',
   KYC_PENDING: 'kyc_pending',
+  PENDING_WALLET: 'pending_wallet',
   CARD_APPLY_READY: 'card_apply_ready',
   CARD_ISSUING: 'card_issuing',
   ACTIVATE_CARD: 'activate_card',
@@ -20,6 +21,7 @@ export const MEMBER_STATE = {
 export const MEMBER_STATE_ORDER = [
   MEMBER_STATE.KYC_REQUIRED,
   MEMBER_STATE.KYC_PENDING,
+  MEMBER_STATE.PENDING_WALLET,
   MEMBER_STATE.CARD_APPLY_READY,
   MEMBER_STATE.CARD_ISSUING,
   MEMBER_STATE.ACTIVATE_CARD,
@@ -29,10 +31,11 @@ export const MEMBER_STATE_ORDER = [
 export const MEMBER_STATE_LABELS = {
   kyc_required: '① KYC Required',
   kyc_pending: '② KYC Pending',
-  card_apply_ready: '③ Card Apply Ready',
-  card_issuing: '④ Card Issuing',
-  activate_card: '⑤ Activate Card',
-  card_active: '⑥ Card Active',
+  pending_wallet: '②.5 Wallet Pending',
+  card_apply_ready: '③ Register Card',
+  card_issuing: '③ Card Issuing',
+  activate_card: '④ Activating',
+  card_active: '⑤ Activated',
 };
 
 /** B2B — separate from card lifecycle */
@@ -52,8 +55,12 @@ export const B2B_STATE = {
  * @returns {MemberStateId}
  */
 export function resolveMemberState(accountState) {
-  const { cardStatus, needsActivation, hasActiveCard } = accountState || {};
-  const status = String(accountState?.kycStatus || 'pending').toLowerCase();
+  const { cardStatus, needsActivation, hasActiveCard, cregisWalletAddress } = accountState || {};
+  const status = String(accountState?.kycStatus || accountState?.status || 'pending').toLowerCase();
+
+  if (status === 'pending_wallet' || (status === 'active' && !cregisWalletAddress)) {
+    return MEMBER_STATE.PENDING_WALLET;
+  }
 
   if (status === 'under_review' || status === 'rejected') {
     return MEMBER_STATE.KYC_PENDING;
@@ -157,11 +164,36 @@ export function getMemberDashboardConfig(memberState, accountState) {
       transactionsEmpty: null,
     },
 
+    [MEMBER_STATE.PENDING_WALLET]: {
+      memberState,
+      dashboardLayout: 'onboarding',
+      journeyIndex: 1.5,
+      journeyLead: null,
+      showJourney: false,
+      showEmptyCard: false,
+      canApplyCard: false,
+      showWalletHero: false,
+      showWalletBalance: false,
+      showActivity: false,
+      showEarnings: false,
+      showCardsSection: false,
+      showWalletBridge: false,
+      showQuickActions: false,
+      hero: {
+        mode: 'banner',
+        bannerVariant: 'review',
+        title: 'USDT wallet address allocation in progress',
+        body: 'Your identity KYC is approved! We are now allocating your TRC-20 USDT wallet address. This screen will update automatically once the address is assigned.',
+        eta: 'Allocating wallet address...',
+      },
+      transactionsEmpty: null,
+    },
+
     [MEMBER_STATE.CARD_APPLY_READY]: {
       memberState,
       dashboardLayout: 'onboarding',
       journeyIndex: 2,
-      journeyLead: 'Step 3 of 6 — Apply for your card',
+      journeyLead: 'Step 3 of 5 — Register your card',
       showJourney: true,
       showEmptyCard: false,
       canApplyCard: true,
@@ -175,11 +207,11 @@ export function getMemberDashboardConfig(memberState, accountState) {
       quickActionsKey: 'card_apply',
       hero: {
         mode: 'verified',
-        title: 'Identity verified — apply for a card',
+        title: 'Identity verified — Register your card',
         verified: true,
-        body: 'Choose a virtual or physical Visa. After you apply, you’ll deposit the issuance fee (100 USDT) before shipping starts.',
-        sub: 'Virtual — fast · Physical — ships in 7–14 days',
-        primaryCta: { label: 'Apply Card', nextScreen: 'cardApply' },
+        body: 'Register your pre-issued Anytap card to unlock your wallet.',
+        sub: 'Register Existing Card',
+        primaryCta: { label: 'Register Card', nextScreen: 'cardRegister' },
       },
       transactionsEmpty: null,
     },
@@ -187,12 +219,12 @@ export function getMemberDashboardConfig(memberState, accountState) {
     [MEMBER_STATE.CARD_ISSUING]: {
       memberState,
       dashboardLayout: 'issuing',
-      journeyIndex: 3,
+      journeyIndex: 2,
       journeyLead: isAppReview
-        ? 'Step 4 of 6 — Pay issuance fee (100 USDT)'
+        ? 'Step 3 of 4 — Pay issuance fee (100 USDT)'
         : isShipping
-          ? 'Step 4 of 6 — Card on the way'
-          : 'Step 4 of 6 — Your card is being prepared',
+          ? 'Step 3 of 4 — Card on the way'
+          : 'Step 3 of 4 — Your card is being prepared',
       showJourney: true,
       showEmptyCard: false,
       showGreyCard: !isShipping && !isAppReview,
@@ -245,8 +277,8 @@ export function getMemberDashboardConfig(memberState, accountState) {
     [MEMBER_STATE.ACTIVATE_CARD]: {
       memberState,
       dashboardLayout: 'onboarding',
-      journeyIndex: 4,
-      journeyLead: 'Step 5 of 6 — Register your card',
+      journeyIndex: 3,
+      journeyLead: 'Step 4 of 5 — Activating Card',
       showJourney: true,
       showEmptyCard: false,
       showGreyCard: false,
@@ -262,11 +294,11 @@ export function getMemberDashboardConfig(memberState, accountState) {
       hero: {
         mode: 'banner',
         bannerVariant: 'activate',
-        title: 'Register your card to unlock your wallet',
-        body: 'B2B and B2C both need this step. Enter the card number from your shipped card — then your personal wallet opens.',
-        primaryCta: { label: 'Activate Card', action: 'activate' },
+        title: 'Activate your card to unlock your wallet',
+        body: 'Enter the activation code sent to your email to activate your card and unlock your spending wallet.',
+        primaryCta: { label: 'Activate Card', nextScreen: 'cardRegister' },
         modeCard: true,
-        statusLabel: 'Issued — registration required',
+        statusLabel: 'Registered — activation required',
         cardBlur: false,
       },
       transactionsEmpty: null,
@@ -275,7 +307,7 @@ export function getMemberDashboardConfig(memberState, accountState) {
     [MEMBER_STATE.CARD_ACTIVE]: {
       memberState,
       dashboardLayout: 'wallet',
-      journeyIndex: 5,
+      journeyIndex: 4,
       journeyLead: null,
       showJourney: false,
       showEmptyCard: false,

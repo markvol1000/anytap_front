@@ -4,6 +4,7 @@ import * as A from '../lib/account-data.js';
 import * as C from '../lib/card-application.js';
 import { isHttpApi } from '../lib/api/config.js';
 import { phoneCountryCodeOptions } from '../lib/phone-country-codes.js';
+import { IssuanceDepositPanel } from './account-wallet.jsx';
 
 function ApplyStepBar({ step, cardType, kycApproved }) {
   const skippedDetails = cardType === 'virtual' && kycApproved;
@@ -232,7 +233,7 @@ function ReviewStep({ s, cardType, shipping, fee }) {
   );
 }
 
-function CompleteStep({ application, cardType }) {
+function CompleteStep({ application, cardType, s }) {
   const fee = application?.issuingFee ?? C.getCardIssuanceFee(cardType);
   return (
     <section className="capply-section capply-section--center">
@@ -241,12 +242,17 @@ function CompleteStep({ application, cardType }) {
       </span>
       <h2 className="capply-section__title">Application submitted</h2>
       <p className="capply-section__lead">We&apos;ll review your application and notify you by email.</p>
-      <p className="capply-section__lead">
+      <p className="capply-section__lead" style={{ marginBottom: '24px' }}>
         After approval, deposit <strong>{fee.amount} {fee.currency}</strong> to activate your {C.getCardTypeLabel(cardType).toLowerCase()}.
       </p>
       {application && (
-        <p className="capply-done__ref">Reference {application.applicationNumber}</p>
+        <p className="capply-done__ref" style={{ marginBottom: '32px' }}>Reference {application.applicationNumber}</p>
       )}
+
+      {/* Display deposit panel at the bottom of application completion */}
+      <div style={{ maxWidth: '480px', margin: '32px auto 0 auto', textAlign: 'left', borderTop: '1px solid #E2E8F0', paddingTop: '32px' }}>
+        <IssuanceDepositPanel s={s} />
+      </div>
     </section>
   );
 }
@@ -369,8 +375,8 @@ export function AccountCardApply({ s }) {
       }
       setStep(4);
       s.showToast(`Application submitted — ${fee.amount} ${fee.currency} due after approval`);
-    } catch {
-      s.showToast('Could not submit application. Please try again.');
+    } catch (err) {
+      s.showToast(err?.message || 'Could not submit application. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -432,7 +438,7 @@ export function AccountCardApply({ s }) {
         <ReviewStep s={s} cardType={cardType} shipping={shipping} fee={C.getCardIssuanceFee(cardType)} />
       )}
 
-      {step === 4 && <CompleteStep application={application} cardType={cardType} />}
+      {step === 4 && <CompleteStep application={application} cardType={cardType} s={s} />}
 
       {step < 4 && scenarioApp && step === 1 && (
         <p className="capply__existing">

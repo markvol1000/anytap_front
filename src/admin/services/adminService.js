@@ -69,5 +69,6 @@ export const getContentItems = bind('getContentItems');
 export const getSettings = bind('getSettings');
 export const updateSettings = bind('updateSettings');
 export const getAdminLogs = bind('getAdminLogs');
+export const retryCregisWallet = bind('retryCregisWallet');
 
 export { MAX_CARDS_PER_MEMBER } from './mock/adminMockData.js';

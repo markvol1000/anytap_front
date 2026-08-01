@@ -8,7 +8,7 @@ import {
   AdminDetailSection,
   AdminSplitLayout,
 } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge, formatUsdt } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAdminDate, formatUsdt } from '../components/AdminStatusBadge.jsx';
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
@@ -19,6 +19,7 @@ import {
   getMembers,
   saveMemberMemo,
   suspendMember,
+  retryCregisWallet,
 } from '../services/adminService.js';
 
 const fetchMembers = (params) => getMembers(params);
@@ -68,6 +69,16 @@ export function MembersPage() {
       } else if (action === 'saveMemo') {
         await saveMemberMemo(detail.id, memoDraft);
         setDetail({ ...detail, memo: memoDraft });
+      } else if (action === 'retryWallet') {
+        const ok = await runConfirm(confirm, {
+          title: 'Retry Cregis Wallet Allocation',
+          message: `Attempt to generate Cregis USDT wallet address for ${detail.name} again?`,
+          confirmLabel: 'Retry',
+        });
+        if (!ok) return;
+        const updated = await retryCregisWallet(detail.id);
+        setDetail(updated);
+        list.reload();
       }
     } catch (err) {
       window.alert(err.message);
@@ -106,7 +117,7 @@ export function MembersPage() {
                   { key: 'name', label: 'Name' },
                   { key: 'email', label: 'Email' },
                   { key: 'country', label: 'Country' },
-                  { key: 'joinDate', label: 'Join Date' },
+                  { key: 'joinDate', label: 'Join Date', render: (r) => formatAdminDate(r.joinDate) },
                   { key: 'kycStatus', label: 'KYC', render: (r) => <AdminStatusBadge status={r.kycStatus} /> },
                   { key: 'cardStatus', label: 'Card', render: (r) => <AdminStatusBadge status={r.cardStatus} /> },
                   { key: 'walletBalance', label: 'Wallet', render: (r) => formatUsdt(r.walletBalance) },
@@ -137,7 +148,7 @@ export function MembersPage() {
                   <AdminDetailRow label="Email" value={detail.email} />
                   <AdminDetailRow label="Phone" value={detail.phone} />
                   <AdminDetailRow label="Country" value={detail.country} />
-                  <AdminDetailRow label="Join date" value={detail.joinDate} />
+                  <AdminDetailRow label="Join date" value={formatAdminDate(detail.joinDate)} />
                   <AdminDetailRow label="KYC" value={<AdminStatusBadge status={detail.kycStatus} />} />
                   <AdminDetailRow label="Card" value={<AdminStatusBadge status={detail.cardStatus} />} />
                   <AdminDetailRow label="Wallet" value={formatUsdt(detail.walletBalance)} />
@@ -158,14 +169,21 @@ export function MembersPage() {
                 </AdminDetailSection>
 
                 <AdminActionStack>
+                  {detail.accountStatus === 'pending_wallet' ? (
+                    <button type="button" className="admin-btn admin-btn--primary" style={{ backgroundColor: '#3b82f6', color: '#fff', fontWeight: 'bold' }} onClick={() => handleAction('retryWallet')}>
+                      ⚡ Retry Wallet Allocation
+                    </button>
+                  ) : null}
                   {detail.accountStatus === 'suspended' ? (
                     <button type="button" className="admin-btn admin-btn--primary" onClick={() => handleAction('activate')}>
                       Reactivate member
                     </button>
                   ) : (
-                    <button type="button" className="admin-btn admin-btn--warning" onClick={() => handleAction('suspend')}>
-                      Suspend member
-                    </button>
+                    detail.accountStatus !== 'pending_wallet' && (
+                      <button type="button" className="admin-btn admin-btn--warning" onClick={() => handleAction('suspend')}>
+                        Suspend member
+                      </button>
+                    )
                   )}
                   <button type="button" className="admin-btn admin-btn--danger" onClick={() => handleAction('delete')}>
                     Delete member

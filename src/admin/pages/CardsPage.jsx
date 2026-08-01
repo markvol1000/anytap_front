@@ -8,7 +8,7 @@ import {
   AdminDetailSection,
   AdminSplitLayout,
 } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAdminDate } from '../components/AdminStatusBadge.jsx';
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
@@ -103,7 +103,7 @@ export function CardsPage() {
                   { key: 'cardType', label: 'Card Type' },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
                   { key: 'wallet', label: 'Wallet' },
-                  { key: 'created', label: 'Created' },
+                  { key: 'created', label: 'Created', render: (r) => formatAdminDate(r.created) },
                 ]}
                 rows={list.items || []}
                 selectedId={selectedId}
@@ -131,7 +131,7 @@ export function CardsPage() {
                   <AdminDetailRow label="Status" value={<AdminStatusBadge status={detail.status} />} />
                   <AdminDetailRow label="Wallet" value={detail.wallet} />
                   <AdminDetailRow label="Last 4" value={detail.last4 ?? '—'} />
-                  <AdminDetailRow label="Created" value={detail.created} />
+                  <AdminDetailRow label="Created" value={formatAdminDate(detail.created)} />
                   {detail.rejectReason ? (
                     <AdminDetailRow label="Reject reason" value={detail.rejectReason} />
                   ) : null}

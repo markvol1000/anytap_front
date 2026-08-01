@@ -10,8 +10,7 @@ function lower(value, fallback = '') {
 
 function dateOnly(iso) {
   if (!iso) return '';
-  const s = String(iso);
-  return s.includes('T') ? s.slice(0, 10) : s.slice(0, 10);
+  return String(iso);
 }
 
 function displayName(row) {

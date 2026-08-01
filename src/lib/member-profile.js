@@ -100,7 +100,7 @@ export function resolveMemberDisplayName(source = {}) {
  */
 export function hasCompletedKycProfile(accountState = {}) {
   const status = String(accountState.kycStatus || accountState.status || '').toLowerCase();
-  return ['approved', 'completed', 'active'].includes(status);
+  return ['approved', 'completed', 'active', 'pending_wallet'].includes(status);
 }
 
 export function resolveMemberCountry(source = {}) {
@@ -144,7 +144,7 @@ export function profilePatchFromKycForm(form = {}) {
 export function applyProfileToAccountState(accountState, source = {}) {
   if (!accountState) return accountState;
   const kycStatus = String(source.kycStatus || accountState.kycStatus || '').toLowerCase();
-  const kycOk = kycStatus === 'approved' || kycStatus === 'completed';
+  const kycOk = kycStatus === 'approved' || kycStatus === 'completed' || kycStatus === 'pending_wallet';
   const profile = getMemberProfile();
   const merged = { ...profile, ...source };
   return {

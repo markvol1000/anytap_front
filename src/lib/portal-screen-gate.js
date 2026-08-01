@@ -53,9 +53,21 @@ function preKycGate(memberState) {
  * @param {object} accountState
  */
 export function resolvePortalScreenGate(screen, accountState) {
+  const memberState = resolveMemberState(accountState);
+  
+  if (memberState === MEMBER_STATE.PENDING_WALLET) {
+    if (screen === 'settings' || screen === 'profile' || screen === 'security' || screen === 'notifications' || screen === 'support') {
+      return content();
+    }
+    return guide(
+      'USDT wallet address allocation in progress',
+      'Your identity KYC is approved! We are now allocating your TRC-20 USDT wallet address. This feature will unlock automatically after this process completes.',
+      null
+    );
+  }
+
   if (ALWAYS_OPEN.has(screen)) return content();
 
-  const memberState = resolveMemberState(accountState);
   const cardStatus = accountState?.cardStatus;
   const profileReady = hasCompletedKycProfile(accountState);
 

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Icon } from '../ui.jsx';
-import { activatePhysicalCard } from '../../lib/services/accountService.js';
+import { updatePhysicalCardPin } from '../../lib/services/accountService.js';
 
-export function PhysicalCardActivateSheet({ s, open, onClose }) {
+export function PhysicalCardChangePinSheet({ s, open, onClose, card }) {
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [loading, setLoading] = useState(false);
@@ -10,12 +10,10 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
 
   if (!open) return null;
 
-  const card = s.activePhysicalTargetCard ?? s.currentCard;
-  const cardNoDisplay = card?.last4 ? `Card ending in ${card.last4}` : 'Physical Card';
-  const isAlreadyActive = card?.status === 'active';
+  const targetCard = card ?? s.currentCard;
+  const cardNoDisplay = targetCard?.last4 ? `Card ending in ${targetCard.last4}` : 'Physical Card';
 
-  const handleActivate = async () => {
-    if (isAlreadyActive) return;
+  const handleChangePin = async () => {
     setErrorMsg('');
 
     if (pin.trim().length !== 6 || !/^\d{6}$/.test(pin)) {
@@ -56,14 +54,13 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
 
     setLoading(true);
     try {
-      const cardNoRaw = card?.cardNo ?? card?.id ?? '';
-      const result = await activatePhysicalCard(cardNoRaw, pin.trim(), ''); // activeCode is resolved by backend
+      const cardNoRaw = targetCard?.cardNo ?? targetCard?.id ?? '';
+      const result = await updatePhysicalCardPin(cardNoRaw, pin.trim());
       if (result.ok) {
-        s.showToast?.('Physical card activated successfully!');
-        if (s.reloadAccount) await s.reloadAccount();
+        s.showToast?.('Physical card PIN updated successfully!');
         onClose();
       } else {
-        setErrorMsg(result.message ?? 'Activation failed. Please check details and try again.');
+        setErrorMsg(result.message ?? 'PIN change failed. Please check details and try again.');
       }
     } catch (err) {
       setErrorMsg(err.message ?? 'Please try again in a moment.');
@@ -73,25 +70,19 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
   };
 
   return (
-    <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Activate Physical Card">
+    <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Change Physical Card PIN">
       <button type="button" className="portal-sheet__backdrop" onClick={onClose} aria-label="Close" />
       <div className="portal-sheet__panel" style={{ paddingBottom: '32px' }}>
         <div className="portal-sheet__head">
-          <h3 className="portal-sheet__title">Activate Physical Card</h3>
+          <h3 className="portal-sheet__title">Change PIN</h3>
           <button type="button" className="portal-sheet__close" onClick={onClose} aria-label="Close">
             <Icon name="close" size={18} />
           </button>
         </div>
 
         <p className="portal-card-onboard-sheet__sub" style={{ marginBottom: '20px' }}>
-          Activate your {cardNoDisplay}. Set your 6-digit payment PIN to activate your card.
+          Change PIN for your {cardNoDisplay}.
         </p>
-
-        {isAlreadyActive && (
-          <div className="cregister-alert cregister-alert--info" style={{ marginBottom: '16px', padding: '10px', borderRadius: '6px', background: '#EBF8FF', color: '#2B6CB0', fontSize: '14px' }} role="status">
-            This card is already active and ready for use.
-          </div>
-        )}
 
         {errorMsg && (
           <div className="cregister-alert cregister-alert--error" style={{ marginBottom: '16px', padding: '10px', borderRadius: '6px', background: '#FFF0F0', color: '#E53E3E', fontSize: '14px' }} role="alert">
@@ -102,7 +93,7 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
         <div className="cregister-form" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <label className="cregister-field">
             <span className="cregister-field__label" style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '500' }}>
-              Set Card PIN (6 digits)
+              New Card PIN (6 digits)
             </span>
             <input
               className="cregister-input cregister-input--mono"
@@ -111,8 +102,7 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
               maxLength={6}
               placeholder="••••••"
               value={pin}
-              disabled={isAlreadyActive}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D2D6DC', fontSize: '16px', backgroundColor: isAlreadyActive ? '#F7FAFC' : '#FFFFFF', cursor: isAlreadyActive ? 'not-allowed' : 'auto' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D2D6DC', fontSize: '16px' }}
               onChange={(e) => {
                 setErrorMsg('');
                 setPin(e.target.value.replace(/\D/g, '').slice(0, 6));
@@ -122,7 +112,7 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
 
           <label className="cregister-field">
             <span className="cregister-field__label" style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '500' }}>
-              Confirm Card PIN
+              Confirm New Card PIN
             </span>
             <input
               className="cregister-input cregister-input--mono"
@@ -131,8 +121,7 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
               maxLength={6}
               placeholder="••••••"
               value={confirmPin}
-              disabled={isAlreadyActive}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D2D6DC', fontSize: '16px', backgroundColor: isAlreadyActive ? '#F7FAFC' : '#FFFFFF', cursor: isAlreadyActive ? 'not-allowed' : 'auto' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D2D6DC', fontSize: '16px' }}
               onChange={(e) => {
                 setErrorMsg('');
                 setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6));
@@ -152,10 +141,10 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
           <button
             type="button"
             className="portal-btn-primary"
-            style={{ flex: 1, padding: '12px', borderRadius: '6px', fontWeight: '500', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: isAlreadyActive ? '#CBD5E0' : undefined, cursor: isAlreadyActive ? 'not-allowed' : 'pointer' }}
-            disabled={loading || isAlreadyActive}
-            onClick={handleActivate}>
-            {loading ? <span className="portal-spin" style={{ width: '16px', height: '16px' }} /> : (isAlreadyActive ? 'Card Active' : 'Activate Card')}
+            style={{ flex: 1, padding: '12px', borderRadius: '6px', fontWeight: '500', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            disabled={loading}
+            onClick={handleChangePin}>
+            {loading ? <span className="portal-spin" style={{ width: '16px', height: '16px' }} /> : 'Change PIN'}
           </button>
         </div>
       </div>
