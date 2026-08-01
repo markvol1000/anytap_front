@@ -94,8 +94,9 @@ function ChooseCardStep({ cardType, setCardType, blocked }) {
             <button
               key={opt.id}
               type="button"
-              disabled={blocked}
-              className={`capply-pick__option${selected ? ' is-selected' : ''}`}
+              disabled={blocked || opt.id === 'virtual'}
+              className={`capply-pick__option${selected ? ' is-selected' : ''}${opt.id === 'virtual' ? ' is-disabled' : ''}`}
+              style={opt.id === 'virtual' ? { opacity: 0.55, cursor: 'not-allowed' } : {}}
               onClick={() => setCardType(opt.id)}>
               <span className={`capply-pick__radio${selected ? ' is-on' : ''}`} aria-hidden="true" />
               <div className={`capply-pick__visual capply-pick__visual--${opt.id}${selected ? ' is-selected' : ''}`}>
@@ -110,7 +111,14 @@ function ChooseCardStep({ cardType, setCardType, blocked }) {
               </div>
               <div className="capply-pick__body">
                 <div className="capply-pick__head">
-                  <strong className="capply-pick__title">{opt.title}</strong>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <strong className="capply-pick__title">{opt.title}</strong>
+                    {opt.id === 'virtual' && (
+                      <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#E53E3E', background: '#FFF0F0', padding: '2px 6px', borderRadius: '4px', marginLeft: '8px' }}>
+                        Unavailable
+                      </span>
+                    )}
+                  </div>
                   <span className="capply-pick__subtitle">{opt.subtitle}</span>
                 </div>
                 <ul className="capply-pick__benefits">
@@ -282,7 +290,7 @@ export function AccountCardApply({ s }) {
 
   const [view, setView] = useState('flow');
   const [step, setStep] = useState(1);
-  const [cardType, setCardType] = useState('virtual');
+  const [cardType, setCardType] = useState('physical');
   const [shipping, setShipping] = useState({
     ...C.EMPTY_SHIPPING,
     recipientName: s.accountState.name ?? '',
