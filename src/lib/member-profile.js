@@ -79,13 +79,18 @@ export function bindMemberProfileToUser(userId) {
 /** Prefer saved profile → session fields. No email-local-part inventing. */
 export function resolveMemberDisplayName(source = {}) {
   const profile = getMemberProfile();
-  return String(
+  const beName = (source.firstName && source.lastName)
+    ? `${source.firstName} ${source.lastName}`
+    : (source.firstName || source.lastName || '');
+  const result = String(
     source.name
     || source.fullName
+    || beName
     || profile.name
     || profile.fullName
     || '',
   ).trim();
+  return result || 'User';
 }
 
 /**
@@ -103,6 +108,7 @@ export function resolveMemberCountry(source = {}) {
   return String(
     source.country
     || source.nationality
+    || source.countryCode
     || profile.country
     || profile.nationality
     || '',
@@ -111,8 +117,8 @@ export function resolveMemberCountry(source = {}) {
 
 export function formatMemberPhone(source = {}) {
   const profile = getMemberProfile();
-  const cc = String(source.phoneCountryCode || profile.phoneCountryCode || '').trim();
-  const num = String(source.phoneNumber || profile.phoneNumber || '').trim();
+  const cc = String(source.phoneCountryCode || source.countryCode || profile.phoneCountryCode || '').trim();
+  const num = String(source.phoneNumber || source.phone || profile.phoneNumber || '').trim();
   if (cc && num) return `${cc} ${num}`;
   return cc || num || '';
 }

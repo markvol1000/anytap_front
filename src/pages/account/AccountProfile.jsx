@@ -10,11 +10,11 @@ export function AccountProfile({ s }) {
     return s || 'Not set';
   };
   const fields = [
-    { label: 'Full name', value: unset(s.accountState?.name) },
+    { label: 'Full name', value: s.accountState?.name || 'User' },
     { label: 'Email', value: unset(s.accountState?.email) },
+    { label: 'Login ID', value: unset(s.accountState?.loginId || s.accountState?.userId) },
     { label: 'Phone', value: unset(s.accountState?.phone) },
     { label: 'Country', value: unset(s.accountState?.country) },
-    { label: 'Member since', value: memberSince },
   ];
 
   return (

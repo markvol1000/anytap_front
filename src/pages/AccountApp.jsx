@@ -130,6 +130,7 @@ function AccountPortal() {
           <SiteHeader
             member
             memberName={s.profileReady ? (s.accountState?.name || '') : ''}
+            loginId={s.accountState?.loginId || ''}
             unreadNotifications={resolveUnreadNotifications(A.MOCK_UNREAD_NOTIFICATIONS)}
             onNotifications={() => {
               s.go('notifications');

@@ -12,8 +12,10 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
 
   const card = s.activePhysicalTargetCard ?? s.currentCard;
   const cardNoDisplay = card?.last4 ? `Card ending in ${card.last4}` : 'Physical Card';
+  const isAlreadyActive = card?.status === 'active';
 
   const handleActivate = async () => {
+    if (isAlreadyActive) return;
     setErrorMsg('');
     if (pin.trim().length !== 6) {
       setErrorMsg('PIN must be exactly 6 digits.');
@@ -57,6 +59,12 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
           Activate your {cardNoDisplay}. Set your 6-digit payment PIN and enter the active code.
         </p>
 
+        {isAlreadyActive && (
+          <div className="cregister-alert cregister-alert--info" style={{ marginBottom: '16px', padding: '10px', borderRadius: '6px', background: '#EBF8FF', color: '#2B6CB0', fontSize: '14px' }} role="status">
+            This card is already active and ready for use.
+          </div>
+        )}
+
         {errorMsg && (
           <div className="cregister-alert cregister-alert--error" style={{ marginBottom: '16px', padding: '10px', borderRadius: '6px', background: '#FFF0F0', color: '#E53E3E', fontSize: '14px' }} role="alert">
             {errorMsg}
@@ -75,7 +83,8 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
               maxLength={6}
               placeholder="••••••"
               value={pin}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D2D6DC', fontSize: '16px' }}
+              disabled={isAlreadyActive}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D2D6DC', fontSize: '16px', backgroundColor: isAlreadyActive ? '#F7FAFC' : '#FFFFFF', cursor: isAlreadyActive ? 'not-allowed' : 'auto' }}
               onChange={(e) => {
                 setErrorMsg('');
                 setPin(e.target.value.replace(/\D/g, '').slice(0, 6));
@@ -93,7 +102,8 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
               inputMode="numeric"
               placeholder="Enter active code"
               value={activeCode}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D2D6DC', fontSize: '16px' }}
+              disabled={isAlreadyActive}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D2D6DC', fontSize: '16px', backgroundColor: isAlreadyActive ? '#F7FAFC' : '#FFFFFF', cursor: isAlreadyActive ? 'not-allowed' : 'auto' }}
               onChange={(e) => {
                 setErrorMsg('');
                 setActiveCode(e.target.value.replace(/\D/g, ''));
@@ -116,10 +126,10 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
           <button
             type="button"
             className="portal-btn-primary"
-            style={{ flex: 1, padding: '12px', borderRadius: '6px', fontWeight: '500', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-            disabled={loading}
+            style={{ flex: 1, padding: '12px', borderRadius: '6px', fontWeight: '500', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: isAlreadyActive ? '#CBD5E0' : undefined, cursor: isAlreadyActive ? 'not-allowed' : 'pointer' }}
+            disabled={loading || isAlreadyActive}
             onClick={handleActivate}>
-            {loading ? <span className="portal-spin" style={{ width: '16px', height: '16px' }} /> : 'Activate Card'}
+            {loading ? <span className="portal-spin" style={{ width: '16px', height: '16px' }} /> : (isAlreadyActive ? 'Card Active' : 'Activate Card')}
           </button>
         </div>
       </div>

@@ -65,8 +65,7 @@ function referralBadge(referralContext) {
 
 function profileMeta(s) {
   const memberSince = A.PROFILE_FIELDS.find((f) => f.label === 'Member since')?.value ?? '—';
-  // TODO: userId should come from accountState (Supabase user.id) when real auth is wired
-  const userId = s.accountState?.userId ?? 'AT-000000';
+  const userId = s.accountState?.loginId || s.accountState?.userId || '—';
   return { memberSince, userId };
 }
 
@@ -187,7 +186,7 @@ function ProfileSummaryDesk({ name, email, kyc, referral, memberSince, userId, o
           <dd>{memberSince}</dd>
         </div>
         <div className="portal-my-desk__meta-row">
-          <dt>User ID</dt>
+          <dt>Login ID</dt>
           <dd className="portal-my-desk__meta-mono">{userId}</dd>
         </div>
       </dl>
@@ -201,7 +200,7 @@ function ProfileSummaryDesk({ name, email, kyc, referral, memberSince, userId, o
 export function AccountSettings({ s }) {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  const name = String(s.accountState?.name || '').trim() || 'Not set';
+  const name = String(s.accountState?.name || '').trim() || 'User';
   const email = String(s.accountState?.email || '').trim() || 'Not set';
   const kyc = kycBadge(s.accountState, s.kycStatusDef);
   const referral = referralBadge(s.referralContext);

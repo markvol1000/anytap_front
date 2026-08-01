@@ -177,7 +177,9 @@ export function TransactionDetailsDrawer({ tx, onClose, onCopyTxId, copyState })
         </div>
 
         <dl className="portal-tx-detail__list">
-          <DetailRow label="Merchant">{A.getActivityMerchantLabel(tx)}</DetailRow>
+          {['card_spend', 'refund', 'reversal'].includes(tx.kind) && A.getActivityMerchantLabel(tx) && A.getActivityMerchantLabel(tx) !== '—' && (
+            <DetailRow label="Merchant">{A.getActivityMerchantLabel(tx)}</DetailRow>
+          )}
           <DetailRow label="Transaction Type">{tx.typeLabel}</DetailRow>
           <DetailRow label="Amount">{A.formatActivityAmount(tx.amount, tx.incoming, tx.kind)}</DetailRow>
           <DetailRow label="Date & Time">{A.formatActivityDateTime(tx.at)}</DetailRow>
@@ -186,7 +188,9 @@ export function TransactionDetailsDrawer({ tx, onClose, onCopyTxId, copyState })
           {maskedCard && (
             <DetailRow label="Card Number">{maskedCard}</DetailRow>
           )}
-          <DetailRow label="Reference Number">{tx.reference ?? '—'}</DetailRow>
+          {tx.reference && tx.reference.trim() !== '' && tx.reference.trim() !== '—' && (
+            <DetailRow label="Reference Number">{tx.reference}</DetailRow>
+          )}
 
           {network && (
             <DetailRow label="Network">{network}</DetailRow>

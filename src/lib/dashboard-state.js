@@ -166,12 +166,9 @@ export function runDashboardCta(s, cta) {
     return;
   }
   if (cta.action === 'activate') {
-    s.go('card');
-    setTimeout(() => {
-      if (typeof s.openActivePhysical === 'function') {
-        s.openActivePhysical(s.currentCard);
-      }
-    }, 100);
+    if (typeof s.openActivePhysical === 'function') {
+      s.openActivePhysical(s.currentCard);
+    }
     return;
   }
   if (cta.toast) {

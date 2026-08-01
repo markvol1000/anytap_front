@@ -175,7 +175,7 @@ export function AccountCardDetailsPanel({ s }) {
       </p>
 
       {/* Activate card CTA — only shown for issued but not yet activated cards */}
-      {s.accountState.cardStatus === 'issued' && card.status === 'issued' && (
+      {card.status === 'issued' && (
         <button
           type="button"
           className="portal-btn-primary portal-card-details__activate"

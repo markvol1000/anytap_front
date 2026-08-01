@@ -186,7 +186,7 @@ async function fetchCregisWalletBalance(userId) {
   }
 }
 
-function buildContextFromSession(session, cardInfo = null, activityItems = [], cregisBalance = null) {
+function buildContextFromSession(session, cardInfoList = [], activityItems = [], cregisBalance = null) {
   const demoLocked = session.demoLockState === true;
   const kycStatus = mapKycStatus(session.kycStatus || session.status);
   const kycApproved = kycStatus === 'approved';
@@ -205,21 +205,60 @@ function buildContextFromSession(session, cardInfo = null, activityItems = [], c
     : (cregisBalance != null
       ? Number(cregisBalance)
       : (session.walletBalance != null ? Number(session.walletBalance) : 0));
-  const cardBalanceRaw = parseWasabiCardBalance(cardInfo);
-  const cardBalanceUsdt = cardBalanceRaw != null ? cardBalanceRaw : 0;
 
-  // Prefer live Wasabi /info; fall back to DB card id from GET /users (admin dashboard source).
-  const cardNo = String(
-    cardInfo?.cardNo
-    || cardInfo?.balanceInfo?.cardNo
-    || session.cardId
-    || '',
-  );
-  const last4 = cardNo.replace(/\D/g, '').slice(-4) || cardNo.slice(-4) || '0000';
+  const list = Array.isArray(cardInfoList) ? cardInfoList : (cardInfoList ? [cardInfoList] : []);
+  
+  let userCards = [];
+  if (!demoLocked && list.length > 0) {
+    userCards = list.map((cardInfo, idx) => {
+      const cardBalanceRaw = parseWasabiCardBalance(cardInfo);
+      const cardBalanceUsdt = cardBalanceRaw != null ? cardBalanceRaw : 0;
+      const cardNo = String(cardInfo?.cardNo || cardInfo?.balanceInfo?.cardNo || '');
+      const last4 = cardInfo.last4 || cardNo.replace(/\D/g, '').slice(-4) || cardNo.slice(-4) || '0000';
+      
+      const hasLiveWasabiBalance = cardBalanceRaw != null;
+      const cardBalanceLabel = hasLiveWasabiBalance
+        ? (cardInfo?.balanceInfo?.currency === 'USD' || !cardInfo?.balanceInfo?.currency
+          ? `$${cardBalanceUsdt.toFixed(2)}`
+          : `${cardBalanceUsdt.toFixed(2)} USDT`)
+        : '—';
+        
+      let cardVariant = cardInfo.cardType || session.cardType || 'virtual';
+      if (cardInfo?.cardTypeId) {
+        const cid = Number(cardInfo.cardTypeId);
+        if (cid === 111059) cardVariant = 'physical';
+        else if (cid === 111032) cardVariant = 'virtual';
+      } else if (cardNo) {
+        const cleanNo = cardNo.replace(/\D/g, '');
+        if (cleanNo.startsWith('493875')) {
+          cardVariant = 'virtual';
+        } else if (cleanNo.length >= 6) {
+          cardVariant = 'physical';
+        }
+      }
 
-  const cardStatus = resolveCardStatusForUi(session, cardInfo);
-  const cardStatusFromWasabi = String(cardInfo?.status || '').toLowerCase();
-  const cardFrozen = cardStatusFromWasabi === 'frozen' || cardInfo?.blocked === true;
+      const cardStatusFromWasabi = String(cardInfo?.status || '').toLowerCase();
+      const cardFrozen = cardStatusFromWasabi === 'frozen' || cardInfo?.blocked === true;
+      const rawLinkStatus = cardInfo.linkStatus || session.cardStatus;
+      const cardStatus = resolveCardStatusForUi(session, { ...cardInfo, status: rawLinkStatus });
+
+      return {
+        id: cardInfo?.id || `card-${session.userId}-${idx}`,
+        variant: cardVariant,
+        last4,
+        cardNo,
+        balance: cardBalanceLabel,
+        status: cardFrozen || cardStatus === 'frozen' ? 'frozen' : (cardStatus === 'issued' ? 'issued' : 'active'),
+        isPrimary: idx === 0,
+        holderName: name,
+      };
+    });
+  }
+
+  const primaryCardInfo = list[0] || null;
+  const cardStatus = primaryCardInfo 
+    ? resolveCardStatusForUi(session, { ...primaryCardInfo, status: primaryCardInfo.linkStatus || session.cardStatus })
+    : mapCardStatus(session.cardStatus);
 
   const needsActivation = cardStatus !== 'active' && cardStatus !== 'frozen' && (session.needsActivation === true || cardStatus === 'issued');
   const walletExists = session.walletExists === true || !!session.cregisWalletAddress;
@@ -227,43 +266,6 @@ function buildContextFromSession(session, cardInfo = null, activityItems = [], c
   const issuanceDepositAddress = showIssuanceDeposit
     ? (session.issuanceDepositAddress || MOCK_ISSUANCE_DEPOSIT_ADDRESS)
     : '';
-  // Dashboard lists DB-linked cards even when Wasabi /info says "Card does not exist".
-  const showLiveCard = ['active', 'frozen', 'issued'].includes(cardStatus)
-    && !!(cardInfo || cardNo)
-    && !!(cardNo || cardInfo?.cardTypeId || cardInfo?.status);
-
-  const hasLiveWasabiBalance = cardBalanceRaw != null;
-  const cardBalanceLabel = hasLiveWasabiBalance
-    ? (cardInfo?.balanceInfo?.currency === 'USD'
-      || !cardInfo?.balanceInfo?.currency
-      ? `$${cardBalanceUsdt.toFixed(2)}`
-      : `${cardBalanceUsdt.toFixed(2)} USDT`)
-    : '—';
-
-  let cardVariant = session.cardType || 'virtual';
-  if (cardInfo?.cardTypeId) {
-    const cid = Number(cardInfo.cardTypeId);
-    if (cid === 111059) cardVariant = 'physical';
-    else if (cid === 111032) cardVariant = 'virtual';
-  } else if (cardNo) {
-    const cleanNo = cardNo.replace(/\D/g, '');
-    if (cleanNo.startsWith('493875')) {
-      cardVariant = 'virtual';
-    } else if (cleanNo.length >= 6) {
-      cardVariant = 'physical';
-    }
-  }
-
-  let userCards = showLiveCard ? [{
-    id: `card-${session.userId}`,
-    variant: cardVariant,
-    last4,
-    cardNo,
-    balance: cardBalanceLabel,
-    status: cardFrozen || cardStatus === 'frozen' ? 'frozen' : (cardStatus === 'issued' ? 'issued' : 'active'),
-    isPrimary: true,
-    holderName: name,
-  }] : [];
 
   if (demoLocked && !userCards.length) {
     userCards = demoPreviewCards(cardStatus, name, walletBalanceUsdt);
@@ -274,6 +276,8 @@ function buildContextFromSession(session, cardInfo = null, activityItems = [], c
     || (cardStatus === 'active' && walletExists && walletBalanceUsdt <= 0);
 
   const accountState = {
+    userId: session.userId || '',
+    loginId: session.loginId || '',
     name,
     email,
     country,
@@ -402,15 +406,15 @@ export async function fetchAccountContext() {
   }
 
   const demoLocked = session.demoLockState === true;
-  let cardInfo = null;
+  let cardInfoList = [];
   let cregisBalance = null;
 
   if (!demoLocked && shouldFetchWasabiCardInfo(session)) {
     try {
-      cardInfo = await apiGet(`/cards/${encodeURIComponent(session.userId)}/info`);
+      cardInfoList = await apiGet(`/cards/${encodeURIComponent(session.userId)}/list-info`);
     } catch (err) {
-      if (!isMissingWasabiCardError(err) && err?.status !== 400 && err?.status !== 404) {
-        console.warn('[accountApi] card info', err);
+      if (err?.status !== 400 && err?.status !== 404) {
+        console.warn('[accountApi] card info list', err);
       }
     }
   }
@@ -422,7 +426,8 @@ export async function fetchAccountContext() {
 
   let activityItems = [];
   try {
-    const cardNo = String(cardInfo?.cardNo || cardInfo?.balanceInfo?.cardNo || '');
+    const primaryCard = cardInfoList?.[0] || null;
+    const cardNo = String(primaryCard?.cardNo || primaryCard?.balanceInfo?.cardNo || '');
     const last4 = cardNo.replace(/\D/g, '').slice(-4) || cardNo.slice(-4) || '';
     if (!demoLocked) {
       const [txRes, localTxs] = await Promise.all([
@@ -436,7 +441,7 @@ export async function fetchAccountContext() {
     console.warn('[accountApi] fetch transactions fallback', err);
   }
 
-  return buildContextFromSession(session, cardInfo, activityItems, cregisBalance);
+  return buildContextFromSession(session, cardInfoList, activityItems, cregisBalance);
 }
 
 export async function fetchReferralContext() {

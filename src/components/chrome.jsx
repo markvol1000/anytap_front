@@ -36,6 +36,7 @@ function normalizePath(pathname) {
 function SiteHeader({
   member = false,
   memberName = '',
+  loginId = '',
   unreadNotifications = 0,
   onNotifications,
   onProfile,
@@ -122,12 +123,22 @@ function SiteHeader({
     setMobileAcc((prev) => (prev === label ? null : label));
   };
 
-  const initials = memberName
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  const getInitials = () => {
+    const val = (memberName && memberName !== 'User' && memberName !== 'Not set' && memberName.trim() !== '') 
+      ? memberName.trim() 
+      : (loginId || 'User').trim();
+    
+    if (val.includes(' ')) {
+      return val.split(' ')
+        .map((w) => w[0])
+        .filter(Boolean)
+        .join('')
+        .slice(0, 2)
+        .toUpperCase();
+    }
+    return val.slice(0, 2).toUpperCase();
+  };
+  const initials = getInitials() || 'AT';
 
   return (
     <>
