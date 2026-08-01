@@ -63,10 +63,10 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
         if (s.reloadAccount) await s.reloadAccount();
         onClose();
       } else {
-        setErrorMsg(result.message ?? 'Activation failed. Please check details and try again.');
+        setErrorMsg(result.message ?? 'Activation failed.');
       }
     } catch (err) {
-      setErrorMsg(err.message ?? 'Please try again in a moment.');
+      setErrorMsg(err.message ?? 'Activation failed.');
     } finally {
       setLoading(false);
     }

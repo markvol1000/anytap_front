@@ -102,7 +102,7 @@ export function resolvePortalScreenGate(screen, accountState) {
       return guide(
         'Register your issued card first',
         'Activation unlocks your personal wallet. Apply for another card after this one is registered.',
-        { label: 'Activate Card', nextScreen: 'cardRegister' },
+        { label: 'Activate Card', nextScreen: 'card' },
       );
     }
     if (memberState === MEMBER_STATE.CARD_ACTIVE) return content();
@@ -149,7 +149,7 @@ export function resolvePortalScreenGate(screen, accountState) {
       'Personal wallet not open yet',
       'Wallet top-up and transfers unlock after you register your card (Activate).',
       memberState === MEMBER_STATE.ACTIVATE_CARD
-        ? { label: 'Activate Card', nextScreen: 'cardRegister' }
+        ? { label: 'Activate Card', nextScreen: 'card' }
         : memberState === MEMBER_STATE.CARD_APPLY_READY
           ? { label: 'Apply Card', nextScreen: 'cardApply' }
           : { label: 'Back to Home', nextScreen: 'home' },

@@ -296,7 +296,7 @@ export function getMemberDashboardConfig(memberState, accountState) {
         bannerVariant: 'activate',
         title: 'Activate your card to unlock your wallet',
         body: 'Enter the activation code sent to your email to activate your card and unlock your spending wallet.',
-        primaryCta: { label: 'Activate Card', nextScreen: 'cardRegister' },
+        primaryCta: { label: 'Activate Card', nextScreen: 'card' },
         modeCard: true,
         statusLabel: 'Registered — activation required',
         cardBlur: false,

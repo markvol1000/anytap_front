@@ -60,10 +60,10 @@ export function PhysicalCardChangePinSheet({ s, open, onClose, card }) {
         s.showToast?.('Physical card PIN updated successfully!');
         onClose();
       } else {
-        setErrorMsg(result.message ?? 'PIN change failed. Please check details and try again.');
+        setErrorMsg(result.message ?? 'PIN change failed.');
       }
     } catch (err) {
-      setErrorMsg(err.message ?? 'Please try again in a moment.');
+      setErrorMsg(err.message ?? 'PIN change failed.');
     } finally {
       setLoading(false);
     }
