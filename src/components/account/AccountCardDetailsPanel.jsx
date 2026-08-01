@@ -179,7 +179,7 @@ export function AccountCardDetailsPanel({ s }) {
         <button
           type="button"
           className="portal-btn-primary portal-card-details__activate"
-          onClick={() => s.showToast('Card activation coming soon')}>
+          onClick={() => s.openActivePhysical(card)}>
           Activate Card
         </button>
       )}

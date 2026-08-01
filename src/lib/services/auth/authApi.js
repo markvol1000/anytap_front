@@ -64,6 +64,7 @@ function normalizeAuthProfile(data, loginId) {
     status: data.status || '',
     trackingNumber: data.trackingNumber || data.tracking_number || '',
     carrier: data.carrier || '',
+    role: data.role || '',
   };
 }
 

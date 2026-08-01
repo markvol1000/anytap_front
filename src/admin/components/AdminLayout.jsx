@@ -13,6 +13,7 @@ import {
   establishLoginSession,
 } from '../../lib/services/authService.js';
 import { hasDemoAdminAccess } from '../../lib/demo-session.js';
+import { getHttpSession } from '../../lib/api/httpSession.js';
 
 export function AdminLayout() {
   const [admin, setAdmin] = useState(null);
@@ -53,8 +54,11 @@ export function AdminLayout() {
     return <div className="admin-shell admin-shell--gate"><p className="admin-loading">Loading…</p></div>;
   }
 
+  const session = getHttpSession();
+  const isMemberAdmin = hasMemberSession() && session && String(session.role).toUpperCase() === 'ADMIN';
+
   const canAccessAdmin = hasDemoAdminAccess()
-    || hasMemberSession()
+    || isMemberAdmin
     || hasAdminSession()
     || (hasMockSession() && isAdminEmail(getMockSessionEmail()));
 
