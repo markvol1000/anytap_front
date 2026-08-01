@@ -92,17 +92,32 @@ export function AccountKyc({ s }) {
       s.showToast('Please enter your English first name.');
       return;
     }
-    if (!/^[a-zA-Z\s.-]+$/.test(firstName)) {
-      s.showToast('First name only supports English alphabets.');
+    if (firstName.length < 2 || firstName.length > 32) {
+      s.showToast('First name must be between 2 and 32 characters.');
       return;
     }
+    if (!/^[a-zA-Z\s]+$/.test(firstName)) {
+      s.showToast('First name only supports English alphabets and spaces.');
+      return;
+    }
+
     const lastName = String(kycForm.lastName || '').trim();
     if (!lastName) {
       s.showToast('Please enter your English last name.');
       return;
     }
-    if (!/^[a-zA-Z\s.-]+$/.test(lastName)) {
-      s.showToast('Last name only supports English alphabets.');
+    if (lastName.length < 2 || lastName.length > 32) {
+      s.showToast('Last name must be between 2 and 32 characters.');
+      return;
+    }
+    if (!/^[a-zA-Z\s]+$/.test(lastName)) {
+      s.showToast('Last name only supports English alphabets and spaces.');
+      return;
+    }
+
+    const totalNameLen = (firstName + " " + lastName).length;
+    if (totalNameLen > 32) {
+      s.showToast('The combined length of First Name and Last Name cannot exceed 32 characters.');
       return;
     }
 
@@ -111,6 +126,7 @@ export function AccountKyc({ s }) {
       s.showToast('Please enter your real legal name. "Test", "Sandbox", or "Mock" names are not allowed.');
       return;
     }
+
     if (!kycForm.dateOfBirth) {
       s.showToast('Please select your date of birth.');
       return;
@@ -126,77 +142,117 @@ export function AccountKyc({ s }) {
       s.showToast('Please ensure that the date range is between 18 - 100 years from the current year.');
       return;
     }
+
     if (!kycForm.nationality?.trim()) {
       s.showToast('Please enter your nationality.');
       return;
     }
     const countryPattern = /^[a-zA-Z]{2}$/;
     if (!countryPattern.test(kycForm.nationality.trim())) {
-      s.showToast('Please enter your 2-letter ISO country code for Nationality (e.g. KR, US).');
+      s.showToast('Please enter your 2-letter ISO country code for Nationality (e.g. KR, HK, US).');
       return;
     }
+
     if (!kycForm.country?.trim()) {
       s.showToast('Please enter your country.');
       return;
     }
     if (!countryPattern.test(kycForm.country.trim())) {
-      s.showToast('Please enter your 2-letter ISO country code for Country of Residence (e.g. KR, US).');
+      s.showToast('Please enter your 2-letter ISO country code for Country of Residence (e.g. KR, HK, US).');
       return;
     }
+
     if (!kycForm.state?.trim()) {
       s.showToast('Please enter your state or region.');
       return;
     }
     if (!/^[a-zA-Z0-9\s-]+$/.test(kycForm.state.trim())) {
-      s.showToast('State/Region only supports English alphabets, numbers, hyphens(-), and spaces. Special characters (,.#/) are not allowed.');
+      s.showToast('State/Region only supports English alphabets, numbers, hyphens(-), and spaces.');
       return;
     }
+
     if (!kycForm.city?.trim()) {
       s.showToast('Please enter your city.');
       return;
     }
     if (!/^[a-zA-Z0-9\s-]+$/.test(kycForm.city.trim())) {
-      s.showToast('City only supports English alphabets, numbers, hyphens(-), and spaces. Special characters (,.#/) are not allowed.');
+      s.showToast('City only supports English alphabets, numbers, hyphens(-), and spaces.');
       return;
     }
+
     if (!kycForm.addressLine1?.trim()) {
       s.showToast('Please enter your address.');
       return;
     }
-    if (!/^[a-zA-Z0-9\s-]+$/.test(kycForm.addressLine1.trim())) {
-      s.showToast('Street Address only supports English alphabets, numbers, hyphens(-), and spaces. Special characters (,.#/) are not allowed.');
+    const addr = kycForm.addressLine1.trim();
+    if (addr.length < 2 || addr.length > 40) {
+      s.showToast('Address must be between 2 and 40 characters.');
       return;
     }
+    if (!/^[a-zA-Z0-9\s-]+$/.test(addr)) {
+      s.showToast('Street Address only supports English alphabets, numbers, hyphens(-), and spaces.');
+      return;
+    }
+
     if (!kycForm.postalCode?.trim()) {
       s.showToast('Please enter your postal code.');
       return;
     }
+    const post = kycForm.postalCode.trim();
+    if (post.length < 2 || post.length > 15) {
+      s.showToast('Postal code must be between 2 and 15 characters.');
+      return;
+    }
+    if (!/^[a-zA-Z0-9]+$/.test(post)) {
+      s.showToast('Postal code must contain English letters and numbers only.');
+      return;
+    }
+
     if (!kycForm.idDocType) {
       s.showToast('Please select an ID document type.');
       return;
     }
+
     const idDocNumber = String(kycForm.idDocNumber || '').trim();
     if (!idDocNumber) {
       s.showToast('Please enter your ID document number.');
       return;
     }
-    if (!/^[a-zA-Z0-9-]+$/.test(idDocNumber) || idDocNumber.length < 5) {
-      s.showToast('Please enter a valid ID document number (minimum 5 alphanumeric characters).');
+    if (idDocNumber.length < 2 || idDocNumber.length > 50) {
+      s.showToast('ID document number must be between 2 and 50 characters.');
       return;
     }
+    if (!/^[a-zA-Z0-9-]+$/.test(idDocNumber)) {
+      s.showToast('ID document number supports English letters, numbers, and hyphens(-) only.');
+      return;
+    }
+
     const phoneCountryCode = String(kycForm.phoneCountryCode || '').trim();
     const phoneNumber = String(kycForm.phoneNumber || '').trim();
     if (!phoneCountryCode || !phoneNumber) {
       s.showToast('Please enter your phone number.');
       return;
     }
-    const phoneDigits = phoneNumber.replace(/[^\d]/g, '');
-    if (phoneDigits.length < 7 || phoneDigits.length > 15) {
-      s.showToast('Please enter a valid phone number (7 to 15 digits).');
+    if (phoneCountryCode.length < 2 || phoneCountryCode.length > 5) {
+      s.showToast('Phone country code must be between 2 and 5 characters.');
       return;
     }
+    const phoneDigits = phoneNumber.replace(/[^\d]/g, '');
+    if (phoneDigits.length < 5 || phoneDigits.length > 20) {
+      s.showToast('Phone number must be between 5 and 20 digits.');
+      return;
+    }
+
     if (isHttpApi && !kycForm.idFrontFile && !kycForm.idFrontId) {
       s.showToast('Please upload the front image of your ID document.');
+      return;
+    }
+    if (isHttpApi && kycForm.idDocType !== 'PASSPORT' && !kycForm.idBackFile && !kycForm.idBackId) {
+      s.showToast('Please upload the back image of your ID document.');
+      return;
+    }
+    if (isHttpApi && !kycForm.selfieFile && !kycForm.selfieId) {
+      s.showToast('Please upload a selfie photo.');
       return;
     }
     setKycSubmitting(true);
@@ -383,7 +439,8 @@ export function AccountKyc({ s }) {
               }}
             />
             <KycDocField
-              label="ID document back (optional)"
+              label={kycForm.idDocType === 'PASSPORT' ? "ID document back (optional)" : "ID document back (required)"}
+              required={kycForm.idDocType !== 'PASSPORT'}
               facing="environment"
               file={kycForm.idBackFile}
               onChange={(file) => {
@@ -394,7 +451,8 @@ export function AccountKyc({ s }) {
               }}
             />
             <KycDocField
-              label="Selfie (optional)"
+              label="Selfie (required)"
+              required
               facing="user"
               accept="image/jpeg,image/png,image/webp"
               file={kycForm.selfieFile}
