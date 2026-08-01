@@ -81,8 +81,21 @@ function resolveCardStatusForUi(session, cardInfo) {
   const cardStatusFromWasabi = String(cardInfo?.status || '').toLowerCase();
   const cardFrozen = cardStatusFromWasabi === 'frozen' || cardInfo?.blocked === true;
 
+  let isPhysical = session.cardType === 'physical';
+  if (cardInfo?.cardTypeId) {
+    const cid = Number(cardInfo.cardTypeId);
+    if (cid === 111059 || cid === 111095) isPhysical = true;
+  }
+
   if (!demoLocked) {
     if (cardFrozen) return 'frozen';
+    
+    // For physical cards, 'issued' status must remain 'issued' so the user is prompted to activate it.
+    const isIssued = cardStatus === 'issued' || cardStatusFromWasabi === 'issued';
+    if (isPhysical && isIssued) {
+      return 'issued';
+    }
+
     if (cardInfo && (cardNo || cardInfo.cardTypeId || cardInfo.status)) {
       return 'active';
     }
@@ -245,6 +258,7 @@ function buildContextFromSession(session, cardInfo = null, activityItems = [], c
     id: `card-${session.userId}`,
     variant: cardVariant,
     last4,
+    cardNo,
     balance: cardBalanceLabel,
     status: cardFrozen || cardStatus === 'frozen' ? 'frozen' : (cardStatus === 'issued' ? 'issued' : 'active'),
     isPrimary: true,
