@@ -255,12 +255,12 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
       const rawLinkStatus = cardInfo.linkStatus || session.cardStatus;
       const cardStatus = resolveCardStatusForUi(session, { ...cardInfo, status: rawLinkStatus });
 
-      const realCardId = cardInfo?.wasabiCardId || cardInfo?.cardNo || cardInfo?.id;
+      const wasabiCardId = cardInfo?.wasabiCardId || cardInfo?.cardNo || cardInfo?.id || '';
       return {
-        id: (realCardId && !String(realCardId).startsWith('card-')) ? realCardId : (cardNo || `card-${session.userId}-${idx}`),
+        id: wasabiCardId,
         variant: cardVariant,
         last4,
-        cardNo,
+        cardNo: wasabiCardId,
         balance: cardBalanceLabel,
         status: cardFrozen || cardStatus === 'frozen' ? 'frozen' : cardStatus,
         isPrimary: idx === 0,
