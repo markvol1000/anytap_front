@@ -255,8 +255,9 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
       const rawLinkStatus = cardInfo.linkStatus || session.cardStatus;
       const cardStatus = resolveCardStatusForUi(session, { ...cardInfo, status: rawLinkStatus });
 
+      const realCardId = cardInfo?.wasabiCardId || cardInfo?.cardNo || cardInfo?.id;
       return {
-        id: cardInfo?.id || `card-${session.userId}-${idx}`,
+        id: (realCardId && !String(realCardId).startsWith('card-')) ? realCardId : (cardNo || `card-${session.userId}-${idx}`),
         variant: cardVariant,
         last4,
         cardNo,
