@@ -91,9 +91,9 @@ function resolveCardStatusForUi(session, cardInfo) {
   if (!demoLocked) {
     if (cardFrozen) return 'frozen';
     
-    // For physical cards, onboarding/issuing statuses must return their actual state instead of defaulting to 'active'.
+    // issued cards stay as 'issued' — activation must be done by admin
     const isIssued = cardStatus === 'issued' || cardStatusFromWasabi === 'issued';
-    if (isPhysical && isIssued) {
+    if (isIssued) {
       return 'issued';
     }
 
@@ -107,10 +107,13 @@ function resolveCardStatusForUi(session, cardInfo) {
       if (isPhysical) {
         return cardStatusFromWasabi || cardStatus;
       }
+      return cardStatusFromWasabi || cardStatus || 'active';
+    }
+    if (cardStatus === 'active') {
       return 'active';
     }
-    if (cardStatus === 'active' || cardStatus === 'issued') {
-      return 'active';
+    if (cardStatus === 'issued') {
+      return 'issued';
     }
   }
 
@@ -197,7 +200,7 @@ async function fetchCregisWalletBalance(userId) {
 }
 
 function buildContextFromSession(session, cardInfoList = [], activityItems = [], cregisBalance = null) {
-  const demoLocked = session.demoLockState === true;
+  const demoLocked = false;
   const kycStatus = mapKycStatus(session.kycStatus || session.status);
   const kycApproved = kycStatus === 'approved' || kycStatus === 'pending_wallet';
   const email = session.email || getEmailForLoginId(session.loginId) || '';
@@ -258,7 +261,7 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
         last4,
         cardNo,
         balance: cardBalanceLabel,
-        status: cardFrozen || cardStatus === 'frozen' ? 'frozen' : (cardStatus === 'issued' ? 'issued' : 'active'),
+        status: cardFrozen || cardStatus === 'frozen' ? 'frozen' : cardStatus,
         isPrimary: idx === 0,
         holderName: name,
       };
@@ -270,7 +273,7 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
     ? resolveCardStatusForUi(session, { ...primaryCardInfo, status: primaryCardInfo.linkStatus || session.cardStatus })
     : mapCardStatus(session.cardStatus);
 
-  const needsActivation = cardStatus !== 'active' && cardStatus !== 'frozen' && (session.needsActivation === true || cardStatus === 'issued');
+  const needsActivation = false;
   const walletExists = session.walletExists === true || !!session.cregisWalletAddress;
   const showIssuanceDeposit = showsIssuanceDepositWallet(cardStatus);
   const issuanceDepositAddress = showIssuanceDeposit
@@ -321,7 +324,7 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
       exists: walletExists,
       balanceUsdt: walletBalanceUsdt,
       network: 'TRC-20 (TRON)',
-      address: session.cregisWalletAddress || '',
+      address: userCards.some((c) => c && c.status === 'active') ? (session.cregisWalletAddress || '') : '',
     },
     userCards,
     registeredCards: userCards,

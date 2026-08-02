@@ -45,6 +45,16 @@ export function WalletsPage() {
       <AdminSplitLayout
         left={(
           <AdminPanel>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+              <button
+                type="button"
+                className="admin-btn admin-btn--ghost admin-btn--sm"
+                onClick={() => list.reload()}
+                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                🔄 Refresh List
+              </button>
+            </div>
             <AdminFilterBar
               search={list.search}
               onSearchChange={list.setSearch}
@@ -68,7 +78,20 @@ export function WalletsPage() {
                 columns={[
                   { key: 'memberName', label: 'Member' },
                   { key: 'address', label: 'Address', render: (r) => shortenAddress(r.address, 8, 6) },
-                  { key: 'balance', label: 'Balance', render: (r) => formatUsdt(r.balance) },
+                  {
+                    key: 'balance',
+                    label: 'Balance',
+                    render: (r) => (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <img 
+                          src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032" 
+                          alt="USDT" 
+                          style={{ width: '16px', height: '16px', borderRadius: '50%' }} 
+                        />
+                        <span>{formatUsdt(r.balance)}</span>
+                      </div>
+                    ),
+                  },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
                   { key: 'created', label: 'Created' },
                 ]}
@@ -92,10 +115,44 @@ export function WalletsPage() {
             {!detailLoading && detail ? (
               <>
                 <AdminDetailSection title="Wallet detail">
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--ghost admin-btn--sm"
+                      onClick={async () => {
+                        try {
+                          const updated = await getWalletById(detail.id, true);
+                          setDetail(updated);
+                          list.setItems((prevItems) =>
+                            prevItems.map((item) =>
+                              item.id === detail.id ? { ...item, balance: updated.balance } : item
+                            )
+                          );
+                        } catch (err) {
+                          window.alert(err.message);
+                        }
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      🔄 Sync Balance with Cregis
+                    </button>
+                  </div>
                   <AdminDetailRow label="Wallet ID" value={detail.id} />
                   <AdminDetailRow label="Address" value={detail.address} />
                   <AdminDetailRow label="Network" value={detail.network} />
-                  <AdminDetailRow label="Balance" value={formatUsdt(detail.balance)} />
+                  <AdminDetailRow 
+                    label="Balance" 
+                    value={
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <img 
+                          src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032" 
+                          alt="USDT" 
+                          style={{ width: '18px', height: '18px', borderRadius: '50%' }} 
+                        />
+                        <span style={{ fontWeight: '600' }}>{formatUsdt(detail.balance)}</span>
+                      </div>
+                    } 
+                  />
                   <AdminDetailRow label="Status" value={<AdminStatusBadge status={detail.status} />} />
                 </AdminDetailSection>
 

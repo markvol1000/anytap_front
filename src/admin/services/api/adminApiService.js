@@ -253,6 +253,13 @@ export async function freezeCard(id) {
   return getCardById(userId);
 }
 
+export async function unfreezeCard(id) {
+  const userId = resolveUserId(id);
+  const cardNo = await resolveFirstCardNo(userId);
+  await apiPost(`/admin/members/${encodeURIComponent(userId)}/cards/${encodeURIComponent(cardNo)}/unfreeze`);
+  return getCardById(userId);
+}
+
 export async function terminateCard() {
   apiNotImplemented(SVC, 'terminateCard', 'Use card status update or backend terminate endpoint when available.');
 }
@@ -275,8 +282,8 @@ export async function getWallets(params = {}) {
   return paginateLocal(mapped, params, ['address', 'memberName', 'memberId']);
 }
 
-export async function getWalletById(id) {
-  const u = await apiGet(`/admin/wallets/${encodeURIComponent(id)}`);
+export async function getWalletById(id, sync = false) {
+  const u = await apiGet(`/admin/wallets/${encodeURIComponent(id)}?sync=${sync}`);
   if (!u) return null;
   return {
     ...mapWalletRow(u),
@@ -296,14 +303,15 @@ export async function unlockWallet() {
 export async function getTransactions(params = {}) {
   const rawList = asArray(await apiGet('/admin/transactions'));
   const mapped = rawList.map(t => ({
-    id: t.id || String(t.id),
+    id: t.txId || t.id || String(t.id),
     memberId: t.userId,
     memberName: t.loginId || 'Unknown',
     kind: t.transactionType || t.type || 'deposit',
     amount: t.amount || 0,
     wallet: t.toAddress || '-',
     status: (t.status || 'success').toLowerCase(),
-    date: t.createdDate || '-'
+    at: t.createdAt || t.createdDate || '-',
+    reference: t.description || t.txId || '-'
   }));
   return paginateLocal(mapped, params, ['kind', 'memberName', 'memberId']);
 }
@@ -407,8 +415,55 @@ export async function updateSettings() {
   apiNotImplemented(SVC, 'updateSettings', 'No PATCH /admin/settings on ALB yet.');
 }
 
-export async function getAdminLogs() {
-  apiNotImplemented(SVC, 'getAdminLogs', 'No GET /admin/logs on ALB yet.');
+export async function getAdminLogs(params = {}) {
+  const rawList = asArray(await apiGet('/admin/logs'));
+  const mapped = rawList.map(l => ({
+    id: String(l.id),
+    adminName: l.loginId || 'System',
+    adminId: l.userId || 'system',
+    action: l.eventType || 'UNKNOWN_ACTION',
+    target: (l.wasabiCardNo && l.wasabiCardNo !== '-') ? `Card: ${l.wasabiCardNo}` : 
+            (l.subAddress && l.subAddress !== '-') ? `SubAddress: ${l.subAddress}` : 
+            (l.externalWalletNo && l.externalWalletNo !== '-') ? `ExternalWallet: ${l.externalWalletNo}` : 'System Log',
+    at: l.createdAt || '-'
+  }));
+  return paginateLocal(mapped, params, ['adminName', 'action', 'target']);
+}
+
+export async function getEmailLogs(params = {}) {
+  const rawList = asArray(await apiGet('/admin/email-logs'));
+  const mapped = rawList.map(l => ({
+    id: String(l.id),
+    recipient: l.recipient || '-',
+    subject: l.subject || '-',
+    status: l.status || '-',
+    ipAddress: l.ipAddress || '-',
+    apiResponseCode: l.apiResponseCode != null ? l.apiResponseCode : '-',
+    at: l.createdAt || '-'
+  }));
+  return paginateLocal(mapped, params, ['recipient', 'subject', 'status']);
+}
+
+export async function getEventLogs(params = {}) {
+  const rawList = asArray(await apiGet('/admin/event-logs'));
+  const mapped = rawList.map(l => ({
+    id: String(l.id),
+    userId: l.user ? l.user.userId : '-',
+    eventType: l.eventType || '-',
+    ipAddress: l.ipAddress || '-',
+    apiResponseCode: l.apiResponseCode != null ? l.apiResponseCode : '-',
+    at: l.createdAt || '-'
+  }));
+  return paginateLocal(mapped, params, ['userId', 'eventType']);
+}
+
+
+export async function getSystemStatus() {
+  return apiGet('/admin/system/status');
+}
+
+export async function getSystemConfig() {
+  return apiGet('/admin/system/config');
 }
 
 /** Extra helpers used by ops dashboard / future admin panels */

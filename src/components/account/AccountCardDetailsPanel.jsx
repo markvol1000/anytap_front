@@ -18,7 +18,7 @@ export function AccountCardDetailsPanel({ s }) {
   const fullNumber = revealedDetails?.cardNo 
     || revealedDetails?.cardNumber 
     || card?.fullNumber 
-    || A.MOCK_CARD.fullNumber;
+    || '';
 
   let rawExpiry = revealedDetails?.expiry 
     || revealedDetails?.expireDate 

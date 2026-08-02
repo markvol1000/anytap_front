@@ -51,24 +51,25 @@ export const ACCENT = '#FF5500';
 export const ADDRESS = '';
 export const REFERRAL_CODE = 'JOHN24';
 
-// ─── Mock card data ───────────────────────────────────────────────────────────
+// ─── Mock card data (DEPRECATED — do not use in production) ──────────────────
 
+/** @deprecated — do not use in production. Use API data only. */
 export const MOCK_ACCOUNT_STATE = {
-  kycStatus: 'approved',
-  cardStatus: 'active',
+  kycStatus: 'pending',
+  cardStatus: 'not_issued',
 };
 
+/** @deprecated — do not use in production. Use API data only. */
 export const MOCK_CARD = {
-  last4: '4921',
-  fullNumber: '5412 1234 5678 4921',
-  expiry: '06/30',
-  /** Mock sensitive value — in production fetched on demand from Wasabi; never stored in DB */
-  cvv: '847',
-  holder: 'JOHN DOE',
-  type: 'Virtual Card',
-  network: 'Visa',
-  physicalLast4: '8804',
-  physicalFullNumber: '4023 7711 5562 8804',
+  last4: '',
+  fullNumber: '',
+  expiry: '',
+  cvv: '',
+  holder: '',
+  type: '',
+  network: '',
+  physicalLast4: '',
+  physicalFullNumber: '',
 };
 
 /** Per-user card records — up to {@link MAX_CARDS_PER_USER} */

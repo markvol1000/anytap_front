@@ -40,35 +40,14 @@ function RegisterSuccess({ card, onDone }) {
 }
 
 export function AccountCardRegister({ s }) {
-  const [phase, setPhase] = useState(() => {
-    const cardStatus = s.accountState?.cardStatus;
-    // If card status is 'issued' or 'pending_activation', go straight to manual activate fallback
-    return (cardStatus === 'issued' || cardStatus === 'pending_activation') ? 'activate' : 'register';
-  });
+  const [phase, setPhase] = useState('register');
 
-  const [form, setForm] = useState(() => {
-    const cardStatus = s.accountState?.cardStatus;
-    const isInitialActivate = cardStatus === 'issued' || cardStatus === 'pending_activation';
-    if (isInitialActivate) {
-      const registeredCard = s.userCards?.find(c => c.status === 'issued' || c.status === 'pending_activation') 
-                           || s.userCards?.[0];
-      const cardId = s.accountState?.cardId || registeredCard?.id || '';
-      return {
-        cardNumber: cardId ? formatCardNumberInput(cardId) : '',
-        expiry: registeredCard?.expiry || '',
-        activeCode: '',
-        pin: '',
-        confirmPin: '',
-      };
-    } else {
-      return {
-        cardNumber: '',
-        expiry: '',
-        activeCode: '',
-        pin: '',
-        confirmPin: '',
-      };
-    }
+  const [form, setForm] = useState({
+    cardNumber: '',
+    expiry: '',
+    activeCode: '',
+    pin: '',
+    confirmPin: '',
   });
 
   const [fieldErrors, setFieldErrors] = useState({});
@@ -315,6 +294,9 @@ export function AccountCardRegister({ s }) {
                 value={form.pin}
                 onChange={(e) => setField('pin', e.target.value.replace(/\D/g, '').slice(0, 6))}
               />
+              <span style={{ color: '#E53E3E', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '500' }}>
+                * First 4 digits of card when withdrawing
+              </span>
             </RegisterField>
 
             <RegisterField label="Confirm PIN" error={fieldErrors.confirmPin}>

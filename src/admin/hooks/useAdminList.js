@@ -110,6 +110,7 @@ export function useAdminList(fetcher, initialFilters = {}, options = {}) {
 
   return {
     items,
+    setItems,
     total,
     page,
     pageSize,

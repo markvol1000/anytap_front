@@ -20,6 +20,13 @@ const STATUS_MAP = {
   maintenance: { label: 'Maintenance', tone: 'danger' },
   issued: { label: 'Issued', tone: 'info' },
   pending_wallet: { label: 'Pending Wallet', tone: 'warning' },
+  shipping: { label: 'Shipping', tone: 'info' },
+  creating: { label: 'Creating', tone: 'warning' },
+  deposit_received: { label: 'Deposit Received', tone: 'warning' },
+  application_review: { label: 'Under Review', tone: 'warning' },
+  blocked: { label: 'Blocked', tone: 'danger' },
+  freeze: { label: 'Frozen', tone: 'info' },
+  not_issued: { label: 'Not Issued', tone: 'neutral' },
 };
 
 export function AdminStatusBadge({ status, label }) {

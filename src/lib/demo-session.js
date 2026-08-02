@@ -41,11 +41,7 @@ export function clearDemoAdminAccess() {
 }
 
 export function hasDemoAdminAccess() {
-  try {
-    return sessionStorage.getItem(DEMO_ADMIN_KEY) === '1';
-  } catch {
-    return false;
-  }
+  return false;
 }
 
 /** Merge demo sessionOverride onto the live session (single write). */

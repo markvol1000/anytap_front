@@ -171,6 +171,7 @@ export async function attemptSignUp(email, password, { loginId, referral = '' } 
       password,
       loginId: id,
       merchantId: MERCHANT_ID,
+      referralCode: referral,
     });
   } catch (err) {
     const mapped = mapLoginError(err);
@@ -242,7 +243,9 @@ export function establishLoginSession() {
 
 export function showAdminPortalLink() {
   const session = getHttpSession();
-  return !!(session && String(session.email).trim().toLowerCase() === 'test206@206.c0m');
+  if (!session) return false;
+  const role = String(session.role).trim().toLowerCase();
+  return role === 'admin';
 }
 
 export function setAdminSession() {}

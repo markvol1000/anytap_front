@@ -80,8 +80,7 @@ export function resolveMemberState(accountState) {
   if (['deposit_received', 'creating', 'shipping', 'application_review', 'applied'].includes(cardStatus)) {
     return MEMBER_STATE.CARD_ISSUING;
   }
-  if (cardStatus === 'issued' || needsActivation) return MEMBER_STATE.ACTIVATE_CARD;
-  if (['active', 'frozen'].includes(cardStatus)) return MEMBER_STATE.CARD_ACTIVE;
+  if (['issued', 'active', 'frozen'].includes(cardStatus) || needsActivation) return MEMBER_STATE.CARD_ACTIVE;
 
   return MEMBER_STATE.CARD_APPLY_READY;
 }

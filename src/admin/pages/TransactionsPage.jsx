@@ -18,6 +18,15 @@ const KIND_OPTIONS = [
   { value: 'wallet_withdraw', label: 'Withdrawal' },
 ];
 
+const shortenTxId = (txId) => {
+  if (!txId) return '—';
+  const str = String(txId);
+  if (str.length > 14) {
+    return `${str.substring(0, 8)}...${str.substring(str.length - 6)}`;
+  }
+  return str;
+};
+
 export function TransactionsPage() {
   const [selectedId, setSelectedId] = useState(null);
   const list = useAdminList(fetchTx, {}, { urlKeys: ['kind', 'status'] });
@@ -70,10 +79,49 @@ export function TransactionsPage() {
             <AdminTableWrap loading={list.loading} error={list.error} hasData={(list.items || []).length > 0}>
               <AdminDataTable
                 columns={[
-                  { key: 'id', label: 'ID' },
-                  { key: 'memberName', label: 'Member' },
+                  { 
+                    key: 'id', 
+                    label: 'ID', 
+                    render: (r) => (
+                      <span style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}>
+                        {shortenTxId(r.id)}
+                      </span>
+                    )
+                  },
+                  { 
+                    key: 'memberName', 
+                    label: 'Member',
+                    render: (r) => {
+                      const memberId = r.memberId || r.userId;
+                      const memberEmail = r.memberEmail || r.email;
+                      let displayText = '—';
+                      if (memberId && memberEmail && memberEmail !== '—') {
+                        displayText = `${memberId} / ${memberEmail}`;
+                      } else if (memberId) {
+                        displayText = memberId;
+                      } else if (memberEmail && memberEmail !== '—') {
+                        displayText = memberEmail;
+                      }
+                      return (
+                        <span style={{ fontWeight: '500' }}>{displayText}</span>
+                      );
+                    }
+                  },
                   { key: 'kind', label: 'Kind' },
-                  { key: 'amount', label: 'Amount', render: (r) => formatUsdt(r.amount) },
+                  { 
+                    key: 'amount', 
+                    label: 'Amount', 
+                    render: (r) => (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <img 
+                          src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032" 
+                          alt="USDT" 
+                          style={{ width: '16px', height: '16px', borderRadius: '50%' }} 
+                        />
+                        <span>{formatUsdt(r.amount)}</span>
+                      </div>
+                    )
+                  },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
                   { key: 'at', label: 'Date', render: (r) => formatAdminDate(r.at) },
                   { key: 'reference', label: 'Reference' },
@@ -94,10 +142,34 @@ export function TransactionsPage() {
         )}
         right={selected ? (
           <AdminDetailPanel title="Transaction detail">
-            <AdminDetailRow label="ID" value={selected.id} />
-            <AdminDetailRow label="Member" value={selected.memberName} />
+            <AdminDetailRow label="ID" value={<span style={{ fontFamily: 'monospace' }}>{selected.id}</span>} />
+            <AdminDetailRow 
+              label="Member" 
+              value={
+                (() => {
+                  const memberId = selected.memberId || selected.userId;
+                  const memberEmail = selected.memberEmail || selected.email;
+                  if (memberId && memberEmail && memberEmail !== '—') {
+                    return `${memberId} / ${memberEmail}`;
+                  }
+                  return memberId || memberEmail || '—';
+                })()
+              } 
+            />
             <AdminDetailRow label="Kind" value={selected.kind} />
-            <AdminDetailRow label="Amount" value={formatUsdt(selected.amount)} />
+            <AdminDetailRow 
+              label="Amount" 
+              value={
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <img 
+                    src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032" 
+                    alt="USDT" 
+                    style={{ width: '18px', height: '18px', borderRadius: '50%' }} 
+                  />
+                  <span style={{ fontWeight: '600' }}>{formatUsdt(selected.amount)}</span>
+                </div>
+              } 
+            />
             <AdminDetailRow label="Status" value={<AdminStatusBadge status={selected.status} />} />
             <AdminDetailRow label="Date" value={formatAdminDate(selected.at)} />
             <AdminDetailRow label="Reference" value={selected.reference} />

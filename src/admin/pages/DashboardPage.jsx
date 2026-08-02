@@ -27,6 +27,7 @@ function formatMoney(amount) {
 }
 
 const REQUEST_TABS = [
+  { id: 'all', label: 'All' },
   { id: 'kyc', label: 'KYC' },
   { id: 'card', label: 'Card' },
   { id: 'withdrawal', label: 'Withdrawal' },
@@ -35,7 +36,7 @@ const REQUEST_TABS = [
 export function DashboardPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [requestTab, setRequestTab] = useState('kyc');
+  const [requestTab, setRequestTab] = useState('all');
 
   useEffect(() => {
     getDashboardData()
@@ -46,12 +47,32 @@ export function DashboardPage() {
   const isMaintenance = data?.systemSummary?.systemStatus === 'maintenance';
   const pending = data?.pendingTasks;
   const summary = data?.systemSummary;
-  const requestRows = data?.recentRequests?.[requestTab] ?? [];
+
+  const kycRows = data?.recentRequests?.kyc ?? [];
+  const cardRows = data?.recentRequests?.card ?? [];
+  const withdrawalRows = data?.recentRequests?.withdrawal ?? [];
+
+  let requestRows = [];
+  if (requestTab === 'all') {
+    requestRows = [...kycRows, ...cardRows, ...withdrawalRows];
+  } else {
+    requestRows = data?.recentRequests?.[requestTab] ?? [];
+  }
+
+  // Sort by date descending
+  requestRows.sort((a, b) => {
+    const timeA = new Date(a.at || 0).getTime();
+    const timeB = new Date(b.at || 0).getTime();
+    return timeB - timeA;
+  });
 
   const requestTabCounts = {
-    kyc: data?.recentRequests?.kyc?.filter((r) => r.status === 'pending').length ?? 0,
-    card: data?.recentRequests?.card?.filter((r) => r.status === 'pending').length ?? 0,
-    withdrawal: data?.recentRequests?.withdrawal?.filter((r) => r.status === 'pending').length ?? 0,
+    all: (kycRows.filter((r) => r.status === 'pending').length) +
+         (cardRows.filter((r) => r.status === 'pending').length) +
+         (withdrawalRows.filter((r) => r.status === 'pending').length),
+    kyc: kycRows.filter((r) => r.status === 'pending').length,
+    card: cardRows.filter((r) => r.status === 'pending').length,
+    withdrawal: withdrawalRows.filter((r) => r.status === 'pending').length,
   };
 
   return (
@@ -128,11 +149,23 @@ export function DashboardPage() {
                   {
                     key: 'memberName',
                     label: 'Member',
-                    render: (r) => (
-                      <Link to={requestDetailRoute(r)} className="admin-table-link">
-                        {r.memberName}
-                      </Link>
-                    ),
+                    render: (r) => {
+                      const memberId = r.memberId || r.id;
+                      const memberEmail = r.memberEmail || r.email;
+                      let displayText = '—';
+                      if (memberId && memberEmail && memberEmail !== '—') {
+                        displayText = `${memberId} / ${memberEmail}`;
+                      } else if (memberId) {
+                        displayText = memberId;
+                      } else if (memberEmail && memberEmail !== '—') {
+                        displayText = memberEmail;
+                      }
+                      return (
+                        <Link to={requestDetailRoute(r)} className="admin-table-link">
+                          <span style={{ fontWeight: '600' }}>{displayText}</span>
+                        </Link>
+                      );
+                    },
                   },
                   { key: 'meta', label: 'Detail' },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
@@ -154,7 +187,25 @@ export function DashboardPage() {
                 </div>
                 <AdminMiniTable
                   columns={[
-                    { key: 'memberName', label: 'Member' },
+                    {
+                      key: 'memberName',
+                      label: 'Member',
+                      render: (r) => {
+                        const memberId = r.memberId || r.userId || r.id;
+                        const memberEmail = r.memberEmail || r.email;
+                        let displayText = '—';
+                        if (memberId && memberEmail && memberEmail !== '—') {
+                          displayText = `${memberId} / ${memberEmail}`;
+                        } else if (memberId) {
+                          displayText = memberId;
+                        } else if (memberEmail && memberEmail !== '—') {
+                          displayText = memberEmail;
+                        }
+                        return (
+                          <div style={{ fontWeight: '600' }}>{displayText}</div>
+                        );
+                      },
+                    },
                     { key: 'kind', label: 'Type', render: (r) => formatTxKind(r.kind) },
                     { key: 'amount', label: 'Amount', render: (r) => formatUsdt(r.amount) },
                     { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
@@ -169,7 +220,25 @@ export function DashboardPage() {
                 </div>
                 <AdminMiniTable
                   columns={[
-                    { key: 'memberName', label: 'Member' },
+                    {
+                      key: 'memberName',
+                      label: 'Member',
+                      render: (r) => {
+                        const memberId = r.memberId || r.userId || r.id;
+                        const memberEmail = r.memberEmail || r.email;
+                        let displayText = '—';
+                        if (memberId && memberEmail && memberEmail !== '—') {
+                          displayText = `${memberId} / ${memberEmail}`;
+                        } else if (memberId) {
+                          displayText = memberId;
+                        } else if (memberEmail && memberEmail !== '—') {
+                          displayText = memberEmail;
+                        }
+                        return (
+                          <div style={{ fontWeight: '600' }}>{displayText}</div>
+                        );
+                      },
+                    },
                     { key: 'kind', label: 'Type', render: (r) => formatTxKind(r.kind) },
                     { key: 'amount', label: 'Amount', render: (r) => formatUsdt(r.amount) },
                     { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },

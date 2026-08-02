@@ -170,12 +170,14 @@ export function useAccountState() {
     ? A.getEmptyReferralContext()
     : A.getReferralContext(referralStateKey);
   const accountState = mockContext.accountState;
-  const walletAddress = resolveWalletAddress(mockContext.wallet?.address);
+  const userCards = mockContext.userCards;
+  const hasActiveCard = userCards.some((c) => c && c.status === 'active');
+  const rawWalletAddress = resolveWalletAddress(mockContext.wallet?.address);
+  const walletAddress = hasActiveCard ? rawWalletAddress : '';
   const kycStatusDef = A.KYC_STATUS_DEFS[accountState.kycStatus] ?? A.KYC_STATUS_DEFS.pending;
   const cardStatusDef = A.resolveCardStatusDef(accountState.cardStatus, accountState);
   const { kycApproved, cardHasNumber, cardIsActive, preIssue, cardApplicationPending, cardDimmed } = A.deriveAccountFlags(accountState);
   const profileReady = hasCompletedKycProfile(accountState);
-  const userCards = mockContext.userCards;
   const cardLimit = A.getCardLimitInfo(userCards);
   const primaryCard = userCards.find((c) => c.isPrimary) ?? userCards[0] ?? null;
   const currentCard = userCards[selectedCardIndex] ?? primaryCard;

@@ -67,6 +67,9 @@ export function mapMemberRow(row) {
     role: row?.role || 'user',
     wasabiHolderId: row?.wasabiHolderId || null,
     createdAt: row?.createdAt || '',
+    cardLast4: row?.cardLast4 || null,
+    wasabiCardId: row?.wasabiCardId || null,
+    cardType: row?.cardType || null,
   };
 }
 
@@ -90,12 +93,12 @@ export function mapKycRow(row) {
   return {
     id: userId,
     memberId: userId,
-    memberName: displayName(row),
-    memberEmail: row?.email || '',
+    memberName: row?.memberName || displayName(row),
+    memberEmail: row?.memberEmail || row?.email || '',
     country: row?.country || '—',
     status: mapKycStatus(row?.kycStatus || row?.status),
     submittedAt: row?.createdAt || row?.submittedAt || '',
-    documentType: row?.documentType || row?.idType || 'ID verification',
+    documentType: row?.documentType || row?.idType || 'Passport',
     idDocumentUrl: row?.idDocumentUrl || '',
     selfieUrl: row?.selfieUrl || '',
     rejectReason: row?.rejectReason || row?.rejectionReason || '',
@@ -129,11 +132,14 @@ export function mapCardRow(row) {
       ? row.cregisWalletAddress
       : (row?.wallet || '—'),
     created: dateOnly(row?.createdAt || row?.created),
-    last4: row?.last4 || null,
+    last4: row?.last4 && row.last4 !== '-' ? row.last4 : null,
+    wasabiCardId: row?.wasabiCardId && row.wasabiCardId !== '-' ? row.wasabiCardId : '',
     trackingNumber: row?.trackingNumber || '',
     carrier: row?.carrier || '',
     loginId: row?.loginId || '',
     rejectReason: row?.rejectReason || '',
+    balance: row?.balance ?? null,
+    currency: row?.currency ?? null,
   };
 }
 
@@ -217,8 +223,10 @@ export function mapDailySummaryToDashboard({
     .slice(0, 8)
     .map((k) => ({
       id: k.id,
-      type: 'kyc',
+      memberId: k.memberId || k.id,
       memberName: k.memberName,
+      memberEmail: k.memberEmail || k.email || '',
+      type: 'kyc',
       status: k.status,
       at: k.submittedAt,
       meta: k.documentType,
@@ -229,8 +237,10 @@ export function mapDailySummaryToDashboard({
     .slice(0, 8)
     .map((c) => ({
       id: c.id,
-      type: 'card',
+      memberId: c.memberId || c.id,
       memberName: c.memberName,
+      memberEmail: c.memberEmail || c.email || '',
+      type: 'card',
       status: c.status,
       at: c.created,
       meta: c.cardType,

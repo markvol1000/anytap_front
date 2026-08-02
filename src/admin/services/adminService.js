@@ -14,7 +14,7 @@ import * as mock from './mock/adminMockService.js';
 import * as api from './api/adminApiService.js';
 
 function adminImpl() {
-  if (!isHttpApi || hasDemoAdminAccess()) return mock;
+  if (!isHttpApi) return mock;
   return api;
 }
 
@@ -68,7 +68,10 @@ export const getNotifications = bind('getNotifications');
 export const getContentItems = bind('getContentItems');
 export const getSettings = bind('getSettings');
 export const updateSettings = bind('updateSettings');
-export const getAdminLogs = bind('getAdminLogs');
+export const getEmailLogs = bind('getEmailLogs');
+export const getEventLogs = bind('getEventLogs');
 export const retryCregisWallet = bind('retryCregisWallet');
+export const unfreezeCard = bind('unfreezeCard');
+export const getAdminLogs = bind('getAdminLogs');
 
 export { MAX_CARDS_PER_MEMBER } from './mock/adminMockData.js';

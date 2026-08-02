@@ -88,14 +88,7 @@ function AccountMain({ s }) {
   if (s.screen === 'card') return <AccountCardView s={s} />;
   if (s.screen === 'cardApply') return <AccountCardApply s={s} />;
   if (s.screen === 'kyc') return <AccountKyc s={s} />;
-  if (s.screen === 'cardRegister') {
-    window.setTimeout(() => s.go('card'), 0);
-    return (
-      <div className="portal-sk-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <div className="portal-spin" style={{ width: 32, height: 32 }} />
-      </div>
-    );
-  }
+  if (s.screen === 'cardRegister') return <AccountCardRegister s={s} />;
   if (s.screen === 'topup') return <AccountWallet s={s} />;
   if (s.screen === 'transactions') return <AccountCardTransactions s={s} />;
   if (s.screen === 'referral') return <AccountReferral s={s} />;

@@ -121,7 +121,6 @@ export function resolvePortalScreenGate(screen, accountState) {
   }
 
   if (screen === 'cardRegister') {
-    if (memberState === MEMBER_STATE.ACTIVATE_CARD) return content();
     if (memberState === MEMBER_STATE.CARD_ACTIVE) {
       return guide(
         'Card already registered',
@@ -129,11 +128,7 @@ export function resolvePortalScreenGate(screen, accountState) {
         { label: 'My Cards', nextScreen: 'card' },
       );
     }
-    return guide(
-      'Card registration is not available yet',
-      'Register after your card ships and shows as issued. Your personal wallet opens after registration.',
-      { label: 'Back to Home', nextScreen: 'home' },
-    );
+    return content();
   }
 
   if (screen === 'topup') {

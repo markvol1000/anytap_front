@@ -967,7 +967,7 @@ export function CardInformationPanel({ card, s, className = '' }) {
     ?? s?.mockContext?.wallet?.address
     ?? s?.accountState?.walletAddress,
   );
-  const fullNumber = card?.fullNumber ?? A.MOCK_CARD.fullNumber;
+  const fullNumber = card?.fullNumber ?? '';
   const revealOpen = Boolean(s?.showCardDetails);
   const isVerified = Boolean(s?.isCardDetailVerified);
 
@@ -1061,21 +1061,23 @@ export function CardInformationPanel({ card, s, className = '' }) {
               <dd className="portal-card-info__value">{A.formatAvailableLimit(card)}</dd>
             </div>
           )}
-          <div className="portal-card-info__item">
-            <dt className="portal-card-info__label">Linked Wallet</dt>
-            <dd className="portal-card-info__value">
-              <span className="portal-card-info__wallet-row">
-                <span className="portal-card-info__value--mono">{A.shortenWalletAddress(walletAddress)}</span>
-                <button
-                  type="button"
-                  className="portal-card-info__copy"
-                  aria-label="Copy wallet address"
-                  onClick={handleCopyWallet}>
-                  <Icon name="copy" size={16} stroke={1.75} />
-                </button>
-              </span>
-            </dd>
-          </div>
+          {walletAddress ? (
+            <div className="portal-card-info__item">
+              <dt className="portal-card-info__label">Linked Wallet</dt>
+              <dd className="portal-card-info__value">
+                <span className="portal-card-info__wallet-row">
+                  <span className="portal-card-info__value--mono">{A.shortenWalletAddress(walletAddress)}</span>
+                  <button
+                    type="button"
+                    className="portal-card-info__copy"
+                    aria-label="Copy wallet address"
+                    onClick={handleCopyWallet}>
+                    <Icon name="copy" size={16} stroke={1.75} />
+                  </button>
+                </span>
+              </dd>
+            </div>
+          ) : null}
           <div className="portal-card-info__item">
             <dt className="portal-card-info__label">Issued Date</dt>
             <dd className="portal-card-info__value">{A.formatIssuedDate(card)}</dd>

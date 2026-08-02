@@ -118,6 +118,9 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
                 setPin(e.target.value.replace(/\D/g, '').slice(0, 6));
               }}
             />
+            <span style={{ color: '#E53E3E', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '500' }}>
+              * First 4 digits of card when withdrawing
+            </span>
           </label>
 
           <label className="cregister-field">
