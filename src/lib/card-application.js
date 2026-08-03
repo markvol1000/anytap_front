@@ -82,12 +82,13 @@ export const CARD_COLOR_IMAGES = {
   black: '/assets/cards/black_card_bg.png',
 };
 
-export const ID_DOC_TYPES = ['Passport', 'National ID', "Driver's License"];
+export const ID_DOC_TYPES = ['Passport', "Driver's License"];
 
-/** Map UI ID labels → Wasabi / backend idType (PASSPORT | ID_CARD). */
+/** Map UI ID labels → Wasabi / backend idType (PASSPORT | DLN | ID_CARD). */
 export function mapWasabiIdType(idDocType) {
   const t = String(idDocType || '').toLowerCase();
   if (t.includes('passport')) return 'PASSPORT';
+  if (t.includes('driver')) return 'DLN';
   return 'ID_CARD';
 }
 
@@ -95,8 +96,7 @@ export function mapWasabiIdType(idDocType) {
 export const KYC_IDENTITY_NOTICE = {
   title: 'KYC Identity Verification Notice',
   body:
-    "We will only accept applications submitted with a passport or a driver's license in English. "
-    + '(National ID cards will not be accepted if issued in a local language — e.g., Chinese, Korean, Japanese, Thai, etc.)',
+    "We only accept applications submitted with a Passport or a Driver's License in English. (National ID cards are not accepted.)",
 };
 
 export const PAYMENT_STATUS = {

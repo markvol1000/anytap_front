@@ -564,6 +564,7 @@ function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onC
           <button
             type="button"
             className={`portal-btn-primary portal-wallet-sheet__btn${danger ? ' portal-wallet-sheet__btn--danger' : ''}`}
+            disabled={!password || !password.trim()}
             onClick={onConfirm}>
             {confirmLabel}
           </button>

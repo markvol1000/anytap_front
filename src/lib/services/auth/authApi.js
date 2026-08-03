@@ -185,7 +185,7 @@ export async function attemptSignUp(email, password, { loginId, referral = '' } 
   return { ok: true, needsEmailConfirm: false, user: login.user };
 }
 
-export async function sendVerificationEmail({ email, password, loginId, merchantId = MERCHANT_ID }) {
+export async function sendVerificationEmail({ email, password, loginId, referral, merchantId = MERCHANT_ID }) {
   const normalizedEmail = email.trim().toLowerCase();
   const id = String(loginId || '').trim();
   if (!normalizedEmail || !password || !id) return { ok: false, code: 'MISSING' };
@@ -198,6 +198,7 @@ export async function sendVerificationEmail({ email, password, loginId, merchant
       password,
       loginId: id,
       merchantId,
+      ...(referral ? { referralCode: String(referral).trim().toUpperCase() } : {}),
     });
     return { ok: true };
   } catch (err) {
@@ -301,7 +302,7 @@ export function saveSignupPending({ email, password, loginId, referral = '' }) {
     email: email.trim().toLowerCase(),
     password,
     loginId: String(loginId || '').trim(),
-    referral: referral.trim(),
+    referral: String(referral || '').trim().toUpperCase(),
     merchantId: MERCHANT_ID,
     expiresAt: Date.now() + SIGNUP_CODE_TTL_MS,
   };

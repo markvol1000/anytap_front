@@ -651,7 +651,7 @@ export async function submitKycApplication(form = {}) {
       birthday: form.dateOfBirth || '',
       nationality: form.nationality || 'KR',
       idNumber: form.idDocNumber || '',
-      idType: form.idDocType || 'PASSPORT',
+      idType: mapWasabiIdType(form.idDocType || 'PASSPORT'),
       gender: form.gender || 'M',
       country: form.country || '',
       state: form.state || '',

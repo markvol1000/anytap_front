@@ -286,6 +286,11 @@ export function TransactionsPage({ items = [], initialScope = 'all' }) {
             onSearchQueryChange={setSearchQuery}
           />
 
+          <div className="portal-wallet-notice" style={{ margin: '12px 16px', padding: '10px 14px' }} role="note">
+            <span className="portal-wallet-notice__ic" aria-hidden="true">!</span>
+            <span>Card transaction confirmation and full merchant details may take up to 3 days to reflect. (거래 내역 확인까지 최대 3일이 소요될 수 있습니다.)</span>
+          </div>
+
           {filtered.length ? (
             <div className="portal-tx-feed portal-tx-panel__feed">
               <TransactionsGroupedFeed items={filtered} onSelect={setSelectedTx} />

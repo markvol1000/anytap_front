@@ -427,9 +427,9 @@ export function formatActivityDateTime(isoOrDate) {
 
 export function formatActivityAmountParts(amount, incoming, kind) {
   const val = Math.abs(amount).toFixed(2);
-  const usdtOut = new Set(['wallet_send', 'wallet_withdraw', 'wallet_fee', 'referral_withdrawal']);
+  const usdtOut = new Set(['wallet_send', 'wallet_withdraw', 'wallet_fee', 'referral_withdrawal', 'card_topup']);
   const usdtIn = new Set([
-    'wallet_topup', 'wallet_receive', 'card_topup',
+    'wallet_topup', 'wallet_receive',
     'referral_reward', 'referral_commission', 'referral_pending',
   ]);
   if (usdtOut.has(kind)) return { sign: '-', value: val, currency: 'USDT' };
