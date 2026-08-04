@@ -389,6 +389,7 @@ export async function fetchLocalTransactions(userId) {
         kind: kind,
         status: status === 'success' ? 'completed' : status,
         txId: tx.txId,
+        cardNo: tx.cardNo || tx.wasabiCardId || '',
         reference: tx.txId ? tx.txId.slice(0, 10).toUpperCase() : '',
         description: tx.description || '',
       };

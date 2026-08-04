@@ -27,12 +27,18 @@ function pickTimestamp(record) {
 }
 
 function pickTitle(record) {
-  return record?.merchantName
+  const candidate = record?.merchantName
     || record?.merchantData?.name
     || record?.description
-    || record?.title
-    || record?.type
-    || 'Card transaction';
+    || record?.title;
+  if (candidate && !['SUCCESS', 'FAIL', 'FAILED', 'PENDING', 'CREATE', 'CARD_UPDATE'].includes(String(candidate).toUpperCase().trim())) {
+    return candidate;
+  }
+  const typeStr = String(record?.type || '').toLowerCase();
+  if (typeStr.includes('topup') || typeStr.includes('deposit')) return 'Card Top Up';
+  if (typeStr.includes('refund')) return 'Refund';
+  if (typeStr.includes('reversal')) return 'Reversal';
+  return 'Card Purchase';
 }
 
 function pickLast4(record, fallbackLast4 = '') {
