@@ -133,13 +133,13 @@ export function mapCardRow(row) {
       : (row?.wallet || '—'),
     created: dateOnly(row?.createdAt || row?.created),
     last4: row?.last4 && row.last4 !== '-' ? row.last4 : null,
-    wasabiCardId: row?.wasabiCardId && row.wasabiCardId !== '-' ? row.wasabiCardId : '',
+    wasabiCardId: row?.wasabiCardId || '',
+    balance: Number(row?.balance ?? 0),
+    currency: row?.currency || 'USDT',
     trackingNumber: row?.trackingNumber || '',
     carrier: row?.carrier || '',
     loginId: row?.loginId || '',
     rejectReason: row?.rejectReason || '',
-    balance: row?.balance ?? null,
-    currency: row?.currency ?? null,
   };
 }
 

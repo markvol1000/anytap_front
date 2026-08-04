@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AdminDataTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
 import {
@@ -17,12 +17,13 @@ import {
   activateCard,
   approveCard,
   freezeCard,
-  unfreezeCard,
   getCardApplications,
   getCardById,
+  getCardTransactions,
   issueCard,
   rejectCard,
   terminateCard,
+  unfreezeCard,
 } from '../services/adminService.js';
 
 const fetchCards = (params) => getCardApplications(params);
@@ -33,6 +34,40 @@ export function CardsPage() {
   const [selectedId, setSelectedId] = useState(null);
   const list = useAdminList(fetchCards, {}, { urlKeys: ['status'] });
   const { detail, loading: detailLoading, setDetail } = useAdminDetail(fetchCardDetail, selectedId);
+
+  const [txItems, setTxItems] = useState([]);
+  const [txLoading, setTxLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setTxItems([]);
+      return;
+    }
+    let active = true;
+    const loadTxs = async () => {
+      setTxLoading(true);
+      try {
+        const res = await getCardTransactions(selectedId, detail?.wasabiCardId);
+        if (active) {
+          const records = res?.records || res?.data || [];
+          setTxItems(records);
+        }
+      } catch (err) {
+        console.error("Failed to load card transactions", err);
+        if (active) {
+          setTxItems([]);
+        }
+      } finally {
+        if (active) {
+          setTxLoading(false);
+        }
+      }
+    };
+    loadTxs();
+    return () => {
+      active = false;
+    };
+  }, [selectedId, detail?.wasabiCardId]);
 
   const runCardAction = useCallback(async (label, fn, options = {}) => {
     if (!detail) return;
@@ -266,6 +301,49 @@ export function CardsPage() {
                     </>
                   )}
                 </AdminActionStack>
+
+                <div style={{ marginTop: '24px' }}>
+                  <AdminDetailSection title="Card Transaction History">
+                    {txLoading ? (
+                      <p className="admin-loading admin-loading--inline">Loading transactions…</p>
+                    ) : txItems && txItems.length > 0 ? (
+                      <div className="admin-detail-table-wrap" style={{ marginTop: '12px' }}>
+                        <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', border: '1px solid var(--admin-border-subtle)' }}>
+                          <thead>
+                            <tr style={{ background: 'var(--admin-bg-subtle)', borderBottom: '1px solid var(--admin-border)', textAlign: 'left' }}>
+                              <th style={{ padding: '10px 8px', fontWeight: '600' }}>Date</th>
+                              <th style={{ padding: '10px 8px', fontWeight: '600' }}>Type</th>
+                              <th style={{ padding: '10px 8px', fontWeight: '600' }}>Amount</th>
+                              <th style={{ padding: '10px 8px', fontWeight: '600' }}>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {txItems.map((tx, idx) => (
+                              <tr key={tx.id || tx.orderNo || idx} style={{ borderBottom: '1px solid var(--admin-border-subtle)' }}>
+                                <td style={{ padding: '10px 8px', color: 'var(--admin-text)' }}>
+                                  {formatAdminDate(tx.transactionTime || tx.created || tx.at)}
+                                </td>
+                                <td style={{ padding: '10px 8px', textTransform: 'capitalize', color: 'var(--admin-text)' }}>
+                                  {tx.type || tx.subType || 'Payment'}
+                                </td>
+                                <td style={{ padding: '10px 8px', fontWeight: '500', color: 'var(--admin-text)' }}>
+                                  {tx.amount} {tx.currency || 'USD'}
+                                </td>
+                                <td style={{ padding: '10px 8px' }}>
+                                  <AdminStatusBadge status={tx.status} />
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: '13px', color: 'var(--admin-muted)', padding: '12px 8px', background: 'var(--admin-bg-subtle)', borderRadius: '6px' }}>
+                        No transaction history found for this card.
+                      </p>
+                    )}
+                  </AdminDetailSection>
+                </div>
               </>
             ) : null}
           </AdminDetailPanel>

@@ -51,6 +51,7 @@ export const issueCard = bind('issueCard');
 export const activateCard = bind('activateCard');
 export const freezeCard = bind('freezeCard');
 export const terminateCard = bind('terminateCard');
+export const getCardTransactions = bind('getCardTransactions');
 export const getWallets = bind('getWallets');
 export const getWalletById = bind('getWalletById');
 export const lockWallet = bind('lockWallet');

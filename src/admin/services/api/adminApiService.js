@@ -264,6 +264,13 @@ export async function terminateCard() {
   apiNotImplemented(SVC, 'terminateCard', 'Use card status update or backend terminate endpoint when available.');
 }
 
+export async function getCardTransactions(userId, cardNo = '') {
+  const resolvedId = resolveUserId(userId);
+  const url = `/admin/members/${encodeURIComponent(resolvedId)}/cards/transactions` + (cardNo ? `?cardNo=${encodeURIComponent(cardNo)}` : '');
+  const data = await apiGet(url);
+  return data;
+}
+
 function mapWalletRow(u) {
   return {
     id: u.userId || u.id,

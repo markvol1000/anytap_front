@@ -483,7 +483,7 @@ export async function fetchReferralContext() {
   return null;
 }
 
-async function compressImageIfNeeded(file, maxBytes = 2 * 1024 * 1024) {
+async function compressImageIfNeeded(file, maxBytes = 900 * 1024) {
   if (!file) return file;
   if (file.size <= maxBytes) return file;
   if (!file.type.startsWith('image/')) return file;
