@@ -100,7 +100,8 @@ export function mapWasabiTransactionRecord(record, opts = {}) {
     kind,
     status,
     reference: String(record.tradeNo || record.transactionId || record.orderNo || id),
-    cardLast4: pickLast4(record, opts.last4 || ''),
+    cardNo: String(record.cardNo || opts.cardId || opts.wasabiCardId || ''),
+    cardLast4: pickLast4(record, opts.last4 || '') || opts.last4 || '',
     cardNetwork: 'Visa',
     cardScheme: 'visa',
   };
@@ -111,11 +112,18 @@ export function mapWasabiTransactionRecord(record, opts = {}) {
  * @param {{ last4?: string }} [opts]
  */
 export function mapWasabiTransactionsResponse(payload, opts = {}) {
-  const records = Array.isArray(payload)
-    ? payload
-    : (payload?.records || payload?.list || payload?.data || []);
+  const rawData = payload?.data ?? payload;
+  const records = Array.isArray(rawData)
+    ? rawData
+    : (rawData?.records || rawData?.list || rawData?.data?.records || rawData?.data?.list || rawData?.data || []);
 
   return records
-    .map((row) => mapWasabiTransactionRecord(row, opts))
+    .map((row) => {
+      const item = mapWasabiTransactionRecord(row, opts);
+      if (item && !item.cardLast4 && opts.last4) {
+        item.cardLast4 = opts.last4;
+      }
+      return item;
+    })
     .filter(Boolean);
 }

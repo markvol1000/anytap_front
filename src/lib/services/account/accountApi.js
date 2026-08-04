@@ -337,12 +337,13 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
   };
 }
 
-export async function fetchCardTransactions(userId, { pageNum = 1, pageSize = 50, last4 = '' } = {}) {
+export async function fetchCardTransactions(userId, { pageNum = 1, pageSize = 50, last4 = '', cardId = '' } = {}) {
   if (!userId) return { total: 0, items: [] };
   try {
-    const query = `pageNum=${encodeURIComponent(pageNum)}&pageSize=${encodeURIComponent(pageSize)}`;
+    let query = `pageNum=${encodeURIComponent(pageNum)}&pageSize=${encodeURIComponent(pageSize)}`;
+    if (cardId) query += `&cardId=${encodeURIComponent(cardId)}`;
     const payload = await apiGet(`/cards/${encodeURIComponent(userId)}/transactions?${query}`);
-    const items = mapWasabiTransactionsResponse(payload, { last4 });
+    const items = mapWasabiTransactionsResponse(payload, { last4, cardId });
     const total = Number(payload?.total ?? items.length) || items.length;
     return { total, items };
   } catch (err) {
@@ -442,15 +443,33 @@ export async function fetchAccountContext() {
   let activityItems = [];
   try {
     const primaryCard = cardInfoList?.[0] || null;
-    const cardNo = String(primaryCard?.cardNo || primaryCard?.balanceInfo?.cardNo || '');
-    const last4 = cardNo.replace(/\D/g, '').slice(-4) || cardNo.slice(-4) || '';
+    const cardNo = String(primaryCard?.cardNo || primaryCard?.wasabiCardId || primaryCard?.balanceInfo?.cardNo || '');
+    const last4 = primaryCard?.last4 || cardNo.replace(/\D/g, '').slice(-4) || cardNo.slice(-4) || '';
     if (!demoLocked) {
-      const [txRes, localTxs] = await Promise.all([
-        fetchCardTransactions(session.userId, { last4 }),
+      const cardList = Array.isArray(cardInfoList) ? cardInfoList : (cardInfoList ? [cardInfoList] : []);
+      const cardPromises = cardList.map((c) => {
+        const cNo = String(c?.cardNo || c?.wasabiCardId || c?.balanceInfo?.cardNo || '');
+        const l4 = c?.last4 || cNo.replace(/\D/g, '').slice(-4) || cNo.slice(-4) || '';
+        return fetchCardTransactions(session.userId, { cardId: cNo, last4: l4 });
+      });
+
+      const [cardTxResults, localTxs] = await Promise.all([
+        Promise.all(cardPromises),
         fetchLocalTransactions(session.userId),
       ]);
-      const cardTxs = txRes?.items || [];
-      activityItems = [...localTxs, ...cardTxs];
+
+      const cardTxs = cardTxResults.flatMap((res) => res?.items || []);
+      const primaryCard = cardList[0] || null;
+      const primaryCardNo = String(primaryCard?.cardNo || primaryCard?.wasabiCardId || '');
+      const primaryLast4 = primaryCard?.last4 || primaryCardNo.slice(-4) || '';
+
+      const normalizedLocalTxs = localTxs.map((tx) => {
+        if (tx.kind === 'card_topup' && !tx.cardNo) {
+          return { ...tx, cardNo: primaryCardNo, cardLast4: primaryLast4 };
+        }
+        return tx;
+      });
+      activityItems = [...normalizedLocalTxs, ...cardTxs];
     }
   } catch (err) {
     console.warn('[accountApi] fetch transactions fallback', err);

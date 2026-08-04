@@ -275,12 +275,12 @@ function CardsDesktopCarousel({
   );
 }
 
-function CardsDesktopTransactions({ items, cardLast4, onViewAll }) {
+function CardsDesktopTransactions({ items, card, cardLast4, onViewAll }) {
   const filtered = useMemo(
     () => A.sortActivityChronological(
-      A.filterActivityForCardPage(A.normalizeActivityItems(items), cardLast4),
+      A.filterActivityForCardPage(A.normalizeActivityItems(items), card || cardLast4),
     ).slice(0, TX_PREVIEW_SIZE),
-    [items, cardLast4],
+    [items, card, cardLast4],
   );
 
   return (
@@ -391,6 +391,7 @@ export function AccountMyCardsDesktop({ s }) {
           <CardPanel mode="detail" s={s} desktopCardMaxWidth={DESK_CARD_OVERVIEW_MAX_W} />
           <CardsDesktopTransactions
             items={A.resolvePortalActivityWithHistory(s.activityItems)}
+            card={selectedCard}
             cardLast4={selectedCard?.last4}
             onViewAll={() => s.go('transactions', { search: { source: 'card' } })}
           />

@@ -59,7 +59,7 @@ const WALLET_KINDS = new Set([
   'card_topup',
   'wallet_fee',
 ]);
-const CARD_KINDS = new Set(['card_spend', 'refund', 'reversal']);
+const CARD_KINDS = new Set(['card_spend', 'card_topup', 'refund', 'reversal']);
 const REWARD_KINDS = new Set([
   'referral_reward',
   'referral_commission',
@@ -146,11 +146,22 @@ export function filterActivityForWalletPage(items) {
   return items.filter(isWalletActivity);
 }
 
-/** Cards page — selected card usage only (no wallet deposits / transfers) */
-export function filterActivityForCardPage(items, last4) {
-  let list = items.filter(isCardActivity);
-  if (last4) list = list.filter((t) => t.cardLast4 === last4);
-  return list;
+export function filterActivityForCardPage(items, cardOrLast4) {
+  const cardItems = items.filter(isCardActivity);
+  if (!cardOrLast4) return cardItems;
+
+  const targetCardNo = typeof cardOrLast4 === 'object'
+    ? (cardOrLast4?.cardNo || cardOrLast4?.id || cardOrLast4?.wasabiCardId || '')
+    : String(cardOrLast4 || '');
+  const targetLast4 = typeof cardOrLast4 === 'object'
+    ? (cardOrLast4?.last4 || '')
+    : (targetCardNo.length <= 4 ? targetCardNo : targetCardNo.slice(-4));
+
+  return cardItems.filter((t) => {
+    if (targetCardNo && t.cardNo) return t.cardNo === targetCardNo;
+    if (targetLast4 && t.cardLast4) return t.cardLast4 === targetLast4;
+    return false;
+  });
 }
 
 /** Rewards page — referral earnings and withdrawals only */

@@ -240,6 +240,7 @@ export function RecentActivitySection({
   title,
   items = [],
   pageFilter,
+  card,
   cardLast4,
   scope = 'all',
   limit = 5,
@@ -263,14 +264,14 @@ export function RecentActivitySection({
     } else if (pageFilter === 'wallet') {
       list = A.filterActivityForWalletPage(list);
     } else if (pageFilter === 'card') {
-      list = A.filterActivityForCardPage(list, cardLast4);
+      list = A.filterActivityForCardPage(list, card || cardLast4);
     } else if (pageFilter === 'rewards') {
       list = A.filterActivityForRewardsPage(list);
     } else if (!showScopeFilters && scope !== 'all') {
       list = A.filterActivityByScope(list, scope);
     }
     return A.sortActivityChronological(list).slice(0, limit);
-  }, [items, pageFilter, cardLast4, scope, limit, showScopeFilters]);
+  }, [items, pageFilter, card, cardLast4, scope, limit, showScopeFilters]);
 
   return (
     <section className={`portal-dash-section portal-activity portal-recent-tx${className ? ` ${className}` : ''}`}>
@@ -288,7 +289,7 @@ export function RecentActivitySection({
           emptyMsg={emptyMsg}
           emptyIcon={emptyIcon}
         />
-      ) : !items.length ? (
+      ) : !displayItems.length ? (
         <div className="portal-tx-empty">
           {emptyIcon && (
             <span className="portal-tx-empty__icon" aria-hidden="true">

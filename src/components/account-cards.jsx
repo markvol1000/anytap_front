@@ -1252,6 +1252,7 @@ export function AccountMyCards({ s }) {
           title="Recent Card Activity"
           items={A.resolvePortalActivityWithHistory(s.activityItems)}
           pageFilter="card"
+          card={selectedCard}
           cardLast4={selectedCard?.last4}
           limit={5}
           className="portal-mycards-recent"

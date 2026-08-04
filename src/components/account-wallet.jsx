@@ -1031,6 +1031,17 @@ export function AccountWallet({ s }) {
           </div>
         )}
 
+        <RecentActivitySection
+          title="Recent Wallet Activity"
+          items={s.activityItems}
+          pageFilter="wallet"
+          limit={5}
+          onItemClick={() => s.go('transactions', { search: { source: 'wallet' } })}
+          onViewAll={() => s.go('transactions', { search: { source: 'wallet' } })}
+          emptyTitle="No wallet activity yet"
+          emptyMsg="Wallet deposits, withdrawals, and card top-ups will appear here."
+          emptyIcon="wallet"
+        />
       </div>
 
       {/* Desktop — transfer-first top up layout */}
@@ -1104,6 +1115,18 @@ export function AccountWallet({ s }) {
             />
           </div>
         )}
+
+        <RecentActivitySection
+          title="Recent Wallet Activity"
+          items={s.activityItems}
+          pageFilter="wallet"
+          limit={5}
+          onItemClick={() => s.go('transactions', { search: { source: 'wallet' } })}
+          onViewAll={() => s.go('transactions', { search: { source: 'wallet' } })}
+          emptyTitle="No wallet activity yet"
+          emptyMsg="Wallet deposits, withdrawals, and card top-ups will appear here."
+          emptyIcon="wallet"
+        />
       </div>
 
       {confirmCharge && selectedCard && (
