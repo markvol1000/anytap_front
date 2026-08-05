@@ -147,7 +147,7 @@ function DetailsStep({ shipping, setShip }) {
       <p className="capply-section__lead">Where should we ship your physical Visa card?</p>
       <div className="capply-form">
         <FormField label="Recipient name">
-          <input className="capply-input" value={shipping.recipientName} onChange={(e) => setShip('recipientName', e.target.value)} />
+          <input className="capply-input" value={shipping.recipientName} placeholder="Enter cardholder name" onChange={(e) => setShip('recipientName', e.target.value)} />
         </FormField>
         <FormField label="Country">
           <input className="capply-input" value={shipping.country} onChange={(e) => setShip('country', e.target.value)} />
@@ -249,10 +249,6 @@ function CompleteStep({ application, cardType, s }) {
         <p className="capply-done__ref" style={{ marginBottom: '32px' }}>Reference {application.applicationNumber}</p>
       )}
 
-      {/* Display deposit panel at the bottom of application completion */}
-      <div style={{ maxWidth: '480px', margin: '32px auto 0 auto', textAlign: 'left', borderTop: '1px solid #E2E8F0', paddingTop: '32px' }}>
-        <IssuanceDepositPanel s={s} />
-      </div>
     </section>
   );
 }
@@ -448,6 +444,16 @@ export function AccountCardApply({ s }) {
         </p>
       )}
 
+
+
+      {/* Display deposit panel underneath the application screen */}
+      <div style={{ maxWidth: '480px', margin: '32px auto 0 auto', textAlign: 'left', borderTop: '1px solid #E2E8F0', paddingTop: '24px', paddingBottom: '16px' }}>
+        <IssuanceDepositPanel s={s} />
+      </div>
+
+      <div className="capply-alert capply-alert--info" style={{ marginTop: '20px', marginBottom: '16px', fontSize: '13px', lineHeight: '1.5', padding: '12px 16px', borderRadius: '8px', backgroundColor: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE' }}>
+        Once you deposit 100 USDT to the address below, your card will be shipped, and delivery may take up to 2 weeks.
+      </div>
       <StickyFoot
         secondaryLabel={secondaryLabel}
         primaryLabel={primaryLabel}

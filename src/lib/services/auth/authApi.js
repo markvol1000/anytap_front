@@ -342,3 +342,19 @@ export function formatSignupCodeTtl() {
   const m = Math.floor(SIGNUP_CODE_TTL_MS / 60000);
   return `${m}:00`;
 }
+
+export async function attemptLogout() {
+  try {
+    const session = getHttpSession();
+    const email = session?.email || '';
+    const userId = session?.userId || '';
+    if (email || userId) {
+      await apiPost('/auth/logout', { email, userId });
+    }
+  } catch (err) {
+    console.error("Failed to log logout to backend", err);
+  } finally {
+    clearHttpSession();
+    clearMemberProfile();
+  }
+}

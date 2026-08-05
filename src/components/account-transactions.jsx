@@ -134,7 +134,7 @@ function DetailRow({ label, children }) {
   );
 }
 
-export function TransactionDetailsDrawer({ tx, onClose, onCopyTxId, copyState }) {
+export function TxDetailSheet({ tx, onClose }) {
   useEffect(() => {
     if (!tx) return undefined;
     const onKeyDown = (e) => {
@@ -200,6 +200,8 @@ export function TransactionDetailsDrawer({ tx, onClose, onCopyTxId, copyState })
     </div>
   );
 }
+
+export const TransactionDetailsDrawer = TxDetailSheet;
 
 function TransactionsGroupedFeed({ items, onSelect }) {
   const groups = useMemo(() => A.groupActivityByDate(items), [items]);
@@ -288,7 +290,7 @@ export function TransactionsPage({ items = [], initialScope = 'all' }) {
 
           <div className="portal-wallet-notice" style={{ margin: '12px 16px', padding: '10px 14px' }} role="note">
             <span className="portal-wallet-notice__ic" aria-hidden="true">!</span>
-            <span>Card transaction confirmation and full merchant details may take up to 3 days to reflect. (거래 내역 확인까지 최대 3일이 소요될 수 있습니다.)</span>
+            <span>Card transaction confirmation and full merchant details may take up to 3 days to reflect.</span>
           </div>
 
           {filtered.length ? (

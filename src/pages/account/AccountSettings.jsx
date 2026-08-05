@@ -35,8 +35,6 @@ const QUICK_ACCESS = [
 const SETTINGS_ITEMS = [
   { label: 'Security', icon: 'lock', screen: 'security' },
   { label: 'Notifications', icon: 'bell', screen: 'notifications' },
-  { label: 'Language', icon: 'globe', screen: 'language' },
-  { label: 'Appearance', icon: 'palette', screen: 'appearance' },
 ];
 
 function initialsFromName(name = '') {
@@ -190,9 +188,6 @@ function ProfileSummaryDesk({ name, email, kyc, referral, memberSince, userId, o
           <dd className="portal-my-desk__meta-mono">{userId}</dd>
         </div>
       </dl>
-      <button type="button" className="portal-my-desk__edit-btn" onClick={onEdit}>
-        Edit Profile
-      </button>
     </section>
   );
 }
@@ -268,6 +263,7 @@ export function AccountSettings({ s }) {
         <section className="portal-my__section portal-my__section--account" aria-labelledby="portal-my-account">
           <h2 id="portal-my-account" className="portal-my__section-title">Account</h2>
           <div className="portal-my__list portal-my__list--account">
+            <SettingsRowMob label="FAQ" icon="helpCircle" onClick={() => s.go('faq')} />
             <SettingsRowMob label="Log Out" icon="logOut" onClick={s.logout} />
             {deleteConfirm ? (
               <div style={{ padding: '10px 0' }}>
@@ -298,7 +294,6 @@ export function AccountSettings({ s }) {
             referral={referral}
             memberSince={memberSince}
             userId={userId}
-            onEdit={handleEditProfile}
           />
 
           <section className="portal-my-desk__panel portal-my-desk__quick" aria-labelledby="portal-my-desk-quick">
@@ -333,8 +328,7 @@ export function AccountSettings({ s }) {
           <section className="portal-my-desk__panel portal-my-desk__account" aria-labelledby="portal-my-desk-account">
             <h2 id="portal-my-desk-account" className="portal-my-desk__panel-title">Account</h2>
             <div className="portal-my-desk__list">
-              <SettingsRowDesk label="Privacy Policy" icon="fileText" href="/privacy" />
-              <SettingsRowDesk label="Terms of Service" icon="fileText" href="/terms" />
+              <SettingsRowDesk label="FAQ" icon="helpCircle" onClick={() => s.go('faq')} />
               <SettingsRowDesk label="Log Out" icon="logOut" onClick={s.logout} />
               {deleteConfirm ? (
                 <div style={{ padding: '10px 0' }}>

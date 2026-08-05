@@ -1057,7 +1057,7 @@ export function CardInformationPanel({ card, s, className = '' }) {
           )}
           {card.status === 'active' && (
             <div className="portal-card-info__item">
-              <dt className="portal-card-info__label">Available Limit</dt>
+              <dt className="portal-card-info__label">Available Balance</dt>
               <dd className="portal-card-info__value">{A.formatAvailableLimit(card)}</dd>
             </div>
           )}

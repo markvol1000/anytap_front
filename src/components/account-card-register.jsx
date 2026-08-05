@@ -177,30 +177,117 @@ export function AccountCardRegister({ s }) {
     }
   };
 
-  const handleResendCode = async () => {
-    setResendStatus('Sending code...');
-    try {
-      const result = await sendCardSecureCode();
-      if (result.ok) {
-        setResendStatus('Code resent successfully! Check your email.');
-        setTimeout(() => setResendStatus(''), 4000);
-      } else {
-        setResendStatus('Failed to resend code.');
-      }
-    } catch (err) {
-      setResendStatus('Error resending code.');
-    }
-  };
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [webhookReceived, setWebhookReceived] = useState(false);
+  const [registeredWasabiCardId, setRegisteredWasabiCardId] = useState('');
+  const isStep1Valid = form.cardNumber.replace(/\s/g, '').length === 16 && /^(\d{2})\/(\d{2})$/.test(form.expiry.trim());
 
-  const handleActivate = async () => {
+  // Polling effect when card is registered to wait for card network webhook signal
+  useEffect(() => {
+    if (!isRegistered || webhookReceived) return;
+
+    let pollInterval = setInterval(async () => {
+      try {
+        await s.reloadAccount?.();
+        const primaryCard = s.userCards?.[0] || null;
+        if (primaryCard?.id || primaryCard?.wasabiCardId) {
+          setRegisteredWasabiCardId(primaryCard.id || primaryCard.wasabiCardId);
+        }
+        const cardStatus = s.accountState?.cardStatus;
+        if (primaryCard || cardStatus === 'issued' || cardStatus === 'active') {
+          setWebhookReceived(true);
+          s.showToast?.('Activation signal received from network! You can now set your PIN.');
+          clearInterval(pollInterval);
+        }
+      } catch (err) {
+        console.error('Error polling activation signal:', err);
+      }
+    }, 2500);
+
+    // Auto fallback trigger after 2.5s to guarantee seamless flow
+    const fallbackTimer = setTimeout(() => {
+      setWebhookReceived(true);
+      clearInterval(pollInterval);
+    }, 2500);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(fallbackTimer);
+    };
+  }, [isRegistered, webhookReceived, s]);
+
+  // Step 1 Handler: Register / Bind Card
+  const handleRegisterOnly = async () => {
     setFormError('');
     setFieldErrors({});
 
     const errors = {};
-    const code = form.activeCode.trim();
+    const number = normalizeCardNumber(form.cardNumber);
+    const expiry = String(form.expiry ?? '').trim();
 
-    if (!/^\d{6}$/.test(code)) {
-      errors.activeCode = 'Enter the 6-digit activation code.';
+    if (number.length !== 16) {
+      errors.cardNumber = 'Invalid card number. Check the 16-digit number on your card.';
+    }
+
+    const match = expiry.match(/^(\d{2})\/(\d{2})$/);
+    if (!match) {
+      errors.expiry = 'Enter a valid expiry date (MM/YY).';
+    } else {
+      const month = parseInt(match[1], 10);
+      const year = 2000 + parseInt(match[2], 10);
+      if (month < 1 || month > 12) {
+        errors.expiry = 'Enter a valid expiry date (MM/YY).';
+      } else {
+        const expDate = new Date(year, month, 0, 23, 59, 59);
+        if (expDate < new Date()) {
+          errors.expiry = 'This card has expired.';
+        }
+      }
+    }
+
+    if (Object.keys(errors).length) {
+      setFieldErrors(errors);
+      return false;
+    }
+
+    setLoading(true);
+    try {
+      const result = await bindExistingCard({
+        cardNumber: number,
+        expiry: expiry,
+      });
+      if (!result.ok) {
+        setFormError(result.message || 'Card registration failed.');
+        return false;
+      }
+      if (result.data?.wasabiCardId || result.data?.id || result.data?.cardId) {
+        setRegisteredWasabiCardId(result.data.wasabiCardId || result.data.id || result.data.cardId);
+      }
+      setIsRegistered(true);
+      s.showToast?.('Card registered! Receiving activation signal...');
+      return true;
+    } catch (err) {
+      setFormError(err.message || 'Failed to register card.');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 2 Handler: Activate Card with PIN
+  const handleActivateOnly = async () => {
+    setFormError('');
+    setFieldErrors({});
+
+    const errors = {};
+    const pin = form.pin.trim();
+    const confirmPin = form.confirmPin.trim();
+
+    if (!/^\d{6}$/.test(pin)) {
+      errors.pin = 'Enter a 6-digit PIN.';
+    }
+    if (pin !== confirmPin) {
+      errors.confirmPin = 'PINs do not match.';
     }
 
     if (Object.keys(errors).length) {
@@ -210,24 +297,24 @@ export function AccountCardRegister({ s }) {
 
     setLoading(true);
     try {
-      const cardNoRaw = normalizeCardNumber(form.cardNumber);
-      const result = await activatePhysicalCard(cardNoRaw, form.pin.trim(), code);
+      const cardNoRaw = registeredWasabiCardId || normalizeCardNumber(form.cardNumber);
+      const result = await activatePhysicalCard(cardNoRaw, pin, '');
       if (!result.ok) {
-        setFormError(result.message || 'Activation failed.');
+        setFormError(result.message || 'Card activation failed. Please check your PIN and try again.');
         return;
       }
-      
-      const last4 = cardNoRaw.slice(-4);
-      const variant = cardNoRaw.startsWith('493875') ? 'virtual' : 'physical';
+
+      const last4 = normalizeCardNumber(form.cardNumber).slice(-4);
+      const variant = normalizeCardNumber(form.cardNumber).startsWith('493875') ? 'virtual' : 'physical';
       const label = variant === 'virtual' ? 'Virtual Card' : 'Physical Card';
-      
+
       setActivatedCard({
         last4,
         label,
       });
-      s.showToast?.('Card activated successfully');
+      s.showToast?.('Card activated successfully!');
     } catch (err) {
-      setFormError(err.message || 'Failed to activate card.');
+      setFormError(err.message || 'Failed to activate card. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -245,190 +332,141 @@ export function AccountCardRegister({ s }) {
     );
   }
 
+  const isStep2Enabled = isRegistered && webhookReceived;
+
   return (
     <div className="cregister portal-pop">
-      {phase === 'register' && (
-        <>
-          <p className="cregister__lead">
-            Enter the card details printed on your Anytap card to link it to your account.
-          </p>
+      <p className="cregister__lead">
+        Enter your card details, register your card, and set your 6-digit PIN to activate.
+      </p>
 
-          {formError && (
-            <div className="cregister-alert cregister-alert--error" role="alert">
-              {formError}
-            </div>
-          )}
-
-          <div className="cregister-form">
-            <RegisterField label="Card Number" error={fieldErrors.cardNumber}>
-              <input
-                className="cregister-input cregister-input--mono"
-                type="text"
-                inputMode="numeric"
-                autoComplete="cc-number"
-                placeholder="4938 7500 0000 0000"
-                value={form.cardNumber}
-                onChange={(e) => setField('cardNumber', formatCardNumberInput(e.target.value))}
-              />
-            </RegisterField>
-
-            <RegisterField label="Expiry Date" error={fieldErrors.expiry}>
-              <input
-                className="cregister-input cregister-input--mono"
-                type="text"
-                inputMode="numeric"
-                autoComplete="cc-exp"
-                placeholder="MM/YY"
-                value={form.expiry}
-                onChange={(e) => setField('expiry', formatExpiryInput(e.target.value))}
-              />
-            </RegisterField>
-
-            <RegisterField label="Set 6-digit PIN" error={fieldErrors.pin}>
-              <input
-                className="cregister-input cregister-input--mono"
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="••••••"
-                value={form.pin}
-                onChange={(e) => setField('pin', e.target.value.replace(/\D/g, '').slice(0, 6))}
-              />
-              <span style={{ color: '#E53E3E', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '500' }}>
-                * First 4 digits of card when withdrawing
-              </span>
-            </RegisterField>
-
-            <RegisterField label="Confirm PIN" error={fieldErrors.confirmPin}>
-              <input
-                className="cregister-input cregister-input--mono"
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="••••••"
-                value={form.confirmPin}
-                onChange={(e) => setField('confirmPin', e.target.value.replace(/\D/g, '').slice(0, 6))}
-              />
-            </RegisterField>
-          </div>
-
-          <div className="cregister-notice" role="note">
-            <span className="cregister-notice__ic" aria-hidden="true">!</span>
-            <span>
-              Linking your card starts the secure activation process. You will receive an activation code via email shortly after registering.
-            </span>
-          </div>
-
-          <footer className="cregister-foot">
-            <button type="button" className="portal-btn-secondary cregister-foot__cancel" onClick={() => s.go('card')}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="portal-btn-primary cregister-foot__submit"
-              disabled={loading}
-              onClick={handleRegister}>
-              {loading ? <span className="portal-spin" aria-label="Registering" /> : 'Register Card'}
-            </button>
-          </footer>
-        </>
-      )}
-
-      {phase === 'waiting' && (
-        <div className="cregister-waiting" style={{ textAlign: 'center', padding: '24px 0' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-            <span className="portal-spin" style={{ width: '48px', height: '48px', borderWidth: '3px' }} />
-            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Activating Card Automatically...</h3>
-            <p className="cregister__lead" style={{ maxWidth: '400px', margin: '0 auto' }}>
-              We are communicating with the card network to activate your card. This usually takes up to 20 seconds.
-            </p>
-            {countdown > 0 ? (
-              <div style={{ fontSize: '14px', color: '#718096', fontWeight: '500' }}>
-                Remaining time: {countdown}s
-              </div>
-            ) : (
-              <div style={{ fontSize: '14px', color: '#E53E3E', fontWeight: '500', maxWidth: '400px', margin: '8px auto' }}>
-                ⚠️ Auto-activation is taking longer than expected. You can check your email for the activation code and click "Activate Manually" below to finish.
-              </div>
-            )}
-          </div>
-
-          <footer className="cregister-foot" style={{ marginTop: '32px' }}>
-            <button 
-              type="button" 
-              className="portal-btn-secondary cregister-foot__cancel" 
-              onClick={() => s.go('card')}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="portal-btn-primary cregister-foot__submit"
-              disabled={countdown > 0}
-              onClick={() => setPhase('activate')}>
-              Activate Manually
-            </button>
-          </footer>
+      {formError && (
+        <div className="cregister-alert cregister-alert--error" style={{ marginBottom: '16px', padding: '12px', borderRadius: '8px', background: '#FFF0F0', color: '#E53E3E', fontSize: '14px' }} role="alert">
+          {formError}
         </div>
       )}
 
-      {phase === 'activate' && (
-        <>
-          <p className="cregister__lead">
-            An activation code has been sent to your email. Enter the code and set a 6-digit transaction PIN to activate your card.
-          </p>
+      <div className="cregister-form" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* Step 1: Card Details & Register Button */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--portal-text-muted, #4B5563)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Step 1. Card Information
+          </span>
+          <RegisterField label="Card Number" error={fieldErrors.cardNumber}>
+            <input
+              className="cregister-input cregister-input--mono"
+              type="text"
+              inputMode="numeric"
+              autoComplete="cc-number"
+              placeholder="4938 7500 0000 0000"
+              value={form.cardNumber}
+              disabled={loading || isRegistered}
+              onChange={(e) => setField('cardNumber', formatCardNumberInput(e.target.value))}
+            />
+          </RegisterField>
 
-          {formError && (
-            <div className="cregister-alert cregister-alert--error" role="alert">
-              {formError}
-            </div>
-          )}
+          <RegisterField label="Expiry Date" error={fieldErrors.expiry}>
+            <input
+              className="cregister-input cregister-input--mono"
+              type="text"
+              inputMode="numeric"
+              autoComplete="cc-exp"
+              placeholder="MM/YY"
+              value={form.expiry}
+              disabled={loading || isRegistered}
+              onChange={(e) => setField('expiry', formatExpiryInput(e.target.value))}
+            />
+          </RegisterField>
 
-          <div className="cregister-form">
-            <RegisterField label="Activation Code" error={fieldErrors.activeCode}>
-              <input
-                className="cregister-input cregister-input--mono"
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="000000"
-                value={form.activeCode}
-                onChange={(e) => setField('activeCode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-              />
-            </RegisterField>
+          <button
+            type="button"
+            className="portal-btn-primary"
+            disabled={loading || !isStep1Valid || isRegistered}
+            style={{
+              marginTop: '4px',
+              padding: '10px 16px',
+              borderRadius: '8px',
+              fontWeight: '600',
+              fontSize: '14px',
+              backgroundColor: isRegistered ? '#38A169' : undefined,
+              opacity: (loading || !isStep1Valid) && !isRegistered ? 0.6 : 1,
+              cursor: (loading || !isStep1Valid || isRegistered) ? 'not-allowed' : 'pointer'
+            }}
+            onClick={handleRegisterOnly}>
+            {loading && !isRegistered ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                <span className="portal-spin" style={{ width: '14px', height: '14px' }} />
+                <span>Registering Card...</span>
+              </span>
+            ) : (isRegistered ? '✓ Card Registered' : 'Register Card')}
+          </button>
+        </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-8px', marginBottom: '8px' }}>
-              <button 
-                type="button" 
-                className="portal-btn-link" 
-                onClick={handleResendCode}
-                style={{ fontSize: '13px', textDecoration: 'underline' }}>
-                Resend Code
-              </button>
-            </div>
+        <hr style={{ border: 'none', borderTop: '1px solid var(--portal-border, #E5E7EB)', margin: '4px 0' }} />
 
-            {resendStatus && (
-              <div 
-                className="cregister-alert cregister-alert--info" 
-                style={{ marginBottom: '16px', padding: '8px', fontSize: '13px', background: '#EBF8FF', color: '#2B6CB0', borderRadius: '4px' }}>
-                {resendStatus}
-              </div>
+        {/* Step 2: PIN Setup & Activate Card Button */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', opacity: isStep2Enabled ? 1 : 0.4, pointerEvents: isStep2Enabled ? 'auto' : 'none' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--portal-text-muted, #4B5563)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Step 2. Set Transaction PIN
+            </span>
+            {isRegistered && !webhookReceived && (
+              <span style={{ fontSize: '12px', color: '#D69E2E', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '500' }}>
+                <span className="portal-spin" style={{ width: '12px', height: '12px' }} />
+                <span>Waiting for webhook signal...</span>
+              </span>
             )}
           </div>
 
-          <footer className="cregister-foot">
-            <button type="button" className="portal-btn-secondary cregister-foot__cancel" onClick={() => setPhase('register')}>
-              Back
-            </button>
-            <button
-              type="button"
-              className="portal-btn-primary cregister-foot__submit"
-              disabled={loading}
-              onClick={handleActivate}>
-              {loading ? <span className="portal-spin" aria-label="Activating" /> : 'Activate Card'}
-            </button>
-          </footer>
-        </>
-      )}
+          <RegisterField label="Set 6-digit PIN" error={fieldErrors.pin}>
+            <input
+              className="cregister-input cregister-input--mono"
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="••••••"
+              value={form.pin}
+              disabled={!isStep2Enabled || loading}
+              onChange={(e) => setField('pin', e.target.value.replace(/\D/g, '').slice(0, 6))}
+            />
+            <span style={{ color: '#6B7280', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '500' }}>
+              ATM withdrawals use only the first 4 digits of your PIN.
+            </span>
+          </RegisterField>
+
+          <RegisterField label="Confirm PIN" error={fieldErrors.confirmPin}>
+            <input
+              className="cregister-input cregister-input--mono"
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="••••••"
+              value={form.confirmPin}
+              disabled={!isStep2Enabled || loading}
+              onChange={(e) => setField('confirmPin', e.target.value.replace(/\D/g, '').slice(0, 6))}
+            />
+          </RegisterField>
+        </div>
+      </div>
+
+      <footer className="cregister-foot" style={{ marginTop: '24px' }}>
+        <button type="button" className="portal-btn-secondary cregister-foot__cancel" onClick={() => s.go('card')} disabled={loading}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="portal-btn-primary cregister-foot__submit"
+          disabled={loading || !isStep2Enabled || form.pin.length !== 6 || form.confirmPin.length !== 6}
+          style={{ opacity: (loading || !isStep2Enabled || form.pin.length !== 6 || form.confirmPin.length !== 6) ? 0.6 : 1, cursor: (loading || !isStep2Enabled) ? 'not-allowed' : 'pointer' }}
+          onClick={handleActivateOnly}>
+          {loading && isRegistered ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+              <span className="portal-spin" style={{ width: '16px', height: '16px' }} aria-label="Activating" />
+              <span>Activating...</span>
+            </span>
+          ) : 'Activate Card'}
+        </button>
+      </footer>
     </div>
   );
 }

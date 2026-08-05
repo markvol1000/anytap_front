@@ -49,6 +49,10 @@ export const refreshSignupExpiry = auth.refreshSignupExpiry;
 export const clearSignupPending = auth.clearSignupPending;
 export const formatExpiresRemaining = auth.formatExpiresRemaining;
 export const formatSignupCodeTtl = auth.formatSignupCodeTtl;
+export const attemptLogout = auth.attemptLogout ?? (async () => {
+  if (auth.clearMockSession) auth.clearMockSession();
+  if (auth.clearAdminSession) auth.clearAdminSession();
+});
 export const verifyEmailCode = auth.verifyEmailCode
   ?? (async () => ({ ok: false, code: 'MISSING' }));
 export const sendVerificationEmail = auth.sendVerificationEmail

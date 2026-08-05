@@ -30,7 +30,6 @@ export const ACTIVITY_SCOPE_FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'wallet', label: 'Wallet' },
   { id: 'card', label: 'Cards' },
-  { id: 'rewards', label: 'Rewards' },
 ];
 
 /** @deprecated Use ACTIVITY_SCOPE_FILTERS on transactions page */

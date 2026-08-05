@@ -668,7 +668,13 @@ export async function submitKycApplication(form = {}) {
       lastName: (form.lastName || '').trim(),
       mobile: form.phoneNumber || '',
       areaCode: form.phoneCountryCode || '+82',
-      birthday: form.dateOfBirth || '',
+      birthday: (() => {
+        const raw = String(form.dateOfBirth || '').replace(/[^\d]/g, '');
+        if (raw.length === 8) {
+          return `${raw.substring(0, 4)}-${raw.substring(4, 6)}-${raw.substring(6, 8)}`;
+        }
+        return form.dateOfBirth || '';
+      })(),
       nationality: form.nationality || 'KR',
       idNumber: form.idDocNumber || '',
       idType: mapWasabiIdType(form.idDocType || 'PASSPORT'),

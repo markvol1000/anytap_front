@@ -10,7 +10,7 @@ import { loadAccountContext, loadReferralContext, submitKycApplication as submit
 import { getHttpSession, hasHttpSession } from '../lib/api/httpSession.js';
 import { resolveWalletAddress } from '../lib/api/display-data.js';
 import * as A from '../lib/account-data.js';
-import { clearMockSession, clearAdminSession } from '../lib/services/authService.js';
+import { clearMockSession, clearAdminSession, attemptLogout } from '../lib/services/authService.js';
 import { hasCompletedKycProfile } from '../lib/member-profile.js';
 
 export function useAccountState() {
@@ -250,8 +250,7 @@ export function useAccountState() {
   }, [navigate, selectedCardIndex, userCards]);
 
   const logout = useCallback(async () => {
-    await clearMockSession();
-    await clearAdminSession();
+    await attemptLogout();
     navigate('/login');
   }, [navigate]);
 

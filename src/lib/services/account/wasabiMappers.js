@@ -28,16 +28,21 @@ function pickTimestamp(record) {
 
 function pickTitle(record) {
   const candidate = record?.merchantName
-    || record?.merchantData?.name
-    || record?.description
-    || record?.title;
-  if (candidate && !['SUCCESS', 'FAIL', 'FAILED', 'PENDING', 'CREATE', 'CARD_UPDATE'].includes(String(candidate).toUpperCase().trim())) {
+    || record?.merchantData?.name;
+  if (candidate && !['SUCCESS', 'FAIL', 'FAILED', 'PENDING', 'CREATE', 'CARD_UPDATE', 'UPDATE_PIN', 'FREEZE', 'UNFREEZE'].includes(String(candidate).toUpperCase().trim())) {
     return candidate;
   }
-  const typeStr = String(record?.type || '').toLowerCase();
+  const typeStr = String(record?.type || record?.tradeType || record?.transactionType || '').toLowerCase();
+  const subTypeStr = String(record?.subType || '').toLowerCase();
+  if (typeStr.includes('update_pin') || subTypeStr.includes('update_pin') || typeStr.includes('reset pin')) return 'Reset PIN';
+  if (typeStr.includes('unfreeze') || subTypeStr.includes('unfreeze')) return 'UnFreeze';
+  if (typeStr.includes('freeze') || subTypeStr.includes('freeze')) return 'Freeze';
+  if (typeStr.includes('card_update') || typeStr.includes('card update')) return 'Card Update';
+  if (typeStr.includes('create')) return 'Create Card';
   if (typeStr.includes('topup') || typeStr.includes('deposit')) return 'Card Top Up';
   if (typeStr.includes('refund')) return 'Refund';
   if (typeStr.includes('reversal')) return 'Reversal';
+  if (record?.description) return record.description;
   return 'Card Purchase';
 }
 
@@ -55,7 +60,7 @@ function mapWasabiType(type = '') {
   const t = String(type).toLowerCase();
   if (t.includes('refund')) return 'refund';
   if (t.includes('reversal') || t.includes('reverse')) return 'reversal';
-  if (t.includes('deposit') || t.includes('create') || t.includes('topup') || t.includes('top_up')) {
+  if (t.includes('deposit') || t.includes('topup') || t.includes('top_up')) {
     return 'card_topup';
   }
   return 'card_spend';

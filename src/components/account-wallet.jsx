@@ -623,6 +623,11 @@ export function IssuanceDepositPanel({ s, className = '' }) {
           <div className="portal-qr" dangerouslySetInnerHTML={{ __html: A.buildQR() }} />
           <p className="portal-issuance-deposit__qr-label">USDT Deposit Address (TRC-20)</p>
           <div className="portal-addr">{address || 'Loading system wallet...'}</div>
+          {isIssuance && (
+            <div className="capply-alert capply-alert--info" style={{ marginTop: '16px', marginBottom: '16px', fontSize: '13px', lineHeight: '1.5', padding: '12px 16px', borderRadius: '8px', backgroundColor: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', textAlign: 'left' }}>
+              Once you deposit 100 USDT to the address below, your card will be shipped, and delivery may take up to 2 weeks.
+            </div>
+          )}
           <button
             type="button"
             className="portal-btn-primary portal-issuance-deposit__copy"

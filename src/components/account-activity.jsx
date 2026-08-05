@@ -6,6 +6,7 @@
 import { useMemo, useState } from 'react';
 import { Icon } from './ui.jsx';
 import * as A from '../lib/account-data.js';
+import { TxDetailSheet } from './account-transactions.jsx';
 
 export function ActivityAmount({ amount, incoming, failed, kind, large = false }) {
   const { sign, value, currency } = A.formatActivityAmountParts(amount, incoming, kind);
@@ -253,9 +254,18 @@ export function RecentActivitySection({
   emptyIcon = null,
   className = '',
 }) {
+  const [selectedModalTx, setSelectedModalTx] = useState(null);
   const dateStyle = ACTIVITY_DATE_STYLE_BY_PAGE[pageFilter] ?? 'standard';
   const isDashboardCompact = pageFilter === 'dashboard';
   const resolvedViewAllLabel = viewAllLabel ?? (isDashboardCompact ? 'View All' : 'See all transactions →');
+
+  const handleRowClick = (tx) => {
+    if (onItemClick) {
+      onItemClick(tx);
+    } else {
+      setSelectedModalTx(tx);
+    }
+  };
 
   const displayItems = useMemo(() => {
     let list = A.normalizeActivityItems(items);
@@ -275,6 +285,9 @@ export function RecentActivitySection({
 
   return (
     <section className={`portal-dash-section portal-activity portal-recent-tx${className ? ` ${className}` : ''}`}>
+      {selectedModalTx && (
+        <TxDetailSheet tx={selectedModalTx} onClose={() => setSelectedModalTx(null)} />
+      )}
       <div className="portal-activity__head">
         <h2 className="portal-dash-section__title portal-dash-section__title--inline">{title}</h2>
       </div>
@@ -283,7 +296,7 @@ export function RecentActivitySection({
           items={items}
           showScopeFilters
           limit={limit}
-          onItemClick={onItemClick}
+          onItemClick={handleRowClick}
           onViewAll={onViewAll}
           emptyTitle={emptyTitle}
           emptyMsg={emptyMsg}
@@ -308,7 +321,7 @@ export function RecentActivitySection({
                 tx={tx}
                 dateStyle="compact"
                 variant="compact"
-                onClick={onItemClick ? () => onItemClick(tx) : undefined}
+                onClick={() => handleRowClick(tx)}
               />
             )) : (
               <p className="portal-dash-wf__tx-empty">{emptyMsg}</p>
@@ -328,7 +341,7 @@ export function RecentActivitySection({
                 key={tx.id}
                 tx={tx}
                 dateStyle={dateStyle}
-                onClick={onItemClick ? () => onItemClick(tx) : undefined}
+                onClick={() => handleRowClick(tx)}
               />
             )) : (
               <div className="portal-tx-empty portal-tx-empty--inline">

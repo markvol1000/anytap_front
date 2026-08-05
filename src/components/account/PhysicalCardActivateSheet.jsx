@@ -118,8 +118,8 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
                 setPin(e.target.value.replace(/\D/g, '').slice(0, 6));
               }}
             />
-            <span style={{ color: '#E53E3E', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '500' }}>
-              * First 4 digits of card when withdrawing
+            <span style={{ color: '#6B7280', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '500' }}>
+              ATM withdrawals use only the first 4 digits of your PIN.
             </span>
           </label>
 
@@ -155,10 +155,26 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
           <button
             type="button"
             className="portal-btn-primary"
-            style={{ flex: 1, padding: '12px', borderRadius: '6px', fontWeight: '500', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: isAlreadyActive ? '#CBD5E0' : undefined, cursor: isAlreadyActive ? 'not-allowed' : 'pointer' }}
+            style={{ 
+              flex: 1, 
+              padding: '12px', 
+              borderRadius: '6px', 
+              fontWeight: '500', 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              backgroundColor: (loading || isAlreadyActive) ? '#CBD5E0' : undefined, 
+              cursor: (loading || isAlreadyActive) ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+            }}
             disabled={loading || isAlreadyActive}
             onClick={handleActivate}>
-            {loading ? <span className="portal-spin" style={{ width: '16px', height: '16px' }} /> : (isAlreadyActive ? 'Card Active' : 'Activate Card')}
+            {loading ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="portal-spin" style={{ width: '16px', height: '16px' }} />
+                <span>Activating...</span>
+              </span>
+            ) : (isAlreadyActive ? 'Card Active' : 'Activate Card')}
           </button>
         </div>
       </div>

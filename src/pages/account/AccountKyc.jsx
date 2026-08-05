@@ -127,11 +127,19 @@ export function AccountKyc({ s }) {
       return;
     }
 
-    if (!kycForm.dateOfBirth) {
-      s.showToast('Please select your date of birth.');
+    const rawDob = String(kycForm.dateOfBirth || '').replace(/[^\d]/g, '');
+    if (rawDob.length !== 8) {
+      s.showToast('Please enter your date of birth in YYYYMMDD format (8 digits).');
       return;
     }
-    const birthDate = new Date(kycForm.dateOfBirth);
+    const year = parseInt(rawDob.substring(0, 4), 10);
+    const month = parseInt(rawDob.substring(4, 6), 10) - 1; // 0-indexed in JS
+    const day = parseInt(rawDob.substring(6, 8), 10);
+    const birthDate = new Date(year, month, day);
+    if (isNaN(birthDate.getTime()) || birthDate.getFullYear() !== year || birthDate.getMonth() !== month || birthDate.getDate() !== day) {
+      s.showToast('Please enter a valid date of birth.');
+      return;
+    }
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
@@ -337,7 +345,17 @@ export function AccountKyc({ s }) {
             </div>
             <div className="capply-form__row">
               <FormField label="Date of birth">
-                <input className="capply-input" type="date" value={kycForm.dateOfBirth} onChange={(e) => setKyc('dateOfBirth', e.target.value)} />
+                <input
+                  className="capply-input"
+                  type="text"
+                  maxLength={8}
+                  value={kycForm.dateOfBirth}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d]/g, '');
+                    setKyc('dateOfBirth', val);
+                  }}
+                  placeholder="yyyymmdd"
+                />
               </FormField>
               <FormField label="Gender">
                 <select className="capply-input" value={kycForm.gender} onChange={(e) => setKyc('gender', e.target.value)}>
