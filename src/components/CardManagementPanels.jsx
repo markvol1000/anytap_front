@@ -134,16 +134,6 @@ export function CardManagementActions({ card, s, className = '' }) {
             <span className="portal-card-mgmt__action-label">Change PIN</span>
             <Icon name="chevron" size={18} stroke={2} className="portal-card-mgmt__action-chevron" />
           </button>
-          <button
-            type="button"
-            className="portal-card-mgmt__action-row portal-card-mgmt__action-row--danger"
-            onClick={() => s?.showToast?.('Report lost or stolen — contact support')}>
-            <span className="portal-card-mgmt__action-icon portal-card-mgmt__action-icon--danger" aria-hidden="true">
-              <Icon name="flag" size={18} stroke={1.75} />
-            </span>
-            <span className="portal-card-mgmt__action-label">Report lost or stolen</span>
-            <Icon name="chevron" size={18} stroke={2} className="portal-card-mgmt__action-chevron" />
-          </button>
         </div>
       </section>
 

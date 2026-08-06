@@ -23,12 +23,6 @@ const QUICK_ACCESS = [
     icon: 'gift',
     screen: 'referral',
   },
-  {
-    label: 'Support',
-    desc: 'Get help from our team',
-    icon: 'messageCircle',
-    screen: 'support',
-  },
 ];
 
 // Security + Notifications + planned (Language, Appearance) — same on mobile and desktop
