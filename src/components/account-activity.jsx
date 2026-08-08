@@ -207,8 +207,8 @@ export function ActivityList({
     </div>
   ) : filtered.length ? (
     <div className="portal-tx-list">
-      {filtered.map((tx) => (
-        <ActivityRow key={tx.id} tx={tx} onClick={onItemClick ? () => onItemClick(tx) : undefined} />
+      {filtered.map((tx, idx) => (
+        <ActivityRow key={`${tx.id}-${idx}`} tx={tx} onClick={onItemClick ? () => onItemClick(tx) : undefined} />
       ))}
     </div>
   ) : (

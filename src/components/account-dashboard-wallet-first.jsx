@@ -265,8 +265,8 @@ export function DashboardRecentTransactions({ s, limit = 8, className = '' }) {
           <h2 className="portal-dash-wf__tx-panel-title">Recent Activity</h2>
         </div>
         <div className="portal-dash-wf__tx-list">
-          {items.length ? items.map((tx) => (
-            <DashboardActivityRow key={tx.id} tx={tx} onClick={() => setSelectedTx(tx)} />
+          {items.length ? items.map((tx, idx) => (
+            <DashboardActivityRow key={`${tx.id}-${idx}`} tx={tx} onClick={() => setSelectedTx(tx)} />
           )) : (
             <p className="portal-dash-wf__tx-empty">No transactions yet.</p>
           )}
