@@ -395,8 +395,8 @@ export function formatActivityWhen(isoOrDate, options = {}) {
   const d = parseActivityDate(isoOrDate);
   if (!d) return '';
 
-  if (style === 'grouped-time') return `${formatMonthDay(d)} · ${formatActivityTime(d)}`;
-  if (style === 'grouped-row') return `${formatMonthDay(d)} · ${formatActivityTime(d)}`;
+  if (style === 'grouped-time') return formatActivityTime(d);
+  if (style === 'grouped-row') return `${formatMonthDay(d)} ${formatActivityTime(d)}`;
 
   const bucket = getActivityDateBucket(d, now);
 

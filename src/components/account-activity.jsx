@@ -64,7 +64,7 @@ function ActivityIcon({ tx, compact = false }) {
 
 /** Icon · title · subtitle | amount · date — shared across dashboard / wallet / card / transactions */
 export function ActivityRow({ tx, onClick, dateStyle = 'standard', variant = 'default' }) {
-  const when = A.formatActivityWhen(tx.at, { style: dateStyle });
+  const when = A.formatActivityWhen(tx.at, { style: 'standard' });
   const status = A.getActivityStatus(tx);
   const isCompact = variant === 'compact';
   const isGrouped = variant === 'grouped';
@@ -96,20 +96,22 @@ export function ActivityRow({ tx, onClick, dateStyle = 'standard', variant = 'de
       <span className={isCompact ? 'portal-tx__side portal-dash-wf__tx-side' : isGrouped ? 'portal-tx-group__side' : 'portal-tx__side'}>
         <ActivityAmount amount={tx.amount} incoming={tx.incoming} failed={tx.failed} kind={tx.kind} item={tx} />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-          <span className="portal-tx__when">{when}</span>
-          {status === 'failed' ? (
-            <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: '600', textTransform: 'uppercase', backgroundColor: 'rgba(239, 68, 68, 0.12)', padding: '1px 5px', borderRadius: '4px' }}>
-              Failed
-            </span>
-          ) : status === 'pending' ? (
-            <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600', textTransform: 'uppercase', backgroundColor: 'rgba(245, 158, 11, 0.12)', padding: '1px 5px', borderRadius: '4px' }}>
-              Pending
-            </span>
-          ) : (
-            <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '600', textTransform: 'uppercase', backgroundColor: 'rgba(16, 185, 129, 0.12)', padding: '1px 5px', borderRadius: '4px' }}>
-              {tx.rawStatus || 'Authorized'}
-            </span>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span className="portal-tx__when">{when}</span>
+            {status === 'failed' ? (
+              <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: '600', textTransform: 'uppercase', backgroundColor: 'rgba(239, 68, 68, 0.12)', padding: '1px 5px', borderRadius: '4px' }}>
+                Failed
+              </span>
+            ) : status === 'pending' ? (
+              <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600', textTransform: 'uppercase', backgroundColor: 'rgba(245, 158, 11, 0.12)', padding: '1px 5px', borderRadius: '4px' }}>
+                Pending
+              </span>
+            ) : (
+              <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '600', textTransform: 'uppercase', backgroundColor: 'rgba(16, 185, 129, 0.12)', padding: '1px 5px', borderRadius: '4px' }}>
+                {tx.rawStatus || 'Authorized'}
+              </span>
+            )}
+          </div>
         </div>
       </span>
     </>
