@@ -348,7 +348,16 @@ export async function getCardTransactions(userId, cardNo = '') {
 }
 
 export async function simulateCardTransaction(cardNo, params = {}) {
-  const data = await apiPost(`/admin/cards/${encodeURIComponent(cardNo)}/simulate-transaction`, params);
+  const payload = {
+    type: params.type || 'auth',
+    amount: params.amount,
+    currency: params.currency || 'USD',
+    merchantName: params.merchantName || 'Simulated Merchant',
+    merchantData: params.merchantData || { name: params.merchantName || 'Simulated Merchant', country: 'KR', city: 'SEOUL' },
+    description: params.description || 'Admin Simulated Transaction',
+    ...params,
+  };
+  const data = await apiPost(`/admin/cards/${encodeURIComponent(cardNo)}/simulate-transaction`, payload);
   return data;
 }
 

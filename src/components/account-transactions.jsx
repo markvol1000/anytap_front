@@ -170,6 +170,7 @@ export function TxDetailSheet({ tx, onClose }) {
               incoming={tx.incoming}
               failed={tx.failed}
               kind={tx.kind}
+              item={tx}
               large
             />
             <TxStatusBadge status={status} />
@@ -188,7 +189,19 @@ export function TxDetailSheet({ tx, onClose }) {
             </DetailRow>
           )}
           <DetailRow label="Date & Time">{A.formatActivityDateTime(tx.at)}</DetailRow>
-          <DetailRow label="Status">{A.formatActivityStatusLabel(status)}</DetailRow>
+          <DetailRow label="Status">
+            <span className={`portal-tx-detail__status-badge portal-tx-detail__status-badge--${status}`}>
+              {A.formatActivityStatusLabel(status)}
+            </span>
+          </DetailRow>
+
+          {tx.remainingBalance != null && !Number.isNaN(tx.remainingBalance) && (
+            <DetailRow label="Remaining Balance">
+              <span style={{ fontWeight: '600', color: '#2b6cb0' }}>
+                ${Number(tx.remainingBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+              </span>
+            </DetailRow>
+          )}
           <DetailRow label="Wallet / Card">{A.getActivitySourceLabel(tx)}</DetailRow>
           {maskedCard && (
             <DetailRow label="Card Number">{maskedCard}</DetailRow>

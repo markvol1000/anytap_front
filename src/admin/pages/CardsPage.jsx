@@ -693,21 +693,54 @@ export function CardsPage() {
                 </select>
               </div>
 
+              {/* Currency Selector / Input */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px', fontWeight: '500' }}>
+                  Transaction Currency (통화)
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <select
+                    value={simCurrency}
+                    onChange={(e) => setSimCurrency(e.target.value)}
+                    disabled={simLoading}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: '#0f172a',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#fff',
+                      fontSize: '14px',
+                      outline: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="USD">USD ($)</option>
+                    <option value="KRW">KRW (₩)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="JPY">JPY (¥)</option>
+                    <option value="GBP">GBP (£)</option>
+                  </select>
+                </div>
+              </div>
+
               {/* Amount Input */}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px', fontWeight: '500' }}>
-                  Transaction Amount (USD)
+                  Transaction Amount ({simCurrency})
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#38bdf8' }}>$</span>
+                  <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#38bdf8' }}>
+                    {simCurrency === 'KRW' ? '₩' : simCurrency === 'EUR' ? '€' : simCurrency === 'JPY' ? '¥' : simCurrency === 'GBP' ? '£' : '$'}
+                  </span>
                   <input
                     type="number"
-                    step="0.01"
+                    step={simCurrency === 'KRW' || simCurrency === 'JPY' ? '1' : '0.01'}
                     min="0.01"
                     value={simAmount}
                     onChange={(e) => setSimAmount(e.target.value)}
                     disabled={simLoading}
-                    placeholder="10.00"
+                    placeholder={simCurrency === 'KRW' ? '10000' : '10.00'}
                     style={{
                       width: '140px',
                       padding: '8px 12px',
@@ -720,38 +753,7 @@ export function CardsPage() {
                       outline: 'none',
                     }}
                   />
-                  <span style={{ fontSize: '13px', color: '#94a3b8' }}>USD</span>
-                </div>
-              </div>
-
-              {/* Currency Selector / Input */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px', fontWeight: '500' }}>
-                  Transaction Currency (통화)
-                </label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <select
-                    value={simCurrency}
-                    onChange={(e) => setSimCurrency(e.target.value)}
-                    disabled={simLoading}
-                    style={{
-                      width: '120px',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      backgroundColor: '#0f172a',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      color: '#fff',
-                      fontSize: '13px',
-                      outline: 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <option value="USD">USD ($)</option>
-                    <option value="KRW">KRW (₩)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="JPY">JPY (¥)</option>
-                    <option value="GBP">GBP (£)</option>
-                  </select>
+                  <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '600' }}>{simCurrency}</span>
                 </div>
               </div>
 
