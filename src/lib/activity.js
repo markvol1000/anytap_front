@@ -423,10 +423,11 @@ export function formatActivityGroupLabel(isoOrDate, now = new Date()) {
   const d = parseActivityDate(isoOrDate);
   if (!d) return '';
   const bucket = getActivityDateBucket(d, now);
-  if (bucket === 'today') return 'Today';
-  if (bucket === 'yesterday') return 'Yesterday';
-  if (bucket === 'prior') return String(d.getFullYear());
-  return formatMonthDay(d, false);
+  const year = d.getFullYear();
+  if (bucket === 'today') return `Today, ${year}`;
+  if (bucket === 'yesterday') return `Yesterday, ${year}`;
+  if (bucket === 'prior') return String(year);
+  return `${formatMonthDay(d, false)}, ${year}`;
 }
 
 /** Group sorted activity items by calendar day / year for transactions page */
