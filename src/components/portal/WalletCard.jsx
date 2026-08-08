@@ -10,50 +10,29 @@ import * as A from '../../lib/account-data.js';
 import * as W from '../../utils/wallet-data.js';
 import { resolveWalletBalance, resolveWalletAddress } from '../../lib/api/display-data.js';
 
-function WalletCardTransactions({ s, limit, className = '' }) {
-  const [selectedTx, setSelectedTx] = useState(null);
-  const [copiedTxId, setCopiedTxId] = useState('');
+import { CardsDesktopTransactions } from '../account-cards-desktop.jsx';
 
+function WalletCardTransactions({ s, limit = 5, className = '' }) {
   const items = useMemo(() => {
     const raw = A.resolvePortalActivityWithHistory(s.activityItems);
     return A.sortActivityChronological(
       A.filterActivityForWalletPage(A.normalizeActivityItems(raw)),
-    ).slice(0, limit);
-  }, [s.activityItems, limit]);
+    );
+  }, [s.activityItems]);
 
-  const handleCopyTxId = useCallback((txId) => {
-    try { navigator.clipboard?.writeText(txId); } catch { /* noop */ }
-    setCopiedTxId(txId);
-    window.setTimeout(() => setCopiedTxId(''), 2000);
-  }, []);
+  const handleViewAll = useCallback(() => {
+    s.go?.('transactions', { search: { source: 'wallet' } });
+  }, [s]);
 
   return (
-    <>
-      <div className={`portal-wallet-card__tx${className ? ` ${className}` : ''}`}>
-        <div className="portal-wallet-card__tx-head">
-          <h3 className="portal-wallet-card__tx-title">Recent Transactions</h3>
-          {limit <= 3 ? (
-            <button type="button" className="portal-wallet-card__tx-link" onClick={() => s.go?.('transactions', { search: { source: 'wallet' } })}>
-              View all
-            </button>
-          ) : null}
-        </div>
-        <div className="portal-wallet-card__tx-list">
-          {items.length ? items.map((tx) => (
-            <DashboardActivityRow key={tx.id} tx={tx} onClick={() => setSelectedTx(tx)} />
-          )) : (
-            <p className="portal-wallet-card__tx-empty">No wallet transactions yet.</p>
-          )}
-        </div>
-      </div>
-
-      <TransactionDetailsDrawer
-        tx={selectedTx}
-        onClose={() => setSelectedTx(null)}
-        onCopyTxId={handleCopyTxId}
-        copyState={copiedTxId}
+    <div className={`portal-wallet-card__tx${className ? ` ${className}` : ''}`}>
+      <CardsDesktopTransactions
+        items={items}
+        onViewAll={handleViewAll}
+        title="Recent Transactions"
+        limit={limit}
       />
-    </>
+    </div>
   );
 }
 

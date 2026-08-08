@@ -1,7 +1,7 @@
 /** Mock wallet constants and formatting helpers. */
 
 export const MOCK_WALLET_BALANCE = 2480.5;
-export const MIN_TOPUP = 19;
+export const MIN_TOPUP = 50;
 export const MIN_SEND = 10;
 export const GAS_FEE_CHARGE = 1.5;
 export const GAS_FEE_SEND = 2;

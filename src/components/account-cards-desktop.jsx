@@ -275,18 +275,20 @@ function CardsDesktopCarousel({
   );
 }
 
-function CardsDesktopTransactions({ items, card, cardLast4, onViewAll }) {
+export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, title = 'Recent Transactions', limit = TX_PREVIEW_SIZE }) {
   const filtered = useMemo(
     () => A.sortActivityChronological(
-      A.filterActivityForCardPage(A.normalizeActivityItems(items), card || cardLast4),
-    ).slice(0, TX_PREVIEW_SIZE),
-    [items, card, cardLast4],
+      (card || cardLast4)
+        ? A.filterActivityForCardPage(A.normalizeActivityItems(items), card || cardLast4)
+        : A.normalizeActivityItems(items),
+    ).slice(0, limit),
+    [items, card, cardLast4, limit],
   );
 
   return (
     <section className="portal-mycards-desk-tx" aria-label="Recent transactions">
       <div className="portal-mycards-desk-tx__head">
-        <h2 className="portal-mycards-section__title">Recent Transactions</h2>
+        <h2 className="portal-mycards-section__title">{title}</h2>
         {onViewAll && filtered.length > 0 ? (
           <button type="button" className="portal-mycards-desk-tx__view-all" onClick={onViewAll}>
             See all transactions →
@@ -295,7 +297,7 @@ function CardsDesktopTransactions({ items, card, cardLast4, onViewAll }) {
       </div>
 
       {!filtered.length ? (
-        <p className="portal-mycards-desk-tx__empty">No transactions for this card yet.</p>
+        <p className="portal-mycards-desk-tx__empty">No transactions yet.</p>
       ) : (
         <div className="portal-mycards-desk-tx__table-wrap">
           <table className="portal-mycards-desk-tx__table">

@@ -7,10 +7,11 @@
 // TODO: USDT balance → Cregis API (wallet/balance endpoint)
 // TODO: Send USDT → Cregis API (wallet/transfer endpoint)
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { Icon } from './ui.jsx';
 import { WalletCard } from './portal/WalletCard.jsx';
 import { RecentActivitySection } from './account-activity.jsx';
+import { DebitCardFace } from './account-cards.jsx';
 import * as A from '../lib/account-data.js';
 import * as W from '../utils/wallet-data.js';
 import { resolveWalletBalance, resolveWalletAddress } from '../lib/api/display-data.js';
@@ -41,6 +42,7 @@ function WalletMyCardsList({ cards, selectedId, onSelect, onManageCards }) {
           const active = card.id === selectedId;
           const variant = card.variant === 'physical' ? 'physical' : 'virtual';
           const bal = W.parseCardBalanceUsdt(card.balance);
+          const statusInfo = A.getCardStatusBadge(card);
           return (
             <li key={card.id}>
               <button
@@ -54,6 +56,30 @@ function WalletMyCardsList({ cards, selectedId, onSelect, onManageCards }) {
                     <span className="portal-wallet-mycards__num">{A.maskCardShort(card.last4)}</span>
                     <span className={`portal-wallet-mycards__badge portal-wallet-mycards__badge--${variant}`}>
                       {A.cardVariantLabel(card)}
+                    </span>
+                    <span
+                      className="portal-wallet-mycards__status-badge"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        backgroundColor: `${statusInfo.text}15`,
+                        color: statusInfo.text,
+                        border: `1px solid ${statusInfo.text}33`,
+                      }}>
+                      <span
+                        style={{
+                          width: '6px',
+                          height: '6px',
+                          borderRadius: '50%',
+                          backgroundColor: statusInfo.dot,
+                        }}
+                      />
+                      {statusInfo.label}
                     </span>
                   </span>
                   <span className="portal-wallet-mycards__bal">{bal} USDT</span>
@@ -250,30 +276,64 @@ function AmountBlock({
   hint,
   quickAmounts = W.QUICK_AMOUNTS,
   onQuickAdd,
+  isExceeded = false,
 }) {
   const inputId = useId();
 
+  const handleInputChange = (val) => {
+    if (!val) {
+      onChange('');
+      return;
+    }
+    // Clean input
+    let clean = val.replace(/[^0-9.]/g, '');
+    const parts = clean.split('.');
+    if (parts.length > 2) {
+      clean = `${parts[0]}.${parts.slice(1).join('')}`;
+    }
+    const [integerPart, decimalPart] = clean.split('.');
+    
+    // Restrict decimal digits to max 2
+    let newDec = decimalPart != null ? decimalPart.slice(0, 2) : null;
+    
+    // Total digit length (integer digits + decimal digits <= 6)
+    const maxIntLen = 6 - (newDec != null ? newDec.length : 0);
+    let newInt = integerPart.slice(0, Math.max(0, maxIntLen));
+
+    let finalVal = newDec != null ? `${newInt}.${newDec}` : newInt;
+    onChange(finalVal);
+  };
+
   return (
-    <div className="portal-wallet-amt">
-      <p className="portal-wallet-amt__label">{label}</p>
-      <div className="portal-wallet-amt__row">
+    <div className="portal-wallet-amt" style={{ background: '#F8FAFC', border: isExceeded ? '2px solid #ef4444' : '2px solid #64748B', borderRadius: '12px', padding: '14px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+      <p className="portal-wallet-amt__label" style={{ fontWeight: 600, color: '#475569', marginBottom: '8px' }}>{label}</p>
+      <div className="portal-wallet-amt__row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
         <input
           id={inputId}
-          className="portal-wallet-amt__input"
+          className={`portal-wallet-amt__input${isExceeded ? ' is-exceeded' : ''}`}
           type="number"
           min="0"
           step="0.01"
           inputMode="decimal"
           placeholder="0"
           value={amount}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => handleInputChange(e.target.value)}
           aria-label={label}
+          style={{
+            fontSize: '30px',
+            fontWeight: 700,
+            color: isExceeded ? '#ef4444' : '#0f172a',
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            width: '100%',
+          }}
         />
-        <span className="portal-wallet-amt__unit">USDT</span>
+        <span className="portal-wallet-amt__unit" style={{ fontWeight: 700, color: '#334155', fontSize: '16px' }}>USDT</span>
       </div>
       {hint && <p className="portal-wallet-amt__hint">{hint}</p>}
       {onQuickAdd && (
-        <div className="portal-wallet-quick-amt">
+        <div className="portal-wallet-quick-amt" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '12px' }}>
           {quickAmounts.map((n) => (
             <button key={n} type="button" className="portal-wallet-quick-amt__btn" onClick={() => onQuickAdd(n)}>
               +{n}
@@ -303,7 +363,7 @@ function TransactionSummary({ selectedCard, topUpAmount, gasFee }) {
         </div>
         <div className="portal-wallet-desk__summary-row">
           <dt>Current Card Balance</dt>
-          <dd>{W.parseCardBalanceUsdt(selectedCard.balance)} USDT</dd>
+          <dd>{selectedCard.balance?.includes('USDT') || selectedCard.balance?.includes('$') ? selectedCard.balance : `${W.parseCardBalanceUsdt(selectedCard.balance)} USDT`}</dd>
         </div>
         <div className="portal-wallet-desk__summary-row">
           <dt>Top Up Amount</dt>
@@ -389,7 +449,8 @@ function WalletTopUpSide({
 
   const walletBal = resolveWalletBalance(s.walletBalance);
   const topUpVal = parseFloat(topUpAmount) || 0;
-  const canSubmit = W.isValidTopUp(topUpAmount) && (topUpVal + W.GAS_FEE_CHARGE <= walletBal);
+  const isExceeded = topUpVal > 0 && (topUpVal + W.GAS_FEE_CHARGE > walletBal);
+  const canSubmit = W.isValidTopUp(topUpAmount) && !isExceeded;
 
   return (
     <>
@@ -399,6 +460,7 @@ function WalletTopUpSide({
         onChange={setTopUpAmount}
         hint={`Min. ${W.MIN_TOPUP} USDT · Gas fee shown on confirmation`}
         onQuickAdd={addTopUpQuick}
+        isExceeded={isExceeded}
       />
       <TransactionSummary
         selectedCard={selectedCard}
@@ -878,7 +940,13 @@ export function AccountWallet({ s }) {
   }, [s.walletTab]);
 
   useEffect(() => {
-    if (!selectedCardId && activeCards[0]) setSelectedCardId(activeCards[0].id);
+    if (activeCards.length > 0) {
+      const exists = activeCards.some((c) => c.id === selectedCardId);
+      if (!exists || !selectedCardId) {
+        const preferred = activeCards.find((c) => c.status === 'active') || activeCards[0];
+        setSelectedCardId(preferred.id);
+      }
+    }
   }, [activeCards, selectedCardId]);
 
   const selectedCard = activeCards.find((c) => c.id === selectedCardId) ?? null;
@@ -1023,18 +1091,6 @@ export function AccountWallet({ s }) {
             />
           </div>
         )}
-
-        <RecentActivitySection
-          title="Recent Wallet Activity"
-          items={s.activityItems}
-          pageFilter="wallet"
-          limit={5}
-          onItemClick={() => s.go('transactions', { search: { source: 'wallet' } })}
-          onViewAll={() => s.go('transactions', { search: { source: 'wallet' } })}
-          emptyTitle="No wallet activity yet"
-          emptyMsg="Wallet deposits, withdrawals, and card top-ups will appear here."
-          emptyIcon="wallet"
-        />
       </div>
 
       {/* Desktop — transfer-first top up layout */}
@@ -1108,18 +1164,6 @@ export function AccountWallet({ s }) {
             />
           </div>
         )}
-
-        <RecentActivitySection
-          title="Recent Wallet Activity"
-          items={s.activityItems}
-          pageFilter="wallet"
-          limit={5}
-          onItemClick={() => s.go('transactions', { search: { source: 'wallet' } })}
-          onViewAll={() => s.go('transactions', { search: { source: 'wallet' } })}
-          emptyTitle="No wallet activity yet"
-          emptyMsg="Wallet deposits, withdrawals, and card top-ups will appear here."
-          emptyIcon="wallet"
-        />
       </div>
 
       {confirmCharge && selectedCard && (

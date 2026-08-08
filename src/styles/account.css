@@ -15946,7 +15946,13 @@ a.portal-mob-back { text-decoration: none; }
 }
 
 .portal-wallet-card__tx {
-  padding-top: 4px;
+  padding-top: 0;
+  margin-top: 8px;
+}
+
+.portal-wallet-card__tx .portal-mycards-desk-tx {
+  margin-top: 8px;
+  padding-top: 12px;
 }
 
 .portal-wallet-card__tx-head {
