@@ -57,6 +57,7 @@ export function mapMemberRow(row) {
     cardStatus: lower(row?.cardStatus, 'not_issued'),
     cardStatusText: row?.cardStatusText || '',
     walletBalance: Number(row?.walletBalance ?? 0) || 0,
+    cregisActualBalance: Number(row?.cregisActualBalance ?? row?.actualBalance ?? row?.walletBalance ?? 0) || 0,
     cregisWalletAddress: row?.cregisWalletAddress && row.cregisWalletAddress !== '-'
       ? row.cregisWalletAddress
       : '',
@@ -80,6 +81,7 @@ export function mapUserDetail(data) {
   const mapped = mapMemberRow(data);
   return {
     ...mapped,
+    cregisActualBalance: Number(data.cregisActualBalance ?? data.actualBalance ?? mapped.cregisActualBalance ?? 0) || 0,
     cardIds: Array.isArray(data.cardIds) ? data.cardIds : [],
     merchantId: data.merchantId || '',
     merchantName: data.merchantName || '',

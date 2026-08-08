@@ -12,7 +12,7 @@ import { AdminStatusBadge, formatUsdt, shortenAddress } from '../components/Admi
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
-import { getWalletById, getWallets, lockWallet, unlockWallet } from '../services/adminService.js';
+import { getWalletById, getWallets, lockWallet, unlockWallet, triggerFeePayout } from '../services/adminService.js';
 
 const fetchWallets = (params) => getWallets(params);
 const fetchWalletDetail = (id) => getWalletById(id);
@@ -22,6 +22,51 @@ export function WalletsPage() {
   const [selectedId, setSelectedId] = useState(null);
   const list = useAdminList(fetchWallets);
   const { detail, loading: detailLoading, setDetail } = useAdminDetail(fetchWalletDetail, selectedId);
+
+  const handleSweepFee = useCallback(async () => {
+    if (!detail) return;
+    const targetUserId = detail.memberId || detail.id;
+
+    const latestDetail = await getWalletById(detail.id, true);
+    setDetail(latestDetail);
+
+    const unpaidFee = Number(latestDetail?.unpaidTotalFee ?? 0);
+    if (unpaidFee <= 0) {
+      await runConfirm(confirm, {
+        title: 'No Unpaid Fee',
+        message: `${latestDetail?.memberName || targetUserId} has no unpaid fees available for sweep. (Unpaid Fee: $0.00)`,
+        confirmLabel: 'Close',
+        hideCancel: true,
+      });
+      return;
+    }
+
+    const ok1 = await runConfirm(confirm, {
+      title: 'Trigger Fee Payout (Sweep Fee)',
+      message: `Sweep unpaid total fee (${formatUsdt(unpaidFee)}) for ${latestDetail.memberName || targetUserId} to Cregis master collection wallet?`,
+      confirmLabel: 'Proceed',
+    });
+    if (!ok1) return;
+
+    const ok2 = await runConfirm(confirm, {
+      title: 'Are you sure?',
+      message: 'This will trigger a real blockchain transaction to sweep the fee. Do you want to proceed?',
+      confirmLabel: 'Yes, Sweep Now',
+      danger: true,
+    });
+    if (!ok2) return;
+
+    try {
+      const res = await triggerFeePayout(targetUserId);
+      const msg = res?.message || (typeof res?.data === 'string' ? res.data : 'Fee payout processed successfully.');
+      window.alert(msg);
+      const updated = await getWalletById(detail.id, true);
+      setDetail(updated);
+      list.reload();
+    } catch (err) {
+      window.alert(err.message);
+    }
+  }, [confirm, detail, list, setDetail]);
 
   const toggleLock = useCallback(async (lock) => {
     if (!detail) return;
@@ -80,17 +125,30 @@ export function WalletsPage() {
                   { key: 'address', label: 'Address', render: (r) => shortenAddress(r.address, 8, 6) },
                   {
                     key: 'balance',
-                    label: 'Balance',
-                    render: (r) => (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <img 
-                          src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032" 
-                          alt="USDT" 
-                          style={{ width: '16px', height: '16px', borderRadius: '50%' }} 
-                        />
-                        <span>{formatUsdt(r.balance)}</span>
-                      </div>
-                    ),
+                    label: 'Balance (Actual) / Unpaid Fee',
+                    render: (r) => {
+                      const avail = (Number(r.balance) || 0).toFixed(2);
+                      const actual = (Number(r.cregisActualBalance ?? r.balance) || 0).toFixed(2);
+                      const unpaid = (Number(r.unpaidTotalFee) || 0).toFixed(2);
+                      return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '15px',
+                            height: '15px',
+                            borderRadius: '50%',
+                            backgroundColor: '#26a17b',
+                            color: '#fff',
+                            fontSize: '9px',
+                            fontWeight: 'bold',
+                            lineHeight: 1
+                          }}>₮</span>
+                          <span>{avail}({actual}) / {unpaid}</span>
+                        </div>
+                      );
+                    },
                   },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
                   { key: 'created', label: 'Created' },
@@ -153,6 +211,24 @@ export function WalletsPage() {
                         <span style={{ color: 'var(--admin-text-muted, #888)' }}>
                           ({formatUsdt(detail.cregisActualBalance ?? detail.balance)}) / {formatUsdt(detail.unpaidTotalFee ?? 0)} Unpaid Fee
                         </span>
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn--ghost admin-btn--sm"
+                          onClick={handleSweepFee}
+                          title="Sweep unpaid fee to Cregis master wallet"
+                          style={{
+                            padding: '2px 6px',
+                            fontSize: '11px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                            color: '#3b82f6',
+                            borderColor: 'rgba(59, 130, 246, 0.3)',
+                            marginLeft: '4px'
+                          }}
+                        >
+                          💸 Sweep Fee
+                        </button>
                       </div>
                     } 
                   />

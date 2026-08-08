@@ -44,9 +44,11 @@ export function AdminConfirmProvider({ children }) {
               />
             ) : null}
             <div className="admin-modal__actions">
-              <button type="button" className="admin-btn admin-btn--ghost" onClick={() => close(false)}>
-                Cancel
-              </button>
+              {!state.hideCancel && (
+                <button type="button" className="admin-btn admin-btn--ghost" onClick={() => close(false)}>
+                  {state.cancelLabel ?? 'Cancel'}
+                </button>
+              )}
               <button
                 type="button"
                 className={`admin-btn ${state.danger ? 'admin-btn--danger' : 'admin-btn--primary'}`}

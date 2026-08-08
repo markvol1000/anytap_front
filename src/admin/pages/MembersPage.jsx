@@ -81,9 +81,23 @@ export function MembersPage() {
         setDetail(updated);
         list.reload();
       } else if (action === 'triggerFeePayout') {
+        const latestDetail = await getMemberById(detail.id);
+        setDetail(latestDetail);
+
+        const unpaidFee = Number(latestDetail?.unpaidTotalFee ?? 0);
+        if (unpaidFee <= 0) {
+          await runConfirm(confirm, {
+            title: 'No Unpaid Fee',
+            message: `${latestDetail?.name || latestDetail?.id} has no unpaid fees available for sweep. (Unpaid Fee: $0.00)`,
+            confirmLabel: 'Close',
+            hideCancel: true,
+          });
+          return;
+        }
+
         const ok1 = await runConfirm(confirm, {
           title: 'Trigger Fee Payout (Sweep Fee)',
-          message: `Sweep unpaid total fee (${formatUsdt(detail.unpaidTotalFee ?? 0)}) for ${detail.name} to Cregis master collection wallet?`,
+          message: `Sweep unpaid total fee (${formatUsdt(unpaidFee)}) for ${latestDetail.name} to Cregis master collection wallet?`,
           confirmLabel: 'Proceed',
         });
         if (!ok1) return;
@@ -96,8 +110,10 @@ export function MembersPage() {
         });
         if (!ok2) return;
 
-        await triggerFeePayout(detail.id);
-        const updated = await getMemberById(detail.id);
+        const res = await triggerFeePayout(latestDetail.id);
+        const msg = res?.message || (typeof res?.data === 'string' ? res.data : 'Fee payout processed successfully.');
+        window.alert(msg);
+        const updated = await getMemberById(latestDetail.id);
         setDetail(updated);
         list.reload();
       }
@@ -146,24 +162,29 @@ export function MembersPage() {
                       label={r.cardStatus + (r.cardLast4 ? ` (${r.cardLast4})` : '')}
                     />
                   ) },
-                  { key: 'walletBalance', label: 'Wallet', render: (r) => (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '16px',
-                        height: '16px',
-                        borderRadius: '50%',
-                        backgroundColor: '#26a17b',
-                        color: '#fff',
-                        fontSize: '9px',
-                        fontWeight: 'bold',
-                        lineHeight: 1
-                      }}>₮</span>
-                      <span>{formatUsdt(r.walletBalance)}</span>
-                    </div>
-                  ) },
+                  { key: 'walletBalance', label: 'Wallet (Actual) / Unpaid Fee', render: (r) => {
+                    const avail = (Number(r.walletBalance) || 0).toFixed(2);
+                    const actual = (Number(r.cregisActualBalance ?? r.walletBalance) || 0).toFixed(2);
+                    const unpaid = (Number(r.unpaidTotalFee) || 0).toFixed(2);
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '15px',
+                          height: '15px',
+                          borderRadius: '50%',
+                          backgroundColor: '#26a17b',
+                          color: '#fff',
+                          fontSize: '9px',
+                          fontWeight: 'bold',
+                          lineHeight: 1
+                        }}>₮</span>
+                        <span>{avail}({actual}) / {unpaid}</span>
+                      </div>
+                    );
+                  } },
                   { key: 'referralStatus', label: 'Referral', render: (r) => <AdminStatusBadge status={r.referralStatus} /> },
                   { key: 'accountStatus', label: 'Account', render: (r) => <AdminStatusBadge status={r.accountStatus} /> },
                 ]}
@@ -293,9 +314,6 @@ export function MembersPage() {
                       </button>
                     )
                   )}
-                  <button type="button" className="admin-btn admin-btn--danger" onClick={() => handleAction('delete')}>
-                    Delete member
-                  </button>
                 </AdminActionStack>
               </>
             ) : null}

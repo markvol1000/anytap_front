@@ -42,6 +42,7 @@ export function CardsPage() {
   const [txTotal, setTxTotal] = useState(0);
   const [txPage, setTxPage] = useState(1);
   const [txLoading, setTxLoading] = useState(false);
+  const [selectedTx, setSelectedTx] = useState(null);
 
   const loadTxs = useCallback(async (page = 1) => {
     if (!selectedId) {
@@ -362,33 +363,85 @@ export function CardsPage() {
                       <p className="admin-loading admin-loading--inline">Loading transactions…</p>
                     ) : txItems && txItems.length > 0 ? (
                       <>
-                        <div className="admin-detail-table-wrap" style={{ marginTop: '12px' }}>
-                          <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', border: '1px solid var(--admin-border-subtle)' }}>
+                        <div className="admin-detail-table-wrap" style={{ marginTop: '12px', overflowX: 'auto' }}>
+                          <table style={{ width: '100%', minWidth: '1100px', fontSize: '12px', borderCollapse: 'collapse', border: '1px solid var(--admin-border-subtle)' }}>
                             <thead>
-                              <tr style={{ background: 'var(--admin-bg-subtle)', borderBottom: '1px solid var(--admin-border)', textAlign: 'left' }}>
-                                <th style={{ padding: '10px 8px', fontWeight: '600' }}>Date</th>
-                                <th style={{ padding: '10px 8px', fontWeight: '600' }}>Type</th>
-                                <th style={{ padding: '10px 8px', fontWeight: '600' }}>Amount</th>
-                                <th style={{ padding: '10px 8px', fontWeight: '600' }}>Status</th>
+                              <tr style={{ background: 'var(--admin-bg-subtle)', borderBottom: '1px solid var(--admin-border)', textAlign: 'left', whiteSpace: 'nowrap' }}>
+                                <th style={{ padding: '8px 6px', fontWeight: '600' }}>Date/Time</th>
+                                <th style={{ padding: '8px 6px', fontWeight: '600' }}>Merchant</th>
+                                <th style={{ padding: '8px 6px', fontWeight: '600' }}>MCC</th>
+                                <th style={{ padding: '8px 6px', fontWeight: '600' }}>Type</th>
+                                <th style={{ padding: '8px 6px', fontWeight: '600' }}>Amount</th>
+                                <th style={{ padding: '8px 6px', fontWeight: '600' }}>Auth Amount</th>
+                                <th style={{ padding: '8px 6px', fontWeight: '600' }}>Auth Fee</th>
+                                <th style={{ padding: '8px 6px', fontWeight: '600' }}>Cross Board Fee</th>
+                                <th style={{ padding: '8px 6px', fontWeight: '600' }}>Settle Amount</th>
+                                <th style={{ padding: '8px 6px', fontWeight: '600' }}>Settle Date</th>
+                                <th style={{ padding: '8px 6px', fontWeight: '600' }}>Status</th>
+                                <th style={{ padding: '8px 6px', fontWeight: '600', textAlign: 'center' }}>Detail</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {txItems.map((tx, idx) => (
-                                <tr key={tx.id || tx.orderNo || idx} style={{ borderBottom: '1px solid var(--admin-border-subtle)' }}>
-                                  <td style={{ padding: '10px 8px', color: 'var(--admin-text)' }}>
-                                    {formatAdminDate(tx.transactionTime || tx.created || tx.at)}
-                                  </td>
-                                  <td style={{ padding: '10px 8px', textTransform: 'capitalize', color: 'var(--admin-text)' }}>
-                                    {tx.type || tx.subType || 'Payment'}
-                                  </td>
-                                  <td style={{ padding: '10px 8px', fontWeight: '500', color: 'var(--admin-text)' }}>
-                                    {tx.amount} {tx.currency || 'USD'}
-                                  </td>
-                                  <td style={{ padding: '10px 8px' }}>
-                                    <AdminStatusBadge status={tx.status} />
-                                  </td>
-                                </tr>
-                              ))}
+                              {txItems.map((tx, idx) => {
+                                const merchant = tx.merchantName || tx.merchantData?.name || tx.description || '—';
+                                const mcc = tx.merchantData?.categoryCode ? `${tx.merchantData.categoryCode}${tx.merchantData?.category ? ` (${tx.merchantData.category})` : ''}` : (tx.merchantData?.category || '—');
+                                const amt = tx.amount != null ? `${tx.amount} ${tx.currency || 'USD'}` : '—';
+                                const authAmt = tx.authorizedAmount != null ? `${tx.authorizedAmount} ${tx.authorizedCurrency || tx.currency || 'USD'}` : '—';
+                                const authFee = tx.fee != null ? `${tx.fee} ${tx.feeCurrency || 'USD'}` : (tx.assistFeeInfo?.authorizationFee != null ? `${tx.assistFeeInfo.authorizationFee} USD` : '—');
+                                const cbFee = tx.crossBoardFee != null ? `${tx.crossBoardFee} ${tx.crossBoardFeeCurrency || 'USD'}` : (tx.assistFeeInfo?.crossBorderFee != null ? `${tx.assistFeeInfo.crossBorderFee} USD` : '—');
+                                const settleAmt = tx.settleAmount != null ? `${tx.settleAmount} ${tx.settleCurrency || 'USD'}` : '—';
+                                const settleDt = tx.settleDate ? formatAdminDate(tx.settleDate) : '—';
+
+                                return (
+                                  <tr 
+                                    key={tx.tradeNo || tx.id || tx.orderNo || idx} 
+                                    style={{ borderBottom: '1px solid var(--admin-border-subtle)', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                    onClick={() => setSelectedTx(tx)}>
+                                    <td style={{ padding: '8px 6px', color: 'var(--admin-text)' }}>
+                                      {formatAdminDate(tx.transactionTime || tx.created || tx.at)}
+                                    </td>
+                                    <td style={{ padding: '8px 6px', fontWeight: '500', color: 'var(--admin-text)' }}>
+                                      {merchant}
+                                    </td>
+                                    <td style={{ padding: '8px 6px', color: 'var(--admin-muted)' }}>
+                                      {mcc}
+                                    </td>
+                                    <td style={{ padding: '8px 6px', textTransform: 'capitalize', color: 'var(--admin-text)' }}>
+                                      {tx.type || tx.subType || 'auth'}
+                                    </td>
+                                    <td style={{ padding: '8px 6px', fontWeight: '500', color: 'var(--admin-text)' }}>
+                                      {amt}
+                                    </td>
+                                    <td style={{ padding: '8px 6px', color: 'var(--admin-text)' }}>
+                                      {authAmt}
+                                    </td>
+                                    <td style={{ padding: '8px 6px', color: 'var(--admin-muted)' }}>
+                                      {authFee}
+                                    </td>
+                                    <td style={{ padding: '8px 6px', color: 'var(--admin-muted)' }}>
+                                      {cbFee}
+                                    </td>
+                                    <td style={{ padding: '8px 6px', color: 'var(--admin-text)' }}>
+                                      {settleAmt}
+                                    </td>
+                                    <td style={{ padding: '8px 6px', color: 'var(--admin-muted)' }}>
+                                      {settleDt}
+                                    </td>
+                                    <td style={{ padding: '8px 6px' }}>
+                                      <AdminStatusBadge status={tx.status} />
+                                    </td>
+                                    <td style={{ padding: '8px 6px', textAlign: 'center' }}>
+                                      <button 
+                                        type="button" 
+                                        className="admin-btn admin-btn--secondary" 
+                                        style={{ padding: '2px 8px', fontSize: '11px' }}
+                                        onClick={(e) => { e.stopPropagation(); setSelectedTx(tx); }}>
+                                        View
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
@@ -428,6 +481,97 @@ export function CardsPage() {
           </AdminDetailPanel>
         )}
       />
+
+      {/* Transaction Detail Modal */}
+      {selectedTx && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setSelectedTx(null)}>
+          <div style={{ backgroundColor: 'var(--admin-bg-panel, #ffffff)', borderRadius: '12px', border: '1px solid var(--admin-border)', padding: '24px', width: '90%', maxWidth: '640px', maxHeight: '85vh', overflowY: 'auto', color: 'var(--admin-text)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--admin-border)', paddingBottom: '12px', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>💳 Card Transaction Detail</h3>
+              <button type="button" className="admin-btn admin-btn--secondary" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => setSelectedTx(null)}>✕ Close</button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Transaction ID (Trade No)</span>
+                <strong>{selectedTx.tradeNo || selectedTx.orderNo || '—'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Origin Trade No</span>
+                <strong>{selectedTx.originTradeNo || '—'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Wasabi Card No</span>
+                <strong>{selectedTx.cardNo || '—'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Transaction Time</span>
+                <strong>{formatAdminDate(selectedTx.transactionTime || selectedTx.created || selectedTx.at)}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Transaction Type</span>
+                <strong style={{ textTransform: 'capitalize' }}>{selectedTx.type || 'auth'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Status</span>
+                <AdminStatusBadge status={selectedTx.status} />
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Merchant Name</span>
+                <strong>{selectedTx.merchantName || selectedTx.merchantData?.name || selectedTx.description || '—'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>MCC (Category Code / Name)</span>
+                <strong>{selectedTx.merchantData?.categoryCode ? `${selectedTx.merchantData.categoryCode} (${selectedTx.merchantData?.category || ''})` : (selectedTx.merchantData?.category || '—')}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Merchant MID / Wallet</span>
+                <strong>{selectedTx.merchantData?.mid || selectedTx.merchantData?.walletType || '—'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Merchant Location</span>
+                <strong>{[selectedTx.merchantData?.city, selectedTx.merchantData?.state, selectedTx.merchantData?.country].filter(Boolean).join(', ') || '—'}</strong>
+              </div>
+              <div style={{ gridColumn: 'span 2', height: '1px', background: 'var(--admin-border-subtle)', margin: '4px 0' }} />
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Transaction Amount</span>
+                <strong style={{ fontSize: '14px', color: '#3182CE' }}>{selectedTx.amount != null ? `${selectedTx.amount} ${selectedTx.currency || 'USD'}` : '—'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Authorized Amount</span>
+                <strong style={{ fontSize: '14px', color: '#2B6CB0' }}>{selectedTx.authorizedAmount != null ? `${selectedTx.authorizedAmount} ${selectedTx.authorizedCurrency || selectedTx.currency || 'USD'}` : '—'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Authorized Fee</span>
+                <strong>{selectedTx.fee != null ? `${selectedTx.fee} ${selectedTx.feeCurrency || 'USD'}` : (selectedTx.assistFeeInfo?.authorizationFee != null ? `${selectedTx.assistFeeInfo.authorizationFee} USD` : '—')}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Cross Board Fee</span>
+                <strong>{selectedTx.crossBoardFee != null ? `${selectedTx.crossBoardFee} ${selectedTx.crossBoardFeeCurrency || 'USD'}` : (selectedTx.assistFeeInfo?.crossBorderFee != null ? `${selectedTx.assistFeeInfo.crossBorderFee} USD` : '—')}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Settlement Amount</span>
+                <strong>{selectedTx.settleAmount != null ? `${selectedTx.settleAmount} ${selectedTx.settleCurrency || 'USD'}` : '—'}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Settlement Date</span>
+                <strong>{selectedTx.settleDate ? formatAdminDate(selectedTx.settleDate) : '—'}</strong>
+              </div>
+            </div>
+
+            {selectedTx.description && (
+              <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--admin-border-subtle)' }}>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px', marginBottom: '4px' }}>Description / Remark</span>
+                <p style={{ margin: 0, fontSize: '13px', background: 'var(--admin-bg-subtle)', padding: '8px 12px', borderRadius: '6px' }}>{selectedTx.description}</p>
+              </div>
+            )}
+
+            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="button" className="admin-btn admin-btn--primary" onClick={() => setSelectedTx(null)}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
