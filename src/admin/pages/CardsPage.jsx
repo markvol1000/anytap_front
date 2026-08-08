@@ -332,14 +332,6 @@ export function CardsPage() {
                           🧪 Simulate Tx
                         </button>
                       ) : null}
-                      {detail.status !== 'terminated' && detail.status !== 'rejected' && detail.status !== 'issued' && detail.status !== 'shipping' ? (
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn--danger"
-                          onClick={() => runCardAction('Terminate Card', terminateCard, { danger: true })}>
-                          Terminate
-                        </button>
-                      ) : null}
                     </>
                   )}
                 </AdminActionStack>
