@@ -323,6 +323,7 @@ function CardsDesktopTransactions({ items, card, cardLast4, onViewAll }) {
                         incoming={tx.incoming}
                         failed={tx.failed}
                         kind={tx.kind}
+                        item={tx}
                       />
                     </td>
                     <td data-label="Status">

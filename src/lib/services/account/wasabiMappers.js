@@ -74,7 +74,7 @@ function mapWasabiType(type = '') {
 
 function mapWasabiStatus(status = '', type = '') {
   const s = String(status).toLowerCase();
-  if (['failed', 'fail', 'declined', 'rejected', 'cancelled', 'canceled'].some((k) => s.includes(k))) {
+  if (['failed', 'fail', 'declined', 'rejected', 'cancelled', 'canceled', 'error', 'denied'].some((k) => s.includes(k))) {
     return 'failed';
   }
   if (['wait_process', 'processing'].some((k) => s.includes(k)) || (s.includes('pending') && !s.includes('authorized'))) {

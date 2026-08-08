@@ -182,9 +182,9 @@ export function TxDetailSheet({ tx, onClose }) {
           )}
           <DetailRow label="Transaction Type">{tx.typeLabel}</DetailRow>
           <DetailRow label="Amount">{A.formatActivityAmount(tx.amount, tx.incoming, tx.kind, tx)}</DetailRow>
-          {tx.originalAmount && tx.originalCurrency && tx.originalCurrency !== 'USD' && (
+          {tx.originalAmount && tx.originalCurrency && (
             <DetailRow label="Original Billing Amount">
-              {tx.originalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {tx.originalCurrency}
+              {A.formatActivityAmountParts(tx.amount, tx.incoming, tx.kind, tx).sign}{tx.originalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {tx.originalCurrency}
             </DetailRow>
           )}
           <DetailRow label="Date & Time">{A.formatActivityDateTime(tx.at)}</DetailRow>

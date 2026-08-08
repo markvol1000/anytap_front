@@ -8,14 +8,22 @@ import { Icon } from './ui.jsx';
 import * as A from '../lib/account-data.js';
 import { TxDetailSheet } from './account-transactions.jsx';
 
-export function ActivityAmount({ amount, incoming, failed, kind, large = false }) {
-  const { sign, value, currency } = A.formatActivityAmountParts(amount, incoming, kind);
+export function ActivityAmount({ amount, incoming, failed, kind, large = false, item = {} }) {
+  const origAmt = item?.originalAmount;
+  const origCurr = item?.originalCurrency;
+  const useOriginal = origAmt && origCurr;
+
+  const displayAmt = useOriginal ? origAmt : (item?.amount ?? amount);
+  const displayCurr = useOriginal ? origCurr : (item?.currency || (kind === 'card_spend' || kind === 'refund' || kind === 'reversal' ? 'USD' : 'USDT'));
+
+  const { sign } = A.formatActivityAmountParts(amount, incoming, kind, item);
+  const val = Math.abs(Number(displayAmt) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const variant = failed ? 'fail' : incoming ? 'in' : 'out';
 
   return (
     <span className={`portal-tx__amt portal-tx__amt--${variant}${large ? ' portal-tx__amt--lg' : ''}`}>
-      <span className="portal-tx__amt-value">{sign}{value}</span>{' '}
-      <span className="portal-tx__amt-currency">{currency}</span>
+      <span className="portal-tx__amt-value">{sign}{val}</span>{' '}
+      <span className="portal-tx__amt-currency">{displayCurr}</span>
     </span>
   );
 }
@@ -86,7 +94,7 @@ export function ActivityRow({ tx, onClick, dateStyle = 'standard', variant = 'de
         )}
       </span>
       <span className={isCompact ? 'portal-tx__side portal-dash-wf__tx-side' : isGrouped ? 'portal-tx-group__side' : 'portal-tx__side'}>
-        <ActivityAmount amount={tx.amount} incoming={tx.incoming} failed={tx.failed} kind={tx.kind} />
+        <ActivityAmount amount={tx.amount} incoming={tx.incoming} failed={tx.failed} kind={tx.kind} item={tx} />
         <span className="portal-tx__when">{when}</span>
       </span>
     </>

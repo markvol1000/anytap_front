@@ -47,6 +47,8 @@ export function CardsPage() {
   const [simModalOpen, setSimModalOpen] = useState(false);
   const [simType, setSimType] = useState('auth');
   const [simAmount, setSimAmount] = useState('10.00');
+  const [simCurrency, setSimCurrency] = useState('USD');
+  const [simMerchantName, setSimMerchantName] = useState('SEODAEMUN-GU OFFICE');
   const [simDescription, setSimDescription] = useState('Admin Test Transaction');
   const [simLoading, setSimLoading] = useState(false);
 
@@ -425,11 +427,16 @@ export function CardsPage() {
                                 const merchant = tx.merchantName || tx.merchantData?.name || tx.description || '—';
                                 const mcc = tx.merchantData?.categoryCode ? `${tx.merchantData.categoryCode}${tx.merchantData?.category ? ` (${tx.merchantData.category})` : ''}` : (tx.merchantData?.category || '—');
 
-                                const amt = tx.amount != null ? `${Number(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${tx.currency || ''}`.trim() : '—';
-                                const authAmt = tx.authorizedAmount != null ? `${Number(tx.authorizedAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${tx.authorizedCurrency || ''}`.trim() : '—';
+                                const sign = (tx.type || tx.subType || '').toLowerCase().includes('refund') ? '+' : '-';
+                                const amtVal = tx.amount != null ? Math.abs(Number(tx.amount)) : null;
+                                const amtCurr = tx.currency || 'KRW';
+                                const amt = amtVal != null ? `${sign}${amtVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${amtCurr}`.trim() : '—';
+                                const authAmtVal = tx.authorizedAmount != null ? Math.abs(Number(tx.authorizedAmount)) : null;
+                                const authAmt = authAmtVal != null ? `${sign}${authAmtVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${tx.authorizedCurrency || 'USD'}`.trim() : '—';
                                 const authFee = tx.fee != null ? `${Number(tx.fee).toFixed(2)} ${tx.feeCurrency || ''}`.trim() : (tx.assistFeeInfo?.authorizationFee != null ? `${Number(tx.assistFeeInfo.authorizationFee).toFixed(2)} USD` : '0.00 USD');
                                 const cbFee = tx.crossBoardFee != null ? `${Number(tx.crossBoardFee).toFixed(2)} ${tx.crossBoardFeeCurrency || ''}`.trim() : (tx.assistFeeInfo?.crossBorderFee != null ? `${Number(tx.assistFeeInfo.crossBorderFee).toFixed(2)} USD` : '0.00 USD');
-                                const settleAmt = tx.settleAmount != null ? `${Number(tx.settleAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${tx.settleCurrency || ''}`.trim() : '—';
+                                const settleAmtVal = tx.settleAmount != null ? Math.abs(Number(tx.settleAmount)) : null;
+                                const settleAmt = settleAmtVal != null ? `${sign}${settleAmtVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${tx.settleCurrency || ''}`.trim() : '—';
                                 const settleDt = tx.settleDate ? formatAdminDate(tx.settleDate) : '—';
 
                                 return (
@@ -717,6 +724,61 @@ export function CardsPage() {
                 </div>
               </div>
 
+              {/* Currency Selector / Input */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px', fontWeight: '500' }}>
+                  Transaction Currency (통화)
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <select
+                    value={simCurrency}
+                    onChange={(e) => setSimCurrency(e.target.value)}
+                    disabled={simLoading}
+                    style={{
+                      width: '120px',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: '#0f172a',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#fff',
+                      fontSize: '13px',
+                      outline: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="USD">USD ($)</option>
+                    <option value="KRW">KRW (₩)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="JPY">JPY (¥)</option>
+                    <option value="GBP">GBP (£)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Merchant Name (거래처 / 가맹점명) Input */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px', fontWeight: '500' }}>
+                  Merchant Name (거래처 / 가맹점명)
+                </label>
+                <input
+                  type="text"
+                  value={simMerchantName}
+                  onChange={(e) => setSimMerchantName(e.target.value)}
+                  disabled={simLoading}
+                  placeholder="e.g. SEODAEMUN-GU OFFICE, STARBUCKS"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#0f172a',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#fff',
+                    fontSize: '13px',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
               {/* Description Input */}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px', fontWeight: '500' }}>
@@ -759,14 +821,17 @@ export function CardsPage() {
                   setSimLoading(true);
                   try {
                     const cardNo = detail.wasabiCardId || detail.id;
+                    const merchantNameVal = simMerchantName || 'Simulated Merchant';
                     await simulateCardTransaction(cardNo, {
                       type: simType,
                       amount: parseFloat(simAmount) || 10.0,
-                      currency: 'USD',
+                      currency: simCurrency || 'USD',
+                      merchantName: merchantNameVal,
+                      merchantData: { name: merchantNameVal, country: 'KR', city: 'SEOUL' },
                       description: simDescription || 'Admin Simulated Transaction',
                     });
                     setSimModalOpen(false);
-                    window.alert(`Simulated transaction (${simType}, $${simAmount}) triggered successfully!`);
+                    window.alert(`Simulated transaction (${simType}, ${simAmount} ${simCurrency}, Merchant: ${merchantNameVal}) triggered successfully!`);
                     const updated = await getCardById(selectedId);
                     setDetail(updated);
                     loadTxs(1);
