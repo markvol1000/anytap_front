@@ -367,7 +367,7 @@ export async function fetchLocalTransactions(userId) {
       const type = String(tx.txType || '').toUpperCase();
       if (type === 'DEPOSIT') {
         kind = 'wallet_topup';
-        title = 'USDT Deposit';
+        title = 'Wallet Deposit';
         incoming = true;
       } else if (type === 'CARD_CHARGE') {
         kind = 'card_topup';
@@ -456,25 +456,20 @@ export async function fetchAccountContext() {
     const last4 = primaryCard?.last4 || cardNo.replace(/\D/g, '').slice(-4) || cardNo.slice(-4) || '';
     if (!demoLocked) {
       const cardList = Array.isArray(cardInfoList) ? cardInfoList : (cardInfoList ? [cardInfoList] : []);
-      const cardPromises = cardList.map((c) => {
-        const cNo = String(c?.cardNo || c?.wasabiCardId || c?.balanceInfo?.cardNo || '');
-        const l4 = c?.last4 || cNo.replace(/\D/g, '').slice(-4) || cNo.slice(-4) || '';
-        return fetchCardTransactions(session.userId, { cardId: cNo, last4: l4 });
-      });
+      const activeCard = cardList.find((c) => c?.status === 'active' || c?.status === 'frozen') || cardList[0] || null;
+      const targetCardNo = String(activeCard?.cardNo || activeCard?.wasabiCardId || activeCard?.balanceInfo?.cardNo || '');
+      const targetLast4 = activeCard?.last4 || targetCardNo.replace(/\D/g, '').slice(-4) || targetCardNo.slice(-4) || '';
 
-      const [cardTxResults, localTxs] = await Promise.all([
-        Promise.all(cardPromises),
+      const [cardTxResult, localTxs] = await Promise.all([
+        targetCardNo ? fetchCardTransactions(session.userId, { cardId: targetCardNo, last4: targetLast4 }) : Promise.resolve({ items: [] }),
         fetchLocalTransactions(session.userId),
       ]);
 
-      const cardTxs = cardTxResults.flatMap((res) => res?.items || []);
-      const primaryCard = cardList[0] || null;
-      const primaryCardNo = String(primaryCard?.cardNo || primaryCard?.wasabiCardId || '');
-      const primaryLast4 = primaryCard?.last4 || primaryCardNo.slice(-4) || '';
+      const cardTxs = cardTxResult?.items || [];
 
       const normalizedLocalTxs = localTxs.map((tx) => {
         if (tx.kind === 'card_topup' && !tx.cardNo) {
-          return { ...tx, cardNo: primaryCardNo, cardLast4: primaryLast4 };
+          return { ...tx, cardNo: targetCardNo, cardLast4: targetLast4 };
         }
         return tx;
       });

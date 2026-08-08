@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { isHttpApi } from '../lib/api/config.js';
 import { loadAccountContext, loadReferralContext, submitKycApplication as submitKycApplicationApi, submitCardApplication as submitCardApplicationApi } from '../lib/services/accountService.js';
+import { fetchCardTransactions } from '../lib/services/account/accountApi.js';
 import { getHttpSession, hasHttpSession } from '../lib/api/httpSession.js';
 import { resolveWalletAddress } from '../lib/api/display-data.js';
 import * as A from '../lib/account-data.js';
@@ -181,6 +182,42 @@ export function useAccountState() {
   const cardLimit = A.getCardLimitInfo(userCards);
   const primaryCard = userCards.find((c) => c.isPrimary) ?? userCards[0] ?? null;
   const currentCard = userCards[selectedCardIndex] ?? primaryCard;
+
+  const [selectedCardTxs, setSelectedCardTxs] = useState(null);
+
+  useEffect(() => {
+    if (!isHttpApi || !hasHttpSession()) return undefined;
+    const session = getHttpSession();
+    if (!session?.userId) return undefined;
+
+    const cNo = String(currentCard?.cardNo || currentCard?.wasabiCardId || currentCard?.balanceInfo?.cardNo || '');
+    const l4 = currentCard?.last4 || cNo.replace(/\D/g, '').slice(-4) || cNo.slice(-4) || '';
+    if (!cNo) {
+      setSelectedCardTxs(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    fetchCardTransactions(session.userId, { cardId: cNo, last4: l4 })
+      .then((res) => {
+        if (!cancelled && res?.items) {
+          setSelectedCardTxs(res.items);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSelectedCardTxs(null);
+      });
+
+    return () => { cancelled = true; };
+  }, [currentCard?.cardNo, currentCard?.wasabiCardId, currentCard?.id]);
+
+  const activeActivityItems = useMemo(() => {
+    if (selectedCardTxs != null) {
+      const localTxs = (mockContext.activityItems || []).filter((item) => item.kind !== 'card_spend' && item.kind !== 'refund');
+      return [...localTxs, ...selectedCardTxs];
+    }
+    return mockContext.activityItems;
+  }, [mockContext.activityItems, selectedCardTxs]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const showToast = useCallback((m) => {
@@ -442,7 +479,7 @@ export function useAccountState() {
     // CTA handlers
     handleStatusCta, handleSecondaryCta,
     // Activity data
-    activityItems: mockContext.activityItems,
+    activityItems: activeActivityItems,
     topUpHistory: mockContext.topUpHistory,
     walletBalance: Math.max(0, mockContext.wallet.balanceUsdt - tempDeduct),
     walletExists: mockContext.wallet.exists,

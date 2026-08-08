@@ -142,19 +142,16 @@ export function mapWasabiTransactionsResponse(payload, opts = {}) {
     ? rawData
     : (rawData?.records || rawData?.list || rawData?.data?.records || rawData?.data?.list || rawData?.data || []);
 
-  const targetCardId = opts.cardId ? String(opts.cardId).replace(/\D/g, '') : '';
-  const targetLast4 = opts.last4 ? String(opts.last4).replace(/\D/g, '') : '';
+  const targetCardId = opts.cardId || opts.wasabiCardId || '';
 
   return records
     .map((row) => {
-      // If row specifies a cardNo, ensure it matches target card if specified
-      if (row?.cardNo && (targetCardId || targetLast4)) {
-        const rowDigits = String(row.cardNo).replace(/\D/g, '');
-        if (targetCardId && rowDigits !== targetCardId && !rowDigits.endsWith(targetLast4)) {
-          return null; // Skip records for a different card
-        }
-        if (targetLast4 && !rowDigits.endsWith(targetLast4)) {
-          return null; // Skip records that don't match target last4
+      // If row specifies a cardNo and a target cardId was requested, check match
+      if (row?.cardNo && targetCardId) {
+        const rowCard = String(row.cardNo).trim();
+        const targetCard = String(targetCardId).trim();
+        if (rowCard && targetCard && rowCard !== targetCard) {
+          return null; // Skip records belonging to a different card
         }
       }
       const item = mapWasabiTransactionRecord(row, opts);
