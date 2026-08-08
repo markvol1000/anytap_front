@@ -70,6 +70,8 @@ export function mapMemberRow(row) {
     cardLast4: row?.cardLast4 || null,
     wasabiCardId: row?.wasabiCardId || null,
     cardType: row?.cardType || null,
+    unpaidTotalFee: Number(row?.unpaidTotalFee ?? 0) || 0,
+    accumulatedTotalFee: Number(row?.accumulatedTotalFee ?? 0) || 0,
   };
 }
 
@@ -120,20 +122,23 @@ export function mapCardStatusForApi(uiStatus) {
 
 export function mapCardRow(row) {
   const userId = row?.userId || row?.id || '';
+  const wasabiCardId = row?.wasabiCardId && row.wasabiCardId !== '-' ? row.wasabiCardId : '';
+  // 카드별 고유 id: wasabiCardId 우선, 없으면 userId
+  const id = wasabiCardId || userId;
   const status = lower(row?.cardStatus || row?.status, 'not_issued');
   return {
-    id: userId,
+    id,
     memberId: userId,
     memberName: displayName(row),
     memberEmail: row?.email || '',
-    cardType: row?.cardType || 'virtual',
+    cardType: row?.cardType || 'physical',
     status,
     wallet: row?.cregisWalletAddress && row.cregisWalletAddress !== '-'
       ? row.cregisWalletAddress
       : (row?.wallet || '—'),
     created: dateOnly(row?.createdAt || row?.created),
     last4: row?.last4 && row.last4 !== '-' ? row.last4 : null,
-    wasabiCardId: row?.wasabiCardId || '',
+    wasabiCardId,
     balance: Number(row?.balance ?? 0),
     currency: row?.currency || 'USDT',
     trackingNumber: row?.trackingNumber || '',

@@ -283,6 +283,14 @@ export async function saveMemberMemo(id, memo) {
   return { ok: true, memo };
 }
 
+export async function triggerFeePayout(userId) {
+  await delay();
+  const idx = store.members.findIndex((m) => m.id === userId);
+  if (idx >= 0) store.members[idx].unpaidTotalFee = 0;
+  logAction('Triggered fee payout', userId);
+  return { ok: true };
+}
+
 // ─── KYC ─────────────────────────────────────────────────────────────────────
 
 export async function getKycApplications(params = {}) {
@@ -404,6 +412,24 @@ export async function terminateCard(id) {
   if (!card) throw new Error('Card not found');
   card.status = 'terminated';
   logAction('Terminated card', id);
+  return clone(card);
+}
+
+export async function unfreezeCard(id) {
+  await delay();
+  const card = store.cardApplications.find((c) => c.id === id);
+  if (!card) throw new Error('Card not found');
+  card.status = 'active';
+  logAction('Unfroze card', id);
+  return clone(card);
+}
+
+export async function shipCard(id) {
+  await delay();
+  const card = store.cardApplications.find((c) => c.id === id);
+  if (!card) throw new Error('Card not found');
+  card.status = 'shipping';
+  logAction('Force shipped card', id);
   return clone(card);
 }
 

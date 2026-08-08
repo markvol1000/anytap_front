@@ -20,6 +20,7 @@ import {
   saveMemberMemo,
   suspendMember,
   retryCregisWallet,
+  triggerFeePayout,
 } from '../services/adminService.js';
 
 const fetchMembers = (params) => getMembers(params);
@@ -77,6 +78,26 @@ export function MembersPage() {
         });
         if (!ok) return;
         const updated = await retryCregisWallet(detail.id);
+        setDetail(updated);
+        list.reload();
+      } else if (action === 'triggerFeePayout') {
+        const ok1 = await runConfirm(confirm, {
+          title: 'Trigger Fee Payout (Sweep Fee)',
+          message: `Sweep unpaid total fee (${formatUsdt(detail.unpaidTotalFee ?? 0)}) for ${detail.name} to Cregis master collection wallet?`,
+          confirmLabel: 'Proceed',
+        });
+        if (!ok1) return;
+
+        const ok2 = await runConfirm(confirm, {
+          title: 'Are you sure?',
+          message: 'This will trigger a real blockchain transaction to sweep the fee. Do you want to proceed?',
+          confirmLabel: 'Yes, Sweep Now',
+          danger: true,
+        });
+        if (!ok2) return;
+
+        await triggerFeePayout(detail.id);
+        const updated = await getMemberById(detail.id);
         setDetail(updated);
         list.reload();
       }
@@ -179,7 +200,7 @@ export function MembersPage() {
                     />
                   )} />
                   <AdminDetailRow label="Wallet" value={(
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', flexWrap: 'wrap' }}>
                       <span style={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -193,7 +214,28 @@ export function MembersPage() {
                         fontWeight: 'bold',
                         lineHeight: 1
                       }}>₮</span>
-                      <span>{formatUsdt(detail.walletBalance)}</span>
+                      <span style={{ fontWeight: '600' }}>{formatUsdt(detail.walletBalance ?? 0)}</span>
+                      <span style={{ color: 'var(--admin-text-muted, #888)' }}>
+                        ({formatUsdt(detail.cregisActualBalance ?? detail.walletBalance ?? 0)}) / {formatUsdt(detail.unpaidTotalFee ?? 0)} Unpaid Fee
+                      </span>
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn--ghost admin-btn--sm"
+                        onClick={() => handleAction('triggerFeePayout')}
+                        title="Sweep unpaid fee to Cregis master wallet"
+                        style={{
+                          padding: '2px 6px',
+                          fontSize: '11px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          color: '#3b82f6',
+                          borderColor: 'rgba(59, 130, 246, 0.3)',
+                          marginLeft: '4px'
+                        }}
+                      >
+                        💸 Sweep Fee
+                      </button>
                     </div>
                   )} />
                   <AdminDetailRow label="Account" value={<AdminStatusBadge status={detail.accountStatus} />} />

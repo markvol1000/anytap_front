@@ -143,13 +143,16 @@ export function WalletsPage() {
                   <AdminDetailRow 
                     label="Balance" 
                     value={
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
                         <img 
                           src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032" 
                           alt="USDT" 
                           style={{ width: '18px', height: '18px', borderRadius: '50%' }} 
                         />
                         <span style={{ fontWeight: '600' }}>{formatUsdt(detail.balance)}</span>
+                        <span style={{ color: 'var(--admin-text-muted, #888)' }}>
+                          ({formatUsdt(detail.cregisActualBalance ?? detail.balance)}) / {formatUsdt(detail.unpaidTotalFee ?? 0)} Unpaid Fee
+                        </span>
                       </div>
                     } 
                   />

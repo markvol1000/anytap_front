@@ -73,6 +73,8 @@ export const getEmailLogs = bind('getEmailLogs');
 export const getEventLogs = bind('getEventLogs');
 export const retryCregisWallet = bind('retryCregisWallet');
 export const unfreezeCard = bind('unfreezeCard');
+export const shipCard = bind('shipCard');
+export const triggerFeePayout = bind('triggerFeePayout');
 export const getAdminLogs = bind('getAdminLogs');
 
 export { MAX_CARDS_PER_MEMBER } from './mock/adminMockData.js';

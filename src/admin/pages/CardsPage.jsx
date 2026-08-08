@@ -47,7 +47,7 @@ export function CardsPage() {
     const loadTxs = async () => {
       setTxLoading(true);
       try {
-        const res = await getCardTransactions(selectedId, detail?.wasabiCardId);
+        const res = await getCardTransactions(detail?.memberId || selectedId, detail?.wasabiCardId);
         if (active) {
           const records = res?.records || res?.data || [];
           setTxItems(records);
@@ -67,7 +67,7 @@ export function CardsPage() {
     return () => {
       active = false;
     };
-  }, [selectedId, detail?.wasabiCardId]);
+  }, [selectedId, detail?.memberId, detail?.wasabiCardId]);
 
   const runCardAction = useCallback(async (label, fn, options = {}) => {
     if (!detail) return;
@@ -81,8 +81,13 @@ export function CardsPage() {
     });
     if (options.showInput) {
       if (ok == null) return;
+      const inputVal = String(ok).trim();
+      if (label.includes('Activate') && !/^\d{6}$/.test(inputVal)) {
+        window.alert('PIN 번호는 6자리 숫자여야 합니다.');
+        return;
+      }
       try {
-        const updated = await fn(detail.id, ok);
+        const updated = await fn(detail.id, inputVal);
         setDetail(updated);
         list.reload();
       } catch (err) {
@@ -250,9 +255,15 @@ export function CardsPage() {
                 </AdminDetailSection>
 
                 <AdminActionStack>
-                  {/* issued 상태: Activate 버튼만 표시, 나머지 모두 숨김 */}
-                  {detail.status === 'issued' ? (
-                    <button type="button" className="admin-btn admin-btn--primary" onClick={() => runCardAction('Activate Card', activateCard)}>
+                  {/* issued/shipping 상태: Activate 버튼 */}
+                  {['issued', 'shipping'].includes(detail.status) ? (
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--primary"
+                      onClick={() => runCardAction('Activate Card', activateCard, {
+                        showInput: true,
+                        inputPlaceholder: 'PIN 번호 6자리 입력 (예: 123456)',
+                      })}>
                       Activate
                     </button>
                   ) : (
@@ -290,7 +301,7 @@ export function CardsPage() {
                           Freeze
                         </button>
                       ) : null}
-                      {detail.status !== 'terminated' && detail.status !== 'rejected' && detail.status !== 'issued' ? (
+                      {detail.status !== 'terminated' && detail.status !== 'rejected' && detail.status !== 'issued' && detail.status !== 'shipping' ? (
                         <button
                           type="button"
                           className="admin-btn admin-btn--danger"

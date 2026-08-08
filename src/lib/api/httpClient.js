@@ -43,6 +43,8 @@ async function parseBody(res) {
 export async function apiRequest(path, options = {}) {
   assertApiBaseUrl();
 
+  const cleanPath = String(path || '').replace(/[\.\/]+$/, (match) => (match.includes('/') ? '/' : ''));
+
   const { json, headers: extraHeaders, ...init } = options;
   const headers = new Headers(extraHeaders);
 
@@ -55,7 +57,7 @@ export async function apiRequest(path, options = {}) {
     body = JSON.stringify(json);
   }
 
-  const res = await fetch(`${API_BASE_URL}${path}`, { ...init, headers, body });
+  const res = await fetch(`${API_BASE_URL}${cleanPath}`, { ...init, headers, body });
   const data = await parseBody(res);
 
   // Spring Boot envelope: { result, message, data, sqlLogs }

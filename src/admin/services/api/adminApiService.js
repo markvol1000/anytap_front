@@ -41,7 +41,7 @@ async function fetchCardsRaw() {
 }
 
 function resolveUserId(id) {
-  const raw = String(id || '');
+  const raw = String(id || '').replace(/\.+$/, '');
   if (!raw || raw.startsWith('temp-')) {
     const err = new Error('This member has no userId yet (pending signup).');
     err.code = 'NO_USER_ID';
@@ -50,10 +50,18 @@ function resolveUserId(id) {
   return raw;
 }
 
-async function updateCardStatus(userId, body) {
-  await apiPost(`/admin/cards/applications/${encodeURIComponent(userId)}/update-status`, body);
+async function updateCardStatus(userId, body, originalId = null) {
+  const payload = { ...body };
+  if (originalId && String(originalId).startsWith('W')) {
+    payload.cardNo = originalId;
+  }
+  await apiPost(`/admin/cards/applications/${encodeURIComponent(userId)}/update-status`, payload);
   const cards = await fetchCardsRaw();
-  return cards.find((c) => c.id === userId) || mapCardRow({ userId, ...body });
+  if (originalId) {
+    const byOriginalId = cards.find((c) => c.id === originalId || c.memberId === originalId || c.wasabiCardId === originalId);
+    if (byOriginalId) return byOriginalId;
+  }
+  return cards.find((c) => c.memberId === userId) || mapCardRow({ userId, ...body });
 }
 
 async function resolveFirstCardNo(userId) {
@@ -179,6 +187,10 @@ export async function saveMemberMemo() {
   apiNotImplemented(SVC, 'saveMemberMemo', 'No ALB member-memo endpoint yet.');
 }
 
+export async function triggerFeePayout(userId) {
+  return apiPost(`/admin/settlement/payout/${encodeURIComponent(userId)}`);
+}
+
 export async function getKycApplications(params = {}) {
   const rows = await fetchKycRaw();
   return paginateLocal(rows, {
@@ -216,7 +228,8 @@ export async function getCardApplications(params = {}) {
 
 export async function getCardById(id) {
   const rows = await fetchCardsRaw();
-  return rows.find((c) => c.id === id) || null;
+  // id는 wasabiCardId 또는 userId — 둘 다 시도
+  return rows.find((c) => c.id === id || c.memberId === id) || null;
 }
 
 export async function getMemberCardCount(memberId) {
@@ -231,33 +244,77 @@ export async function getMemberCardCount(memberId) {
 }
 
 export async function approveCard(id) {
-  return updateCardStatus(resolveUserId(id), { cardStatus: 'deposit_received' });
+  const rows = await fetchCardsRaw();
+  const card = rows.find((c) => c.id === id || c.memberId === id || c.wasabiCardId === id);
+  const userId = resolveUserId(card?.memberId || id);
+  const cardNo = card?.wasabiCardId || (String(id).startsWith('W') ? id : null);
+  return updateCardStatus(userId, { cardStatus: 'deposit_received', cardNo }, id);
 }
 
 export async function rejectCard(id) {
-  return updateCardStatus(resolveUserId(id), { cardStatus: 'not_issued' });
+  const rows = await fetchCardsRaw();
+  const card = rows.find((c) => c.id === id || c.memberId === id || c.wasabiCardId === id);
+  const userId = resolveUserId(card?.memberId || id);
+  const cardNo = card?.wasabiCardId || (String(id).startsWith('W') ? id : null);
+  return updateCardStatus(userId, { cardStatus: 'not_issued', cardNo }, id);
 }
 
 export async function issueCard(id) {
-  return updateCardStatus(resolveUserId(id), { cardStatus: 'issued' });
+  const rows = await fetchCardsRaw();
+  const card = rows.find((c) => c.id === id || c.memberId === id || c.wasabiCardId === id);
+  const userId = resolveUserId(card?.memberId || id);
+  const cardNo = card?.wasabiCardId || (String(id).startsWith('W') ? id : null);
+  return updateCardStatus(userId, { cardStatus: 'issued', cardNo }, id);
 }
 
-export async function activateCard(id) {
-  return updateCardStatus(resolveUserId(id), { cardStatus: 'active' });
+export async function activateCard(id, pin = '') {
+  const rows = await fetchCardsRaw();
+  const card = rows.find((c) => c.id === id || c.memberId === id || c.wasabiCardId === id);
+  const userId = resolveUserId(card?.memberId || id);
+  const cardNo = card?.wasabiCardId || (String(id).startsWith('W') ? id : null);
+
+  const cleanPin = String(pin || '').trim();
+  if (!cleanPin || !/^\d{6}$/.test(cleanPin)) {
+    throw new Error('PIN 번호 6자리를 입력해야 합니다.');
+  }
+
+  if (!cardNo) {
+    throw new Error('카드 번호를 찾을 수 없습니다.');
+  }
+
+  await apiPost(`/admin/members/${encodeURIComponent(userId)}/cards/${encodeURIComponent(cardNo)}/activate`, { pin: cleanPin });
+
+  const updatedRows = await fetchCardsRaw();
+  return updatedRows.find((c) => c.id === id || c.wasabiCardId === cardNo || c.memberId === userId) || mapCardRow({ userId, ...card });
 }
 
 export async function freezeCard(id) {
-  const userId = resolveUserId(id);
+  const rows = await fetchCardsRaw();
+  const card = rows.find((c) => c.id === id || c.memberId === id);
+  const userId = resolveUserId(card?.memberId || id);
   const cardNo = await resolveFirstCardNo(userId);
   await apiPost(`/admin/members/${encodeURIComponent(userId)}/cards/${encodeURIComponent(cardNo)}/freeze`);
-  return getCardById(userId);
+  return getCardById(id);
 }
 
 export async function unfreezeCard(id) {
-  const userId = resolveUserId(id);
+  const rows = await fetchCardsRaw();
+  const card = rows.find((c) => c.id === id || c.memberId === id);
+  const userId = resolveUserId(card?.memberId || id);
   const cardNo = await resolveFirstCardNo(userId);
   await apiPost(`/admin/members/${encodeURIComponent(userId)}/cards/${encodeURIComponent(cardNo)}/unfreeze`);
-  return getCardById(userId);
+  return getCardById(id);
+}
+
+export async function shipCard(id) {
+  const rows = await fetchCardsRaw();
+  const card = rows.find((c) => c.id === id || c.memberId === id);
+  const userId = resolveUserId(card?.memberId || id);
+  // 선택된 카드의 cardNo (id 자체가 wasabiCardId일 수 있음)
+  const cardNo = card?.wasabiCardId || await resolveFirstCardNo(userId);
+  await apiPost(`/admin/members/${encodeURIComponent(userId)}/cards/${encodeURIComponent(cardNo)}/ship`);
+  const updatedRows = await fetchCardsRaw();
+  return updatedRows.find((c) => c.id === id || c.memberId === userId) || null;
 }
 
 export async function terminateCard() {
@@ -265,8 +322,12 @@ export async function terminateCard() {
 }
 
 export async function getCardTransactions(userId, cardNo = '') {
-  const resolvedId = resolveUserId(userId);
-  const url = `/admin/members/${encodeURIComponent(resolvedId)}/cards/transactions` + (cardNo ? `?cardNo=${encodeURIComponent(cardNo)}` : '');
+  const rows = await fetchCardsRaw();
+  const card = rows.find((c) => c.id === userId || c.wasabiCardId === userId || c.memberId === userId);
+  const actualUserId = resolveUserId(card?.memberId || userId);
+  const actualCardNo = cardNo || card?.wasabiCardId || (String(userId).startsWith('W') ? userId : '');
+
+  const url = `/admin/members/${encodeURIComponent(actualUserId)}/cards/transactions` + (actualCardNo ? `?cardNo=${encodeURIComponent(actualCardNo)}` : '');
   const data = await apiGet(url);
   return data;
 }
@@ -276,10 +337,12 @@ function mapWalletRow(u) {
     id: u.userId || u.id,
     memberId: u.userId || u.id,
     memberName: u.loginId || u.email || 'Unknown',
-    address: u.cregisWalletAddress || '-',
-    balance: u.balance || 0,
+    address: u.cregisWalletAddress || u.address || '-',
+    balance: u.balance !== undefined ? u.balance : (u.availableBalance || 0),
+    cregisActualBalance: u.cregisActualBalance !== undefined ? u.cregisActualBalance : (u.actualBalance || u.balance || 0),
+    unpaidTotalFee: u.unpaidTotalFee || 0,
     status: (u.status || 'ACTIVE').toLowerCase(),
-    created: u.createdDate || '-'
+    created: u.created || u.createdDate || '-'
   };
 }
 
@@ -290,12 +353,13 @@ export async function getWallets(params = {}) {
 }
 
 export async function getWalletById(id, sync = false) {
-  const u = await apiGet(`/admin/wallets/${encodeURIComponent(id)}?sync=${sync}`);
+  const cleanId = String(id || '').replace(/\.+$/, '');
+  const u = await apiGet(`/admin/wallets/${encodeURIComponent(cleanId)}?sync=${sync}`);
   if (!u) return null;
   return {
     ...mapWalletRow(u),
-    recentDeposits: [],
-    recentTopUps: []
+    recentDeposits: Array.isArray(u.recentDeposits) ? u.recentDeposits : [],
+    recentTopUps: Array.isArray(u.recentTopUps) ? u.recentTopUps : []
   };
 }
 

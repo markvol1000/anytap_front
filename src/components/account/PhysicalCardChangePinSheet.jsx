@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon } from '../ui.jsx';
 import { updatePhysicalCardPin } from '../../lib/services/accountService.js';
 
@@ -7,6 +7,15 @@ export function PhysicalCardChangePinSheet({ s, open, onClose, card }) {
   const [confirmPin, setConfirmPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setPin('');
+      setConfirmPin('');
+      setErrorMsg('');
+      setLoading(false);
+    }
+  }, [open]);
 
   if (!open) return null;
 
