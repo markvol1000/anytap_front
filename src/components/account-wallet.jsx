@@ -952,6 +952,8 @@ export function AccountWallet({ s }) {
   const selectedCard = activeCards.find((c) => c.id === selectedCardId) ?? null;
   const topUpVal = parseFloat(topUpAmount) || 0;
   const sendVal = parseFloat(sendAmount) || 0;
+  const walletBal = resolveWalletBalance(s.walletBalance);
+  const sendExceeded = sendVal > 0 && (sendVal + W.GAS_FEE_SEND > walletBal);
   const chargeTotal = (topUpVal + W.GAS_FEE_CHARGE).toFixed(2);
 
   const addTopUpQuick = (n) => {
@@ -1010,7 +1012,6 @@ export function AccountWallet({ s }) {
     );
   }
 
-  const walletBal = resolveWalletBalance(s.walletBalance);
   const canTopUpCard = activeCards.length > 0;
   const onQuickAction = (id) => {
     if (id === 'topUp') {
@@ -1069,7 +1070,8 @@ export function AccountWallet({ s }) {
                 label="Amount to send"
                 amount={sendAmount}
                 onChange={setSendAmount}
-                hint={`Min. ${W.MIN_SEND} USDT · Available: ${W.formatUsdtAmount(walletBal)} USDT`}
+                hint={sendExceeded ? `Exceeds available balance (${W.formatUsdtAmount(walletBal)} USDT)` : `Min. ${W.MIN_SEND} USDT · Available: ${W.formatUsdtAmount(walletBal)} USDT`}
+                isExceeded={sendExceeded}
               />
               <WalletNotice>
                 Anytap is not responsible for transfers to incorrect addresses. Always verify before sending.
@@ -1077,7 +1079,7 @@ export function AccountWallet({ s }) {
               <button
                 type="button"
                 className="portal-btn-primary portal-wallet-send__cta"
-                disabled={!W.isValidTronAddress(sendAddress) || !W.isValidSend(sendAmount, walletBal)}
+                disabled={!W.isValidTronAddress(sendAddress) || !W.isValidSend(sendAmount, walletBal) || sendExceeded}
                 onClick={() => setConfirmSend(true)}>
                 Confirm Send
               </button>
@@ -1136,7 +1138,8 @@ export function AccountWallet({ s }) {
                   label="Amount to send"
                   amount={sendAmount}
                   onChange={setSendAmount}
-                  hint={`Min. ${W.MIN_SEND} USDT · Available: ${W.formatUsdtAmount(walletBal)} USDT`}
+                  hint={sendExceeded ? `Exceeds available balance (${W.formatUsdtAmount(walletBal)} USDT)` : `Min. ${W.MIN_SEND} USDT · Available: ${W.formatUsdtAmount(walletBal)} USDT`}
+                  isExceeded={sendExceeded}
                 />
                 <SendSummaryDesk
                   address={sendAddress}
@@ -1149,7 +1152,7 @@ export function AccountWallet({ s }) {
                 <button
                   type="button"
                   className="portal-btn-primary portal-wallet-send__cta"
-                  disabled={!W.isValidTronAddress(sendAddress) || !W.isValidSend(sendAmount, walletBal)}
+                  disabled={!W.isValidTronAddress(sendAddress) || !W.isValidSend(sendAmount, walletBal) || sendExceeded}
                   onClick={() => setConfirmSend(true)}>
                   Confirm Send
                 </button>

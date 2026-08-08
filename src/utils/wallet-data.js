@@ -87,7 +87,7 @@ export function isValidTopUp(amount) {
 
 export function isValidSend(amount, available = MOCK_WALLET_BALANCE) {
   const v = parseFloat(amount);
-  return !Number.isNaN(v) && v >= MIN_SEND && v <= available;
+  return !Number.isNaN(v) && v >= MIN_SEND && (v + GAS_FEE_SEND) <= available;
 }
 
 export function isValidTronAddress(address) {
