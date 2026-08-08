@@ -69,6 +69,7 @@ export const getNotifications = bind('getNotifications');
 export const getContentItems = bind('getContentItems');
 export const getSettings = bind('getSettings');
 export const updateSettings = bind('updateSettings');
+export const deleteSettingKey = bind('deleteSettingKey');
 export const getEmailLogs = bind('getEmailLogs');
 export const getEventLogs = bind('getEventLogs');
 export const retryCregisWallet = bind('retryCregisWallet');

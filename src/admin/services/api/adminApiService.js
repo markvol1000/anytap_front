@@ -7,7 +7,7 @@
  * Missing on ALB: wallets/transactions/referrals/notifications/content/settings/logs lists.
  */
 
-import { apiGet, apiPost } from '../../../lib/api/httpClient.js';
+import { apiDelete, apiGet, apiPatch, apiPost } from '../../../lib/api/httpClient.js';
 import { apiNotImplemented } from '../../../lib/api/stub.js';
 import { MAX_CARDS_PER_MEMBER } from '../mock/adminMockData.js';
 import {
@@ -499,11 +499,40 @@ export async function getContentItems() {
 }
 
 export async function getSettings() {
-  apiNotImplemented(SVC, 'getSettings', 'No GET /admin/settings on ALB yet.');
+  const data = await apiGet('/admin/settings').catch(() => ({}));
+  const raw = data || {};
+  return {
+    cardFeeUsdt: Number(raw.cardFeeUsdt ?? raw.WASABI_CARD_FEE_USDT ?? 100),
+    topUpFeePercent: Number(raw.topUpFeePercent ?? raw.WASABI_TOPUP_FEE_PERCENT ?? 2.5),
+    minWithdrawalUsdt: Number(raw.minWithdrawalUsdt ?? raw.MIN_WITHDRAWAL_USDT ?? 10),
+    referralRatePercent: Number(raw.referralRatePercent ?? raw.REFERRAL_RATE_PERCENT ?? 5.0),
+    supportedNetworks: typeof raw.supportedNetworks === 'string'
+      ? raw.supportedNetworks.split(',').map((s) => s.trim()).filter(Boolean)
+      : (Array.isArray(raw.supportedNetworks) ? raw.supportedNetworks : ['TRC-20', 'ERC-20']),
+    maintenanceMode: Boolean(raw.maintenanceMode === 'true' || raw.maintenanceMode === true),
+    ...raw,
+  };
 }
 
-export async function updateSettings() {
-  apiNotImplemented(SVC, 'updateSettings', 'No PATCH /admin/settings on ALB yet.');
+export async function updateSettings(patch) {
+  const formattedPatch = {};
+  if (patch && typeof patch === 'object') {
+    Object.entries(patch).forEach(([k, v]) => {
+      if (Array.isArray(v)) {
+        formattedPatch[k] = v.join(', ');
+      } else if (v != null) {
+        formattedPatch[k] = String(v);
+      }
+    });
+  }
+  await apiPatch('/admin/settings', formattedPatch);
+  return getSettings();
+}
+
+export async function deleteSettingKey(key) {
+  if (!key) return false;
+  await apiDelete(`/admin/settings/${encodeURIComponent(key)}`);
+  return getSettings();
 }
 
 export async function getAdminLogs(params = {}) {

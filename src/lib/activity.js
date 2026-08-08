@@ -435,8 +435,23 @@ export function formatActivityDateTime(isoOrDate) {
   return `${date} · ${time}`;
 }
 
-export function formatActivityAmountParts(amount, incoming, kind) {
-  const val = Math.abs(amount).toFixed(2);
+export function formatActivityAmountParts(amount, incoming, kind, item = {}) {
+  let displayAmount = amount;
+  let currency = item?.currency;
+
+  if (kind === 'card_spend' || kind === 'refund' || kind === 'reversal') {
+    if (item?.authorizedAmount != null) {
+      displayAmount = item.authorizedAmount;
+      currency = item.authorizedCurrency || 'USD';
+    } else if (item?.settleAmount != null) {
+      displayAmount = item.settleAmount;
+      currency = item.settleCurrency || 'USD';
+    } else if (!currency) {
+      currency = 'USD';
+    }
+  }
+
+  const val = Math.abs(Number(displayAmount) || 0).toFixed(2);
   const usdtOut = new Set(['wallet_send', 'wallet_withdraw', 'wallet_fee', 'referral_withdrawal', 'card_topup']);
   const usdtIn = new Set([
     'wallet_topup', 'wallet_receive',
@@ -444,10 +459,10 @@ export function formatActivityAmountParts(amount, incoming, kind) {
   ]);
   if (usdtOut.has(kind)) return { sign: '-', value: val, currency: 'USDT' };
   if (usdtIn.has(kind)) return { sign: '+', value: val, currency: 'USDT' };
-  if (kind === 'refund' || kind === 'reversal') return { sign: '+', value: val, currency: 'USD' };
+  if (kind === 'refund' || kind === 'reversal') return { sign: '+', value: val, currency: currency || 'USD' };
   return incoming
-    ? { sign: '+', value: val, currency: 'USDT' }
-    : { sign: '-', value: val, currency: 'USD' };
+    ? { sign: '+', value: val, currency: currency || 'USDT' }
+    : { sign: '-', value: val, currency: currency || 'USD' };
 }
 
 export function formatActivityAmount(amount, incoming, kind) {
