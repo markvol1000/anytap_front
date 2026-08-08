@@ -84,16 +84,17 @@ export function WithdrawalsPage() {
                 },
               ]}
             />
-            <AdminTableWrap loading={list.loading} error={list.error} hasData={list.items.length > 0}>
+            <AdminTableWrap loading={list.loading} error={list.error} hasData={(list.items || []).length > 0}>
               <AdminDataTable
                 columns={[
                   { key: 'memberName', label: 'Member' },
                   { key: 'amount', label: 'Amount', render: (r) => formatUsdt(r.amount) },
-                  { key: 'wallet', label: 'Wallet' },
+                  { key: 'toWallet', label: 'To Wallet', render: (r) => r.toWallet || r.wallet || '—' },
+                  { key: 'targetMember', label: 'Target Member', render: (r) => r.targetMember || '—' },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
                   { key: 'date', label: 'Date', render: (r) => formatAdminDate(r.date) },
                 ]}
-                rows={list.items}
+                rows={list.items || []}
                 selectedId={selectedId}
                 onSelectRow={(r) => { setSelectedId(r.id); setTxHash(''); }}
                 sortKey={list.sortKey}
@@ -114,8 +115,10 @@ export function WithdrawalsPage() {
               <>
                 <AdminDetailSection title="Request">
                   <AdminDetailRow label="ID" value={detail.id} />
+                  <AdminDetailRow label="Member" value={detail.memberName} />
                   <AdminDetailRow label="Amount" value={formatUsdt(detail.amount)} />
-                  <AdminDetailRow label="Wallet" value={detail.wallet} />
+                  <AdminDetailRow label="To Wallet" value={detail.toWallet || detail.wallet || '—'} />
+                  <AdminDetailRow label="Target Member" value={detail.targetMember || '—'} />
                   <AdminDetailRow label="Status" value={<AdminStatusBadge status={detail.status} />} />
                   <AdminDetailRow label="Date" value={formatAdminDate(detail.date)} />
                   {detail.txHash ? <AdminDetailRow label="Tx hash" value={detail.txHash} /> : null}

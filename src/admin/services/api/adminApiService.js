@@ -142,7 +142,7 @@ export async function getMembers(params = {}) {
   const members = await fetchMembersRaw();
   return paginateLocal(members, {
     ...params,
-    searchKeys: ['id', 'name', 'email', 'loginId'],
+    searchKeys: ['id', 'name', 'email', 'loginId', 'cregisWalletAddress', 'walletAddress', 'wallet', 'address'],
   });
 }
 
@@ -445,31 +445,96 @@ export async function adjustReferralReward(id, amount, note = '') {
 }
 
 export async function getWithdrawals(params = {}) {
-  const rows = asArray(await apiGet('/admin/withdrawals')).map(w => ({
-    id: w.id || 'WID_001',
-    memberName: w.loginId || w.memberName || 'User',
-    amount: w.amount || 0,
-    wallet: w.wallet || w.toAddress || 'TY3N3q4...',
-    status: w.status || 'pending',
-    date: w.date || w.createdAt || '',
-    txHash: w.txHash || '',
-    memo: w.memo || '',
-  }));
-  return paginateLocal(rows, params);
+  const [data, members] = await Promise.all([
+    apiGet('/admin/withdrawals').catch(() => []),
+    fetchMembersRaw().catch(() => []),
+  ]);
+
+  const memberMapByWallet = new Map();
+  members.forEach((m) => {
+    const addr = m.cregisWalletAddress || m.walletAddress || m.wallet;
+    if (addr && addr !== '-') {
+      memberMapByWallet.set(addr.toLowerCase(), m);
+    }
+  });
+
+  const rows = asArray(data).map(w => {
+    const toWallet = w.toWallet || w.toAddress || w.wallet || w.address || '—';
+    const matchedMember = memberMapByWallet.get(toWallet.toLowerCase());
+
+    let targetMember = null;
+    if (w.targetUserEmail || w.toUserEmail || w.toUserId) {
+      targetMember = `${w.toUserId || ''}${w.targetUserEmail || w.toUserEmail ? ` (${w.targetUserEmail || w.toUserEmail})` : ''}`.trim();
+    } else if (w.targetMember || w.targetUser) {
+      targetMember = w.targetMember || w.targetUser;
+    } else if (matchedMember) {
+      targetMember = matchedMember.loginId || matchedMember.email || matchedMember.id;
+    }
+
+    return {
+      id: String(w.id || w.withdrawalId || 'WID_001'),
+      memberName: w.loginId || w.memberName || w.email || w.userId || 'User',
+      memberId: w.memberId || w.userId || '',
+      amount: Number(w.amount || 0),
+      wallet: toWallet,
+      toWallet: toWallet,
+      targetMember: targetMember,
+      status: (w.status || 'pending').toLowerCase(),
+      date: w.date || w.createdAt || w.createdDate || '',
+      txHash: w.txHash || '',
+      memo: w.memo || '',
+    };
+  });
+
+  return paginateLocal(rows, {
+    ...params,
+    searchKeys: ['memberName', 'wallet', 'toWallet', 'targetMember', 'id', 'status'],
+  });
 }
 
 export async function getWithdrawalById(id) {
-  const rows = asArray(await apiGet('/admin/withdrawals')).map(w => ({
-    id: w.id || 'WID_001',
-    memberName: w.loginId || w.memberName || 'User',
-    amount: w.amount || 0,
-    wallet: w.wallet || w.toAddress || 'TY3N3q4...',
-    status: w.status || 'pending',
-    date: w.date || w.createdAt || '',
-    txHash: w.txHash || '',
-    memo: w.memo || '',
-  }));
-  return rows.find((x) => x.id === id) || null;
+  const [data, members] = await Promise.all([
+    apiGet('/admin/withdrawals').catch(() => []),
+    fetchMembersRaw().catch(() => []),
+  ]);
+
+  const memberMapByWallet = new Map();
+  members.forEach((m) => {
+    const addr = m.cregisWalletAddress || m.walletAddress || m.wallet;
+    if (addr && addr !== '-') {
+      memberMapByWallet.set(addr.toLowerCase(), m);
+    }
+  });
+
+  const rows = asArray(data).map(w => {
+    const toWallet = w.toWallet || w.toAddress || w.wallet || w.address || '—';
+    const matchedMember = memberMapByWallet.get(toWallet.toLowerCase());
+
+    let targetMember = null;
+    if (w.targetUserEmail || w.toUserEmail || w.toUserId) {
+      targetMember = `${w.toUserId || ''}${w.targetUserEmail || w.toUserEmail ? ` (${w.targetUserEmail || w.toUserEmail})` : ''}`.trim();
+    } else if (w.targetMember || w.targetUser) {
+      targetMember = w.targetMember || w.targetUser;
+    } else if (matchedMember) {
+      targetMember = matchedMember.loginId || matchedMember.email || matchedMember.id;
+    }
+
+    return {
+      id: String(w.id || w.withdrawalId || 'WID_001'),
+      memberName: w.loginId || w.memberName || w.email || w.userId || 'User',
+      memberId: w.memberId || w.userId || '',
+      amount: Number(w.amount || 0),
+      wallet: toWallet,
+      toWallet: toWallet,
+      targetMember: targetMember,
+      status: (w.status || 'pending').toLowerCase(),
+      date: w.date || w.createdAt || w.createdDate || '',
+      txHash: w.txHash || '',
+      memo: w.memo || '',
+    };
+  });
+
+  return rows.find((x) => String(x.id) === String(id)) || null;
 }
 
 export async function approveWithdrawal(id, txHash = '') {
