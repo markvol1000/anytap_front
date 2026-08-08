@@ -361,8 +361,8 @@ export async function fetchLocalTransactions(userId) {
     const data = await apiGet(`/cards/${encodeURIComponent(userId)}/local-transactions`);
     if (!Array.isArray(data)) return [];
     return data.map((tx) => {
-      let kind = 'wallet_topup';
-      let title = 'USDT Deposit';
+      let kind = 'unknown';
+      let title = tx.description || 'Transaction';
       let incoming = true;
       const type = String(tx.txType || '').toUpperCase();
       if (type === 'DEPOSIT') {
@@ -377,6 +377,14 @@ export async function fetchLocalTransactions(userId) {
         kind = 'wallet_withdraw';
         title = 'Transfer Sent';
         incoming = false;
+      } else if (type === 'CARD_SPEND') {
+        kind = 'card_spend';
+        title = tx.description && tx.description !== '-' ? tx.description : 'Card Purchase';
+        incoming = false;
+      } else if (type === 'REFUND') {
+        kind = 'refund';
+        title = tx.description && tx.description !== '-' ? tx.description : 'Refund';
+        incoming = true;
       }
       const status = String(tx.status || 'SUCCESS').toLowerCase();
       return {

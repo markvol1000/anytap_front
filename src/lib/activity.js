@@ -67,7 +67,7 @@ const REWARD_KINDS = new Set([
 ]);
 
 const TYPE_LABELS = {
-  wallet_topup: 'USDT Deposit',
+  wallet_topup: 'Wallet Deposit',
   wallet_withdraw: 'Withdrawal',
   wallet_send: 'Transfer Sent',
   wallet_receive: 'Transfer Received',

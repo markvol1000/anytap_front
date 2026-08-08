@@ -125,7 +125,7 @@ export function mapWasabiTransactionRecord(record, opts = {}) {
     authorizedAmount: record.authorizedAmount != null ? Math.abs(Number(record.authorizedAmount) || 0) : undefined,
     authorizedCurrency: record.authorizedCurrency || 'USD',
     reference: String(record.tradeNo || record.transactionId || record.orderNo || id),
-    cardNo: String(record.cardNo || opts.cardId || opts.wasabiCardId || ''),
+    cardNo: String(record.cardNo || record.balanceInfo?.cardNo || opts.cardId || opts.wasabiCardId || ''),
     cardLast4: pickLast4(record, opts.last4 || '') || opts.last4 || '',
     cardNetwork: 'Visa',
     cardScheme: 'visa',
@@ -134,7 +134,7 @@ export function mapWasabiTransactionRecord(record, opts = {}) {
 
 /**
  * @param {object} payload — { total, records } from GET /cards/{userId}/transactions
- * @param {{ last4?: string }} [opts]
+ * @param {{ last4?: string, cardId?: string }} [opts]
  */
 export function mapWasabiTransactionsResponse(payload, opts = {}) {
   const rawData = payload?.data ?? payload;
@@ -142,8 +142,21 @@ export function mapWasabiTransactionsResponse(payload, opts = {}) {
     ? rawData
     : (rawData?.records || rawData?.list || rawData?.data?.records || rawData?.data?.list || rawData?.data || []);
 
+  const targetCardId = opts.cardId ? String(opts.cardId).replace(/\D/g, '') : '';
+  const targetLast4 = opts.last4 ? String(opts.last4).replace(/\D/g, '') : '';
+
   return records
     .map((row) => {
+      // If row specifies a cardNo, ensure it matches target card if specified
+      if (row?.cardNo && (targetCardId || targetLast4)) {
+        const rowDigits = String(row.cardNo).replace(/\D/g, '');
+        if (targetCardId && rowDigits !== targetCardId && !rowDigits.endsWith(targetLast4)) {
+          return null; // Skip records for a different card
+        }
+        if (targetLast4 && !rowDigits.endsWith(targetLast4)) {
+          return null; // Skip records that don't match target last4
+        }
+      }
       const item = mapWasabiTransactionRecord(row, opts);
       if (item && !item.cardLast4 && opts.last4) {
         item.cardLast4 = opts.last4;
