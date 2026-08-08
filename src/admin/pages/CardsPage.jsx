@@ -8,7 +8,7 @@ import {
   AdminDetailSection,
   AdminSplitLayout,
 } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge, formatAdminDate, shortenAddress } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAdminDate, formatUsdt, shortenAddress } from '../components/AdminStatusBadge.jsx';
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
@@ -43,6 +43,12 @@ export function CardsPage() {
   const [txPage, setTxPage] = useState(1);
   const [txLoading, setTxLoading] = useState(false);
   const [selectedTx, setSelectedTx] = useState(null);
+
+  const [simModalOpen, setSimModalOpen] = useState(false);
+  const [simType, setSimType] = useState('auth');
+  const [simAmount, setSimAmount] = useState('10.00');
+  const [simDescription, setSimDescription] = useState('Admin Test Transaction');
+  const [simLoading, setSimLoading] = useState(false);
 
   const loadTxs = useCallback(async (page = 1) => {
     if (!selectedId) {
@@ -175,6 +181,18 @@ export function CardsPage() {
                     },
                   },
                   { 
+                    key: 'last4', 
+                    label: 'Last 4', 
+                    render: (r) => {
+                      const l4 = r.last4 || (r.wasabiCardId && r.wasabiCardId.length >= 4 ? r.wasabiCardId.slice(-4) : '—');
+                      return (
+                        <span style={{ fontWeight: '500' }}>
+                          {l4 !== '—' ? `•••• ${l4}` : '—'}
+                        </span>
+                      );
+                    } 
+                  },
+                  { 
                     key: 'wasabiCardId', 
                     label: 'Card No', 
                     render: (r) => (
@@ -183,26 +201,34 @@ export function CardsPage() {
                       </span>
                     ) 
                   },
-                  { key: 'last4', label: 'Last 4', render: (r) => r.last4 ? `•••• ${r.last4}` : '—' },
-                  { key: 'cardType', label: 'Card Type' },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
                   { 
                     key: 'wallet', 
-                    label: 'Wallet', 
-                    render: (r) => (
-                      r.wallet && r.wallet !== '—' ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <img 
-                            src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032" 
-                            alt="USDT" 
-                            style={{ width: '16px', height: '16px', borderRadius: '50%' }} 
-                          />
-                          <span style={{ fontFamily: 'monospace' }}>{shortenAddress(r.wallet, 8, 6)}</span>
+                    label: 'Wallet (Actual) / Unpaid Fee', 
+                    render: (r) => {
+                      const avail = (Number(r.walletBalance ?? r.balance) || 0).toFixed(2);
+                      const actual = (Number(r.cregisActualBalance ?? r.actualBalance ?? r.walletBalance ?? r.balance) || 0).toFixed(2);
+                      const unpaid = (Number(r.unpaidTotalFee) || 0).toFixed(2);
+                      return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '15px',
+                            height: '15px',
+                            borderRadius: '50%',
+                            backgroundColor: '#26a17b',
+                            color: '#fff',
+                            fontSize: '9px',
+                            fontWeight: 'bold',
+                            lineHeight: 1
+                          }}>₮</span>
+                          <span>{avail}({actual}) / {unpaid}</span>
                         </div>
-                      ) : '—'
-                    ) 
+                      );
+                    } 
                   },
-                  { key: 'balance', label: 'Balance', render: (r) => r.balance ?? '—' },
                   { key: 'currency', label: 'Currency', render: (r) => r.currency ?? '—' },
                   { key: 'created', label: 'Created', render: (r) => formatAdminDate(r.created) },
                 ]}
@@ -246,20 +272,49 @@ export function CardsPage() {
                   <AdminDetailRow label="Status" value={<AdminStatusBadge status={detail.status} />} />
                   <AdminDetailRow 
                     label="Wallet" 
-                    value={
-                      detail.wallet && detail.wallet !== '—' ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <img 
-                            src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032" 
-                            alt="USDT" 
-                            style={{ width: '18px', height: '18px', borderRadius: '50%' }} 
-                          />
-                          <span style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{detail.wallet}</span>
+                    value={(
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '16px',
+                            height: '16px',
+                            borderRadius: '50%',
+                            backgroundColor: '#26a17b',
+                            color: '#fff',
+                            fontSize: '9px',
+                            fontWeight: 'bold',
+                            lineHeight: 1
+                          }}>₮</span>
+                          <span style={{ fontWeight: '600' }}>{formatUsdt(detail.walletBalance ?? detail.balance ?? 0)}</span>
+                          <span style={{ color: 'var(--admin-text-muted, #888)' }}>
+                            ({formatUsdt(detail.cregisActualBalance ?? detail.actualBalance ?? detail.walletBalance ?? detail.balance ?? 0)}) / {formatUsdt(detail.unpaidTotalFee ?? 0)} Unpaid Fee
+                          </span>
                         </div>
-                      ) : '—'
-                    } 
+                        {detail.wallet && detail.wallet !== '—' ? (
+                          <span style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--admin-muted, #888)' }}>
+                            Address: {detail.wallet}
+                          </span>
+                        ) : null}
+                      </div>
+                    )} 
                   />
-                  <AdminDetailRow label="Balance" value={detail.balance ?? '—'} />
+                  <AdminDetailRow 
+                    label="Balance" 
+                    value={(
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+                        <img 
+                          src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032" 
+                          alt={detail.currency || 'USD'} 
+                          style={{ width: '18px', height: '18px', borderRadius: '50%' }} 
+                        />
+                        <span style={{ fontWeight: '600' }}>{formatUsdt(detail.balance ?? 0)}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--admin-muted, #888)' }}>{detail.currency || 'USD'}</span>
+                      </div>
+                    )} 
+                  />
                   <AdminDetailRow label="Currency" value={detail.currency ?? '—'} />
                   <AdminDetailRow label="Created" value={formatAdminDate(detail.created)} />
                   <AdminDetailRow label="Tracking No" value={detail.trackingNumber || '—'} />
@@ -320,15 +375,7 @@ export function CardsPage() {
                         <button
                           type="button"
                           className="admin-btn admin-btn--secondary"
-                          onClick={() => runCardAction('Simulate Card Transaction', async (id, inputVal) => {
-                            const amt = parseFloat(inputVal) || 10.0;
-                            await simulateCardTransaction(detail.wasabiCardId || detail.id, { type: 'auth', amount: amt, currency: 'USD', description: 'Admin Test Purchase' });
-                            const updated = await getCardById(id);
-                            return updated;
-                          }, {
-                            showInput: true,
-                            inputPlaceholder: 'Enter transaction amount (e.g. 10.00)…',
-                          })}>
+                          onClick={() => setSimModalOpen(true)}>
                           🧪 Simulate Tx
                         </button>
                       ) : null}
@@ -560,6 +607,178 @@ export function CardsPage() {
 
             <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
               <button type="button" className="admin-btn admin-btn--primary" onClick={() => setSelectedTx(null)}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Simulate Tx Modal */}
+      {simModalOpen && (
+        <div
+          className="admin-modal-backdrop"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+          onClick={() => !simLoading && setSimModalOpen(false)}
+        >
+          <div
+            className="admin-modal"
+            style={{
+              backgroundColor: 'var(--admin-bg-surface, #1e293b)',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '440px',
+              width: '100%',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              color: '#fff',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🧪 Simulate Card Transaction
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSimModalOpen(false)}
+                disabled={simLoading}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '20px', cursor: 'pointer', padding: '4px' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Transaction Type Selector */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px', fontWeight: '500' }}>
+                  Transaction Type (모든 Wasabi API 타입)
+                </label>
+                <select
+                  value={simType}
+                  onChange={(e) => setSimType(e.target.value)}
+                  disabled={simLoading}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#0f172a',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#fff',
+                    fontSize: '14px',
+                    outline: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="auth">auth (Payment Authorization / 결제 승인)</option>
+                  <option value="refund">refund (Refund / 환불)</option>
+                  <option value="Void">Void (Transaction Cancellation / 결제 취소)</option>
+                  <option value="maintain_fee">maintain_fee (Card Maintenance Fee / 카드 유지 수수료)</option>
+                </select>
+              </div>
+
+              {/* Amount Input */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px', fontWeight: '500' }}>
+                  Transaction Amount (USD)
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#38bdf8' }}>$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={simAmount}
+                    onChange={(e) => setSimAmount(e.target.value)}
+                    disabled={simLoading}
+                    placeholder="10.00"
+                    style={{
+                      width: '140px',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: '#0f172a',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#fff',
+                      fontSize: '15px',
+                      fontWeight: '600',
+                      outline: 'none',
+                    }}
+                  />
+                  <span style={{ fontSize: '13px', color: '#94a3b8' }}>USD</span>
+                </div>
+              </div>
+
+              {/* Description Input */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px', fontWeight: '500' }}>
+                  Description (비고)
+                </label>
+                <input
+                  type="text"
+                  value={simDescription}
+                  onChange={(e) => setSimDescription(e.target.value)}
+                  disabled={simLoading}
+                  placeholder="Admin Test Transaction"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#0f172a',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#fff',
+                    fontSize: '13px',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}>
+              <button
+                type="button"
+                className="admin-btn admin-btn--ghost"
+                onClick={() => setSimModalOpen(false)}
+                disabled={simLoading}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-btn admin-btn--primary"
+                disabled={simLoading || !simAmount || parseFloat(simAmount) <= 0}
+                onClick={async () => {
+                  setSimLoading(true);
+                  try {
+                    const cardNo = detail.wasabiCardId || detail.id;
+                    await simulateCardTransaction(cardNo, {
+                      type: simType,
+                      amount: parseFloat(simAmount) || 10.0,
+                      currency: 'USD',
+                      description: simDescription || 'Admin Simulated Transaction',
+                    });
+                    setSimModalOpen(false);
+                    window.alert(`Simulated transaction (${simType}, $${simAmount}) triggered successfully!`);
+                    const updated = await getCardById(selectedId);
+                    setDetail(updated);
+                    loadTxs(1);
+                  } catch (err) {
+                    window.alert(err.message || 'Failed to trigger simulated transaction.');
+                  } finally {
+                    setSimLoading(false);
+                  }
+                }}
+                style={{ backgroundColor: '#3b82f6', color: '#fff', fontWeight: 'bold' }}
+              >
+                {simLoading ? 'Executing…' : 'Execute Simulate Tx'}
+              </button>
             </div>
           </div>
         </div>

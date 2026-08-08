@@ -128,6 +128,10 @@ export function mapCardRow(row) {
   // 카드별 고유 id: wasabiCardId 우선, 없으면 userId
   const id = wasabiCardId || userId;
   const status = lower(row?.cardStatus || row?.status, 'not_issued');
+  const wBal = Number(row?.walletBalance ?? 0) || 0;
+  const cActual = Number(row?.cregisActualBalance ?? wBal) || 0;
+  const uFee = Number(row?.unpaidTotalFee ?? 0) || 0;
+
   return {
     id,
     memberId: userId,
@@ -138,11 +142,14 @@ export function mapCardRow(row) {
     wallet: row?.cregisWalletAddress && row.cregisWalletAddress !== '-'
       ? row.cregisWalletAddress
       : (row?.wallet || '—'),
+    walletBalance: wBal,
+    cregisActualBalance: cActual,
+    unpaidTotalFee: uFee,
     created: dateOnly(row?.createdAt || row?.created),
     last4: row?.last4 && row.last4 !== '-' ? row.last4 : null,
     wasabiCardId,
-    balance: Number(row?.balance ?? 0),
-    currency: row?.currency || 'USDT',
+    balance: Number(row?.balance ?? row?.cardBalance ?? 0),
+    currency: row?.currency || 'USD',
     trackingNumber: row?.trackingNumber || '',
     carrier: row?.carrier || '',
     loginId: row?.loginId || '',
@@ -219,6 +226,7 @@ export function mapDailySummaryToDashboard({
   members = [],
   kyc = [],
   cards = [],
+  recentTxs = [],
 } = {}) {
   const pendingKyc = kyc.filter((k) => k.status === 'pending').length;
   const pendingCards = cards.filter((c) =>
@@ -253,6 +261,38 @@ export function mapDailySummaryToDashboard({
       meta: c.cardType,
     }));
 
+  const memberMap = new Map();
+  members.forEach((m) => {
+    if (m.userId) memberMap.set(m.userId, m);
+    if (m.id) memberMap.set(m.id, m);
+  });
+
+  const walletTransactions = [];
+  const cardTransactions = [];
+
+  (recentTxs || []).forEach((t) => {
+    const uId = t.userId || t.id;
+    const member = memberMap.get(uId);
+    const rawKind = (t.type || t.txType || 'deposit').toLowerCase();
+    const item = {
+      id: t.txId || t.id,
+      memberId: uId,
+      memberName: member?.name || t.loginId || uId,
+      memberEmail: member?.email || t.email || '—',
+      kind: rawKind === 'deposit' ? 'wallet_deposit' : (rawKind === 'card_charge' ? 'card_spend' : rawKind),
+      amount: Number(t.amount ?? 0),
+      status: (t.status || 'success').toLowerCase(),
+      at: t.createdAt || t.createdDate || t.at || new Date().toISOString(),
+    };
+
+    const txTypeStr = String(t.type || t.txType || '').toUpperCase();
+    if (txTypeStr.includes('CARD') || txTypeStr.includes('WASABI')) {
+      cardTransactions.push(item);
+    } else {
+      walletTransactions.push(item);
+    }
+  });
+
   return {
     pendingTasks: {
       pendingKyc,
@@ -275,8 +315,8 @@ export function mapDailySummaryToDashboard({
       card: recentCards,
       withdrawal: [],
     },
-    walletTransactions: [],
-    cardTransactions: [],
+    walletTransactions,
+    cardTransactions,
     adminActivity: [],
     analytics: summary,
   };

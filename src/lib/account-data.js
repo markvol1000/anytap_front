@@ -345,7 +345,7 @@ export function resolveCardStatusDef(cardStatus, accountState = {}) {
         ...def,
         dashboardTitle: 'No Card Yet',
         cardLine: 'Card',
-        message: 'Apply for a virtual (1 USDT) or physical (100 USDT) card to get started.',
+        message: 'Apply for a virtual (20 USDT) or physical (100 USDT) card to get started.',
         cta: null,
         secondaryCta: null,
         nextScreen: null,

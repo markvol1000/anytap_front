@@ -55,10 +55,10 @@ export function CardsDesktopInfoPanel({ card, s }) {
     );
   }
   return (
-    <>
+    <div style={{ marginTop: '-4px' }}>
       <CardInformationPanel card={card} s={s} className="portal-card-info--desk" />
       <CardDesktopManagementPanel card={card} s={s} />
-    </>
+    </div>
   );
 }
 

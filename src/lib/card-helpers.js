@@ -95,15 +95,19 @@ export function formatExpiryDisplay(expiry) {
 /** Remaining daily spend headroom */
 export function getCardAvailableLimit(card) {
   if (!card) return 0;
+  if (typeof card.balanceUsdt === 'number') return Math.max(0, card.balanceUsdt);
+  if (card.balance) {
+    const stripped = String(card.balance).replace(/[^\d.]/g, '');
+    const parsed = parseFloat(stripped);
+    if (!Number.isNaN(parsed)) return Math.max(0, parsed);
+  }
   if (typeof card.availableLimit === 'number') return Math.max(0, card.availableLimit);
-  const limits = getCardLimitsSummary(card);
-  if (!limits) return 0;
-  return Math.max(0, limits.dailySpend.limit - limits.dailySpend.used);
+  return 0;
 }
 
 export function formatAvailableLimit(card) {
   const available = getCardAvailableLimit(card);
-  return `${available.toLocaleString('en-US')} USD`;
+  return `${available.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
 }
 
 export function shortenWalletAddress(address) {

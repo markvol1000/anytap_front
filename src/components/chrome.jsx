@@ -371,16 +371,16 @@ function SiteHeader({
       {showDeposit && s && (
         <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Deposit QR">
           <button type="button" className="portal-sheet__backdrop" onClick={() => setShowDeposit(false)} aria-label="Close" />
-          <div className="portal-sheet__panel portal-wallet-sheet portal-wallet-sheet--receive" style={{ padding: '24px', maxWidth: '480px', maxHeight: 'min(96vh, 820px)' }}>
-            <div className="portal-sheet__head" style={{ marginBottom: '16px' }}>
-              <h3 className="portal-sheet__title">
+          <div className="portal-sheet__panel portal-wallet-sheet portal-wallet-sheet--receive" style={{ padding: '20px 24px', maxWidth: '440px', maxHeight: '92vh' }}>
+            <div className="portal-sheet__head" style={{ marginBottom: '12px' }}>
+              <h3 className="portal-sheet__title" style={{ fontSize: '18px', fontWeight: '600' }}>
                 {W.showsIssuanceDepositWallet(s.accountState?.cardStatus) ? 'Pay Issuance Fee' : 'Deposit USDT'}
               </h3>
               <button type="button" className="portal-sheet__close" onClick={() => setShowDeposit(false)} aria-label="Close">
                 <Icon name="close" size={18} />
               </button>
             </div>
-            <IssuanceDepositPanel s={s} />
+            <IssuanceDepositPanel s={s} isModal />
           </div>
         </div>
       )}

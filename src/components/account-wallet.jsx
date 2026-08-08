@@ -574,7 +574,7 @@ function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onC
   );
 }
 
-export function IssuanceDepositPanel({ s, className = '' }) {
+export function IssuanceDepositPanel({ s, className = '', isModal = false }) {
   const [systemAddress, setSystemAddress] = useState('');
   const status = s.accountState?.cardStatus;
   const isIssuance = W.showsIssuanceDepositWallet(status);
@@ -597,40 +597,28 @@ export function IssuanceDepositPanel({ s, className = '' }) {
         className,
       ].filter(Boolean).join(' ')}
       aria-label="Card deposit">
-      <div className="portal-issuance-deposit__head">
-        <p className="portal-issuance-deposit__eyebrow">{isIssuance ? 'Card issuance fee' : 'USDT Deposit'}</p>
-        {paid ? (
-          <p className="portal-issuance-deposit__badge" role="status">Payment received</p>
-        ) : null}
-        <h2 className="portal-issuance-deposit__title">
-          {paid
-            ? `Deposit confirmed · ${amount} ${W.ISSUANCE_DEPOSIT_CURRENCY}`
-            : isIssuance
-              ? `Deposit ${amount} ${W.ISSUANCE_DEPOSIT_CURRENCY}`
-              : 'Deposit USDT'}
-        </h2>
-        <p className="portal-issuance-deposit__body">
-          {paid
-            ? 'Your 100 USDT issuance fee is confirmed. Card preparation is in progress — do not send again.'
-            : isIssuance
-              ? 'Send exactly this amount via TRC-20. This deposit wallet stays visible until your card ships.'
-              : 'Send USDT (TRC-20) to fund your wallet balance.'}
-        </p>
-      </div>
+      <p className="portal-issuance-deposit__body" style={{ fontSize: '13px', margin: 0, marginBottom: '12px', color: '#94a3b8' }}>
+        {paid
+          ? 'Your 100 USDT issuance fee is confirmed. Card preparation is in progress — do not send again.'
+          : isIssuance
+            ? 'Send exactly this amount via TRC-20. This deposit wallet stays visible until your card ships.'
+            : 'Send USDT (TRC-20) to fund your wallet balance.'}
+      </p>
 
       {!paid ? (
-        <div className="portal-qrbox portal-issuance-deposit__qrbox">
+        <div className="portal-qrbox portal-issuance-deposit__qrbox" style={isModal ? { padding: '16px', gap: '10px' } : undefined}>
           <div className="portal-qr" dangerouslySetInnerHTML={{ __html: A.buildQR() }} />
-          <p className="portal-issuance-deposit__qr-label">USDT Deposit Address (TRC-20)</p>
-          <div className="portal-addr">{address || 'Loading system wallet...'}</div>
+          <p className="portal-issuance-deposit__qr-label" style={{ fontSize: '12px', margin: 0 }}>USDT Deposit Address (TRC-20)</p>
+          <div className="portal-addr" style={{ fontSize: '13px', padding: '8px 12px' }}>{address || 'Loading system wallet...'}</div>
           {isIssuance && (
-            <div className="capply-alert capply-alert--info" style={{ marginTop: '16px', marginBottom: '16px', fontSize: '13px', lineHeight: '1.5', padding: '12px 16px', borderRadius: '8px', backgroundColor: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', textAlign: 'left' }}>
+            <div className="capply-alert capply-alert--info" style={{ marginTop: '8px', marginBottom: '8px', fontSize: '12px', lineHeight: '1.4', padding: '8px 12px', borderRadius: '6px', backgroundColor: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', textAlign: 'left' }}>
               Once you deposit 100 USDT to the address below, your card will be shipped, and delivery may take up to 2 weeks.
             </div>
           )}
           <button
             type="button"
             className="portal-btn-primary portal-issuance-deposit__copy"
+            style={{ padding: '8px 16px', fontSize: '13px' }}
             disabled={!address}
             onClick={() => (address && s.copy ? s.copy(address, 'Deposit address copied') : undefined)}>
             Copy Address
@@ -649,7 +637,7 @@ export function IssuanceDepositPanel({ s, className = '' }) {
         </div>
       )}
 
-      <div className="portal-meta-row portal-issuance-deposit__meta">
+      <div className="portal-meta-row portal-issuance-deposit__meta" style={isModal ? { marginTop: '12px', marginBottom: '8px' } : undefined}>
         <div className="portal-meta">
           <span className="portal-meta__k">Network</span>
           <span className="portal-meta__v">
@@ -672,7 +660,7 @@ export function IssuanceDepositPanel({ s, className = '' }) {
       </div>
 
       {!paid ? (
-        <p className="portal-issuance-deposit__note" role="note">
+        <p className="portal-issuance-deposit__note" role="note" style={isModal ? { fontSize: '11px', margin: 0 } : undefined}>
           Only send USDT on TRC-20. Other networks or assets may be lost. {isIssuance ? 'Personal spending wallet opens after you register your card.' : ''}
         </p>
       ) : null}

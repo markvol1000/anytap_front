@@ -7,7 +7,7 @@ export const MAX_CARDS_PER_USER = 3;
 
 /** Fee charged at card issuance — TODO: fetch from Wasabi API config */
 export const CARD_ISSUANCE_FEES = {
-  virtual: { amount: 1, currency: 'USDT' },
+  virtual: { amount: 20, currency: 'USDT' },
   physical: { amount: 100, currency: 'USDT' },
 } as const;
 

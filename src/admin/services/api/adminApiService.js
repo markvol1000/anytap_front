@@ -36,8 +36,12 @@ async function fetchKycRaw() {
   return asArray(await apiGet('/admin/kyc')).map(mapKycRow);
 }
 
-async function fetchCardsRaw() {
-  return asArray(await apiGet('/admin/cards/applications')).map(mapCardRow);
+async function fetchCardsRaw(params = {}) {
+  const query = new URLSearchParams();
+  if (params?.page) query.append('pageNum', params.page);
+  if (params?.limit) query.append('pageSize', params.limit);
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+  return asArray(await apiGet(`/admin/cards/applications${queryString}`)).map(mapCardRow);
 }
 
 function resolveUserId(id) {
@@ -56,12 +60,7 @@ async function updateCardStatus(userId, body, originalId = null) {
     payload.cardNo = originalId;
   }
   await apiPost(`/admin/cards/applications/${encodeURIComponent(userId)}/update-status`, payload);
-  const cards = await fetchCardsRaw();
-  if (originalId) {
-    const byOriginalId = cards.find((c) => c.id === originalId || c.memberId === originalId || c.wasabiCardId === originalId);
-    if (byOriginalId) return byOriginalId;
-  }
-  return cards.find((c) => c.memberId === userId) || mapCardRow({ userId, ...body });
+  return getCardById(originalId || userId);
 }
 
 async function resolveFirstCardNo(userId) {
@@ -107,13 +106,20 @@ export async function getSystemSummary() {
 }
 
 export async function getDashboardData() {
-  const [summary, members, kyc, cards] = await Promise.all([
+  const [summary, members, kyc, cards, recentTxs] = await Promise.all([
     apiGet('/admin/analytics/daily-summary').catch(() => ({})),
     fetchMembersRaw().catch(() => []),
     fetchKycRaw().catch(() => []),
     fetchCardsRaw().catch(() => []),
+    apiGet('/admin/transactions/recent').catch(() => []),
   ]);
-  return mapDailySummaryToDashboard({ summary, members, kyc, cards });
+  return mapDailySummaryToDashboard({
+    summary,
+    members,
+    kyc,
+    cards,
+    recentTxs: asArray(recentTxs),
+  });
 }
 
 export async function getRecentMembers(limit = 5) {
@@ -123,8 +129,9 @@ export async function getRecentMembers(limit = 5) {
     .slice(0, limit);
 }
 
-export async function getRecentTransactions() {
-  return [];
+export async function getRecentTransactions(limit = 10) {
+  const txs = asArray(await apiGet('/admin/transactions/recent').catch(() => []));
+  return txs.slice(0, limit);
 }
 
 export async function getRecentAdminActions() {
@@ -219,7 +226,7 @@ export async function rejectKyc(id) {
 }
 
 export async function getCardApplications(params = {}) {
-  const rows = await fetchCardsRaw();
+  const rows = await fetchCardsRaw(params);
   return paginateLocal(rows, {
     ...params,
     searchKeys: ['memberName', 'memberId', 'memberEmail', 'loginId', 'cardType'],
@@ -227,9 +234,13 @@ export async function getCardApplications(params = {}) {
 }
 
 export async function getCardById(id) {
-  const rows = await fetchCardsRaw();
-  // id는 wasabiCardId 또는 userId — 둘 다 시도
-  return rows.find((c) => c.id === id || c.memberId === id) || null;
+  if (!id) return null;
+  try {
+    const data = await apiGet(`/admin/cards/applications/detail/${encodeURIComponent(id)}`);
+    return mapCardRow(data);
+  } catch {
+    return null;
+  }
 }
 
 export async function getMemberCardCount(memberId) {
@@ -238,38 +249,33 @@ export async function getMemberCardCount(memberId) {
     const cards = asArray(await apiGet(`/admin/members/${encodeURIComponent(userId)}/cards`));
     return cards.length;
   } catch {
-    const rows = await fetchCardsRaw();
-    return rows.filter((c) => c.memberId === memberId && c.status !== 'terminated' && c.status !== 'rejected').length;
+    return 1;
   }
 }
 
 export async function approveCard(id) {
-  const rows = await fetchCardsRaw();
-  const card = rows.find((c) => c.id === id || c.memberId === id || c.wasabiCardId === id);
+  const card = await getCardById(id);
   const userId = resolveUserId(card?.memberId || id);
   const cardNo = card?.wasabiCardId || (String(id).startsWith('W') ? id : null);
   return updateCardStatus(userId, { cardStatus: 'deposit_received', cardNo }, id);
 }
 
 export async function rejectCard(id) {
-  const rows = await fetchCardsRaw();
-  const card = rows.find((c) => c.id === id || c.memberId === id || c.wasabiCardId === id);
+  const card = await getCardById(id);
   const userId = resolveUserId(card?.memberId || id);
   const cardNo = card?.wasabiCardId || (String(id).startsWith('W') ? id : null);
   return updateCardStatus(userId, { cardStatus: 'not_issued', cardNo }, id);
 }
 
 export async function issueCard(id) {
-  const rows = await fetchCardsRaw();
-  const card = rows.find((c) => c.id === id || c.memberId === id || c.wasabiCardId === id);
+  const card = await getCardById(id);
   const userId = resolveUserId(card?.memberId || id);
   const cardNo = card?.wasabiCardId || (String(id).startsWith('W') ? id : null);
   return updateCardStatus(userId, { cardStatus: 'issued', cardNo }, id);
 }
 
 export async function activateCard(id, pin = '') {
-  const rows = await fetchCardsRaw();
-  const card = rows.find((c) => c.id === id || c.memberId === id || c.wasabiCardId === id);
+  const card = await getCardById(id);
   const userId = resolveUserId(card?.memberId || id);
   const cardNo = card?.wasabiCardId || (String(id).startsWith('W') ? id : null);
 
@@ -283,38 +289,31 @@ export async function activateCard(id, pin = '') {
   }
 
   await apiPost(`/admin/members/${encodeURIComponent(userId)}/cards/${encodeURIComponent(cardNo)}/activate`, { pin: cleanPin });
-
-  const updatedRows = await fetchCardsRaw();
-  return updatedRows.find((c) => c.id === id || c.wasabiCardId === cardNo || c.memberId === userId) || mapCardRow({ userId, ...card });
+  return getCardById(id);
 }
 
 export async function freezeCard(id) {
-  const rows = await fetchCardsRaw();
-  const card = rows.find((c) => c.id === id || c.memberId === id);
+  const card = await getCardById(id);
   const userId = resolveUserId(card?.memberId || id);
-  const cardNo = await resolveFirstCardNo(userId);
+  const cardNo = card?.wasabiCardId || (String(id).startsWith('W') ? id : '');
   await apiPost(`/admin/members/${encodeURIComponent(userId)}/cards/${encodeURIComponent(cardNo)}/freeze`);
   return getCardById(id);
 }
 
 export async function unfreezeCard(id) {
-  const rows = await fetchCardsRaw();
-  const card = rows.find((c) => c.id === id || c.memberId === id);
+  const card = await getCardById(id);
   const userId = resolveUserId(card?.memberId || id);
-  const cardNo = await resolveFirstCardNo(userId);
+  const cardNo = card?.wasabiCardId || (String(id).startsWith('W') ? id : '');
   await apiPost(`/admin/members/${encodeURIComponent(userId)}/cards/${encodeURIComponent(cardNo)}/unfreeze`);
   return getCardById(id);
 }
 
 export async function shipCard(id) {
-  const rows = await fetchCardsRaw();
-  const card = rows.find((c) => c.id === id || c.memberId === id);
+  const card = await getCardById(id);
   const userId = resolveUserId(card?.memberId || id);
-  // 선택된 카드의 cardNo (id 자체가 wasabiCardId일 수 있음)
-  const cardNo = card?.wasabiCardId || await resolveFirstCardNo(userId);
+  const cardNo = card?.wasabiCardId || (String(id).startsWith('W') ? id : '');
   await apiPost(`/admin/members/${encodeURIComponent(userId)}/cards/${encodeURIComponent(cardNo)}/ship`);
-  const updatedRows = await fetchCardsRaw();
-  return updatedRows.find((c) => c.id === id || c.memberId === userId) || null;
+  return getCardById(id);
 }
 
 export async function terminateCard() {
@@ -322,13 +321,29 @@ export async function terminateCard() {
 }
 
 export async function getCardTransactions(userId, cardNo = '') {
-  const rows = await fetchCardsRaw();
-  const card = rows.find((c) => c.id === userId || c.wasabiCardId === userId || c.memberId === userId);
-  const actualUserId = resolveUserId(card?.memberId || userId);
-  const actualCardNo = cardNo || card?.wasabiCardId || (String(userId).startsWith('W') ? userId : '');
+  let actualUserId = userId;
+  let actualCardNo = cardNo;
 
-  const url = `/admin/members/${encodeURIComponent(actualUserId)}/cards/transactions` + (actualCardNo ? `?cardNo=${encodeURIComponent(actualCardNo)}` : '');
-  const data = await apiGet(url);
+  if (String(userId).startsWith('W') || String(userId).startsWith('WD')) {
+    actualCardNo = userId;
+    actualUserId = '';
+  } else {
+    try {
+      actualUserId = resolveUserId(userId);
+    } catch {
+      actualUserId = userId;
+    }
+  }
+
+  const query = new URLSearchParams();
+  if (actualCardNo) query.append('cardNo', actualCardNo);
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+
+  const url = actualUserId 
+    ? `/admin/members/${encodeURIComponent(actualUserId)}/cards/transactions${queryString}`
+    : `/admin/cards/transactions${queryString}`;
+
+  const data = await apiGet(url).catch(() => ({ records: [], total: 0 }));
   return data;
 }
 

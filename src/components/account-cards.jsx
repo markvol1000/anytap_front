@@ -235,7 +235,7 @@ export function DashboardIssueFirstCard({ onAdd, disabled = false, className = '
         <Icon name="plus" size={36} stroke={2} />
       </span>
       <span className="debit-card__empty-label">Apply Card</span>
-      <span className="debit-card__empty-sub">Virtual from 1 USDT · Physical from 100 USDT</span>
+      <span className="debit-card__empty-sub">Virtual from 20 USDT · Physical from 100 USDT</span>
     </button>
   );
 }

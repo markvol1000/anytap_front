@@ -151,53 +151,64 @@ export function CardManagementActions({ card, s, className = '' }) {
 
 export function CardSpendingLimits({ card, className = '' }) {
   if (!card) return null;
-  const limits = A.getCardLimitsSummary ? A.getCardLimitsSummary(card) : null;
-  if (!limits || !limits.dailySpend || !limits.atmWithdrawal) return null;
-
-  const dailyPct = limits.dailySpend.limit > 0
-    ? Math.min(100, (limits.dailySpend.used / limits.dailySpend.limit) * 100)
-    : 0;
-  const atmPct = limits.atmWithdrawal.limit > 0
-    ? Math.min(100, (limits.atmWithdrawal.used / limits.atmWithdrawal.limit) * 100)
-    : 0;
-  const dailyLeft = Math.max(0, limits.dailySpend.limit - limits.dailySpend.used);
-  const atmLeft = Math.max(0, limits.atmWithdrawal.limit - limits.atmWithdrawal.used);
 
   return (
     <section
       className={`portal-card-mgmt__limits${className ? ` ${className}` : ''}`}
       aria-label="Spending limits">
-      <h2 className="portal-card-mgmt__section-title">Spending Limits</h2>
-      <div className="portal-card-mgmt__panel portal-card-mgmt__panel--limits">
+      <h2 className="portal-card-mgmt__section-title" style={{ marginBottom: '10px' }}>Spending Limits</h2>
+      <div className="portal-card-mgmt__panel portal-card-mgmt__panel--limits" style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '14px 16px' }}>
+        {/* Card Spending Limits */}
         <div className="portal-mycards-desk-info__limit">
-          <div className="portal-mycards-desk-info__limit-head">
-            <span className="portal-mycards-desk-info__limit-name">Daily Spend Limit</span>
-            <span className="portal-mycards-desk-info__limit-total">
-              {A.formatLimitUsd(limits.dailySpend.limit)}
-            </span>
+          <div className="portal-mycards-desk-info__limit-head" style={{ marginBottom: '8px', borderBottom: '1px solid var(--portal-border)', paddingBottom: '4px' }}>
+            <span className="portal-mycards-desk-info__limit-name" style={{ fontWeight: '700', fontSize: '13px' }}>Card Spending</span>
           </div>
-          <div className="portal-mycards-desk-info__track" aria-hidden="true">
-            <div className="portal-mycards-desk-info__fill" style={{ width: `${dailyPct}%` }} />
-          </div>
-          <div className="portal-mycards-desk-info__limit-foot">
-            <span>{A.formatLimitUsd(limits.dailySpend.used)} used</span>
-            <span>{A.formatLimitUsd(dailyLeft)} left</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 10px', fontSize: '12px' }}>
+            <div>
+              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Single Tx</span>
+              <strong style={{ fontSize: '12.5px' }}>$20,000</strong>
+            </div>
+            <div>
+              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Daily Tx Count</span>
+              <strong style={{ fontSize: '12.5px' }}>100</strong>
+            </div>
+            <div>
+              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Daily Limit</span>
+              <strong style={{ fontSize: '12.5px' }}>$250,000</strong>
+            </div>
+            <div>
+              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Monthly Limit</span>
+              <strong style={{ fontSize: '12.5px' }}>$1,000,000</strong>
+            </div>
           </div>
         </div>
 
+        {/* ATM Withdrawal Limits */}
         <div className="portal-mycards-desk-info__limit">
-          <div className="portal-mycards-desk-info__limit-head">
-            <span className="portal-mycards-desk-info__limit-name">ATM Withdrawal Limit</span>
-            <span className="portal-mycards-desk-info__limit-total">
-              {A.formatLimitUsd(limits.atmWithdrawal.limit)} / day
-            </span>
+          <div className="portal-mycards-desk-info__limit-head" style={{ marginBottom: '8px', borderBottom: '1px solid var(--portal-border)', paddingBottom: '4px' }}>
+            <span className="portal-mycards-desk-info__limit-name" style={{ fontWeight: '700', fontSize: '13px' }}>ATM Withdrawal</span>
           </div>
-          <div className="portal-mycards-desk-info__track" aria-hidden="true">
-            <div className="portal-mycards-desk-info__fill" style={{ width: `${atmPct}%` }} />
-          </div>
-          <div className="portal-mycards-desk-info__limit-foot">
-            <span>{A.formatLimitUsd(limits.atmWithdrawal.used)} used</span>
-            <span>{A.formatLimitUsd(atmLeft)} available</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 10px', fontSize: '12px' }}>
+            <div>
+              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Single Tx</span>
+              <strong style={{ fontSize: '12.5px' }}>$1,500</strong>
+            </div>
+            <div>
+              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Daily Limit</span>
+              <strong style={{ fontSize: '12.5px' }}>$1,500</strong>
+            </div>
+            <div>
+              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Daily Tx Count</span>
+              <strong style={{ fontSize: '12.5px' }}>30</strong>
+            </div>
+            <div>
+              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Fee</span>
+              <strong style={{ fontSize: '12.5px' }}>2% (min $1)</strong>
+            </div>
+            <div>
+              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Monthly Limit</span>
+              <strong style={{ fontSize: '12.5px' }}>$15,000</strong>
+            </div>
           </div>
         </div>
       </div>
