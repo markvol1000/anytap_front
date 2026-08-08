@@ -4,12 +4,18 @@
  */
 
 function pickAmount(record) {
-  const raw = record?.amount
-    ?? record?.authorizedAmount
+  const raw = record?.authorizedAmount
     ?? record?.settleAmount
+    ?? record?.amount
     ?? record?.receivedAmount
     ?? 0;
   return Math.abs(Number(raw) || 0);
+}
+
+function pickCurrency(record) {
+  return record?.authorizedCurrency
+    || record?.settleCurrency
+    || (record?.kind === 'card_spend' || record?.kind === 'refund' || record?.kind === 'reversal' ? 'USD' : 'USDT');
 }
 
 function pickTimestamp(record) {
@@ -108,6 +114,9 @@ export function mapWasabiTransactionRecord(record, opts = {}) {
     title: pickTitle(record),
     at: pickTimestamp(record),
     amount: pickAmount(record),
+    currency: pickCurrency(record),
+    originalAmount: record.amount != null ? Math.abs(Number(record.amount) || 0) : undefined,
+    originalCurrency: record.currency || undefined,
     incoming,
     failed: status === 'failed',
     kind,
