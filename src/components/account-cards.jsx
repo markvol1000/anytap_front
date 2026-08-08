@@ -362,8 +362,19 @@ export function CardOnboardingActions({ s, layout = 'inline' }) {
   const applyDisabled = !s.kycApproved && !s.cardApplicationPending;
   const applyLimited = !s.cardLimit?.canAdd;
 
-  const goApply = () => s.go('cardApply');
-  const goRegister = () => s.go('cardRegister');
+  const goApply = () => {
+    if (!s.kycApproved && !s.cardApplicationPending) {
+      s.showToast?.('Identity verification (KYC) is required before applying for a card.');
+      s.go?.('kyc');
+      return;
+    }
+    if (s.cardLimit && !s.cardLimit.canAdd) {
+      s.showToast?.(`Maximum limit of ${s.cardLimit.max} cards reached.`);
+      return;
+    }
+    s.go?.('cardApply');
+  };
+  const goRegister = () => s.go?.('cardRegister');
 
   if (layout === 'header') {
     return (
@@ -371,8 +382,7 @@ export function CardOnboardingActions({ s, layout = 'inline' }) {
         <button
           type="button"
           className="btn btn--accent btn--sm portal-card-onboard__header-btn"
-          onClick={goApply}
-          disabled={applyDisabled || applyLimited}>
+          onClick={goApply}>
           + Apply New Card
         </button>
         <button
@@ -391,8 +401,7 @@ export function CardOnboardingActions({ s, layout = 'inline' }) {
         <button
           type="button"
           className="portal-card-onboard__card"
-          onClick={goApply}
-          disabled={applyDisabled || applyLimited}>
+          onClick={goApply}>
           <span className="portal-card-onboard__icon" aria-hidden="true">
             <Icon name="plus" size={24} stroke={1.75} />
           </span>
@@ -425,8 +434,7 @@ export function CardOnboardingActions({ s, layout = 'inline' }) {
       <button
         type="button"
         className="portal-card-onboard__link"
-        onClick={goApply}
-        disabled={applyDisabled || applyLimited}>
+        onClick={goApply}>
         + Apply New Card
       </button>
       <button type="button" className="portal-card-onboard__link" onClick={goRegister}>
@@ -437,10 +445,21 @@ export function CardOnboardingActions({ s, layout = 'inline' }) {
 }
 
 function CardOnboardingSheet({ s, open, onClose, hint }) {
-  const applyDisabled = !s.kycApproved && !s.cardApplicationPending;
-  const applyLimited = !s.cardLimit?.canAdd;
-
   if (!open) return null;
+
+  const goApply = () => {
+    onClose();
+    if (!s.kycApproved && !s.cardApplicationPending) {
+      s.showToast?.('Identity verification (KYC) is required before applying for a card.');
+      s.go?.('kyc');
+      return;
+    }
+    if (s.cardLimit && !s.cardLimit.canAdd) {
+      s.showToast?.(`Maximum limit of ${s.cardLimit.max} cards reached.`);
+      return;
+    }
+    s.go?.('cardApply');
+  };
 
   return (
     <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Card actions">
@@ -460,11 +479,7 @@ function CardOnboardingSheet({ s, open, onClose, hint }) {
           <button
             type="button"
             className="portal-card-onboard__card portal-card-onboard__card--sheet"
-            onClick={() => {
-              onClose();
-              s.go('cardApply');
-            }}
-            disabled={applyDisabled || applyLimited}>
+            onClick={goApply}>
             <span className="portal-card-onboard__icon" aria-hidden="true">
               <Icon name="plus" size={24} stroke={1.75} />
             </span>

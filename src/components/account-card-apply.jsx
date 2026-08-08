@@ -147,25 +147,25 @@ function DetailsStep({ shipping, setShip }) {
       <p className="capply-section__lead">Where should we ship your physical Visa card?</p>
       <div className="capply-form">
         <FormField label="Recipient name">
-          <input className="capply-input" value={shipping.recipientName} placeholder="Enter cardholder name" onChange={(e) => setShip('recipientName', e.target.value)} />
+          <input className="capply-input" value={shipping.recipientName} placeholder="e.g. Gildong Hong" onChange={(e) => setShip('recipientName', e.target.value)} />
         </FormField>
         <FormField label="Country">
-          <input className="capply-input" value={shipping.country} onChange={(e) => setShip('country', e.target.value)} />
+          <input className="capply-input" value={shipping.country} placeholder="e.g. South Korea" onChange={(e) => setShip('country', e.target.value)} />
         </FormField>
         <FormField label="State / Province">
-          <input className="capply-input" value={shipping.state} onChange={(e) => setShip('state', e.target.value)} />
+          <input className="capply-input" value={shipping.state} placeholder="e.g. Seoul" onChange={(e) => setShip('state', e.target.value)} />
         </FormField>
         <FormField label="City">
-          <input className="capply-input" value={shipping.city} onChange={(e) => setShip('city', e.target.value)} />
+          <input className="capply-input" value={shipping.city} placeholder="e.g. Gangnam-gu" onChange={(e) => setShip('city', e.target.value)} />
         </FormField>
         <FormField label="Address line 1">
-          <input className="capply-input" value={shipping.addressLine1} onChange={(e) => setShip('addressLine1', e.target.value)} />
+          <input className="capply-input" value={shipping.addressLine1} placeholder="e.g. 123 Teheran-ro" onChange={(e) => setShip('addressLine1', e.target.value)} />
         </FormField>
         <FormField label="Address line 2 (optional)">
-          <input className="capply-input" value={shipping.addressLine2} onChange={(e) => setShip('addressLine2', e.target.value)} />
+          <input className="capply-input" value={shipping.addressLine2} placeholder="e.g. Apt 402, Building B" onChange={(e) => setShip('addressLine2', e.target.value)} />
         </FormField>
         <FormField label="Postal code">
-          <input className="capply-input" value={shipping.postalCode} onChange={(e) => setShip('postalCode', e.target.value)} />
+          <input className="capply-input" value={shipping.postalCode} placeholder="e.g. 06123" onChange={(e) => setShip('postalCode', e.target.value)} />
         </FormField>
         <div className="capply-form__row capply-form__row--phone">
           <FormField label="Country code">
@@ -175,7 +175,7 @@ function DetailsStep({ shipping, setShip }) {
             />
           </FormField>
           <FormField label="Phone number">
-            <input className="capply-input" type="tel" value={shipping.phoneNumber} onChange={(e) => setShip('phoneNumber', e.target.value)} />
+            <input className="capply-input" type="tel" value={shipping.phoneNumber} placeholder="e.g. 01012345678" onChange={(e) => setShip('phoneNumber', e.target.value)} />
           </FormField>
         </div>
       </div>
@@ -198,36 +198,34 @@ function ReviewStep({ s, cardType, shipping, fee }) {
             alt=""
             className="capply-review-card__img"
             width={1240}
-            height={728}
-            draggable={false}
+            height={780}
+            loading="lazy"
+            decoding="async"
           />
         </div>
-        <div className="capply-review-card__meta">
-          <strong>{opt?.title}</strong>
-          <span>{opt?.subtitle}</span>
+        <div className="capply-review-card__info">
+          <span className="capply-review-card__badge">{opt?.badge}</span>
+          <h3 className="capply-review-card__title">{opt?.title}</h3>
+          <p className="capply-review-card__sub">{opt?.network} · Debit</p>
         </div>
       </div>
 
-      <dl className="capply-summary">
-        <div><dt>Name</dt><dd>{s.accountState.name}</dd></div>
-        <div><dt>Email</dt><dd>{s.accountState.email}</dd></div>
-        <div><dt>Card type</dt><dd>{C.getCardTypeLabel(cardType)}</dd></div>
-        <div><dt>Network</dt><dd>Visa</dd></div>
-        {cardType === 'physical' && shipping.addressLine1 && (
+      <dl className="capply-review-dl">
+        <div><dt>Card type</dt><dd>{opt?.title}</dd></div>
+        <div><dt>Issuing fee</dt><dd>{fee.amount} {fee.currency}</dd></div>
+        {cardType === 'physical' ? (
           <>
-            <div><dt>Delivery</dt><dd>{shipping.recipientName}</dd></div>
-            <div><dt>Address</dt><dd>{[shipping.addressLine1, shipping.city, shipping.country].filter(Boolean).join(', ')}</dd></div>
+            <div><dt>Delivery</dt><dd>{shipping.recipientName || '-'}</dd></div>
+            <div><dt>Address</dt><dd>{[shipping.addressLine1, shipping.addressLine2, shipping.city, shipping.state, shipping.country].filter(Boolean).join(', ') || '-'}</dd></div>
+            <div><dt>Phone</dt><dd>{shipping.phoneCountryCode} {shipping.phoneNumber || '-'}</dd></div>
           </>
-        )}
+        ) : null}
       </dl>
 
-      <div className="capply-fee">
-        <p className="capply-fee__label">Issuing fee</p>
-        <p className="capply-fee__amount">{fee.amount} {fee.currency}</p>
-        <ul className="capply-fee__list">
-          <li>Pay in USDT on TRC-20 after approval.</li>
-          <li>Fee is non-refundable once payment is confirmed.</li>
-        </ul>
+      <div className="capply-review-notice">
+        <p className="capply-review-notice__text">
+          By clicking &ldquo;Pay & Submit&rdquo;, the issuing fee will be deducted from your account balance. Your card will be processed immediately upon payment.
+        </p>
       </div>
     </section>
   );
@@ -295,7 +293,7 @@ export function AccountCardApply({ s }) {
   const [cardType, setCardType] = useState('physical');
   const [shipping, setShipping] = useState({
     ...C.EMPTY_SHIPPING,
-    recipientName: s.accountState.name ?? '',
+    recipientName: (s.accountState?.name && s.accountState.name !== 'User') ? s.accountState.name : '',
   });
   const [application, setApplication] = useState(null);
   const [submitting, setSubmitting] = useState(false);

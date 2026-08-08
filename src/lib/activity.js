@@ -67,7 +67,7 @@ const REWARD_KINDS = new Set([
 ]);
 
 const TYPE_LABELS = {
-  wallet_topup: 'Wallet Deposit',
+  wallet_topup: 'USDT Deposit',
   wallet_withdraw: 'Withdrawal',
   wallet_send: 'Transfer Sent',
   wallet_receive: 'Transfer Received',
@@ -640,7 +640,7 @@ function topUpStepStatus(st) {
 export function topUpHistoryToActivityItems(history = []) {
   return history.map((h) => ({
     id: `wh-${h.tx}`,
-    title: h.st === 0 ? 'Wallet Deposit' : h.st === 3 ? 'Wallet Deposit' : 'Wallet Deposit',
+    title: h.st === 0 ? 'Failed Top-Up' : h.st === 3 ? 'Card Top Up' : 'Pending Top-Up',
     at: parseTopUpHistoryDate(h.date),
     amount: parseFloat(h.usdt),
     incoming: true,
@@ -712,13 +712,7 @@ export function mergeActivityItems(base = [], extra = []) {
 
 export function buildUnifiedActivityItems(transactions = [], topUpHistory = []) {
   const normalized = normalizeActivityItems(transactions);
-  const txIds = new Set(normalized.map((t) => t.id));
-  const txHashSet = new Set(normalized.map((t) => t.txId).filter(Boolean));
-  const fromHistory = topUpHistoryToActivityItems(topUpHistory)
-    .filter((item) => !txIds.has(item.id) && !txHashSet.has(item.txId));
-  const fees = topUpHistoryFeeItems(topUpHistory)
-    .filter((item) => !txIds.has(item.id) && !txHashSet.has(item.txId));
-  return sortActivityChronological([...normalized, ...fromHistory, ...fees]);
+  return sortActivityChronological(normalized);
 }
 
 export function buildFullActivityFeed(transactions = [], topUpHistory = [], rewardHistory = []) {

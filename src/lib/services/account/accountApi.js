@@ -362,12 +362,12 @@ export async function fetchLocalTransactions(userId) {
     if (!Array.isArray(data)) return [];
     return data.map((tx) => {
       let kind = 'wallet_topup';
-      let title = 'Wallet Deposit';
+      let title = 'USDT Deposit';
       let incoming = true;
       const type = String(tx.txType || '').toUpperCase();
       if (type === 'DEPOSIT') {
         kind = 'wallet_topup';
-        title = 'Wallet Deposit';
+        title = 'USDT Deposit';
         incoming = true;
       } else if (type === 'CARD_CHARGE') {
         kind = 'card_topup';
