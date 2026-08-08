@@ -437,7 +437,7 @@ export function formatActivityDateTime(isoOrDate) {
 
 export function formatActivityAmountParts(amount, incoming, kind, item = {}) {
   const displayAmount = item?.amount ?? amount;
-  const currency = item?.currency || (kind === 'card_spend' || kind === 'refund' || kind === 'reversal' ? 'KRW' : 'USDT');
+  const currency = item?.currency || (kind === 'card_spend' || kind === 'refund' || kind === 'reversal' ? 'USD' : 'USDT');
 
   const val = Math.abs(Number(displayAmount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const usdtOut = new Set(['wallet_send', 'wallet_withdraw', 'wallet_fee', 'referral_withdrawal', 'card_topup']);

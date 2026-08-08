@@ -128,26 +128,7 @@ export function SettingsPage() {
     <div className="admin-page admin-page--settings">
       <AdminPageHeader
         title="Settings & System Configurations"
-        description="Manage fee rates, Wasabi/Cregis API keys, master addresses, and all DB System_Config parameters."
-        actions={(
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              type="button"
-              className="admin-btn admin-btn--ghost"
-              onClick={() => setAddModalOpen(true)}
-            >
-              + Add Config Key
-            </button>
-            <button
-              type="button"
-              className="admin-btn admin-btn--primary"
-              disabled={saving}
-              onClick={handleSave}
-            >
-              {saving ? 'Saving…' : 'Save Changes'}
-            </button>
-          </div>
-        )}
+        description="View fee rates, Wasabi/Cregis API keys, master addresses, and all DB System_Config parameters (Read-only)."
       />
 
       {/* Tabs */}
@@ -155,8 +136,7 @@ export function SettingsPage() {
         {[
           { id: 'fees', label: '💰 Fees & Limits' },
           { id: 'api', label: '🔌 Wasabi & Cregis API' },
-          { id: 'system', label: '⚙️ System & Networks' },
-          { id: 'all', label: '🗄️ All Config DB Entries' },
+          { id: 'all', label: '🗄️ System_Config DB Ledger' },
         ].map((t) => (
           <button
             key={t.id}
@@ -170,248 +150,152 @@ export function SettingsPage() {
         ))}
       </div>
 
-      {/* TAB 1: FEES & LIMITS */}
+      {/* TAB 1: FEES & LIMITS (READ ONLY TEXT) */}
       {activeTab === 'fees' && (
         <div className="admin-settings-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
           <AdminPanel>
-            <AdminDetailSection title="Transaction & Card Fee Rates">
-              <label className="admin-field" style={{ marginBottom: '16px' }}>
-                <span className="admin-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
+            <AdminDetailSection title="Transaction & Card Fee Rates (Read-only)">
+              <div style={{ marginBottom: '16px' }}>
+                <span style={{ fontWeight: '600', display: 'block', marginBottom: '4px', fontSize: '13px', color: '#94a3b8' }}>
                   Card Issuance Fee (USDT)
                 </span>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="admin-input"
-                  value={settings.cardFeeUsdt ?? settings.WASABI_CARD_FEE_USDT ?? 100}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    patch('cardFeeUsdt', val);
-                    patch('WASABI_CARD_FEE_USDT', val);
-                  }}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff' }}
-                />
-                <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', fontSize: '13px', fontFamily: 'monospace' }}>
+                  {settings.cardFeeUsdt ?? settings.WASABI_CARD_FEE_USDT ?? 100} USDT
+                </div>
+                <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
                   Default fee charged for physical/virtual card application (e.g. 100 USDT)
                 </span>
-              </label>
+              </div>
 
-              <label className="admin-field" style={{ marginBottom: '16px' }}>
-                <span className="admin-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
+              <div style={{ marginBottom: '16px' }}>
+                <span style={{ fontWeight: '600', display: 'block', marginBottom: '4px', fontSize: '13px', color: '#94a3b8' }}>
                   Card Top-up / Recharge Fee (%)
                 </span>
-                <input
-                  type="number"
-                  step="0.1"
-                  className="admin-input"
-                  value={settings.topUpFeePercent ?? settings.WASABI_TOPUP_FEE_PERCENT ?? 2.5}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    patch('topUpFeePercent', val);
-                    patch('WASABI_TOPUP_FEE_PERCENT', val);
-                  }}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff' }}
-                />
-                <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', fontSize: '13px', fontFamily: 'monospace' }}>
+                  {settings.topUpFeePercent ?? settings.WASABI_TOPUP_FEE_PERCENT ?? 2.5}%
+                </div>
+                <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
                   Percentage fee deducted upon card recharge (e.g. 2.5%)
                 </span>
-              </label>
+              </div>
             </AdminDetailSection>
           </AdminPanel>
 
           <AdminPanel>
-            <AdminDetailSection title="Withdrawals & Referrals">
-              <label className="admin-field" style={{ marginBottom: '16px' }}>
-                <span className="admin-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
+            <AdminDetailSection title="Withdrawals & Referrals (Read-only)">
+              <div style={{ marginBottom: '16px' }}>
+                <span style={{ fontWeight: '600', display: 'block', marginBottom: '4px', fontSize: '13px', color: '#94a3b8' }}>
                   Minimum Withdrawal Amount (USDT)
                 </span>
-                <input
-                  type="number"
-                  step="1"
-                  className="admin-input"
-                  value={settings.minWithdrawalUsdt ?? settings.MIN_WITHDRAWAL_USDT ?? 10}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    patch('minWithdrawalUsdt', val);
-                    patch('MIN_WITHDRAWAL_USDT', val);
-                  }}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff' }}
-                />
-                <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', fontSize: '13px', fontFamily: 'monospace' }}>
+                  {settings.minWithdrawalUsdt ?? settings.MIN_WITHDRAWAL_USDT ?? 10} USDT
+                </div>
+                <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
                   Minimum threshold for user withdrawal requests (e.g. 10 USDT)
                 </span>
-              </label>
+              </div>
 
-              <label className="admin-field" style={{ marginBottom: '16px' }}>
-                <span className="admin-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
+              <div style={{ marginBottom: '16px' }}>
+                <span style={{ fontWeight: '600', display: 'block', marginBottom: '4px', fontSize: '13px', color: '#94a3b8' }}>
                   Referral Reward Allowance Rate (%)
                 </span>
-                <input
-                  type="number"
-                  step="0.1"
-                  className="admin-input"
-                  value={settings.referralRatePercent ?? settings.REFERRAL_RATE_PERCENT ?? 5.0}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    patch('referralRatePercent', val);
-                    patch('REFERRAL_RATE_PERCENT', val);
-                  }}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff' }}
-                />
-                <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', fontSize: '13px', fontFamily: 'monospace' }}>
+                  {settings.referralRatePercent ?? settings.REFERRAL_RATE_PERCENT ?? 5.0}%
+                </div>
+                <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
                   Commission allowance percentage paid to referrer upon member recharge (e.g. 5.0%)
                 </span>
-              </label>
-            </AdminDetailSection>
-          </AdminPanel>
-        </div>
-      )}
-
-      {/* TAB 2: WASABI & CREGIS API CONFIG */}
-      {activeTab === 'api' && (
-        <div className="admin-settings-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
-          <AdminPanel>
-            <AdminDetailSection title="Wasabi Card Platform Credentials">
-              <label className="admin-field" style={{ marginBottom: '16px' }}>
-                <span className="admin-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
-                  Wasabi API Base URL
-                </span>
-                <input
-                  type="text"
-                  className="admin-input"
-                  value={settings.WASABI_DEFAULT_API_URL || ''}
-                  onChange={(e) => patch('WASABI_DEFAULT_API_URL', e.target.value)}
-                  placeholder="https://api.wasabicard.com"
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff' }}
-                />
-              </label>
-
-              <label className="admin-field" style={{ marginBottom: '16px' }}>
-                <span className="admin-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
-                  Wasabi API Key
-                </span>
-                <input
-                  type="text"
-                  className="admin-input"
-                  value={settings.WASABI_DEFAULT_API_KEY || ''}
-                  onChange={(e) => patch('WASABI_DEFAULT_API_KEY', e.target.value)}
-                  placeholder="WSB_KEY_..."
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff', fontFamily: 'monospace' }}
-                />
-              </label>
-
-              <label className="admin-field" style={{ marginBottom: '16px' }}>
-                <span className="admin-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
-                  Wasabi Private Key (RSA / SHA256)
-                </span>
-                <textarea
-                  rows={3}
-                  className="admin-input"
-                  value={settings.WASABI_DEFAULT_PRIVATE_KEY || ''}
-                  onChange={(e) => patch('WASABI_DEFAULT_PRIVATE_KEY', e.target.value)}
-                  placeholder="MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBA..."
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff', fontFamily: 'monospace', fontSize: '11px' }}
-                />
-              </label>
-
-              <label className="admin-field" style={{ marginBottom: '16px' }}>
-                <span className="admin-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
-                  Wasabi Default Physical Card Type ID
-                </span>
-                <input
-                  type="text"
-                  className="admin-input"
-                  value={settings.WASABI_DEFAULT_CARD_TYPE_ID || '111059'}
-                  onChange={(e) => patch('WASABI_DEFAULT_CARD_TYPE_ID', e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff', fontFamily: 'monospace' }}
-                />
-              </label>
-            </AdminDetailSection>
-          </AdminPanel>
-
-          <AdminPanel>
-            <AdminDetailSection title="Cregis & Master Deposit Addresses">
-              <label className="admin-field" style={{ marginBottom: '16px' }}>
-                <span className="admin-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
-                  Cregis Fee Sweep Master Collect Address
-                </span>
-                <input
-                  type="text"
-                  className="admin-input"
-                  value={settings.cregis_collect_address || ''}
-                  onChange={(e) => patch('cregis_collect_address', e.target.value)}
-                  placeholder="T..."
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff', fontFamily: 'monospace' }}
-                />
-                <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
-                  Master wallet address where accumulated unpaid fees are swept/transferred
-                </span>
-              </label>
-
-              <label className="admin-field" style={{ marginBottom: '16px' }}>
-                <span className="admin-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
-                  Wasabi Merchant Card Recharge Deposit Address
-                </span>
-                <input
-                  type="text"
-                  className="admin-input"
-                  value={settings.wasabi_merchant_deposit_address || ''}
-                  onChange={(e) => patch('wasabi_merchant_deposit_address', e.target.value)}
-                  placeholder="T..."
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff', fontFamily: 'monospace' }}
-                />
-                <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
-                  Wasabi merchant pool wallet address for Funding Card deposits
-                </span>
-              </label>
-            </AdminDetailSection>
-          </AdminPanel>
-        </div>
-      )}
-
-      {/* TAB 3: SYSTEM & NETWORKS */}
-      {activeTab === 'system' && (
-        <div className="admin-settings-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
-          <AdminPanel>
-            <AdminDetailSection title="Networks & Portal Controls">
-              <label className="admin-field" style={{ marginBottom: '16px' }}>
-                <span className="admin-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
-                  Supported Blockchain Networks (Comma Separated)
-                </span>
-                <input
-                  className="admin-input"
-                  value={Array.isArray(settings.supportedNetworks) ? settings.supportedNetworks.join(', ') : (settings.supportedNetworks || 'TRC-20, ERC-20')}
-                  onChange={(e) => patch('supportedNetworks', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff' }}
-                />
-              </label>
-
-              <div style={{ marginTop: '20px', padding: '16px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155' }}>
-                <label className="admin-field admin-field--checkbox" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(settings.maintenanceMode)}
-                    onChange={(e) => patch('maintenanceMode', e.target.checked)}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                  />
-                  <span style={{ fontWeight: '600', color: '#f87171', fontSize: '15px' }}>Enable System Maintenance Mode</span>
-                </label>
-                <p className="admin-muted" style={{ margin: 0, marginTop: '8px', fontSize: '12px', color: '#94a3b8' }}>
-                  When enabled, member portal displays maintenance alert banner and restricts new transactions/card applications.
-                </p>
               </div>
             </AdminDetailSection>
           </AdminPanel>
         </div>
       )}
 
-      {/* TAB 4: ALL CONFIG DB ENTRIES TABLE */}
+      {/* TAB 2: WASABI & CREGIS API CONFIG (READ ONLY TEXT) */}
+      {activeTab === 'api' && (
+        <div className="admin-settings-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
+          <AdminPanel>
+            <AdminDetailSection title="Wasabi Card Platform Credentials (Read-only)">
+              <div style={{ marginBottom: '16px' }}>
+                <span style={{ fontWeight: '600', display: 'block', marginBottom: '4px', fontSize: '13px', color: '#94a3b8' }}>
+                  Wasabi API Base URL
+                </span>
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', fontSize: '13px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  {settings.WASABI_DEFAULT_API_URL || '—'}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <span style={{ fontWeight: '600', display: 'block', marginBottom: '4px', fontSize: '13px', color: '#94a3b8' }}>
+                  Wasabi API Key
+                </span>
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', fontSize: '13px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  {settings.WASABI_DEFAULT_API_KEY || '—'}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <span style={{ fontWeight: '600', display: 'block', marginBottom: '4px', fontSize: '13px', color: '#94a3b8' }}>
+                  Wasabi Private Key (RSA / SHA256)
+                </span>
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#64748b', fontSize: '11px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  •••••••••••••••••••••••••••••••••••••••• (Encrypted & Masked)
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <span style={{ fontWeight: '600', display: 'block', marginBottom: '4px', fontSize: '13px', color: '#94a3b8' }}>
+                  Wasabi Default Physical Card Type ID
+                </span>
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', fontSize: '13px', fontFamily: 'monospace' }}>
+                  {settings.WASABI_DEFAULT_CARD_TYPE_ID || '111059'}
+                </div>
+              </div>
+            </AdminDetailSection>
+          </AdminPanel>
+
+          <AdminPanel>
+            <AdminDetailSection title="Cregis & Master Deposit Addresses (Read-only)">
+              <div style={{ marginBottom: '16px' }}>
+                <span style={{ fontWeight: '600', display: 'block', marginBottom: '4px', fontSize: '13px', color: '#94a3b8' }}>
+                  Cregis Fee Sweep Master Collect Address
+                </span>
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', fontSize: '13px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  {settings.cregis_collect_address || '—'}
+                </div>
+                <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                  Master wallet address where accumulated unpaid fees are swept/transferred
+                </span>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <span style={{ fontWeight: '600', display: 'block', marginBottom: '4px', fontSize: '13px', color: '#94a3b8' }}>
+                  Wasabi Merchant Card Recharge Deposit Address
+                </span>
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', fontSize: '13px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  {settings.wasabi_merchant_deposit_address || '—'}
+                </div>
+                <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                  Wasabi merchant pool wallet address for Funding Card deposits
+                </span>
+              </div>
+            </AdminDetailSection>
+          </AdminPanel>
+        </div>
+      )}
+
+      {/* TAB 4: ALL CONFIG DB ENTRIES TABLE (READ ONLY & UNMODIFIABLE) */}
       {activeTab === 'all' && (
         <AdminPanel>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', gap: '12px' }}>
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>
-              🗄️ System_Config DB Ledger ({filteredKeys.length} Entries)
-            </h3>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>
+                🗄️ System_Config DB Ledger ({filteredKeys.length} Entries)
+              </h3>
+              <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginTop: '2px' }}>
+                Read-only system ledger. Editing and deleting entries is disabled.
+              </span>
+            </div>
             <input
               type="text"
               placeholder="Search key or value…"
@@ -421,13 +305,13 @@ export function SettingsPage() {
             />
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div style={{ overflowX: 'auto', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #334155', padding: '4px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <thead>
-                <tr style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderBottom: '1px solid #334155', textAlign: 'left', fontSize: '12px', color: '#94a3b8' }}>
-                  <th style={{ padding: '12px' }}>Config Key</th>
-                  <th style={{ padding: '12px' }}>Value</th>
-                  <th style={{ padding: '12px', textAlign: 'right' }}>Actions</th>
+                <tr style={{ backgroundColor: '#1e293b', borderBottom: '1px solid #334155', textAlign: 'left', fontSize: '12px', color: '#94a3b8' }}>
+                  <th style={{ padding: '12px', width: '32%', whiteSpace: 'nowrap' }}>Config Key</th>
+                  <th style={{ padding: '12px', width: '50%' }}>Value</th>
+                  <th style={{ padding: '12px', width: '18%', whiteSpace: 'nowrap' }}>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -439,28 +323,17 @@ export function SettingsPage() {
                   </tr>
                 ) : (
                   filteredKeys.map((key) => (
-                    <tr key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: '600', color: '#38bdf8', fontSize: '13px' }}>
+                    <tr key={key} style={{ borderBottom: '1px solid #1e293b', backgroundColor: '#0f172a' }}>
+                      <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: '600', color: '#38bdf8', fontSize: '13px', whiteSpace: 'nowrap' }}>
                         {key}
                       </td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <input
-                          type="text"
-                          className="admin-input"
-                          value={settings[key] ?? ''}
-                          onChange={(e) => patch(key, e.target.value)}
-                          style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff', fontSize: '12px', fontFamily: 'monospace' }}
-                        />
+                      <td style={{ padding: '12px', fontFamily: 'monospace', fontSize: '12px', color: key.includes('KEY') || key.includes('SECRET') || key.includes('PRIVATE') ? '#64748b' : '#f8fafc', wordBreak: 'break-all' }}>
+                        {key.includes('KEY') || key.includes('SECRET') || key.includes('PRIVATE') ? '•••••••••••••••••••••••• (Masked Security Value)' : String(settings[key] ?? '')}
                       </td>
-                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn--danger"
-                          style={{ padding: '4px 8px', fontSize: '11px' }}
-                          onClick={() => handleDeleteKey(key)}
-                        >
-                          Delete
-                        </button>
+                      <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '4px', backgroundColor: 'rgba(56,189,248,0.1)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)', fontWeight: '600', display: 'inline-block', whiteSpace: 'nowrap' }}>
+                          Protected (Immutable)
+                        </span>
                       </td>
                     </tr>
                   ))

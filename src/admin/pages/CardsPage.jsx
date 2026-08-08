@@ -424,17 +424,12 @@ export function CardsPage() {
                               {txItems.map((tx, idx) => {
                                 const merchant = tx.merchantName || tx.merchantData?.name || tx.description || '—';
                                 const mcc = tx.merchantData?.categoryCode ? `${tx.merchantData.categoryCode}${tx.merchantData?.category ? ` (${tx.merchantData.category})` : ''}` : (tx.merchantData?.category || '—');
-                                const curr = tx.currency ? String(tx.currency).toUpperCase() : 'KRW';
-                                const authCurr = tx.authorizedCurrency ? String(tx.authorizedCurrency).toUpperCase() : 'USD';
-                                const feeCurr = tx.feeCurrency ? String(tx.feeCurrency).toUpperCase() : 'USD';
-                                const cbFeeCurr = tx.crossBoardFeeCurrency ? String(tx.crossBoardFeeCurrency).toUpperCase() : 'USD';
-                                const settleCurr = tx.settleCurrency ? String(tx.settleCurrency).toUpperCase() : 'USD';
 
-                                const amt = tx.amount != null ? `${Number(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${curr}` : '—';
-                                const authAmt = tx.authorizedAmount != null ? `${Number(tx.authorizedAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${authCurr}` : '—';
-                                const authFee = tx.fee != null ? `${Number(tx.fee).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${feeCurr}` : (tx.assistFeeInfo?.authorizationFee != null ? `${Number(tx.assistFeeInfo.authorizationFee).toFixed(2)} USD` : '0.00 USD');
-                                const cbFee = tx.crossBoardFee != null ? `${Number(tx.crossBoardFee).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cbFeeCurr}` : (tx.assistFeeInfo?.crossBorderFee != null ? `${Number(tx.assistFeeInfo.crossBorderFee).toFixed(2)} USD` : '0.00 USD');
-                                const settleAmt = tx.settleAmount != null ? `${Number(tx.settleAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${settleCurr}` : (tx.authorizedAmount != null ? `${Number(tx.authorizedAmount).toFixed(2)} USD` : '—');
+                                const amt = tx.amount != null ? `${Number(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${tx.currency || ''}`.trim() : '—';
+                                const authAmt = tx.authorizedAmount != null ? `${Number(tx.authorizedAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${tx.authorizedCurrency || ''}`.trim() : '—';
+                                const authFee = tx.fee != null ? `${Number(tx.fee).toFixed(2)} ${tx.feeCurrency || ''}`.trim() : (tx.assistFeeInfo?.authorizationFee != null ? `${Number(tx.assistFeeInfo.authorizationFee).toFixed(2)} USD` : '0.00 USD');
+                                const cbFee = tx.crossBoardFee != null ? `${Number(tx.crossBoardFee).toFixed(2)} ${tx.crossBoardFeeCurrency || ''}`.trim() : (tx.assistFeeInfo?.crossBorderFee != null ? `${Number(tx.assistFeeInfo.crossBorderFee).toFixed(2)} USD` : '0.00 USD');
+                                const settleAmt = tx.settleAmount != null ? `${Number(tx.settleAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${tx.settleCurrency || ''}`.trim() : '—';
                                 const settleDt = tx.settleDate ? formatAdminDate(tx.settleDate) : '—';
 
                                 return (
@@ -579,24 +574,24 @@ export function CardsPage() {
               </div>
               <div style={{ gridColumn: 'span 2', height: '1px', background: 'var(--admin-border-subtle)', margin: '4px 0' }} />
               <div>
-                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Local Transaction Amount</span>
-                <strong style={{ fontSize: '14px', color: '#3182CE' }}>{selectedTx.amount != null ? `${Number(selectedTx.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${selectedTx.currency || 'KRW'}` : '—'}</strong>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Transaction Amount</span>
+                <strong style={{ fontSize: '14px', color: '#3182CE' }}>{selectedTx.amount != null ? `${Number(selectedTx.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${selectedTx.currency || ''}`.trim() : '—'}</strong>
               </div>
               <div>
-                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Card Authorized Amount (USD)</span>
-                <strong style={{ fontSize: '14px', color: '#2B6CB0' }}>{selectedTx.authorizedAmount != null ? `${Number(selectedTx.authorizedAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${selectedTx.authorizedCurrency || 'USD'}` : '—'}</strong>
+                <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Authorized Amount</span>
+                <strong style={{ fontSize: '14px', color: '#2B6CB0' }}>{selectedTx.authorizedAmount != null ? `${Number(selectedTx.authorizedAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${selectedTx.authorizedCurrency || ''}`.trim() : '—'}</strong>
               </div>
               <div>
                 <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Authorized Fee</span>
-                <strong>{selectedTx.fee != null ? `${Number(selectedTx.fee).toFixed(2)} ${selectedTx.feeCurrency || 'USD'}` : (selectedTx.assistFeeInfo?.authorizationFee != null ? `${Number(selectedTx.assistFeeInfo.authorizationFee).toFixed(2)} USD` : '0.00 USD')}</strong>
+                <strong>{selectedTx.fee != null ? `${Number(selectedTx.fee).toFixed(2)} ${selectedTx.feeCurrency || ''}`.trim() : (selectedTx.assistFeeInfo?.authorizationFee != null ? `${Number(selectedTx.assistFeeInfo.authorizationFee).toFixed(2)} USD` : '0.00 USD')}</strong>
               </div>
               <div>
                 <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Cross Border Fee</span>
-                <strong>{selectedTx.crossBoardFee != null ? `${Number(selectedTx.crossBoardFee).toFixed(2)} ${selectedTx.crossBoardFeeCurrency || 'USD'}` : (selectedTx.assistFeeInfo?.crossBorderFee != null ? `${Number(selectedTx.assistFeeInfo.crossBorderFee).toFixed(2)} USD` : '0.00 USD')}</strong>
+                <strong>{selectedTx.crossBoardFee != null ? `${Number(selectedTx.crossBoardFee).toFixed(2)} ${selectedTx.crossBoardFeeCurrency || ''}`.trim() : (selectedTx.assistFeeInfo?.crossBorderFee != null ? `${Number(selectedTx.assistFeeInfo.crossBorderFee).toFixed(2)} USD` : '0.00 USD')}</strong>
               </div>
               <div>
                 <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Settlement Amount</span>
-                <strong>{selectedTx.settleAmount != null ? `${Number(selectedTx.settleAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${selectedTx.settleCurrency || 'USD'}` : (selectedTx.authorizedAmount != null ? `${Number(selectedTx.authorizedAmount).toFixed(2)} USD` : '—')}</strong>
+                <strong>{selectedTx.settleAmount != null ? `${Number(selectedTx.settleAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${selectedTx.settleCurrency || ''}`.trim() : '—'}</strong>
               </div>
               <div>
                 <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Settlement Date</span>
