@@ -58,4 +58,5 @@ export const verifyEmailCode = auth.verifyEmailCode
 export const sendVerificationEmail = auth.sendVerificationEmail
   ?? (async () => ({ ok: false, code: 'MISSING' }));
 export const loginIdOk = auth.loginIdOk ?? auth.emailOk;
+export const checkReferralCode = auth.checkReferralCode ?? (async () => false);
 export { ensureAvailableLoginId, saveEmailLoginId, HTTP_DEMO_LOGIN } from './auth/loginId.js';

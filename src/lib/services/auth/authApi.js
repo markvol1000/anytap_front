@@ -2,7 +2,7 @@
  * AnyTap Spring Boot auth — /api/v1/auth/*
  */
 
-import { apiPost } from '../../api/httpClient.js';
+import { apiGet, apiPost } from '../../api/httpClient.js';
 import { MERCHANT_ID } from '../../api/config.js';
 import {
   clearHttpSession,
@@ -183,6 +183,16 @@ export async function attemptSignUp(email, password, { loginId, referral = '' } 
   const login = await attemptLogin(id, password, { emailHint: normalizedEmail });
   if (!login.ok) return { ok: true, needsLogin: true };
   return { ok: true, needsEmailConfirm: false, user: login.user };
+}
+
+export async function checkReferralCode(code) {
+  if (!code || !code.trim()) return false;
+  try {
+    const res = await apiGet(`/auth/check-referral?code=${encodeURIComponent(code.trim().toUpperCase())}`);
+    return res === true || res?.data === true || res?.exists === true;
+  } catch {
+    return false;
+  }
 }
 
 export async function sendVerificationEmail({ email, password, loginId, referral, merchantId = MERCHANT_ID }) {

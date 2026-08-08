@@ -4,12 +4,57 @@ import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react';
 import { Icon } from './ui.jsx';
 import { OutlineInput, OutlinePasswordInput } from './outline-field.jsx';
 import { emailOk, attemptLogin, attemptSignUp, establishLoginSession, hasMemberSession, setMockSession, sendMockEmailVerification, verifyMockEmailCode, saveSignupPending, loadSignupPending, refreshSignupExpiry, clearSignupPending, formatExpiresRemaining, formatSignupCodeTtl, verifyEmailCode, sendVerificationEmail, ensureAvailableLoginId, saveEmailLoginId } from '../lib/services/authService.js';
+import { checkReferralCode } from '../lib/services/authService.js';
 import { API_MODE, isHttpApi } from '../lib/api/config.js';
 import { AUTH_ERRORS, SIGNUP_ERRORS, SIGNUP_VERIFY } from '../utils/auth-messages.js';
 import { useAuthToast } from '../hooks/useAuthToast.js';
 import { englishFormProps, englishFieldProps, handleEnglishSubmit } from '../utils/formValidation.js';
+import { checkPasswordRules, passwordPolicyOk } from '../lib/password-policy.ts';
 
 const AUTH_PW_ICON = 22;
+
+export function PasswordRequirementsChecklist({ password = '' }) {
+  const rules = checkPasswordRules(password);
+  const items = [
+    { label: '8–64 characters', valid: rules.minMaxLen },
+    { label: 'Uppercase letter (A–Z)', valid: rules.hasUppercase },
+    { label: 'Lowercase letter (a–z)', valid: rules.hasLowercase },
+    { label: 'Number (0–9)', valid: rules.hasNumber },
+    { label: 'Special character (!@#$%^&*)', valid: rules.hasSpecial },
+  ];
+
+  return (
+    <div
+      className="pw-checklist"
+      style={{
+        marginTop: '8px',
+        marginBottom: '8px',
+        padding: '10px 12px',
+        backgroundColor: 'rgba(248, 250, 252, 0.8)',
+        borderRadius: '8px',
+        border: '1px solid rgba(226, 232, 240, 0.8)',
+        fontSize: '12px',
+        textAlign: 'left',
+      }}
+    >
+      <div style={{ fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+        Password Requirements:
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px' }}>
+        {items.map((item, idx) => (
+          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontWeight: 'bold', fontSize: '13px', color: item.valid ? '#16A34A' : '#94A3B8' }}>
+              {item.valid ? '✓' : '○'}
+            </span>
+            <span style={{ color: item.valid ? '#1E293B' : '#64748B', fontWeight: item.valid ? 500 : 400 }}>
+              {item.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function AuthPasswordToggleIcon({ visible }) {
   const props = { size: AUTH_PW_ICON, weight: 'light', 'aria-hidden': true };
@@ -278,7 +323,7 @@ function SignUpPage() {
       nextHints.password = SIGNUP_ERRORS.PASSWORD_REQUIRED.hint;
       nextErrors.password = true;
       valid = false;
-    } else if (passwordVal.length < 8) {
+    } else if (!passwordPolicyOk(passwordVal)) {
       nextHints.password = SIGNUP_ERRORS.PASSWORD_SHORT.hint;
       nextErrors.password = true;
       valid = false;
@@ -318,6 +363,42 @@ function SignUpPage() {
     ? SIGNUP_ERRORS.PASSWORD_MISMATCH.hint
     : hints.passwordConfirm;
 
+  const [referralPromptOpen, setReferralPromptOpen] = useState(false);
+  const [pendingFormResult, setPendingFormResult] = useState(null);
+
+  const proceedSubmit = async (result, ignoreReferral = false) => {
+    clearSignupErrors();
+    const finalReferral = ignoreReferral ? '' : result.referralVal;
+
+    if (isHttpApi) {
+      const loginIdVal = result.emailVal;
+      saveEmailLoginId(result.emailVal, loginIdVal);
+      const sent = await sendVerificationEmail({
+        email: result.emailVal,
+        password: result.passwordVal,
+        loginId: loginIdVal,
+        referral: finalReferral,
+      });
+      if (!sent.ok) {
+        applySignupError(sent.code, { showToast, setHints, setErrors });
+        return;
+      }
+      const payload = saveSignupPending({
+        email: result.emailVal,
+        password: result.passwordVal,
+        loginId: loginIdVal,
+        referral: finalReferral,
+      });
+      showToast(SIGNUP_VERIFY.CODE_SENT);
+      navigate('/sign-up/verify', { state: { signupPending: payload } });
+      return;
+    }
+
+    sendMockEmailVerification(result.emailVal);
+    const payload = saveSignupPending({ email: result.emailVal, referral: finalReferral });
+    navigate('/sign-up/verify', { state: { signupPending: payload } });
+  };
+
   return (
     <section className="login-screen login-screen--signup">
       <AuthToast msg={toast} />
@@ -338,34 +419,16 @@ function SignUpPage() {
               showToast(SIGNUP_ERRORS.INCOMPLETE.toast);
               return;
             }
-            clearSignupErrors();
-
-            if (isHttpApi) {
-              const loginIdVal = result.emailVal;
-              saveEmailLoginId(result.emailVal, loginIdVal);
-              const sent = await sendVerificationEmail({
-                email: result.emailVal,
-                password: result.passwordVal,
-                loginId: loginIdVal,
-              });
-              if (!sent.ok) {
-                applySignupError(sent.code, { showToast, setHints, setErrors });
+            const referralCode = String(referral || result.referralVal || '').trim().toUpperCase();
+            if (referralCode) {
+              const exists = await checkReferralCode(referralCode);
+              if (exists) {
+                proceedSubmit({ ...result, referralVal: referralCode }, false);
                 return;
               }
-              const payload = saveSignupPending({
-                email: result.emailVal,
-                password: result.passwordVal,
-                loginId: loginIdVal,
-                referral: result.referralVal,
-              });
-              showToast(SIGNUP_VERIFY.CODE_SENT);
-              navigate('/sign-up/verify', { state: { signupPending: payload } });
-              return;
             }
-
-            sendMockEmailVerification(result.emailVal);
-            const payload = saveSignupPending({ email: result.emailVal, referral: result.referralVal });
-            navigate('/sign-up/verify', { state: { signupPending: payload } });
+            setPendingFormResult({ ...result, referralVal: '' });
+            setReferralPromptOpen(true);
           }}>
           <div className="login-screen__field">
             <OutlineInput
@@ -398,7 +461,9 @@ function SignUpPage() {
               autoComplete="new-password"
               required
               minLength={8}
+              maxLength={64}
             />
+            <PasswordRequirementsChecklist password={password} />
             {showPasswordHint && (
               <p className="login-screen__hint">{hints.password}</p>
             )}
@@ -457,6 +522,47 @@ function SignUpPage() {
           Already have an account? <Link to="/login">Log in</Link>
         </p>
       </div>
+
+      {referralPromptOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', padding: '16px' }}>
+          <div style={{ background: '#ffffff', maxWidth: '420px', width: '100%', padding: '24px', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                {referral ? 'Invalid Referral Code' : 'No Referral Code'}
+              </h3>
+              <button type="button" onClick={() => setReferralPromptOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#64748b' }} aria-label="Close">
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+            <p style={{ fontSize: '14px', color: '#475569', marginTop: 0, marginBottom: '24px', lineHeight: 1.5 }}>
+              {referral
+                ? `The referral code "${referral}" could not be found. Would you like to proceed with account creation without saving this code?`
+                : "You haven't entered a referral code. Do you want to proceed with account creation without a referral code?"}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="portal-btn-secondary"
+                style={{ padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#334155', cursor: 'pointer' }}
+                onClick={() => setReferralPromptOpen(false)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="portal-btn-primary"
+                style={{ padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, background: '#FF5500', color: '#ffffff', border: 'none', cursor: 'pointer' }}
+                onClick={() => {
+                  setReferralPromptOpen(false);
+                  if (pendingFormResult) {
+                    proceedSubmit(pendingFormResult, true);
+                  }
+                }}>
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -625,13 +731,6 @@ function SignUpVerifyPage() {
           <p className="verify-inbox__sent-msg">We sent a 6-digit code to</p>
           <div className="verify-inbox__email-row">
             <span className="verify-inbox__sent-email">{pending.email}</span>
-            <button
-              type="button"
-              className="verify-inbox__change-email"
-              onClick={handleChangeEmail}
-              disabled={verifying}>
-              Edit
-            </button>
           </div>
         </div>
         <div className="verify-inbox-card">
