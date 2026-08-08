@@ -22,9 +22,12 @@ import {
   getCardTransactions,
   issueCard,
   rejectCard,
+  simulateCardTransaction,
   terminateCard,
   unfreezeCard,
-} from '../services/adminService.js';
+} from '../services/api/adminApiService.js';
+
+const isDevEnv = import.meta.env.DEV || import.meta.env.MODE === 'development' || import.meta.env.MODE === 'dev' || (typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname));
 
 const fetchCards = (params) => getCardApplications(params);
 const fetchCardDetail = (id) => getCardById(id);
@@ -36,38 +39,49 @@ export function CardsPage() {
   const { detail, loading: detailLoading, setDetail } = useAdminDetail(fetchCardDetail, selectedId);
 
   const [txItems, setTxItems] = useState([]);
+  const [txTotal, setTxTotal] = useState(0);
+  const [txPage, setTxPage] = useState(1);
   const [txLoading, setTxLoading] = useState(false);
 
-  useEffect(() => {
+  const loadTxs = useCallback(async (page = 1) => {
     if (!selectedId) {
       setTxItems([]);
+      setTxTotal(0);
       return;
     }
-    let active = true;
-    const loadTxs = async () => {
-      setTxLoading(true);
-      try {
-        const res = await getCardTransactions(detail?.memberId || selectedId, detail?.wasabiCardId);
-        if (active) {
-          const records = res?.records || res?.data || [];
-          setTxItems(records);
-        }
-      } catch (err) {
-        console.error("Failed to load card transactions", err);
-        if (active) {
-          setTxItems([]);
-        }
-      } finally {
-        if (active) {
-          setTxLoading(false);
+    setTxLoading(true);
+    try {
+      const res = await getCardTransactions(detail?.memberId || selectedId, detail?.wasabiCardId, page, 10);
+      let records = [];
+      let totalCount = 0;
+      if (res) {
+        if (Array.isArray(res.records)) {
+          records = res.records;
+          totalCount = res.total ?? res.records.length;
+        } else if (Array.isArray(res.data)) {
+          records = res.data;
+          totalCount = res.total ?? res.data.length;
+        } else if (Array.isArray(res)) {
+          records = res;
+          totalCount = res.length;
         }
       }
-    };
-    loadTxs();
-    return () => {
-      active = false;
-    };
+      setTxItems(records);
+      setTxTotal(totalCount);
+      setTxPage(page);
+    } catch (err) {
+      console.error("Failed to load card transactions", err);
+      setTxItems([]);
+      setTxTotal(0);
+    } finally {
+      setTxLoading(false);
+    }
   }, [selectedId, detail?.memberId, detail?.wasabiCardId]);
+
+  useEffect(() => {
+    setTxPage(1);
+    loadTxs(1);
+  }, [selectedId, detail?.memberId, detail?.wasabiCardId, loadTxs]);
 
   const runCardAction = useCallback(async (label, fn, options = {}) => {
     if (!detail) return;
@@ -301,6 +315,22 @@ export function CardsPage() {
                           Freeze
                         </button>
                       ) : null}
+                      {isDevEnv && (detail.wasabiCardId || ['active', 'normal', 'issued', 'shipping'].includes(detail.status)) ? (
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn--secondary"
+                          onClick={() => runCardAction('Simulate Card Transaction', async (id, inputVal) => {
+                            const amt = parseFloat(inputVal) || 10.0;
+                            await simulateCardTransaction(detail.wasabiCardId || detail.id, { type: 'auth', amount: amt, currency: 'USD', description: 'Admin Test Purchase' });
+                            const updated = await getCardById(id);
+                            return updated;
+                          }, {
+                            showInput: true,
+                            inputPlaceholder: 'Enter transaction amount (e.g. 10.00)…',
+                          })}>
+                          🧪 Simulate Tx
+                        </button>
+                      ) : null}
                       {detail.status !== 'terminated' && detail.status !== 'rejected' && detail.status !== 'issued' && detail.status !== 'shipping' ? (
                         <button
                           type="button"
@@ -314,40 +344,78 @@ export function CardsPage() {
                 </AdminActionStack>
 
                 <div style={{ marginTop: '24px' }}>
-                  <AdminDetailSection title="Card Transaction History">
-                    {txLoading ? (
+                  <AdminDetailSection 
+                    title={
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <span>Card Transaction History</span>
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn--secondary"
+                          style={{ padding: '4px 10px', fontSize: '12px' }}
+                          disabled={txLoading}
+                          onClick={() => loadTxs(txPage)}>
+                          {txLoading ? 'Refreshing…' : '🔄 Refresh'}
+                        </button>
+                      </div>
+                    }>
+                    {txLoading && !txItems.length ? (
                       <p className="admin-loading admin-loading--inline">Loading transactions…</p>
                     ) : txItems && txItems.length > 0 ? (
-                      <div className="admin-detail-table-wrap" style={{ marginTop: '12px' }}>
-                        <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', border: '1px solid var(--admin-border-subtle)' }}>
-                          <thead>
-                            <tr style={{ background: 'var(--admin-bg-subtle)', borderBottom: '1px solid var(--admin-border)', textAlign: 'left' }}>
-                              <th style={{ padding: '10px 8px', fontWeight: '600' }}>Date</th>
-                              <th style={{ padding: '10px 8px', fontWeight: '600' }}>Type</th>
-                              <th style={{ padding: '10px 8px', fontWeight: '600' }}>Amount</th>
-                              <th style={{ padding: '10px 8px', fontWeight: '600' }}>Status</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {txItems.map((tx, idx) => (
-                              <tr key={tx.id || tx.orderNo || idx} style={{ borderBottom: '1px solid var(--admin-border-subtle)' }}>
-                                <td style={{ padding: '10px 8px', color: 'var(--admin-text)' }}>
-                                  {formatAdminDate(tx.transactionTime || tx.created || tx.at)}
-                                </td>
-                                <td style={{ padding: '10px 8px', textTransform: 'capitalize', color: 'var(--admin-text)' }}>
-                                  {tx.type || tx.subType || 'Payment'}
-                                </td>
-                                <td style={{ padding: '10px 8px', fontWeight: '500', color: 'var(--admin-text)' }}>
-                                  {tx.amount} {tx.currency || 'USD'}
-                                </td>
-                                <td style={{ padding: '10px 8px' }}>
-                                  <AdminStatusBadge status={tx.status} />
-                                </td>
+                      <>
+                        <div className="admin-detail-table-wrap" style={{ marginTop: '12px' }}>
+                          <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', border: '1px solid var(--admin-border-subtle)' }}>
+                            <thead>
+                              <tr style={{ background: 'var(--admin-bg-subtle)', borderBottom: '1px solid var(--admin-border)', textAlign: 'left' }}>
+                                <th style={{ padding: '10px 8px', fontWeight: '600' }}>Date</th>
+                                <th style={{ padding: '10px 8px', fontWeight: '600' }}>Type</th>
+                                <th style={{ padding: '10px 8px', fontWeight: '600' }}>Amount</th>
+                                <th style={{ padding: '10px 8px', fontWeight: '600' }}>Status</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody>
+                              {txItems.map((tx, idx) => (
+                                <tr key={tx.id || tx.orderNo || idx} style={{ borderBottom: '1px solid var(--admin-border-subtle)' }}>
+                                  <td style={{ padding: '10px 8px', color: 'var(--admin-text)' }}>
+                                    {formatAdminDate(tx.transactionTime || tx.created || tx.at)}
+                                  </td>
+                                  <td style={{ padding: '10px 8px', textTransform: 'capitalize', color: 'var(--admin-text)' }}>
+                                    {tx.type || tx.subType || 'Payment'}
+                                  </td>
+                                  <td style={{ padding: '10px 8px', fontWeight: '500', color: 'var(--admin-text)' }}>
+                                    {tx.amount} {tx.currency || 'USD'}
+                                  </td>
+                                  <td style={{ padding: '10px 8px' }}>
+                                    <AdminStatusBadge status={tx.status} />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Transactions Pagination */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', fontSize: '12px', color: 'var(--admin-muted)' }}>
+                          <span>Page {txPage} of {Math.max(1, Math.ceil(txTotal / 10))} ({txTotal} total)</span>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn--secondary"
+                              style={{ padding: '4px 8px', fontSize: '12px' }}
+                              disabled={txPage <= 1 || txLoading}
+                              onClick={() => loadTxs(txPage - 1)}>
+                              Prev
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn--secondary"
+                              style={{ padding: '4px 8px', fontSize: '12px' }}
+                              disabled={txPage >= Math.ceil(txTotal / 10) || txLoading}
+                              onClick={() => loadTxs(txPage + 1)}>
+                              Next
+                            </button>
+                          </div>
+                        </div>
+                      </>
                     ) : (
                       <p style={{ fontSize: '13px', color: 'var(--admin-muted)', padding: '12px 8px', background: 'var(--admin-bg-subtle)', borderRadius: '6px' }}>
                         No transaction history found for this card.

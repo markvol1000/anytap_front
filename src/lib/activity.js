@@ -130,7 +130,7 @@ export function filterActivity(items, filterId) {
 
 export function filterActivityByScope(items, scopeId) {
   if (scopeId === 'wallet') return items.filter(isWalletActivity);
-  if (scopeId === 'card') return items.filter(isCardActivity);
+  if (scopeId === 'card') return items.filter((t) => isCardActivity(t) && t.kind !== 'card_topup');
   if (scopeId === 'rewards') return items.filter(isRewardActivity);
   return items;
 }
@@ -146,7 +146,7 @@ export function filterActivityForWalletPage(items) {
 }
 
 export function filterActivityForCardPage(items, cardOrLast4) {
-  const cardItems = items.filter(isCardActivity);
+  const cardItems = items.filter((t) => isCardActivity(t) && t.kind !== 'card_topup');
   if (!cardOrLast4) return cardItems;
 
   const targetCardNo = typeof cardOrLast4 === 'object'

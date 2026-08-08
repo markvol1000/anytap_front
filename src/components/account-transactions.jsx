@@ -244,10 +244,17 @@ export function TransactionsPage({ items = [], initialScope = 'all' }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTx, setSelectedTx] = useState(null);
   const [copiedTxId, setCopiedTxId] = useState('');
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     setScope(initialScope);
   }, [initialScope]);
+
+  // Reset page to 1 when any filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [scope, dateRange, customFrom, customTo, status, searchQuery]);
 
   const filtered = useMemo(
     () => A.applyTransactionFilters(items, {
@@ -259,6 +266,13 @@ export function TransactionsPage({ items = [], initialScope = 'all' }) {
       searchQuery,
     }),
     [items, scope, dateRange, customFrom, customTo, status, searchQuery],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedItems = useMemo(
+    () => filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filtered, currentPage, pageSize],
   );
 
   const handleCopyTxId = useCallback((txId) => {
@@ -294,9 +308,47 @@ export function TransactionsPage({ items = [], initialScope = 'all' }) {
           </div>
 
           {filtered.length ? (
-            <div className="portal-tx-feed portal-tx-panel__feed">
-              <TransactionsGroupedFeed items={filtered} onSelect={setSelectedTx} />
-            </div>
+            <>
+              <div className="portal-tx-feed portal-tx-panel__feed">
+                <TransactionsGroupedFeed items={paginatedItems} onSelect={setSelectedTx} />
+              </div>
+
+              {/* Activity Pagination Controls (Max 10 per page) */}
+              <div 
+                className="portal-tx-pagination"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'space-between',
+                  padding: '16px 20px',
+                  borderTop: '1px solid var(--portal-border, rgba(255,255,255,0.08))',
+                  fontSize: '13px',
+                  color: 'var(--portal-muted, #a0aec0)'
+                }}
+              >
+                <span>
+                  Page {currentPage} of {totalPages} ({filtered.length} total)
+                </span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="portal-btn-secondary"
+                    style={{ padding: '6px 14px', borderRadius: '8px', fontSize: '13px', cursor: currentPage <= 1 ? 'not-allowed' : 'pointer', opacity: currentPage <= 1 ? 0.5 : 1 }}
+                    disabled={currentPage <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    className="portal-btn-secondary"
+                    style={{ padding: '6px 14px', borderRadius: '8px', fontSize: '13px', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer', opacity: currentPage >= totalPages ? 0.5 : 1 }}
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+                    Next
+                  </button>
+                </div>
+              </div>
+            </>
           ) : (
             <div className="portal-tx-empty portal-tx-panel__empty">
               <p className="portal-tx-empty__title">No transactions found</p>

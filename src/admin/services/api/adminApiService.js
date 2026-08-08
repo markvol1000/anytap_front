@@ -332,6 +332,11 @@ export async function getCardTransactions(userId, cardNo = '') {
   return data;
 }
 
+export async function simulateCardTransaction(cardNo, params = {}) {
+  const data = await apiPost(`/admin/cards/${encodeURIComponent(cardNo)}/simulate-transaction`, params);
+  return data;
+}
+
 function mapWalletRow(u) {
   return {
     id: u.userId || u.id,

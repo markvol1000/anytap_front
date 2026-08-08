@@ -71,10 +71,12 @@ function mapWasabiStatus(status = '', type = '') {
   if (['failed', 'fail', 'declined', 'rejected', 'cancelled', 'canceled'].some((k) => s.includes(k))) {
     return 'failed';
   }
-  if (['pending', 'wait_process', 'processing', 'authorized'].some((k) => s.includes(k))) {
+  if (['wait_process', 'processing'].some((k) => s.includes(k)) || (s.includes('pending') && !s.includes('authorized'))) {
     return 'pending';
   }
-  if (s.includes('success') || s.includes('complete') || s.includes('settled')) return 'completed';
+  if (s.includes('success') || s.includes('complete') || s.includes('settled') || s.includes('authorized') || s.includes('succeed')) {
+    return 'completed';
+  }
   if (String(type).toLowerCase().includes('auth')) return 'completed';
   return 'completed';
 }
