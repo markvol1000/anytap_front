@@ -252,9 +252,40 @@ export function resolveActivityFilterFromSearch(searchParams) {
   return 'all';
 }
 
-/** Newest first */
+/** Default multi-key sort: 1) updateDate desc, 2) createDate/at desc, 3) name/title asc */
 export function sortActivityChronological(items) {
-  return [...items].sort((a, b) => new Date(b.at) - new Date(a.at));
+  return [...items].sort((a, b) => {
+    const getUpdateTs = (row) => {
+      const raw = row.updatedAt || row.updateDate || row.updated || row.at || row.date || row.createdAt || row.createDate || row.created;
+      if (!raw) return 0;
+      const t = new Date(raw).getTime();
+      return Number.isNaN(t) ? 0 : t;
+    };
+
+    const getCreateTs = (row) => {
+      const raw = row.createdAt || row.createDate || row.created || row.at || row.date;
+      if (!raw) return 0;
+      const t = new Date(raw).getTime();
+      return Number.isNaN(t) ? 0 : t;
+    };
+
+    const getName = (row) => String(row.name || row.title || row.memberName || row.loginId || row.email || row.id || '').toLowerCase();
+
+    // 1) Update Date Descending
+    const uA = getUpdateTs(a);
+    const uB = getUpdateTs(b);
+    if (uA !== uB) return uB - uA;
+
+    // 2) Create Date / Transaction Date Descending
+    const cA = getCreateTs(a);
+    const cB = getCreateTs(b);
+    if (cA !== cB) return cB - cA;
+
+    // 3) Name / Title Ascending
+    const nA = getName(a);
+    const nB = getName(b);
+    return nA.localeCompare(nB);
+  });
 }
 
 /** Portal activity — remote API modes never fall back to mock */

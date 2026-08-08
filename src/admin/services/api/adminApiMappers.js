@@ -197,9 +197,10 @@ export function paginateLocal(items, {
     );
   }
 
-  if (sortKey) {
-    const dir = sortDir === 'desc' ? -1 : 1;
-    list.sort((a, b) => {
+  // Primary default sort: updatedate desc -> createdt desc -> name asc
+  list.sort((a, b) => {
+    if (sortKey) {
+      const dir = sortDir === 'desc' ? -1 : 1;
       const av = a[sortKey];
       const bv = b[sortKey];
       if (av == null && bv == null) return 0;
@@ -207,8 +208,40 @@ export function paginateLocal(items, {
       if (bv == null) return -1;
       if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
       return String(av).localeCompare(String(bv)) * dir;
-    });
-  }
+    }
+
+    // Default multi-key sort: 1) updateDate desc, 2) createDate desc, 3) name asc
+    const getUpdateTs = (row) => {
+      const raw = row.updatedAt || row.updateDate || row.updated || row.at || row.date || row.createdAt || row.createDate || row.created || row.joinDate;
+      if (!raw) return 0;
+      const t = new Date(raw).getTime();
+      return Number.isNaN(t) ? 0 : t;
+    };
+
+    const getCreateTs = (row) => {
+      const raw = row.createdAt || row.createDate || row.created || row.joinDate || row.submittedAt || row.at || row.date;
+      if (!raw) return 0;
+      const t = new Date(raw).getTime();
+      return Number.isNaN(t) ? 0 : t;
+    };
+
+    const getName = (row) => String(row.name || row.memberName || row.loginId || row.email || row.id || '').toLowerCase();
+
+    // 1) Update Date Descending
+    const uA = getUpdateTs(a);
+    const uB = getUpdateTs(b);
+    if (uA !== uB) return uB - uA;
+
+    // 2) Create Date Descending
+    const cA = getCreateTs(a);
+    const cB = getCreateTs(b);
+    if (cA !== cB) return cB - cA;
+
+    // 3) Name Ascending
+    const nA = getName(a);
+    const nB = getName(b);
+    return nA.localeCompare(nB);
+  });
 
   const total = list.length;
   const start = (Math.max(1, page) - 1) * pageSize;
