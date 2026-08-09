@@ -395,7 +395,7 @@ export async function fetchLocalTransactions(userId) {
       return {
         id: tx.txId || `local-${Date.now()}-${Math.random()}`,
         title: title,
-        at: tx.createdAt,
+        at: tx.chainTime || tx.createdAt,
         amount: Number(tx.amount || 0),
         incoming: incoming,
         failed: status === 'failed',
