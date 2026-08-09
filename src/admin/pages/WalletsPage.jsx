@@ -12,7 +12,7 @@ import { AdminStatusBadge, formatUsdt, shortenAddress } from '../components/Admi
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
-import { getWalletById, getWallets, lockWallet, unlockWallet, triggerFeePayout, getCregisDepositList } from '../services/adminService.js';
+import { getWalletById, getWallets, lockWallet, unlockWallet, triggerFeePayout, getCregisDepositList, syncAllCregisDeposits } from '../services/adminService.js';
 
 const fetchWallets = (params) => getWallets(params);
 const fetchWalletDetail = (id) => getWalletById(id);
@@ -23,11 +23,30 @@ export function WalletsPage() {
   const list = useAdminList(fetchWallets);
   const { detail, loading: detailLoading, setDetail } = useAdminDetail(fetchWalletDetail, selectedId);
 
+  const [syncStatus, setSyncStatus] = useState('idle');
+  const [syncedResultMsg, setSyncedResultMsg] = useState('');
+
   const [depositPage, setDepositPage] = useState(1);
   const [depositListItems, setDepositListItems] = useState([]);
   const [depositTotalPages, setDepositTotalPages] = useState(1);
   const [depositTotal, setDepositTotal] = useState(0);
   const [depositListLoading, setDepositListLoading] = useState(false);
+
+  const handleSyncAllDeposits = useCallback(async () => {
+    setSyncStatus('syncing');
+    try {
+      const res = await syncAllCregisDeposits();
+      const count = res?.totalSyncedCount ?? res?.data?.totalSyncedCount ?? 0;
+      setSyncedResultMsg(count > 0 ? `완료 (${count}건 동기화)` : '완료 (누락 없음)');
+      setSyncStatus('success');
+      list.reload();
+      setTimeout(() => setSyncStatus('idle'), 4000);
+    } catch (err) {
+      setSyncedResultMsg('실패');
+      setSyncStatus('error');
+      setTimeout(() => setSyncStatus('idle'), 4000);
+    }
+  }, [list]);
 
   const fetchDepositList = useCallback(async (targetUserId, page = 1) => {
     if (!targetUserId) return;
@@ -125,7 +144,30 @@ export function WalletsPage() {
       <AdminSplitLayout
         left={(
           <AdminPanel>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '10px' }}>
+              <button
+                type="button"
+                className="admin-btn admin-btn--primary admin-btn--sm"
+                onClick={handleSyncAllDeposits}
+                disabled={syncStatus === 'syncing'}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: syncStatus === 'syncing' ? '#64748b' : (syncStatus === 'success' ? '#10b981' : (syncStatus === 'error' ? '#ef4444' : '#2563eb')),
+                  borderColor: 'transparent',
+                  color: '#ffffff',
+                  fontWeight: '600',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  cursor: syncStatus === 'syncing' ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {syncStatus === 'syncing' && '⏳ 진행중... (Syncing)'}
+                {syncStatus === 'success' && `✅ ${syncedResultMsg}`}
+                {syncStatus === 'error' && '❌ 동기화 실패'}
+                {syncStatus === 'idle' && '⚡ 전체 Cregis 입금 동기화'}
+              </button>
               <button
                 type="button"
                 className="admin-btn admin-btn--ghost admin-btn--sm"
@@ -300,11 +342,14 @@ export function WalletsPage() {
                           { 
                             key: 'amount', 
                             label: 'Amount', 
-                            render: (r) => (
-                              <span style={{ color: '#10b981', fontWeight: '600' }}>
-                                +{r.amount || '0'} {r.currency || 'USDT'}
-                              </span>
-                            ) 
+                            render: (r) => {
+                              const isUsdt = (r.currency || '').toUpperCase().includes('USDT');
+                              return (
+                                <span style={{ color: isUsdt ? '#10b981' : '#a855f7', fontWeight: '600' }}>
+                                  +{r.amount || '0'} {r.currency || 'USDT'} {isUsdt ? '' : '⚙️ (Gas)'}
+                                </span>
+                              );
+                            } 
                           },
                           { 
                             key: 'status', 
