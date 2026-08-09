@@ -476,8 +476,15 @@ export async function fetchAccountContext() {
       const cardTxs = cardTxResult?.items || [];
 
       const normalizedLocalTxs = localTxs.map((tx) => {
-        if (tx.kind === 'card_topup' && !tx.cardNo) {
-          return { ...tx, cardNo: targetCardNo, cardLast4: targetLast4 };
+        if (tx.kind === 'card_topup') {
+          // In Card View, Card Top-Up represents incoming money to the Card (+100 USDT)
+          return { 
+            ...tx, 
+            cardNo: tx.cardNo || targetCardNo, 
+            cardLast4: tx.cardLast4 || targetLast4,
+            cardIncoming: true, // Mark as incoming deposit for Card View
+            cardDisplayAmount: `+${Math.abs(Number(tx.amount || 0)).toFixed(2)} USDT`
+          };
         }
         return tx;
       });

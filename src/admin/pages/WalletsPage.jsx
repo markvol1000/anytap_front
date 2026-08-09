@@ -330,10 +330,11 @@ export function WalletsPage() {
                             ? `${Number(r.rawAmount || 0).toLocaleString('ko-KR')} KRW`
                             : formatUsdt(r.rawAmount);
 
+                          const isPlus = r.incoming || r.cardIncoming;
                           return (
                             <div>
-                              <span style={{ color: r.incoming ? '#38A169' : '#E53E3E', fontWeight: 600 }}>
-                                {r.incoming ? '+' : '-'}{formattedAmt}
+                              <span style={{ color: isPlus ? '#38A169' : '#E53E3E', fontWeight: 600 }}>
+                                {isPlus ? '+' : '-'}{formattedAmt}
                               </span>
                               {r.incoming && r.rawAmount && r.rawAmount !== r.amount && (
                                 <div style={{ fontSize: '10px', color: 'var(--admin-text-muted, #888)' }}>
