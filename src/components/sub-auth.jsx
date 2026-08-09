@@ -881,8 +881,8 @@ function ForgotPasswordPage() {
                 label="New Password"
                 value={newPassword}
                 filled={newPassword.length > 0}
-                showPw={showPw}
-                onTogglePw={() => setShowPw((v) => !v)}
+                visible={showPw}
+                onToggle={() => setShowPw((v) => !v)}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
               />
@@ -891,11 +891,12 @@ function ForgotPasswordPage() {
                 label="Confirm New Password"
                 value={confirmPassword}
                 filled={confirmPassword.length > 0}
-                showPw={showPw}
-                onTogglePw={() => setShowPw((v) => !v)}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                visible={showPw}
+                onToggle={() => setShowPw((v) => !v)}
+                onChange={(e) => setNewPassword(e.target.value)}
                 required
               />
+
               <button type="submit" className="btn btn--primary btn--lg login-screen__submit" disabled={loading}>
                 {loading ? 'Resetting...' : 'Set New Password'} <Icon name="arrowRight" size={16} />
               </button>

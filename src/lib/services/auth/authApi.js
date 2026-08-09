@@ -362,7 +362,10 @@ export async function changePassword({ userId, currentPassword, newPassword }) {
     });
     return { ok: true, message: res?.message || 'Password changed successfully' };
   } catch (err) {
-    return { ok: false, message: err?.message || 'Failed to change password' };
+    const msg = err?.status === 503 || err?.message?.includes('503') || err?.message?.includes('fetch')
+      ? 'Backend service is currently unreachable (503). Please check server connection.'
+      : (err?.message || 'Failed to change password');
+    return { ok: false, message: msg };
   }
 }
 
@@ -371,7 +374,10 @@ export async function sendForgotPasswordEmail({ email }) {
     const res = await apiPost('/auth/forgot-password/send-email', { email });
     return { ok: true, message: res?.message || 'Verification code sent to email' };
   } catch (err) {
-    return { ok: false, message: err?.message || 'Failed to send verification email' };
+    const msg = err?.status === 503 || err?.message?.includes('503') || err?.message?.includes('fetch')
+      ? 'Backend service is currently unreachable (503). Please check server connection.'
+      : (err?.message || 'Failed to send verification email');
+    return { ok: false, message: msg };
   }
 }
 
@@ -384,9 +390,13 @@ export async function resetPassword({ email, code, newPassword }) {
     });
     return { ok: true, message: res?.message || 'Password reset successfully' };
   } catch (err) {
-    return { ok: false, message: err?.message || 'Failed to reset password' };
+    const msg = err?.status === 503 || err?.message?.includes('503') || err?.message?.includes('fetch')
+      ? 'Backend service is currently unreachable (503). Please check server connection.'
+      : (err?.message || 'Failed to reset password');
+    return { ok: false, message: msg };
   }
 }
+
 
 export async function attemptLogout() {
   try {

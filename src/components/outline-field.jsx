@@ -44,7 +44,9 @@ function OutlinePasswordInput({
   value,
   onChange,
   visible = false,
+  showPw,
   onToggle,
+  onTogglePw,
   toggleable = true,
   error = false,
   wrapClass = 'password-wrap',
@@ -55,7 +57,10 @@ function OutlinePasswordInput({
 }) {
   const id = useId();
   const filled = value.length > 0;
-  const inputType = toggleable && visible ? 'text' : 'password';
+  const isVis = visible || showPw || false;
+  const handleToggle = onToggle || onTogglePw;
+  const inputType = toggleable && isVis ? 'text' : 'password';
+
 
   return (
     <div className={wrapClass}>
@@ -75,11 +80,12 @@ function OutlinePasswordInput({
         <button
           type="button"
           className={toggleClass}
-          onClick={onToggle}
-          aria-label={visible ? 'Hide password' : 'Show password'}
-          aria-pressed={visible}>
-          {ToggleIcon ? <ToggleIcon visible={visible} /> : null}
+          onClick={handleToggle}
+          aria-label={isVis ? 'Hide password' : 'Show password'}
+          aria-pressed={isVis}>
+          {ToggleIcon ? <ToggleIcon visible={isVis} /> : null}
         </button>
+
       ) : (
         <span className={`${toggleClass} password-wrap__toggle--static`} aria-hidden="true">
           {ToggleIcon ? <ToggleIcon visible={false} /> : null}
