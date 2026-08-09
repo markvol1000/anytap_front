@@ -682,6 +682,11 @@ export async function getCregisDepositList(userId) {
   return res?.data || res;
 }
 
+export async function syncUserCregisDeposits(userId) {
+  const res = await apiPost(`/cregis/user/sync-deposits/${encodeURIComponent(userId)}`);
+  return res?.data || res;
+}
+
 export async function syncAllCregisDeposits() {
   const res = await apiPost('/cregis/user/sync-all-deposits');
   return res?.data || res;

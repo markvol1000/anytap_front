@@ -12,7 +12,7 @@ import { AdminStatusBadge, formatUsdt, shortenAddress } from '../components/Admi
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
-import { getWalletById, getWallets, lockWallet, unlockWallet, triggerFeePayout, getCregisDepositList, syncAllCregisDeposits } from '../services/adminService.js';
+import { getWalletById, getWallets, lockWallet, unlockWallet, triggerFeePayout, getCregisDepositList, syncUserCregisDeposits } from '../services/adminService.js';
 
 const fetchWallets = (params) => getWallets(params);
 const fetchWalletDetail = (id) => getWalletById(id);
@@ -23,30 +23,14 @@ export function WalletsPage() {
   const list = useAdminList(fetchWallets);
   const { detail, loading: detailLoading, setDetail } = useAdminDetail(fetchWalletDetail, selectedId);
 
-  const [syncStatus, setSyncStatus] = useState('idle');
-  const [syncedResultMsg, setSyncedResultMsg] = useState('');
+  const [singleSyncStatus, setSingleSyncStatus] = useState('idle');
+  const [singleSyncMsg, setSingleSyncMsg] = useState('');
 
   const [depositPage, setDepositPage] = useState(1);
   const [depositListItems, setDepositListItems] = useState([]);
   const [depositTotalPages, setDepositTotalPages] = useState(1);
   const [depositTotal, setDepositTotal] = useState(0);
   const [depositListLoading, setDepositListLoading] = useState(false);
-
-  const handleSyncAllDeposits = useCallback(async () => {
-    setSyncStatus('syncing');
-    try {
-      const res = await syncAllCregisDeposits();
-      const count = res?.totalSyncedCount ?? res?.data?.totalSyncedCount ?? 0;
-      setSyncedResultMsg(count > 0 ? `완료 (${count}건 동기화)` : '완료 (누락 없음)');
-      setSyncStatus('success');
-      list.reload();
-      setTimeout(() => setSyncStatus('idle'), 4000);
-    } catch (err) {
-      setSyncedResultMsg('실패');
-      setSyncStatus('error');
-      setTimeout(() => setSyncStatus('idle'), 4000);
-    }
-  }, [list]);
 
   const fetchDepositList = useCallback(async (targetUserId, page = 1) => {
     if (!targetUserId) return;
@@ -57,14 +41,38 @@ export function WalletsPage() {
       const innerData = res?.data || res;
       const rows = innerData?.rows || (Array.isArray(innerData) ? innerData : []);
       setDepositListItems(rows);
-      setDepositTotalPages(innerData?.totalPages || (innerData?.total ? Math.ceil(innerData.total / 10) : 1));
+      setDepositTotalPages(innerData?.totalPages || 1);
       setDepositTotal(innerData?.total || rows.length);
     } catch (err) {
-      console.error('Failed to fetch Cregis deposit list:', err);
+      console.error('Failed to fetch deposit list:', err);
     } finally {
       setDepositListLoading(false);
     }
   }, []);
+
+  const handleSingleWalletSync = useCallback(async (targetUserId) => {
+    if (!targetUserId) return;
+    setSingleSyncStatus('syncing');
+    try {
+      const res = await syncUserCregisDeposits(targetUserId);
+      const count = res?.syncedCount ?? res?.data?.syncedCount ?? 0;
+      setSingleSyncMsg(count > 0 ? `완료 (${count}건 동기화)` : '완료 (누락 없음)');
+      setSingleSyncStatus('success');
+
+      if (detail) {
+        const updated = await getWalletById(detail.id, true);
+        setDetail(updated);
+      }
+      fetchDepositList(targetUserId, 1);
+      list.reload();
+
+      setTimeout(() => setSingleSyncStatus('idle'), 4000);
+    } catch (err) {
+      setSingleSyncMsg('실패');
+      setSingleSyncStatus('error');
+      setTimeout(() => setSingleSyncStatus('idle'), 4000);
+    }
+  }, [detail, fetchDepositList, list, setDetail]);
 
   useEffect(() => {
     if (detail) {
@@ -144,30 +152,7 @@ export function WalletsPage() {
       <AdminSplitLayout
         left={(
           <AdminPanel>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '10px' }}>
-              <button
-                type="button"
-                className="admin-btn admin-btn--primary admin-btn--sm"
-                onClick={handleSyncAllDeposits}
-                disabled={syncStatus === 'syncing'}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  backgroundColor: syncStatus === 'syncing' ? '#64748b' : (syncStatus === 'success' ? '#10b981' : (syncStatus === 'error' ? '#ef4444' : '#2563eb')),
-                  borderColor: 'transparent',
-                  color: '#ffffff',
-                  fontWeight: '600',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  cursor: syncStatus === 'syncing' ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {syncStatus === 'syncing' && '⏳ 진행중... (Syncing)'}
-                {syncStatus === 'success' && `✅ ${syncedResultMsg}`}
-                {syncStatus === 'error' && '❌ 동기화 실패'}
-                {syncStatus === 'idle' && '⚡ 전체 Cregis 입금 동기화'}
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
               <button
                 type="button"
                 className="admin-btn admin-btn--ghost admin-btn--sm"
@@ -253,31 +238,34 @@ export function WalletsPage() {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '10px' }}>
                     <button
                       type="button"
+                      className="admin-btn admin-btn--primary admin-btn--sm"
+                      onClick={() => handleSingleWalletSync(detail.memberId || detail.id)}
+                      disabled={singleSyncStatus === 'syncing'}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        backgroundColor: singleSyncStatus === 'syncing' ? '#64748b' : (singleSyncStatus === 'success' ? '#10b981' : (singleSyncStatus === 'error' ? '#ef4444' : '#2563eb')),
+                        borderColor: 'transparent',
+                        color: '#ffffff',
+                        fontWeight: '600',
+                        padding: '5px 10px',
+                        borderRadius: '6px',
+                        cursor: singleSyncStatus === 'syncing' ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {singleSyncStatus === 'syncing' && '⏳ 동기화 중...'}
+                      {singleSyncStatus === 'success' && `✅ ${singleSyncMsg}`}
+                      {singleSyncStatus === 'error' && '❌ 동기화 실패'}
+                      {singleSyncStatus === 'idle' && '⚡ Cregis 입금 동기화'}
+                    </button>
+                    <button
+                      type="button"
                       className="admin-btn admin-btn--ghost admin-btn--sm"
                       onClick={() => fetchDepositList(detail.memberId || detail.id, 1)}
                       style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}
                     >
                       🔄 Refresh Cregis Deposits
-                    </button>
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn--ghost admin-btn--sm"
-                      onClick={async () => {
-                        try {
-                          const updated = await getWalletById(detail.id, true);
-                          setDetail(updated);
-                          list.setItems((prevItems) =>
-                            prevItems.map((item) =>
-                              item.id === detail.id ? { ...item, balance: updated.balance } : item
-                            )
-                          );
-                        } catch (err) {
-                          window.alert(err.message);
-                        }
-                      }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      🔄 Sync Balance with Cregis
                     </button>
                   </div>
                   <AdminDetailRow label="Wallet ID" value={detail.id} />

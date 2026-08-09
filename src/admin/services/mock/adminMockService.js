@@ -471,6 +471,42 @@ export async function unlockWallet(id) {
   return clone(wallet);
 }
 
+export async function getCregisDepositList(userId, pageNum = 1, pageSize = 10) {
+  await delay();
+  return {
+    code: '00000',
+    msg: 'ok',
+    data: {
+      total: 1,
+      pageNum: pageNum,
+      pageSize: pageSize,
+      totalPages: 1,
+      rows: [
+        { txid: 'd6bb4d4e9259647227aca599bd7a988354227db1c796ce48616a03d75423f588', amount: '100.00', currency: 'USDT', status: 'SUCCESS', created_at: '2026-08-09 08:04:22' }
+      ]
+    }
+  };
+}
+
+export async function syncUserCregisDeposits(userId) {
+  await delay(1200);
+  return {
+    userId,
+    status: 'SUCCESS',
+    syncedCount: 0,
+    syncedTxIds: []
+  };
+}
+
+export async function syncAllCregisDeposits() {
+  await delay(1500);
+  return {
+    totalUsersChecked: 16,
+    totalSyncedCount: 0,
+    status: 'SUCCESS'
+  };
+}
+
 // ─── Transactions ────────────────────────────────────────────────────────────
 
 export async function getTransactions(params = {}) {

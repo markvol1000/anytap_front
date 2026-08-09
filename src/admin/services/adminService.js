@@ -78,6 +78,7 @@ export const shipCard = bind('shipCard');
 export const triggerFeePayout = bind('triggerFeePayout');
 export const getAdminLogs = bind('getAdminLogs');
 export const getCregisDepositList = bind('getCregisDepositList');
+export const syncUserCregisDeposits = bind('syncUserCregisDeposits');
 export const syncAllCregisDeposits = bind('syncAllCregisDeposits');
 
 export { MAX_CARDS_PER_MEMBER } from './mock/adminMockData.js';
