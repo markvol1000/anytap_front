@@ -406,6 +406,7 @@ export async function fetchLocalTransactions(userId) {
         txId: tx.txId,
         cardNo: tx.cardNo || tx.wasabiCardId || '',
         reference: tx.txId ? tx.txId.slice(0, 10).toUpperCase() : '',
+        currency: tx.currency || tx.coinType || (type === 'CARD_SPEND' ? 'KRW' : 'USDT'),
         description: tx.description || '',
       };
     });

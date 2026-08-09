@@ -121,7 +121,7 @@ export function mapWasabiTransactionRecord(record, opts = {}) {
     failed: status === 'failed',
     kind,
     status,
-    rawStatus: record.status ? String(record.status).toLowerCase() : 'authorized',
+    rawStatus: record.status ? String(record.status).toLowerCase() : (kind === 'card_spend' ? 'authorized' : 'completed'),
     authorizedAmount: record.authorizedAmount != null ? Math.abs(Number(record.authorizedAmount) || 0) : undefined,
     authorizedCurrency: record.authorizedCurrency || 'USD',
     reference: String(record.tradeNo || record.transactionId || record.orderNo || id),

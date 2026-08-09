@@ -321,18 +321,28 @@ export function WalletsPage() {
                       { 
                         key: 'amount', 
                         label: 'Amount (Net/Gross)', 
-                        render: (r) => (
-                          <div>
-                            <span style={{ color: r.incoming ? '#38A169' : '#E53E3E', fontWeight: 600 }}>
-                              {r.incoming ? '+' : '-'}{formatUsdt(r.amount)}
-                            </span>
-                            {r.incoming && r.rawAmount && r.rawAmount !== r.amount && (
-                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted, #888)' }}>
-                                (Gross: {formatUsdt(r.rawAmount)})
-                              </div>
-                            )}
-                          </div>
-                        ) 
+                        render: (r) => {
+                          const curr = (r.currency || 'USDT').toUpperCase();
+                          const formattedAmt = curr === 'KRW'
+                            ? `${Number(r.amount || 0).toLocaleString('ko-KR')} KRW`
+                            : formatUsdt(r.amount);
+                          const formattedGross = curr === 'KRW'
+                            ? `${Number(r.rawAmount || 0).toLocaleString('ko-KR')} KRW`
+                            : formatUsdt(r.rawAmount);
+
+                          return (
+                            <div>
+                              <span style={{ color: r.incoming ? '#38A169' : '#E53E3E', fontWeight: 600 }}>
+                                {r.incoming ? '+' : '-'}{formattedAmt}
+                              </span>
+                              {r.incoming && r.rawAmount && r.rawAmount !== r.amount && (
+                                <div style={{ fontSize: '10px', color: 'var(--admin-text-muted, #888)' }}>
+                                  (Gross: {formattedGross})
+                                </div>
+                              )}
+                            </div>
+                          );
+                        } 
                       },
                       {
                         key: 'feeAmount',

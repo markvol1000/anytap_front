@@ -108,7 +108,9 @@ export function ActivityRow({ tx, onClick, dateStyle = 'standard', variant = 'de
               </span>
             ) : (
               <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '600', textTransform: 'uppercase', backgroundColor: 'rgba(16, 185, 129, 0.12)', padding: '1px 5px', borderRadius: '4px' }}>
-                {tx.rawStatus || 'Authorized'}
+                {(tx.incoming || tx.kind === 'wallet_deposit' || tx.kind === 'wallet_receive' || tx.kind === 'card_topup')
+                  ? (tx.rawStatus && tx.rawStatus !== 'authorized' ? (tx.rawStatus.charAt(0).toUpperCase() + tx.rawStatus.slice(1).toLowerCase()) : 'Completed')
+                  : (tx.rawStatus ? (tx.rawStatus.charAt(0).toUpperCase() + tx.rawStatus.slice(1).toLowerCase()) : 'Authorized')}
               </span>
             )}
           </div>
