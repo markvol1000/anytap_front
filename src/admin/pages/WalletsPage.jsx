@@ -329,13 +329,33 @@ export function WalletsPage() {
                           },
                           { 
                             key: 'amount', 
-                            label: 'Amount', 
+                            label: 'Type / Amount', 
                             render: (r) => {
+                              const txType = (r.txType || r.tx_type || (r.trade_type === '2' || r.trade_type === 2 ? 'WITHDRAW' : 'DEPOSIT')).toUpperCase();
+                              const isOutflow = txType === 'WITHDRAW' || txType === 'CARD_CHARGE' || txType === 'CARD_SPEND' || txType === 'SWEEP' || (r.amount && String(r.amount).startsWith('-'));
                               const isUsdt = (r.currency || '').toUpperCase().includes('USDT');
+                              
+                              const displaySign = isOutflow ? '-' : '+';
+                              const cleanAmount = String(r.amount || '0').replace(/^[+-]/, '');
+                              
+                              let color = '#10b981'; // Green for Deposit (+)
+                              if (isOutflow) {
+                                color = '#ef4444'; // Red for Withdrawal (-)
+                              } else if (!isUsdt) {
+                                color = '#a855f7'; // Purple for Gas
+                              }
+
                               return (
-                                <span style={{ color: isUsdt ? '#10b981' : '#a855f7', fontWeight: '600' }}>
-                                  +{r.amount || '0'} {r.currency || 'USDT'} {isUsdt ? '' : '⚙️ (Gas)'}
-                                </span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                  <span style={{ color, fontWeight: '600', fontSize: '12px' }}>
+                                    {displaySign}{cleanAmount} {r.currency || 'USDT'} {(!isOutflow && !isUsdt) ? '⚙️ (Gas)' : ''}
+                                  </span>
+                                  {txType && (
+                                    <span style={{ fontSize: '10px', color: 'var(--admin-text-muted, #888)' }}>
+                                      {txType}
+                                    </span>
+                                  )}
+                                </div>
                               );
                             } 
                           },
