@@ -1,7 +1,5 @@
-// ===== Account Security =====
-// Password change with Old Password, New Password, Confirm New Password
-
 import { useState } from 'react';
+import { changePassword } from '../../lib/services/authService.js';
 
 export function AccountSecurity({ s }) {
   const [oldPassword, setOldPassword] = useState('');
@@ -29,8 +27,18 @@ export function AccountSecurity({ s }) {
 
     setLoading(true);
     try {
-      // Password change logic via backend/session
-      s.showToast('Password updated successfully.');
+      const userId = s.accountState?.userId || s.session?.userId || '';
+      const res = await changePassword({
+        userId,
+        currentPassword: oldPassword,
+        newPassword,
+      });
+
+      if (!res.ok) {
+        throw new Error(res.message || 'Failed to change password');
+      }
+
+      s.showToast(res.message || 'Password updated successfully.');
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -40,6 +48,7 @@ export function AccountSecurity({ s }) {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="portal-page portal-page--unified portal-detail" style={{ maxWidth: '440px', margin: '0 auto', padding: '24px 16px' }}>

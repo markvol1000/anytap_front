@@ -3,7 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react';
 import { Icon } from './ui.jsx';
 import { OutlineInput, OutlinePasswordInput } from './outline-field.jsx';
-import { emailOk, attemptLogin, attemptSignUp, establishLoginSession, hasMemberSession, setMockSession, sendMockEmailVerification, verifyMockEmailCode, saveSignupPending, loadSignupPending, refreshSignupExpiry, clearSignupPending, formatExpiresRemaining, formatSignupCodeTtl, verifyEmailCode, sendVerificationEmail, ensureAvailableLoginId, saveEmailLoginId } from '../lib/services/authService.js';
+import { emailOk, attemptLogin, attemptSignUp, establishLoginSession, hasMemberSession, setMockSession, sendMockEmailVerification, verifyMockEmailCode, saveSignupPending, loadSignupPending, refreshSignupExpiry, clearSignupPending, formatExpiresRemaining, formatSignupCodeTtl, verifyEmailCode, sendVerificationEmail, ensureAvailableLoginId, saveEmailLoginId, sendForgotPasswordEmail, resetPassword } from '../lib/services/authService.js';
+
 import { checkReferralCode } from '../lib/services/authService.js';
 import { API_MODE, isHttpApi } from '../lib/api/config.js';
 import { AUTH_ERRORS, SIGNUP_ERRORS, SIGNUP_VERIFY } from '../utils/auth-messages.js';
@@ -771,36 +772,159 @@ function SignUpVerifyPage() {
 }
 
 function ForgotPasswordPage() {
-  const [done, setDone] = useState(false);
+  const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const { toast, showToast } = useAuthToast();
+
+  const handleSendEmail = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    if (!email || !emailOk(email)) {
+      setErrorMsg('Please enter a valid email address.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await sendForgotPasswordEmail({ email });
+      if (!res.ok) {
+        throw new Error(res.message || 'Failed to send verification code.');
+      }
+      showToast(res.message || 'Verification code sent to your email.');
+      setStep(2);
+    } catch (err) {
+      setErrorMsg(err?.message || 'Failed to send verification code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    if (!code || code.trim().length !== 6) {
+      setErrorMsg('Please enter the 6-digit verification code.');
+      return;
+    }
+    if (!newPassword || newPassword.length < 8) {
+      setErrorMsg('New password must be at least 8 characters long.');
+      return;
+    }
+    if (!passwordPolicyOk(newPassword)) {
+      setErrorMsg('Password does not meet the security requirements.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setErrorMsg('Passwords do not match.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await resetPassword({ email, code, newPassword });
+      if (!res.ok) {
+        throw new Error(res.message || 'Failed to reset password.');
+      }
+      showToast(res.message || 'Password reset successfully!');
+      setStep(3);
+    } catch (err) {
+      setErrorMsg(err?.message || 'Failed to reset password.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <section className="login-screen">
+      <AuthToast msg={toast} />
       <div className="shell login-screen__inner">
-        {done ? (
+        {step === 3 ? (
           <div className="aform-done">
             <div className="aform-done__check"><Icon name="checkCircle" size={42} /></div>
-            <h3>Check your email</h3>
-            <p>If an account exists for that address, we&apos;ve sent a temporary password. Use it to log in, then change your password from account settings.</p>
+            <h3>Password Reset Complete</h3>
+            <p>Your password has been successfully updated. You can now log in with your new password.</p>
             <Link to="/login" className="btn btn--primary btn--lg login-screen__submit">
-              Back to log in <Icon name="arrowRight" size={16} />
+              Go to Login <Icon name="arrowRight" size={16} />
             </Link>
           </div>
-        ) : (
+        ) : step === 2 ? (
           <>
             <h1 className="login-screen__headline">
               Reset<br />
               <span className="login-screen__accent">password</span>
             </h1>
             <p className="login-screen__lede">
-              Enter the email registered to your Anytap account. We&apos;ll send a temporary password so you can log back in.
+              Enter the 6-digit code sent to <strong>{email}</strong> and your new password.
             </p>
-            <form
-              className="login-screen__form"
-              {...englishFormProps}
-              onSubmit={handleEnglishSubmit(() => setDone(true))}>
+            {errorMsg && (
+              <p className="auth-field-hint auth-field-hint--visible auth-field-hint--global" role="alert" style={{ marginBottom: '12px', color: '#ef4444' }}>
+                {errorMsg}
+              </p>
+            )}
+            <form className="login-screen__form" onSubmit={handleResetPassword}>
               <OutlineInput
-                label="Registered email"
+                label="6-Digit Verification Code"
+                type="text"
+                value={code}
+                filled={code.length > 0}
+                onChange={(e) => setCode(e.target.value)}
+                maxLength={6}
+                required
+              />
+              <OutlinePasswordInputAuth
+                label="New Password"
+                value={newPassword}
+                filled={newPassword.length > 0}
+                showPw={showPw}
+                onTogglePw={() => setShowPw((v) => !v)}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+              <PasswordRequirementsChecklist password={newPassword} />
+              <OutlinePasswordInputAuth
+                label="Confirm New Password"
+                value={confirmPassword}
+                filled={confirmPassword.length > 0}
+                showPw={showPw}
+                onTogglePw={() => setShowPw((v) => !v)}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+              <button type="submit" className="btn btn--primary btn--lg login-screen__submit" disabled={loading}>
+                {loading ? 'Resetting...' : 'Set New Password'} <Icon name="arrowRight" size={16} />
+              </button>
+              <button
+                type="button"
+                className="btn btn--secondary"
+                style={{ marginTop: '8px', width: '100%' }}
+                onClick={() => { setStep(1); setErrorMsg(''); }}>
+                Back to Change Email
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            <h1 className="login-screen__headline">
+              Find<br />
+              <span className="login-screen__accent">password</span>
+            </h1>
+            <p className="login-screen__lede">
+              Enter the email address associated with your Anytap account. We&apos;ll send a 6-digit verification code to reset your password.
+            </p>
+            {errorMsg && (
+              <p className="auth-field-hint auth-field-hint--visible auth-field-hint--global" role="alert" style={{ marginBottom: '12px', color: '#ef4444' }}>
+                {errorMsg}
+              </p>
+            )}
+            <form className="login-screen__form" onSubmit={handleSendEmail}>
+              <OutlineInput
+                label="Registered Email"
                 type="email"
                 value={email}
                 filled={email.length > 0}
@@ -808,8 +932,8 @@ function ForgotPasswordPage() {
                 autoComplete="email"
                 required
               />
-              <button type="submit" className="btn btn--primary btn--lg login-screen__submit">
-                Send temporary password <Icon name="arrowRight" size={16} />
+              <button type="submit" className="btn btn--primary btn--lg login-screen__submit" disabled={loading}>
+                {loading ? 'Sending Code...' : 'Send Verification Code'} <Icon name="arrowRight" size={16} />
               </button>
             </form>
             <p className="login-screen__alt">
@@ -823,3 +947,4 @@ function ForgotPasswordPage() {
 }
 
 export { LoginPage, SignUpPage, SignUpVerifyPage, ForgotPasswordPage };
+

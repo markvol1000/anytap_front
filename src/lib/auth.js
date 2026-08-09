@@ -235,3 +235,16 @@ function formatSecondsAsMmSs(totalSec) {
   const s = totalSec % 60;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
+
+export async function changePassword() {
+  return { ok: true, message: 'Password changed successfully' };
+}
+
+export async function sendForgotPasswordEmail() {
+  return { ok: true, message: 'Verification code sent to email' };
+}
+
+export async function resetPassword() {
+  return { ok: true, message: 'Password reset successfully' };
+}
+

@@ -353,6 +353,41 @@ export function formatSignupCodeTtl() {
   return `${m}:00`;
 }
 
+export async function changePassword({ userId, currentPassword, newPassword }) {
+  try {
+    const res = await apiPost('/auth/change-password', {
+      userId,
+      currentPassword,
+      newPassword,
+    });
+    return { ok: true, message: res?.message || 'Password changed successfully' };
+  } catch (err) {
+    return { ok: false, message: err?.message || 'Failed to change password' };
+  }
+}
+
+export async function sendForgotPasswordEmail({ email }) {
+  try {
+    const res = await apiPost('/auth/forgot-password/send-email', { email });
+    return { ok: true, message: res?.message || 'Verification code sent to email' };
+  } catch (err) {
+    return { ok: false, message: err?.message || 'Failed to send verification email' };
+  }
+}
+
+export async function resetPassword({ email, code, newPassword }) {
+  try {
+    const res = await apiPost('/auth/forgot-password/reset', {
+      email,
+      code,
+      newPassword,
+    });
+    return { ok: true, message: res?.message || 'Password reset successfully' };
+  } catch (err) {
+    return { ok: false, message: err?.message || 'Failed to reset password' };
+  }
+}
+
 export async function attemptLogout() {
   try {
     const session = getHttpSession();
@@ -368,3 +403,4 @@ export async function attemptLogout() {
     clearMemberProfile();
   }
 }
+
