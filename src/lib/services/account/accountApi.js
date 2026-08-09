@@ -397,6 +397,8 @@ export async function fetchLocalTransactions(userId) {
         title: title,
         at: tx.chainTime || tx.createdAt,
         amount: Number(tx.amount || 0),
+        rawAmount: Number(tx.rawAmount || tx.amount || 0),
+        feeAmount: Number(tx.feeAmount || 0),
         incoming: incoming,
         failed: status === 'failed',
         kind: kind,

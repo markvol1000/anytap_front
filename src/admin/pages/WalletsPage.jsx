@@ -12,7 +12,8 @@ import { AdminStatusBadge, formatUsdt, shortenAddress } from '../components/Admi
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
-import { getWalletById, getWallets, lockWallet, unlockWallet, triggerFeePayout, getCregisDepositList, syncUserCregisDeposits } from '../services/adminService.js';
+import { getWalletById, getWallets, lockWallet, unlockWallet, getCregisDepositList, syncUserCregisDeposits, triggerFeePayout } from '../services/adminService.js';
+import { fetchLocalTransactions } from '../../lib/services/account/accountApi.js';
 
 const fetchWallets = (params) => getWallets(params);
 const fetchWalletDetail = (id) => getWalletById(id);
@@ -31,6 +32,7 @@ export function WalletsPage() {
   const [depositTotalPages, setDepositTotalPages] = useState(1);
   const [depositTotal, setDepositTotal] = useState(0);
   const [depositListLoading, setDepositListLoading] = useState(false);
+  const [localTxs, setLocalTxs] = useState([]);
 
   const fetchDepositList = useCallback(async (targetUserId, page = 1) => {
     if (!targetUserId) return;
@@ -78,10 +80,14 @@ export function WalletsPage() {
     if (detail) {
       const targetUserId = detail.memberId || detail.id;
       fetchDepositList(targetUserId, 1);
+      fetchLocalTransactions(targetUserId)
+        .then((txs) => setLocalTxs(Array.isArray(txs) ? txs : []))
+        .catch(() => setLocalTxs([]));
     } else {
       setDepositListItems([]);
       setDepositTotal(0);
       setDepositTotalPages(1);
+      setLocalTxs([]);
     }
   }, [detail, fetchDepositList]);
 
@@ -308,121 +314,52 @@ export function WalletsPage() {
                   <AdminDetailRow label="Status" value={<AdminStatusBadge status={detail.status} />} />
                 </AdminDetailSection>
 
-                {/* 📋 Cregis On-Chain Deposit List (Direct Paginated Section) */}
-                <AdminDetailSection title="📋 Cregis On-Chain Deposit List">
-                  {depositListLoading ? (
-                    <p className="admin-loading admin-loading--inline">Loading Cregis deposits...</p>
-                  ) : depositListItems.length === 0 ? (
-                    <p className="admin-muted" style={{ padding: '12px 0' }}>No Cregis deposit records found for this wallet address.</p>
-                  ) : (
-                    <>
-                      <AdminMiniTable
-                        columns={[
-                          { 
-                            key: 'txid', 
-                            label: 'TxID', 
-                            render: (r) => (
-                              <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>
-                                {shortenAddress(r.txid || r.txId || r.third_party_id || r.orderNo || '-', 8, 6)}
-                              </span>
-                            ) 
-                          },
-                          { 
-                            key: 'amount', 
-                            label: 'Type / Amount', 
-                            render: (r) => {
-                              const txType = (r.txType || r.tx_type || (r.trade_type === '2' || r.trade_type === 2 ? 'WITHDRAW' : 'DEPOSIT')).toUpperCase();
-                              const isOutflow = txType === 'WITHDRAW' || txType === 'CARD_CHARGE' || txType === 'CARD_SPEND' || txType === 'SWEEP' || (r.amount && String(r.amount).startsWith('-'));
-                              const isUsdt = (r.currency || '').toUpperCase().includes('USDT');
-                              
-                              const displaySign = isOutflow ? '-' : '+';
-                              const cleanAmount = String(r.amount || '0').replace(/^[+-]/, '');
-                              
-                              let color = '#10b981'; // Green for Deposit (+)
-                              if (isOutflow) {
-                                color = '#ef4444'; // Red for Withdrawal (-)
-                              } else if (!isUsdt) {
-                                color = '#a855f7'; // Purple for Gas
-                              }
-
-                              return (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                  <span style={{ color, fontWeight: '600', fontSize: '12px' }}>
-                                    {displaySign}{cleanAmount} {r.currency || 'USDT'} {(!isOutflow && !isUsdt) ? '⚙️ (Gas)' : ''}
-                                  </span>
-                                  {txType && (
-                                    <span style={{ fontSize: '10px', color: 'var(--admin-text-muted, #888)' }}>
-                                      {txType}
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            } 
-                          },
-                          { 
-                            key: 'status', 
-                            label: 'Status', 
-                            render: (r) => (
-                              <AdminStatusBadge status={String(r.status === 1 || r.status === '1' ? 'success' : (r.status || 'success'))} />
-                            ) 
-                          },
-                          { 
-                            key: 'date', 
-                            label: 'Date', 
-                            render: (r) => {
-                              const rawDate = r.created_at || r.createdTime || (r.block_time ? r.block_time * 1000 : null) || r.timestamp;
-                              return rawDate ? new Date(rawDate).toLocaleString() : '-';
-                            } 
-                          },
-                        ]}
-                        rows={depositListItems}
-                      />
-                      {depositTotalPages > 1 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.08))' }}>
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn--ghost admin-btn--sm"
-                            disabled={depositPage <= 1}
-                            onClick={() => fetchDepositList(detail.memberId || detail.id, depositPage - 1)}
-                            style={{ opacity: depositPage <= 1 ? 0.4 : 1 }}
-                          >
-                            ◀ Previous
-                          </button>
-                          <span style={{ fontSize: '12px', color: 'var(--admin-text-muted, #888)' }}>
-                            Page {depositPage} / {depositTotalPages} ({depositTotal} total)
+                <AdminDetailSection title="💳 Unified Wallet Transaction & On-Chain History (통합 거래 & 온체인 입금 원장)">
+                  <AdminMiniTable
+                    columns={[
+                      { key: 'title', label: 'Type' },
+                      { 
+                        key: 'amount', 
+                        label: 'Amount (Net/Gross)', 
+                        render: (r) => (
+                          <div>
+                            <span style={{ color: r.incoming ? '#38A169' : '#E53E3E', fontWeight: 600 }}>
+                              {r.incoming ? '+' : '-'}{formatUsdt(r.amount)}
+                            </span>
+                            {r.incoming && r.rawAmount && r.rawAmount !== r.amount && (
+                              <div style={{ fontSize: '10px', color: 'var(--admin-text-muted, #888)' }}>
+                                (Gross: {formatUsdt(r.rawAmount)})
+                              </div>
+                            )}
+                          </div>
+                        ) 
+                      },
+                      {
+                        key: 'feeAmount',
+                        label: 'Fee (수수료)',
+                        render: (r) => (
+                          <span style={{ fontSize: '12px', color: r.feeAmount > 0 ? '#E53E3E' : 'var(--admin-text-muted, #888)' }}>
+                            {r.feeAmount > 0 ? formatUsdt(r.feeAmount) : '-'}
                           </span>
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn--ghost admin-btn--sm"
-                            disabled={depositPage >= depositTotalPages}
-                            onClick={() => fetchDepositList(detail.memberId || detail.id, depositPage + 1)}
-                            style={{ opacity: depositPage >= depositTotalPages ? 0.4 : 1 }}
-                          >
-                            Next ▶
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </AdminDetailSection>
-
-                <AdminDetailSection title="Recent deposits">
-                  <AdminMiniTable
-                    columns={[
-                      { key: 'kind', label: 'Type' },
-                      { key: 'amount', label: 'Amount', render: (r) => formatUsdt(r.amount) },
+                        )
+                      },
+                      { 
+                        key: 'status', 
+                        label: 'Status', 
+                        render: (r) => (
+                          <span style={{ 
+                            textTransform: 'uppercase', 
+                            fontSize: '11px', 
+                            fontWeight: 600, 
+                            color: (r.status === 'completed' || r.status === 'success' || r.status === '1') ? '#38A169' : (r.status === 'failed' || r.status === '2') ? '#E53E3E' : '#F6A623' 
+                          }}>
+                            {(r.status === '1' || r.status === 'success' || r.status === 'completed') ? 'SUCCESS' : (r.status === '0' || r.status === 'pending') ? 'PENDING' : r.status}
+                          </span>
+                        ) 
+                      },
+                      { key: 'at', label: 'Date', render: (r) => r.at ? new Date(r.at).toLocaleString('ko-KR') : '-' }
                     ]}
-                    rows={detail.recentDeposits ?? []}
-                  />
-                </AdminDetailSection>
-
-                <AdminDetailSection title="Recent top-ups">
-                  <AdminMiniTable
-                    columns={[
-                      { key: 'kind', label: 'Type' },
-                      { key: 'amount', label: 'Amount', render: (r) => formatUsdt(r.amount) },
-                    ]}
-                    rows={detail.recentTopUps ?? []}
+                    rows={localTxs ?? []}
                   />
                 </AdminDetailSection>
 

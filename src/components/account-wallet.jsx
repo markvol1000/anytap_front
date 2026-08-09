@@ -588,14 +588,14 @@ function WalletNotice({ children }) {
   );
 }
 
-function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onConfirm, confirmLabel, danger }) {
+function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onConfirm, confirmLabel, danger, loading = false }) {
   return (
     <div className="portal-sheet" role="dialog" aria-modal="true" aria-label={title}>
-      <button type="button" className="portal-sheet__backdrop" onClick={onCancel} aria-label="Close" />
+      <button type="button" className="portal-sheet__backdrop" onClick={loading ? undefined : onCancel} aria-label="Close" />
       <div className="portal-sheet__panel portal-wallet-sheet">
         <div className="portal-sheet__head">
           <h3 className="portal-sheet__title">{title}</h3>
-          <button type="button" className="portal-sheet__close" onClick={onCancel} aria-label="Close">
+          <button type="button" className="portal-sheet__close" onClick={loading ? undefined : onCancel} disabled={loading} aria-label="Close">
             <Icon name="close" size={18} />
           </button>
         </div>
@@ -615,26 +615,28 @@ function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onC
             placeholder="Enter password"
             value={password}
             onChange={(e) => onPassword(e.target.value)}
+            disabled={loading}
             autoComplete="current-password"
           />
         </label>
         {notice && <WalletNotice>{notice}</WalletNotice>}
         <div className="portal-wallet-sheet__actions">
-          <button type="button" className="portal-btn-secondary portal-wallet-sheet__btn" onClick={onCancel}>
+          <button type="button" className="portal-btn-secondary portal-wallet-sheet__btn" onClick={onCancel} disabled={loading}>
             Cancel
           </button>
           <button
             type="button"
             className={`portal-btn-primary portal-wallet-sheet__btn${danger ? ' portal-wallet-sheet__btn--danger' : ''}`}
-            disabled={!password || !password.trim()}
+            disabled={loading || !password || !password.trim()}
             onClick={onConfirm}>
-            {confirmLabel}
+            {loading ? <><span className="btn-spinner"></span>Processing...</> : confirmLabel}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
 
 export function IssuanceDepositPanel({ s, className = '', isModal = false }) {
   const [systemAddress, setSystemAddress] = useState('');
@@ -844,9 +846,13 @@ export function CardTopUpSelectSheet({ s, cards, open, onClose, onSelect }) {
 
 export function QuickTopUpSheet({ s, card, open, onClose }) {
   const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (open) setAmount('');
+    if (open) {
+      setAmount('');
+      setLoading(false);
+    }
   }, [open, card?.id]);
 
   if (!open || !card) return null;
@@ -858,6 +864,8 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
   };
 
   const handleConfirm = async () => {
+    if (loading) return;
+    setLoading(true);
     try {
       const topUpVal = parseFloat(amount) || 0;
       await chargeCard(topUpVal, card?.cardId || card?.id);
@@ -868,16 +876,18 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
     } catch (err) {
       console.error('Failed to top up card', err);
       s.showToast(err?.message || 'Failed to top up card');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Card top up">
-      <button type="button" className="portal-sheet__backdrop" onClick={onClose} aria-label="Close" />
+      <button type="button" className="portal-sheet__backdrop" onClick={loading ? undefined : onClose} aria-label="Close" />
       <div className="portal-sheet__panel portal-wallet-sheet">
         <div className="portal-sheet__head">
           <h3 className="portal-sheet__title">Card Top Up</h3>
-          <button type="button" className="portal-sheet__close" onClick={onClose} aria-label="Close">
+          <button type="button" className="portal-sheet__close" onClick={loading ? undefined : onClose} disabled={loading} aria-label="Close">
             <Icon name="close" size={18} />
           </button>
         </div>
@@ -900,15 +910,15 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
           Wallet balance: <strong>{W.formatUsdtAmount(resolveWalletBalance(s.walletBalance))} USDT</strong>
         </p>
         <div className="portal-wallet-sheet__actions">
-          <button type="button" className="portal-btn-secondary portal-wallet-sheet__btn" onClick={onClose}>
+          <button type="button" className="portal-btn-secondary portal-wallet-sheet__btn" onClick={onClose} disabled={loading}>
             Cancel
           </button>
           <button
             type="button"
             className="portal-btn-primary portal-wallet-sheet__btn"
-            disabled={!W.isValidTopUp(amount) || (parseFloat(amount) || 0) + W.GAS_FEE_CHARGE > resolveWalletBalance(s.walletBalance)}
+            disabled={loading || !W.isValidTopUp(amount) || (parseFloat(amount) || 0) + W.GAS_FEE_CHARGE > resolveWalletBalance(s.walletBalance)}
             onClick={handleConfirm}>
-            {W.topUpCtaLabel(amount)}
+            {loading ? <><span className="btn-spinner"></span>Processing...</> : W.topUpCtaLabel(amount)}
           </button>
         </div>
       </div>
@@ -930,6 +940,7 @@ export function AccountWallet({ s }) {
   const [confirmSend, setConfirmSend] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (s.walletTab) {
@@ -965,9 +976,12 @@ export function AccountWallet({ s }) {
     setConfirmCharge(false);
     setConfirmSend(false);
     setPassword('');
+    setLoading(false);
   };
 
   const finishCharge = async () => {
+    if (loading) return;
+    setLoading(true);
     try {
       await chargeCard(topUpVal, selectedCard?.cardId || selectedCard?.id);
       s.deductWalletBalance?.(topUpVal + W.GAS_FEE_CHARGE);
@@ -978,10 +992,14 @@ export function AccountWallet({ s }) {
     } catch (err) {
       console.error('Failed to charge card', err);
       s.showToast(err?.message || 'Failed to charge card');
+    } finally {
+      setLoading(false);
     }
   };
 
   const finishSend = async () => {
+    if (loading) return;
+    setLoading(true);
     try {
       await withdrawToExternal(sendVal, sendAddress, password);
       s.deductWalletBalance?.(sendVal + W.GAS_FEE_SEND);
@@ -993,8 +1011,11 @@ export function AccountWallet({ s }) {
     } catch (err) {
       console.error('Failed to send USDT', err);
       s.showToast(err?.message || 'Failed to submit transfer');
+    } finally {
+      setLoading(false);
     }
   };
+
 
   if (!s.walletExists) {
     return (
@@ -1184,6 +1205,7 @@ export function AccountWallet({ s }) {
           onCancel={closeConfirm}
           onConfirm={finishCharge}
           confirmLabel="Confirm"
+          loading={loading}
         />
       )}
 
@@ -1202,9 +1224,11 @@ export function AccountWallet({ s }) {
           onCancel={closeConfirm}
           onConfirm={finishSend}
           confirmLabel="Confirm"
+          loading={loading}
           danger
         />
       )}
+
 
     </div>
   );

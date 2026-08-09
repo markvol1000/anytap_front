@@ -152,7 +152,27 @@ body.portal-member:not(.portal-member--child) .portal-app {
   background: var(--portal-accent);
   transition: background .15s;
 }
-.portal-btn-primary:disabled { background: #F6C7AC; cursor: not-allowed; }
+.portal-btn-primary:disabled { background: #F6C7AC; cursor: not-allowed; opacity: 0.65; pointer-events: none; }
+@keyframes btnSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: btnSpin 0.6s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+button:disabled {
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+}
+
 .portal-btn-link {
   background: none; border: none; cursor: pointer; padding: 0;
   font-size: 14px; font-weight: 700; color: var(--portal-accent); font-family: inherit;
