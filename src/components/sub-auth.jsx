@@ -893,9 +893,10 @@ function ForgotPasswordPage() {
                 filled={confirmPassword.length > 0}
                 visible={showPw}
                 onToggle={() => setShowPw((v) => !v)}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 required
               />
+
 
               <button type="submit" className="btn btn--primary btn--lg login-screen__submit" disabled={loading}>
                 {loading ? 'Resetting...' : 'Set New Password'} <Icon name="arrowRight" size={16} />

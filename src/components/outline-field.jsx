@@ -13,13 +13,14 @@ function fieldClass(filled, className, error) {
 /** Fieldset + legend notch — border gaps at label without background fill (MUI-style). */
 function OutlineFieldFrame({ label, filled, className, error, children }) {
   return (
-    <fieldset className={fieldClass(filled, className, error)}>
-      <legend className="outline-field__legend">{label}</legend>
+    <div className={fieldClass(filled, className, error)}>
+      <span className="outline-field__legend">{label}</span>
       <span className="outline-field__rest-label" aria-hidden="true">{label}</span>
       {children}
-    </fieldset>
+    </div>
   );
 }
+
 
 function OutlineInput({ label, filled, error, className = '', ...props }) {
   const id = useId();
