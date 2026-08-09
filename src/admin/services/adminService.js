@@ -77,5 +77,6 @@ export const unfreezeCard = bind('unfreezeCard');
 export const shipCard = bind('shipCard');
 export const triggerFeePayout = bind('triggerFeePayout');
 export const getAdminLogs = bind('getAdminLogs');
+export const getCregisDepositList = bind('getCregisDepositList');
 
 export { MAX_CARDS_PER_MEMBER } from './mock/adminMockData.js';

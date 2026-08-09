@@ -677,4 +677,9 @@ export async function retryCregisWallet(userId) {
   return apiPost(`/admin/members/${encodeURIComponent(userId)}/retry-wallet`);
 }
 
+export async function getCregisDepositList(userId) {
+  const res = await apiGet(`/cregis/user/deposit-list/${encodeURIComponent(userId)}`);
+  return res?.data || res;
+}
+
 export { MAX_CARDS_PER_MEMBER };

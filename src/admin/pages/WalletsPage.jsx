@@ -12,7 +12,7 @@ import { AdminStatusBadge, formatUsdt, shortenAddress } from '../components/Admi
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
-import { getWalletById, getWallets, lockWallet, unlockWallet, triggerFeePayout } from '../services/adminService.js';
+import { getWalletById, getWallets, lockWallet, unlockWallet, triggerFeePayout, getCregisDepositList } from '../services/adminService.js';
 
 const fetchWallets = (params) => getWallets(params);
 const fetchWalletDetail = (id) => getWalletById(id);
@@ -22,6 +22,26 @@ export function WalletsPage() {
   const [selectedId, setSelectedId] = useState(null);
   const list = useAdminList(fetchWallets);
   const { detail, loading: detailLoading, setDetail } = useAdminDetail(fetchWalletDetail, selectedId);
+
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
+  const [depositListItems, setDepositListItems] = useState([]);
+  const [depositListLoading, setDepositListLoading] = useState(false);
+
+  const handleViewCregisDepositList = useCallback(async () => {
+    if (!detail) return;
+    const targetUserId = detail.memberId || detail.id;
+    setDepositListLoading(true);
+    setDepositModalOpen(true);
+    try {
+      const res = await getCregisDepositList(targetUserId);
+      const rows = res?.data?.rows || res?.rows || (Array.isArray(res) ? res : []);
+      setDepositListItems(rows);
+    } catch (err) {
+      window.alert('Failed to fetch Cregis deposit list: ' + err.message);
+    } finally {
+      setDepositListLoading(false);
+    }
+  }, [detail]);
 
   const handleSweepFee = useCallback(async () => {
     if (!detail) return;
@@ -173,7 +193,15 @@ export function WalletsPage() {
             {!detailLoading && detail ? (
               <>
                 <AdminDetailSection title="Wallet detail">
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '10px' }}>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--ghost admin-btn--sm"
+                      onClick={handleViewCregisDepositList}
+                      style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}
+                    >
+                      📋 Cregis Deposit List
+                    </button>
                     <button
                       type="button"
                       className="admin-btn admin-btn--ghost admin-btn--sm"
@@ -271,6 +299,105 @@ export function WalletsPage() {
           </AdminDetailPanel>
         )}
       />
+
+      {depositModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.65)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            backgroundColor: '#1e293b',
+            color: '#f8fafc',
+            borderRadius: '12px',
+            width: '90%',
+            maxWidth: '850px',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            padding: '24px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)',
+            border: '1px solid #334155'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#38bdf8' }}>
+                📋 Cregis On-Chain Deposit List — {detail?.memberName || detail?.id}
+              </h3>
+              <button
+                type="button"
+                className="admin-btn admin-btn--ghost admin-btn--sm"
+                onClick={() => setDepositModalOpen(false)}
+                style={{ fontSize: '16px', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {depositListLoading ? (
+              <p style={{ padding: '30px', textAlign: 'center', color: '#94a3b8' }}>Loading Cregis deposits from gateway...</p>
+            ) : depositListItems.length === 0 ? (
+              <p style={{ padding: '30px', textAlign: 'center', color: '#94a3b8' }}>No Cregis deposit records found for this wallet address.</p>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #334155', color: '#94a3b8' }}>
+                    <th style={{ padding: '10px 8px' }}>TxID / OrderNo</th>
+                    <th style={{ padding: '10px 8px' }}>Amount</th>
+                    <th style={{ padding: '10px 8px' }}>Status</th>
+                    <th style={{ padding: '10px 8px' }}>Date / Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {depositListItems.map((item, idx) => (
+                    <tr key={item.txid || item.txId || item.third_party_id || idx} style={{ borderBottom: '1px solid #334155' }}>
+                      <td style={{ padding: '10px 8px', fontFamily: 'monospace', fontSize: '11px', color: '#cbd5e1', wordBreak: 'break-all' }}>
+                        {item.txid || item.txId || item.third_party_id || item.orderNo || '-'}
+                      </td>
+                      <td style={{ padding: '10px 8px', fontWeight: '600', color: '#4ade80' }}>
+                        +{item.amount || item.txAmount || '0'} {item.currency || 'USDT'}
+                      </td>
+                      <td style={{ padding: '10px 8px' }}>
+                        <span style={{
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          backgroundColor: 'rgba(74, 222, 128, 0.15)',
+                          color: '#4ade80',
+                          fontWeight: '600',
+                          border: '1px solid rgba(74, 222, 128, 0.3)'
+                        }}>
+                          {String(item.status || 'SUCCESS').toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 8px', color: '#94a3b8', fontSize: '12px' }}>
+                        {item.created_at || item.createdTime || item.timestamp ? new Date(item.created_at || item.createdTime || item.timestamp).toLocaleString() : '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="admin-btn admin-btn--primary"
+                onClick={() => setDepositModalOpen(false)}
+                style={{ padding: '8px 20px', cursor: 'pointer' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
