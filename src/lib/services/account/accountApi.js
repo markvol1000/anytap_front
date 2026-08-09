@@ -91,8 +91,13 @@ function resolveCardStatusForUi(session, cardInfo) {
   if (!demoLocked) {
     if (cardFrozen) return 'frozen';
     
-    // issued cards stay as 'issued' — activation must be done by admin
-    const isIssued = cardStatus === 'issued' || cardStatusFromWasabi === 'issued';
+    const rawLinkStatus = String(cardInfo?.linkStatus || '').toLowerCase();
+    if (rawLinkStatus === 'active') {
+      return 'active';
+    }
+
+    // issued cards stay as 'issued' — activation must be done by admin or pin activation
+    const isIssued = (cardStatus === 'issued' || cardStatusFromWasabi === 'issued') && rawLinkStatus !== 'active';
     if (isIssued) {
       return 'issued';
     }
