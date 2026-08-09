@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AdminDataTable, AdminMiniTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
 import {
@@ -23,25 +23,40 @@ export function WalletsPage() {
   const list = useAdminList(fetchWallets);
   const { detail, loading: detailLoading, setDetail } = useAdminDetail(fetchWalletDetail, selectedId);
 
-  const [depositModalOpen, setDepositModalOpen] = useState(false);
+  const [depositPage, setDepositPage] = useState(1);
   const [depositListItems, setDepositListItems] = useState([]);
+  const [depositTotalPages, setDepositTotalPages] = useState(1);
+  const [depositTotal, setDepositTotal] = useState(0);
   const [depositListLoading, setDepositListLoading] = useState(false);
 
-  const handleViewCregisDepositList = useCallback(async () => {
-    if (!detail) return;
-    const targetUserId = detail.memberId || detail.id;
+  const fetchDepositList = useCallback(async (targetUserId, page = 1) => {
+    if (!targetUserId) return;
     setDepositListLoading(true);
-    setDepositModalOpen(true);
+    setDepositPage(page);
     try {
-      const res = await getCregisDepositList(targetUserId);
-      const rows = res?.data?.rows || res?.rows || (Array.isArray(res) ? res : []);
+      const res = await getCregisDepositList(targetUserId, page, 10);
+      const innerData = res?.data || res;
+      const rows = innerData?.rows || (Array.isArray(innerData) ? innerData : []);
       setDepositListItems(rows);
+      setDepositTotalPages(innerData?.totalPages || (innerData?.total ? Math.ceil(innerData.total / 10) : 1));
+      setDepositTotal(innerData?.total || rows.length);
     } catch (err) {
-      window.alert('Failed to fetch Cregis deposit list: ' + err.message);
+      console.error('Failed to fetch Cregis deposit list:', err);
     } finally {
       setDepositListLoading(false);
     }
-  }, [detail]);
+  }, []);
+
+  useEffect(() => {
+    if (detail) {
+      const targetUserId = detail.memberId || detail.id;
+      fetchDepositList(targetUserId, 1);
+    } else {
+      setDepositListItems([]);
+      setDepositTotal(0);
+      setDepositTotalPages(1);
+    }
+  }, [detail, fetchDepositList]);
 
   const handleSweepFee = useCallback(async () => {
     if (!detail) return;
@@ -197,10 +212,10 @@ export function WalletsPage() {
                     <button
                       type="button"
                       className="admin-btn admin-btn--ghost admin-btn--sm"
-                      onClick={handleViewCregisDepositList}
+                      onClick={() => fetchDepositList(detail.memberId || detail.id, 1)}
                       style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}
                     >
-                      📋 Cregis Deposit List
+                      🔄 Refresh Cregis Deposits
                     </button>
                     <button
                       type="button"
@@ -263,6 +278,81 @@ export function WalletsPage() {
                   <AdminDetailRow label="Status" value={<AdminStatusBadge status={detail.status} />} />
                 </AdminDetailSection>
 
+                {/* 📋 Cregis On-Chain Deposit List (Direct Paginated Section) */}
+                <AdminDetailSection title="📋 Cregis On-Chain Deposit List">
+                  {depositListLoading ? (
+                    <p className="admin-loading admin-loading--inline">Loading Cregis deposits...</p>
+                  ) : depositListItems.length === 0 ? (
+                    <p className="admin-muted" style={{ padding: '12px 0' }}>No Cregis deposit records found for this wallet address.</p>
+                  ) : (
+                    <>
+                      <AdminMiniTable
+                        columns={[
+                          { 
+                            key: 'txid', 
+                            label: 'TxID', 
+                            render: (r) => (
+                              <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>
+                                {shortenAddress(r.txid || r.txId || r.third_party_id || r.orderNo || '-', 8, 6)}
+                              </span>
+                            ) 
+                          },
+                          { 
+                            key: 'amount', 
+                            label: 'Amount', 
+                            render: (r) => (
+                              <span style={{ color: '#10b981', fontWeight: '600' }}>
+                                +{r.amount || '0'} {r.currency || 'USDT'}
+                              </span>
+                            ) 
+                          },
+                          { 
+                            key: 'status', 
+                            label: 'Status', 
+                            render: (r) => (
+                              <AdminStatusBadge status={String(r.status === 1 || r.status === '1' ? 'success' : (r.status || 'success'))} />
+                            ) 
+                          },
+                          { 
+                            key: 'date', 
+                            label: 'Date', 
+                            render: (r) => {
+                              const rawDate = r.created_at || r.createdTime || (r.block_time ? r.block_time * 1000 : null) || r.timestamp;
+                              return rawDate ? new Date(rawDate).toLocaleString() : '-';
+                            } 
+                          },
+                        ]}
+                        rows={depositListItems}
+                      />
+                      {depositTotalPages > 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.08))' }}>
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn--ghost admin-btn--sm"
+                            disabled={depositPage <= 1}
+                            onClick={() => fetchDepositList(detail.memberId || detail.id, depositPage - 1)}
+                            style={{ opacity: depositPage <= 1 ? 0.4 : 1 }}
+                          >
+                            ◀ Previous
+                          </button>
+                          <span style={{ fontSize: '12px', color: 'var(--admin-text-muted, #888)' }}>
+                            Page {depositPage} / {depositTotalPages} ({depositTotal} total)
+                          </span>
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn--ghost admin-btn--sm"
+                            disabled={depositPage >= depositTotalPages}
+                            onClick={() => fetchDepositList(detail.memberId || detail.id, depositPage + 1)}
+                            style={{ opacity: depositPage >= depositTotalPages ? 0.4 : 1 }}
+                          >
+                            Next ▶
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </AdminDetailSection>
+
                 <AdminDetailSection title="Recent deposits">
                   <AdminMiniTable
                     columns={[
@@ -299,105 +389,6 @@ export function WalletsPage() {
           </AdminDetailPanel>
         )}
       />
-
-      {depositModalOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.65)',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backdropFilter: 'blur(4px)'
-        }}>
-          <div style={{
-            backgroundColor: '#1e293b',
-            color: '#f8fafc',
-            borderRadius: '12px',
-            width: '90%',
-            maxWidth: '850px',
-            maxHeight: '80vh',
-            overflowY: 'auto',
-            padding: '24px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)',
-            border: '1px solid #334155'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#38bdf8' }}>
-                📋 Cregis On-Chain Deposit List — {detail?.memberName || detail?.id}
-              </h3>
-              <button
-                type="button"
-                className="admin-btn admin-btn--ghost admin-btn--sm"
-                onClick={() => setDepositModalOpen(false)}
-                style={{ fontSize: '16px', color: '#94a3b8', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {depositListLoading ? (
-              <p style={{ padding: '30px', textAlign: 'center', color: '#94a3b8' }}>Loading Cregis deposits from gateway...</p>
-            ) : depositListItems.length === 0 ? (
-              <p style={{ padding: '30px', textAlign: 'center', color: '#94a3b8' }}>No Cregis deposit records found for this wallet address.</p>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #334155', color: '#94a3b8' }}>
-                    <th style={{ padding: '10px 8px' }}>TxID / OrderNo</th>
-                    <th style={{ padding: '10px 8px' }}>Amount</th>
-                    <th style={{ padding: '10px 8px' }}>Status</th>
-                    <th style={{ padding: '10px 8px' }}>Date / Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {depositListItems.map((item, idx) => (
-                    <tr key={item.txid || item.txId || item.third_party_id || idx} style={{ borderBottom: '1px solid #334155' }}>
-                      <td style={{ padding: '10px 8px', fontFamily: 'monospace', fontSize: '11px', color: '#cbd5e1', wordBreak: 'break-all' }}>
-                        {item.txid || item.txId || item.third_party_id || item.orderNo || '-'}
-                      </td>
-                      <td style={{ padding: '10px 8px', fontWeight: '600', color: '#4ade80' }}>
-                        +{item.amount || item.txAmount || '0'} {item.currency || 'USDT'}
-                      </td>
-                      <td style={{ padding: '10px 8px' }}>
-                        <span style={{
-                          padding: '3px 8px',
-                          borderRadius: '4px',
-                          fontSize: '11px',
-                          backgroundColor: 'rgba(74, 222, 128, 0.15)',
-                          color: '#4ade80',
-                          fontWeight: '600',
-                          border: '1px solid rgba(74, 222, 128, 0.3)'
-                        }}>
-                          {String(item.status || 'SUCCESS').toUpperCase()}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px 8px', color: '#94a3b8', fontSize: '12px' }}>
-                        {item.created_at || item.createdTime || item.timestamp ? new Date(item.created_at || item.createdTime || item.timestamp).toLocaleString() : '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-
-            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                className="admin-btn admin-btn--primary"
-                onClick={() => setDepositModalOpen(false)}
-                style={{ padding: '8px 20px', cursor: 'pointer' }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

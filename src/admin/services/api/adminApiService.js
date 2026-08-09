@@ -677,8 +677,8 @@ export async function retryCregisWallet(userId) {
   return apiPost(`/admin/members/${encodeURIComponent(userId)}/retry-wallet`);
 }
 
-export async function getCregisDepositList(userId) {
-  const res = await apiGet(`/cregis/user/deposit-list/${encodeURIComponent(userId)}`);
+export async function getCregisDepositList(userId, pageNum = 1, pageSize = 10) {
+  const res = await apiGet(`/admin/members/${encodeURIComponent(userId)}/deposits?pageNum=${pageNum}&pageSize=${pageSize}`);
   return res?.data || res;
 }
 
