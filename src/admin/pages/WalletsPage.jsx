@@ -320,15 +320,19 @@ export function WalletsPage() {
                       { key: 'title', label: 'Type' },
                       { 
                         key: 'amount', 
-                        label: 'Amount (Net/Gross)', 
+                        label: 'Transaction Amount', 
                         render: (r) => {
-                          const curr = (r.currency || 'USDT').toUpperCase();
+                          const curr = String(r.currency || r.originalCurrency || r.authorizedCurrency || r.settleCurrency || 'USDT').toUpperCase();
                           const formattedAmt = curr === 'KRW'
                             ? `${Number(r.amount || 0).toLocaleString('ko-KR')} KRW`
-                            : formatUsdt(r.amount);
+                            : curr === 'USD'
+                              ? `$${Number(r.amount || 0).toFixed(2)}`
+                              : formatUsdt(r.amount);
                           const formattedGross = curr === 'KRW'
                             ? `${Number(r.rawAmount || 0).toLocaleString('ko-KR')} KRW`
-                            : formatUsdt(r.rawAmount);
+                            : curr === 'USD'
+                              ? `$${Number(r.rawAmount || 0).toFixed(2)}`
+                              : formatUsdt(r.rawAmount);
 
                           const isPlus = r.incoming || r.cardIncoming;
                           return (

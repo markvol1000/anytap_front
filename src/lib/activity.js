@@ -130,7 +130,7 @@ export function filterActivity(items, filterId) {
 
 export function filterActivityByScope(items, scopeId) {
   if (scopeId === 'wallet') return items.filter(isWalletActivity);
-  if (scopeId === 'card') return items.filter((t) => isCardActivity(t) && t.kind !== 'card_topup');
+  if (scopeId === 'card') return items.filter(isCardActivity);
   if (scopeId === 'rewards') return items.filter(isRewardActivity);
   return items;
 }
@@ -146,7 +146,7 @@ export function filterActivityForWalletPage(items) {
 }
 
 export function filterActivityForCardPage(items, cardOrLast4) {
-  const cardItems = items.filter((t) => isCardActivity(t) && t.kind !== 'card_topup');
+  const cardItems = items.filter(isCardActivity);
   if (!cardOrLast4) return cardItems;
 
   const targetCardNo = typeof cardOrLast4 === 'object'
@@ -472,6 +472,9 @@ export function formatActivityAmountParts(amount, incoming, kind, item = {}) {
   const currency = item?.currency || (kind === 'card_spend' || kind === 'refund' || kind === 'reversal' ? 'USD' : 'USDT');
 
   const val = Math.abs(Number(displayAmount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (item?.cardIncoming === true || (kind === 'card_topup' && item?.cardIncoming)) {
+    return { sign: '+', value: val, currency: 'USDT' };
+  }
   const usdtOut = new Set(['wallet_send', 'wallet_withdraw', 'wallet_fee', 'referral_withdrawal', 'card_topup']);
   const usdtIn = new Set([
     'wallet_topup', 'wallet_receive',

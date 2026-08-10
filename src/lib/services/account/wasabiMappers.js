@@ -13,9 +13,14 @@ function pickAmount(record) {
 }
 
 function pickCurrency(record) {
-  return record?.authorizedCurrency
-    || record?.settleCurrency
-    || (record?.kind === 'card_spend' || record?.kind === 'refund' || record?.kind === 'reversal' ? 'USD' : 'USDT');
+  const explicitCurr = record?.currency 
+    || record?.originalCurrency 
+    || record?.authorizedCurrency 
+    || record?.settleCurrency;
+  if (explicitCurr && String(explicitCurr).trim()) {
+    return String(explicitCurr).trim().toUpperCase();
+  }
+  return (record?.kind === 'card_spend' || record?.kind === 'refund' || record?.kind === 'reversal' ? 'USD' : 'USDT');
 }
 
 function pickTimestamp(record) {
@@ -26,6 +31,11 @@ function pickTimestamp(record) {
   if (raw == null) return new Date().toISOString();
   if (typeof raw === 'number') {
     const ms = raw < 1e12 ? raw * 1000 : raw;
+    return new Date(ms).toISOString();
+  }
+  if (typeof raw === 'string' && /^\d+$/.test(raw)) {
+    const num = Number(raw);
+    const ms = num < 1e12 ? num * 1000 : num;
     return new Date(ms).toISOString();
   }
   const parsed = new Date(raw);
