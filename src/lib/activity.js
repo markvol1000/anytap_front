@@ -497,12 +497,16 @@ export function formatActivityAmount(amount, incoming, kind) {
 }
 
 export function formatActivityStatusLabel(status) {
+  const s = String(status || '').toLowerCase();
   const map = {
     completed: 'Completed',
     pending: 'Pending',
     failed: 'Failed',
+    refunded: 'Refunded',
+    cancelled: 'Cancelled',
+    canceled: 'Cancelled',
   };
-  return map[status] ?? 'Completed';
+  return map[s] ?? 'Completed';
 }
 
 export function getActivityIconVariant(item) {

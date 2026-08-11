@@ -98,7 +98,7 @@ function mapWasabiStatus(status = '', type = '') {
 }
 
 function isIncomingKind(kind) {
-  return kind === 'refund' || kind === 'reversal' || kind === 'card_topup';
+  return kind === 'refund' || kind === 'reversal';
 }
 
 /**
