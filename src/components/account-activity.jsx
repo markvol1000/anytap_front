@@ -179,15 +179,27 @@ export function ActivityList({
   emptyIcon = null,
 }) {
   const [scopeFilter, setScopeFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setPage(1);
+  }, [scopeFilter, items]);
 
   const filtered = useMemo(() => {
     let list = A.normalizeActivityItems(items);
     list = showScopeFilters
       ? A.filterActivityByScope(list, scopeFilter)
       : list;
-    list = A.sortActivityChronological(list);
-    return limit ? list.slice(0, limit) : list;
-  }, [items, scopeFilter, limit, showScopeFilters]);
+    return A.sortActivityChronological(list);
+  }, [items, scopeFilter, showScopeFilters]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedItems = useMemo(() => {
+    if (limit) return filtered.slice(0, limit);
+    return filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filtered, limit, currentPage, pageSize]);
 
   const scopeFilters = showScopeFilters ? (
     <ActivityScopeTabBar
@@ -207,15 +219,63 @@ export function ActivityList({
       <p className="portal-tx-empty__title">{emptyTitle}</p>
       <p className="portal-tx-empty__msg">{emptyMsg}</p>
     </div>
-  ) : filtered.length ? (
+  ) : paginatedItems.length ? (
     <div className="portal-tx-list">
-      {filtered.map((tx, idx) => (
+      {paginatedItems.map((tx, idx) => (
         <ActivityRow key={`${tx.id}-${idx}`} tx={tx} onClick={onItemClick ? () => onItemClick(tx) : undefined} />
       ))}
     </div>
   ) : (
     <div className="portal-tx-empty portal-tx-empty--inline">
       <p className="portal-tx-empty__msg">{emptyMsg}</p>
+    </div>
+  );
+
+  const paginationControls = !limit && filtered.length > pageSize && (
+    <div
+      className="portal-tx-pagination"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 16px',
+        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+        fontSize: '13px',
+        color: 'var(--portal-muted, #a0aec0)',
+      }}>
+      <span>
+        Page {currentPage} of {totalPages} ({filtered.length} total)
+      </span>
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <button
+          type="button"
+          className="portal-btn-secondary"
+          style={{
+            padding: '4px 12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            opacity: currentPage <= 1 ? 0.5 : 1,
+            cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
+          }}
+          disabled={currentPage <= 1}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}>
+          Previous
+        </button>
+        <button
+          type="button"
+          className="portal-btn-secondary"
+          style={{
+            padding: '4px 12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            opacity: currentPage >= totalPages ? 0.5 : 1,
+            cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+          }}
+          disabled={currentPage >= totalPages}
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+          Next
+        </button>
+      </div>
     </div>
   );
 
@@ -233,6 +293,7 @@ export function ActivityList({
         {scopeFilters}
         <div className="portal-tx-panel__surface" id="portal-tx-panel-surface-preview">
           {listBody}
+          {paginationControls}
           {viewAllFoot}
         </div>
       </div>
@@ -258,6 +319,7 @@ export function ActivityList({
   return (
     <div className="portal-tx-list-wrap">
       {listBody}
+      {paginationControls}
       {viewAllFoot}
     </div>
   );
@@ -271,7 +333,7 @@ export function RecentActivitySection({
   card,
   cardLast4,
   scope = 'all',
-  limit = 5,
+  limit = 10,
   showScopeFilters = false,
   onViewAll,
   onItemClick,
@@ -282,9 +344,16 @@ export function RecentActivitySection({
   className = '',
 }) {
   const [selectedModalTx, setSelectedModalTx] = useState(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+
   const dateStyle = ACTIVITY_DATE_STYLE_BY_PAGE[pageFilter] ?? 'standard';
   const isDashboardCompact = pageFilter === 'dashboard';
   const resolvedViewAllLabel = viewAllLabel ?? (isDashboardCompact ? 'View All' : 'See all transactions →');
+
+  useEffect(() => {
+    setPage(1);
+  }, [items, pageFilter, scope, card, cardLast4]);
 
   const handleRowClick = (tx) => {
     if (onItemClick) {
@@ -294,7 +363,7 @@ export function RecentActivitySection({
     }
   };
 
-  const displayItems = useMemo(() => {
+  const allFilteredItems = useMemo(() => {
     let list = A.normalizeActivityItems(items);
     if (pageFilter === 'dashboard') {
       list = A.filterActivityForDashboard(list);
@@ -307,8 +376,16 @@ export function RecentActivitySection({
     } else if (!showScopeFilters && scope !== 'all') {
       list = A.filterActivityByScope(list, scope);
     }
-    return A.sortActivityChronological(list).slice(0, limit);
-  }, [items, pageFilter, card, cardLast4, scope, limit, showScopeFilters]);
+    return A.sortActivityChronological(list);
+  }, [items, pageFilter, card, cardLast4, scope, showScopeFilters]);
+
+  const totalPages = Math.max(1, Math.ceil(allFilteredItems.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+
+  const displayItems = useMemo(() => {
+    if (isDashboardCompact) return allFilteredItems.slice(0, 5);
+    return allFilteredItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [allFilteredItems, isDashboardCompact, currentPage, pageSize]);
 
   return (
     <section className={`portal-dash-section portal-activity portal-recent-tx${className ? ` ${className}` : ''}`}>
@@ -322,7 +399,6 @@ export function RecentActivitySection({
         <ActivityList
           items={items}
           showScopeFilters
-          limit={limit}
           onItemClick={handleRowClick}
           onViewAll={onViewAll}
           emptyTitle={emptyTitle}
@@ -376,6 +452,53 @@ export function RecentActivitySection({
               </div>
             )}
           </div>
+          {allFilteredItems.length > pageSize && (
+            <div
+              className="portal-activity__pagination"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                fontSize: '13px',
+                color: 'var(--portal-muted, #a0aec0)',
+              }}>
+              <span>
+                Page {currentPage} of {totalPages} ({allFilteredItems.length} total)
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="portal-btn-secondary"
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    opacity: currentPage <= 1 ? 0.5 : 1,
+                    cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
+                  }}
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className="portal-btn-secondary"
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    opacity: currentPage >= totalPages ? 0.5 : 1,
+                    cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+                  }}
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
           {onViewAll && displayItems.length > 0 && (
             <div className="portal-activity__foot">
               <button type="button" className="portal-activity__view-all" onClick={onViewAll}>
