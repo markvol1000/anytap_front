@@ -275,7 +275,7 @@ function CardsDesktopCarousel({
   );
 }
 
-export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, title = 'Recent Transactions', limit = TX_PREVIEW_SIZE }) {
+export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, title = 'Recent Transactions', limit = 5 }) {
   const filtered = useMemo(
     () => A.sortActivityChronological(
       (card || cardLast4)

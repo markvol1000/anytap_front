@@ -3,7 +3,7 @@
 // RecentActivitySection — titled preview block with View All
 // TODO: Replace mock activityItems with API transaction endpoints
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Icon } from './ui.jsx';
 import * as A from '../lib/account-data.js';
 import { TxDetailSheet } from './account-transactions.jsx';
