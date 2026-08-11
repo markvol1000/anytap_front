@@ -57,8 +57,9 @@ const WALLET_KINDS = new Set([
   'wallet_receive',
   'card_topup',
   'wallet_fee',
+  'card_charge_fee',
 ]);
-const CARD_KINDS = new Set(['card_spend', 'card_topup', 'refund', 'reversal']);
+const CARD_KINDS = new Set(['card_spend', 'card_topup', 'card_charge_fee', 'refund', 'reversal']);
 const REWARD_KINDS = new Set([
   'referral_reward',
   'referral_commission',
@@ -73,6 +74,7 @@ const TYPE_LABELS = {
   wallet_receive: 'Transfer Received',
   wallet_fee: 'Network Fee',
   card_topup: 'Card Top Up',
+  card_charge_fee: 'Card Top Up Fee',
   card_spend: 'Card Purchase',
   refund: 'Refund',
   reversal: 'Reversal',
@@ -475,7 +477,7 @@ export function formatActivityAmountParts(amount, incoming, kind, item = {}) {
   if (item?.cardIncoming === true || (kind === 'card_topup' && item?.cardIncoming)) {
     return { sign: '+', value: val, currency: 'USDT' };
   }
-  const usdtOut = new Set(['wallet_send', 'wallet_withdraw', 'wallet_fee', 'referral_withdrawal', 'card_topup']);
+  const usdtOut = new Set(['wallet_send', 'wallet_withdraw', 'wallet_fee', 'referral_withdrawal', 'card_topup', 'card_charge_fee']);
   const usdtIn = new Set([
     'wallet_topup', 'wallet_receive',
     'referral_reward', 'referral_commission', 'referral_pending',

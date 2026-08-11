@@ -378,6 +378,10 @@ export async function fetchLocalTransactions(userId) {
         kind = 'card_topup';
         title = 'Card Top Up';
         incoming = false;
+      } else if (type === 'CARD_CHARGE_FEE') {
+        kind = 'card_charge_fee';
+        title = 'Card Top Up Fee';
+        incoming = false;
       } else if (type === 'WITHDRAW') {
         kind = 'wallet_withdraw';
         title = 'Transfer Sent';
