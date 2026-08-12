@@ -93,7 +93,7 @@ export function resolvePortalScreenGate(screen, accountState) {
       return guide(
         'Your card application is already in progress',
         showsIssuanceDepositWallet(cardStatus)
-          ? 'Complete the 100 USDT issuance deposit on Home. This page is only for new applications.'
+          ? 'Complete the 300 USDT issuance deposit on Home. This page is only for new applications.'
           : 'Shipping or production is underway. Track progress from Home.',
         { label: 'Back to Home', nextScreen: 'home' },
       );
@@ -136,7 +136,7 @@ export function resolvePortalScreenGate(screen, accountState) {
     if (memberState === MEMBER_STATE.CARD_ISSUING && showsIssuanceDepositWallet(cardStatus)) {
       return guide(
         'Issuance fee deposit is on Home',
-        'The 100 USDT issuance address is shown on the dashboard until shipping starts. Your personal spending wallet opens only after card registration.',
+        'The 300 USDT issuance address is shown on the dashboard until shipping starts. Your personal spending wallet opens only after card registration.',
         { label: 'View deposit on Home', nextScreen: 'home' },
       );
     }

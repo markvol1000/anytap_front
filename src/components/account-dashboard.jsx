@@ -377,16 +377,18 @@ function DashboardCardSection({ s }) {
 }
 
 function DashboardGreeting({ s }) {
-  const first = String(s.accountState.name || '').trim().split(/\s+/)[0];
+  const name = String(s.accountState?.name || '').trim();
+  const first = name.split(/\s+/)[0];
+  const isGenericUser = !first || /^user$/i.test(first);
   const hour = new Date().getHours();
   const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+  const titleText = (!isGenericUser && s.profileReady) ? `${greet}, ${first}` : greet;
 
   return (
     <div className="portal-dash-greet">
       <div>
-        <p className="portal-dash-greet__title">
-          {first && s.profileReady ? `${greet}, ${first}` : greet}
-        </p>
+        <p className="portal-dash-greet__title">{titleText}</p>
         <p className="portal-dash-greet__sub">Welcome to Anytap</p>
       </div>
     </div>

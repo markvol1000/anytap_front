@@ -3,8 +3,8 @@
 export const MOCK_WALLET_BALANCE = 2480.5;
 export const MIN_TOPUP = 50;
 export const MIN_SEND = 10;
-export const GAS_FEE_CHARGE = 1.5;
-export const GAS_FEE_SEND = 2;
+export const GAS_FEE_CHARGE = 3;
+export const GAS_FEE_SEND = 3;
 export const QUICK_AMOUNTS = [50, 100, 200, 500];
 export const WALLET_NETWORK = 'TRC-20 (TRON)';
 export const MIN_DEPOSIT_LABEL = '10 USDT';

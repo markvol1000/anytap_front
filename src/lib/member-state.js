@@ -220,7 +220,7 @@ export function getMemberDashboardConfig(memberState, accountState) {
       dashboardLayout: 'issuing',
       journeyIndex: 2,
       journeyLead: isAppReview
-        ? 'Step 3 of 4 — Pay issuance fee (100 USDT)'
+        ? 'Step 3 of 4 — Pay issuance fee (300 USDT)'
         : isShipping
           ? 'Step 3 of 4 — Card on the way'
           : 'Step 3 of 4 — Your card is being prepared',
@@ -241,9 +241,9 @@ export function getMemberDashboardConfig(memberState, accountState) {
         ? {
           mode: 'banner',
           bannerVariant: 'review',
-          title: 'Deposit 100 USDT to continue issuance.',
+          title: 'Deposit 300 USDT to continue issuance.',
           body: 'Send the card issuance fee to the deposit address below. This address stays visible until shipping starts.',
-          eta: 'TRC-20 · 100 USDT',
+          eta: 'TRC-20 · 300 USDT',
         }
         : isShipping
         ? {
