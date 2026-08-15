@@ -3,6 +3,9 @@ import { useLocation } from 'react-router-dom';
 import {
   absoluteUrl,
   defaultOgImage,
+  OG_IMAGE_ALT,
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_WIDTH,
   resolveSeo,
 } from '../lib/seo.ts';
 
@@ -49,11 +52,15 @@ export function Seo() {
     upsertMeta('property', 'og:description', seo.description);
     upsertMeta('property', 'og:url', url);
     upsertMeta('property', 'og:image', image);
+    upsertMeta('property', 'og:image:width', String(OG_IMAGE_WIDTH));
+    upsertMeta('property', 'og:image:height', String(OG_IMAGE_HEIGHT));
+    upsertMeta('property', 'og:image:alt', OG_IMAGE_ALT);
 
     upsertMeta('name', 'twitter:card', 'summary_large_image');
     upsertMeta('name', 'twitter:title', seo.title);
     upsertMeta('name', 'twitter:description', seo.description);
     upsertMeta('name', 'twitter:image', image);
+    upsertMeta('name', 'twitter:image:alt', OG_IMAGE_ALT);
   }, [pathname]);
 
   return null;

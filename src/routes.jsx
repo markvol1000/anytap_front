@@ -16,6 +16,7 @@ export const appRoutes = [
   { path: '/merchant-apply', page: lazyNamed(() => import('./components/sub-apply.jsx'), 'MerchantApplyPage') },
   { path: '/merchant-apply/form', page: lazyNamed(() => import('./components/sub-apply.jsx'), 'MerchantApplyFormPage') },
   { path: '/contact', page: lazyNamed(() => import('./components/sub-apply.jsx'), 'ContactPage') },
+  { path: '/faq', page: lazyNamed(() => import('./pages/FaqPage.tsx'), 'FaqPage') },
   { path: '/card-how-to-use', page: lazyNamed(() => import('./components/sub-card.jsx'), 'CardHowToUse') },
   { path: '/card-who-can-apply', page: lazyNamed(() => import('./components/sub-card.jsx'), 'CardWhoCanApply') },
   { path: '/card-benefits', page: lazyNamed(() => import('./components/sub-card.jsx'), 'CardBenefits') },

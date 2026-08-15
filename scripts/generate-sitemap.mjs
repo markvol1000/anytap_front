@@ -14,6 +14,7 @@ const PATHS = [
   '/',
   '/about',
   '/contact',
+  '/faq',
   '/card-how-to-use',
   '/card-who-can-apply',
   '/card-benefits',

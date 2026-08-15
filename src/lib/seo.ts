@@ -9,7 +9,12 @@ export interface PageSeo {
   ogImage?: string;
 }
 
-const DEFAULT_OG = `${SITE_ORIGIN}/assets/why_card_bg.png`;
+/** SNS share preview (Open Graph / Twitter) — 1200×630 */
+export const OG_IMAGE_WIDTH = 1200;
+export const OG_IMAGE_HEIGHT = 630;
+export const OG_IMAGE_ALT = 'Anytap — Spend crypto anywhere with Visa';
+
+const DEFAULT_OG = `${SITE_ORIGIN}/assets/og-share.jpg`;
 const BRAND = 'Anytap';
 
 const DEFAULT_DESC =
@@ -31,6 +36,12 @@ export const SEO_PAGES: PageSeo[] = [
     path: '/contact',
     title: `Contact ${BRAND}`,
     description: `Contact ${BRAND} support or business partnerships for card, payment, and merchant questions.`,
+  },
+  {
+    path: '/faq',
+    title: `FAQ | ${BRAND}`,
+    description:
+      'Frequently asked questions about Anytap cards, KYC, top-ups, fees, security, and the referral program.',
   },
   {
     path: '/card-how-to-use',

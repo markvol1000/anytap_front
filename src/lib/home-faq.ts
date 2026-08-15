@@ -27,12 +27,12 @@ export const HOME_FAQ: HomeFaqItem[] = [
   {
     question: 'What is the difference between virtual and physical cards?',
     answer:
-      'Both run on the Visa network. The virtual card works with Apple Pay, Google Pay, and online checkout. The physical card adds in-store chip payments and ATM withdrawals.',
+      'The Physical Card uses the Visa network for offline payments and ATM withdrawals. The virtual card is scheduled to launch after November.',
   },
   {
     question: 'Who can apply for an Anytap card?',
     answer:
-      'Anyone 18 or older with a valid government ID can apply. No traditional bank account is required — just complete KYC and choose a virtual or physical Visa.',
+      'Anyone 18 or older with a valid passport or driver’s license can apply. No traditional bank account is required — just complete KYC and apply for a physical Visa card.',
   },
   {
     question: 'Why was my deposit not credited?',
@@ -42,6 +42,6 @@ export const HOME_FAQ: HomeFaqItem[] = [
   {
     question: 'Is Apple Pay / Google Pay / Samsung Pay supported?',
     answer:
-      'Yes. After your virtual card is issued, add it to your phone wallet once and tap to pay at any NFC terminal worldwide.',
+      'Google Pay is supported on the physical Visa card. Apple Pay support is under review. Samsung Pay is planned starting November 2026.',
   },
 ];

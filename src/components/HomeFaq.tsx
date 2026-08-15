@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { HOME_FAQ } from '../lib/home-faq.ts';
 import { Icon } from './ui.jsx';
 
@@ -34,6 +35,12 @@ export function HomeFaq() {
               </div>
             );
           })}
+        </div>
+
+        <div className="home-faq__more">
+          <Link to="/faq" className="home-faq__more-link">
+            More <Icon name="arrowRight" size={16} stroke={2} />
+          </Link>
         </div>
       </div>
     </section>

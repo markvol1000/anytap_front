@@ -4010,6 +4010,9 @@ body.auth-page {
   line-height: 1.4;
   color: var(--danger-500);
 }
+.login-screen__hint--muted {
+  color: var(--fg-muted);
+}
 
 .auth-toast {
   position: fixed;
@@ -4939,4 +4942,119 @@ body.auth-page main { padding-bottom: 0; }
   .home-faq__q { font-size: 15.5px; padding: 18px 0; }
   .home-faq__a { font-size: 14px; margin-bottom: 18px; }
 }
+
+.home-faq__more {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+.home-faq__more-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+}
+.home-faq__more-link:hover {
+  color: var(--brand-primary);
+}
+.home-faq__more-link svg {
+  transition: transform 180ms var(--ease-standard);
+}
+.home-faq__more-link:hover svg {
+  transform: translateX(3px);
+}
+
+.faq-page {
+  max-width: 860px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+.faq-page__section-title {
+  margin: 0 0 16px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+.faq-page__list {
+  border-top: 1px solid var(--border-default);
+}
+.faq-page__item {
+  border-bottom: 1px solid var(--border-default);
+}
+.faq-page__q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.faq-page__qid {
+  color: var(--fg-subtle);
+  font-weight: 600;
+  margin-right: 4px;
+}
+.faq-page__q svg {
+  flex-shrink: 0;
+  color: var(--fg-muted);
+  transition: transform 220ms var(--ease-standard);
+}
+.faq-page__item.is-open .faq-page__q svg {
+  transform: rotate(180deg);
+  color: var(--brand-primary);
+}
+.faq-page__a {
+  padding: 0 36px 18px 0;
+  max-width: 68ch;
+}
+.faq-page__a p {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--fg-muted);
+  white-space: pre-wrap;
+}
+.faq-page__a p:last-child {
+  margin-bottom: 0;
+}
+
+.capply-pick__option {
+  position: relative;
+}
+.capply-pick__option.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.capply-pick__badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-primary-pale);
+  color: var(--brand-primary-strong);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 

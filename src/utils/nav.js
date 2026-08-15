@@ -44,7 +44,7 @@ export const NAV = [
 export const FOOTER_COMPANY = [
   { label: 'About', href: '/about' },
   { label: 'Contact Us', href: '/contact' },
-  { label: 'FAQ', href: '/#faq' },
+  { label: 'FAQ', href: '/faq' },
   { label: 'Sign Up', href: '/sign-up' },
   { label: 'Log In', href: '/login' },
   { label: 'Terms of Service', href: '/terms' },

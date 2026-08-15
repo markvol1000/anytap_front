@@ -7,7 +7,7 @@ import { Icon, Logo } from './ui.jsx';
 
 const lifestyleSlides = [
   { id: 'life-1', src: lifeNewYork, alt: 'New York — paying with Anytap on 42nd Street' },
-  { id: 'life-2', src: lifeVietnam, alt: 'Vietnam — tapping Anytap for a Grab ride' },
+  { id: 'life-2', src: lifeVietnam, alt: 'Thailand — family traveling with Anytap Visa card' },
   { id: 'life-3', src: lifeJapan, alt: 'Japan — paying with Anytap at a convenience store' },
 ];
 
