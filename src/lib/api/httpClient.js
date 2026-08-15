@@ -87,6 +87,10 @@ export function apiPatch(path, json, options) {
   return apiRequest(path, { ...options, method: 'PATCH', json });
 }
 
+export function apiPut(path, json, options) {
+  return apiRequest(path, { ...options, method: 'PUT', json });
+}
+
 export function apiDelete(path, options) {
   return apiRequest(path, { ...options, method: 'DELETE' });
 }

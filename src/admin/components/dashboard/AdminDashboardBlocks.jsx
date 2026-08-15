@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../../../components/ui.jsx';
 
 /**
@@ -118,3 +118,185 @@ export function requestDetailRoute(row) {
   if (row.type === 'card') return `/admin/cards?status=${row.status === 'pending' ? 'pending' : 'all'}`;
   return `/admin/withdrawals?status=${row.status === 'pending' ? 'pending' : 'all'}`;
 }
+
+function describeArc(cx, cy, r, startAngleDeg, endAngleDeg) {
+  let angleDiff = endAngleDeg - startAngleDeg;
+  if (angleDiff >= 360) angleDiff = 359.999;
+  if (angleDiff <= 0.01) return '';
+
+  const startRad = ((startAngleDeg - 90) * Math.PI) / 180;
+  const endRad = (((startAngleDeg + angleDiff) - 90) * Math.PI) / 180;
+
+  const x1 = cx + r * Math.cos(startRad);
+  const y1 = cy + r * Math.sin(startRad);
+  const x2 = cx + r * Math.cos(endRad);
+  const y2 = cy + r * Math.sin(endRad);
+
+  const largeArcFlag = angleDiff > 180 ? 1 : 0;
+
+  return `M ${x1.toFixed(3)} ${y1.toFixed(3)} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2.toFixed(3)} ${y2.toFixed(3)}`;
+}
+
+export function AdminRequestDistributionChart({ kycCount = 0, cardCount = 0, withdrawalCount = 0 }) {
+  const navigate = useNavigate();
+  const totalCount = kycCount + cardCount + withdrawalCount;
+  const safeTotal = totalCount || 1;
+
+  const kycRatio = totalCount ? kycCount / safeTotal : 0.45;
+  const cardRatio = totalCount ? cardCount / safeTotal : 0.35;
+  const withdrawalRatio = totalCount ? withdrawalCount / safeTotal : 0.20;
+
+  const kycPct = Math.round(kycRatio * 100);
+  const cardPct = Math.round(cardRatio * 100);
+  const withdrawalPct = Math.max(0, 100 - kycPct - cardPct);
+
+  // Compute angles
+  const kycAngle = kycRatio * 360;
+  const cardAngle = cardRatio * 360;
+
+  const a0 = 0;
+  const a1 = kycAngle;
+  const a2 = kycAngle + cardAngle;
+  const a3 = 360;
+
+  const pathKyc = describeArc(110, 110, 75, a0, a1);
+  const pathCard = describeArc(110, 110, 75, a1, a2);
+  const pathWithdrawal = describeArc(110, 110, 75, a2, a3);
+
+  return (
+    <div className="admin-chart-card">
+      <div className="admin-chart-card__head">
+        <h3 className="admin-chart-card__title">Request Types Distribution</h3>
+        <span className="admin-chart-card__badge">{totalCount} Total Requests</span>
+      </div>
+
+      <div className="admin-donut-layout">
+        <div className="admin-donut-wrap">
+          <svg width="220" height="220" viewBox="0 0 220 220" className="admin-donut-svg">
+            {/* Background ring */}
+            <circle cx="110" cy="110" r="75" fill="none" stroke="#e2e8f0" strokeWidth="28" />
+            
+            {/* KYC Arc Path (Vibrant Royal Blue) */}
+            {pathKyc && (
+              <path
+                d={pathKyc}
+                fill="none"
+                stroke="#2563eb"
+                strokeWidth="28"
+                className="admin-donut-segment"
+                onClick={() => navigate('/admin/kyc')}
+              >
+                <title>{`KYC Requests: ${kycCount} (${kycPct}%) — Click to open KYC menu`}</title>
+              </path>
+            )}
+
+            {/* Card Arc Path (Vibrant Emerald Green) */}
+            {pathCard && (
+              <path
+                d={pathCard}
+                fill="none"
+                stroke="#10b981"
+                strokeWidth="28"
+                className="admin-donut-segment"
+                onClick={() => navigate('/admin/cards')}
+              >
+                <title>{`Card Applications: ${cardCount} (${cardPct}%) — Click to open Cards menu`}</title>
+              </path>
+            )}
+
+            {/* Withdrawal Arc Path (Vibrant Brand Orange) */}
+            {pathWithdrawal && (
+              <path
+                d={pathWithdrawal}
+                fill="none"
+                stroke="#ff5500"
+                strokeWidth="28"
+                className="admin-donut-segment"
+                onClick={() => navigate('/admin/withdrawals')}
+              >
+                <title>{`Withdrawal Requests: ${withdrawalCount} (${withdrawalPct}%) — Click to open Withdrawals menu`}</title>
+              </path>
+            )}
+
+            {/* Center Text */}
+            <text x="110" y="104" textAnchor="middle" className="admin-donut-center-val">
+              {totalCount}
+            </text>
+            <text x="110" y="126" textAnchor="middle" className="admin-donut-center-lbl">
+              REQUESTS
+            </text>
+          </svg>
+        </div>
+
+        <div className="admin-chart-legend-grid" style={{ flex: 1 }}>
+          <Link to="/admin/kyc" className="admin-chart-legend-item">
+            <span className="admin-chart-legend-item__dot" style={{ background: '#2563eb', width: '14px', height: '14px' }} />
+            <div className="admin-chart-legend-item__info">
+              <span className="admin-chart-legend-item__label">KYC Requests</span>
+              <span className="admin-chart-legend-item__val" style={{ color: '#2563eb', fontSize: '18px' }}>{kycCount} <span className="admin-chart-legend-item__sub">({kycPct}%)</span></span>
+            </div>
+          </Link>
+          <Link to="/admin/cards" className="admin-chart-legend-item">
+            <span className="admin-chart-legend-item__dot" style={{ background: '#10b981', width: '14px', height: '14px' }} />
+            <div className="admin-chart-legend-item__info">
+              <span className="admin-chart-legend-item__label">Card Applications</span>
+              <span className="admin-chart-legend-item__val" style={{ color: '#10b981', fontSize: '18px' }}>{cardCount} <span className="admin-chart-legend-item__sub">({cardPct}%)</span></span>
+            </div>
+          </Link>
+          <Link to="/admin/withdrawals" className="admin-chart-legend-item">
+            <span className="admin-chart-legend-item__dot" style={{ background: '#ff5500', width: '14px', height: '14px' }} />
+            <div className="admin-chart-legend-item__info">
+              <span className="admin-chart-legend-item__label">Withdrawal Requests</span>
+              <span className="admin-chart-legend-item__val" style={{ color: '#ff5500', fontSize: '18px' }}>{withdrawalCount} <span className="admin-chart-legend-item__sub">({withdrawalPct}%)</span></span>
+            </div>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function AdminTxVolumeChart({ walletTxCount = 0, cardTxCount = 0, todayTopUp = 0, todayPayments = 0 }) {
+  const items = [
+    { label: 'Wallet Top Up', amount: `$${Number(todayTopUp).toLocaleString('en-US')}`, count: walletTxCount, color: '#2563eb', gradient: 'linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)', route: '/admin/transactions?kind=wallet_topup', heightPct: 85 },
+    { label: 'Card Payments', amount: `$${Number(todayPayments).toLocaleString('en-US')}`, count: cardTxCount, color: '#10b981', gradient: 'linear-gradient(180deg, #10b981 0%, #047857 100%)', route: '/admin/transactions?kind=card_spend', heightPct: 68 },
+    { label: 'Withdrawals', amount: 'Active Queue', count: 0, color: '#ff5500', gradient: 'linear-gradient(180deg, #ff5500 0%, #c23b00 100%)', route: '/admin/withdrawals', heightPct: 45 },
+    { label: 'Deposits Log', amount: 'Verified', count: walletTxCount, color: '#8b5cf6', gradient: 'linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%)', route: '/admin/wallets', heightPct: 75 },
+  ];
+
+  return (
+    <div className="admin-chart-card">
+      <div className="admin-chart-card__head">
+        <h3 className="admin-chart-card__title">Transaction & Activity Breakdown</h3>
+        <span className="admin-chart-card__badge" style={{ background: '#eff6ff', color: '#1d4ed8', fontWeight: 700 }}>Live Activity</span>
+      </div>
+      <div className="admin-tx-bar-chart">
+        {items.map((item) => (
+          <Link key={item.label} to={item.route} className="admin-tx-bar-col" title={`Click to open ${item.label} menu`}>
+            <div className="admin-tx-bar-col__top">
+              <span className="admin-tx-bar-col__amount">{item.amount}</span>
+              {item.count > 0 && <span className="admin-tx-bar-col__cnt">{item.count} txs</span>}
+            </div>
+            <div
+              className="admin-tx-bar-col__fill"
+              style={{ height: `${item.heightPct}%`, background: item.gradient }}
+            />
+            <span className="admin-tx-bar-col__label">{item.label}</span>
+          </Link>
+        ))}
+      </div>
+      <div className="admin-chart-legend-grid">
+        {items.map((item) => (
+          <Link key={item.label} to={item.route} className="admin-chart-legend-item">
+            <span className="admin-chart-legend-item__dot" style={{ background: item.color, width: '14px', height: '14px' }} />
+            <div className="admin-chart-legend-item__info">
+              <span className="admin-chart-legend-item__label">{item.label}</span>
+              <span className="admin-chart-legend-item__val" style={{ color: item.color, fontSize: '16px' }}>{item.amount}</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+

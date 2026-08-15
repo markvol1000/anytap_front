@@ -8,14 +8,17 @@ const OPS_NAV = [
   { to: '/admin/cards', label: 'Cards', icon: 'creditCard' },
   { to: '/admin/wallets', label: 'Wallets', icon: 'wallet' },
   { to: '/admin/transactions', label: 'Transactions', icon: 'receipt' },
-  { to: '/admin/referral', label: 'Referral', icon: 'trophy' },
+  { to: '/admin/referral', label: 'Referral List', icon: 'trophy' },
   { to: '/admin/withdrawals', label: 'Withdrawals', icon: 'arrowUpRight' },
 ];
 
 const SYSTEM_NAV = [
+  { to: '/admin/db-backups', label: 'DB Backups', icon: 'database' },
+  { to: '/admin/operations', label: 'Operations & System Health', icon: 'server' },
   { to: '/admin/notifications', label: 'Notifications', icon: 'bell' },
   { to: '/admin/content', label: 'Content Management', icon: 'fileText' },
   { to: '/admin/settings', label: 'Settings', icon: 'settings' },
+  { to: '/admin/login-logs', label: 'Login Logs', icon: 'lock' },
   { to: '/admin/logs', label: 'Admin Logs', icon: 'clock' },
 ];
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AdminDataTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
 import {
@@ -34,7 +35,16 @@ const fetchCardDetail = (id) => getCardById(id);
 
 export function CardsPage() {
   const confirm = useAdminConfirm();
-  const [selectedId, setSelectedId] = useState(null);
+  const [searchParams] = useSearchParams();
+  const urlCardId = searchParams.get('id') || searchParams.get('cardId');
+  const [selectedId, setSelectedId] = useState(() => urlCardId || null);
+
+  useEffect(() => {
+    if (urlCardId && urlCardId !== selectedId) {
+      setSelectedId(urlCardId);
+    }
+  }, [urlCardId]);
+
   const list = useAdminList(fetchCards, {}, { urlKeys: ['status'] });
   const { detail, loading: detailLoading, setDetail } = useAdminDetail(fetchCardDetail, selectedId);
 

@@ -50,6 +50,15 @@ export function AdminLayout() {
     return () => { cancelled = true; };
   }, [location.pathname]);
 
+  useEffect(() => {
+    const handleExpired = () => {
+      window.alert('Login session has expired due to 30 minutes of inactivity. Please log in again.');
+      setAuthChecked(false);
+    };
+    window.addEventListener('anytap-session-expired', handleExpired);
+    return () => window.removeEventListener('anytap-session-expired', handleExpired);
+  }, []);
+
   if (!authChecked) {
     return <div className="admin-shell admin-shell--gate"><p className="admin-loading">Loading…</p></div>;
   }

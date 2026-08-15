@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react';
-import { AdminDataTable } from '../components/AdminDataTable.jsx';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AdminDataTable, AdminMiniTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
 import {
   AdminActionStack,
@@ -16,6 +17,7 @@ import {
   activateMember,
   deleteMember,
   getMemberById,
+  getMemberCards,
   getMembers,
   saveMemberMemo,
   suspendMember,
@@ -27,11 +29,35 @@ const fetchMembers = (params) => getMembers(params);
 const fetchMemberDetail = (id) => getMemberById(id);
 
 export function MembersPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const paramId = searchParams.get('id') || searchParams.get('userId');
+
   const confirm = useAdminConfirm();
   const [selectedId, setSelectedId] = useState(null);
   const [memoDraft, setMemoDraft] = useState('');
+  const [memberCards, setMemberCards] = useState([]);
+  const [memberCardsLoading, setMemberCardsLoading] = useState(false);
   const list = useAdminList(fetchMembers);
   const { detail, loading: detailLoading, setDetail } = useAdminDetail(fetchMemberDetail, selectedId);
+
+  useEffect(() => {
+    if (paramId) {
+      setSelectedId(paramId);
+    }
+  }, [paramId]);
+
+  useEffect(() => {
+    if (detail?.id) {
+      setMemberCardsLoading(true);
+      getMemberCards(detail.id)
+        .then((cards) => setMemberCards(cards || []))
+        .catch(() => setMemberCards([]))
+        .finally(() => setMemberCardsLoading(false));
+    } else {
+      setMemberCards([]);
+    }
+  }, [detail?.id]);
 
   const selectRow = (row) => {
     setSelectedId(row.id);
@@ -281,6 +307,40 @@ export function MembersPage() {
                     </>
                   ) : (
                     <p className="admin-muted" style={{ paddingLeft: '8px', fontSize: '13px' }}>No card issued yet.</p>
+                  )}
+                </AdminDetailSection>
+
+                <AdminDetailSection title="Issued Cards List">
+                  {memberCardsLoading ? (
+                    <p className="admin-loading admin-loading--inline">Loading cards…</p>
+                  ) : memberCards.length > 0 ? (
+                    <AdminMiniTable
+                      columns={[
+                        { key: 'id', label: 'Card ID / No', render: (r) => (
+                          <button
+                            type="button"
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#3b82f6',
+                              textDecoration: 'underline',
+                              cursor: 'pointer',
+                              padding: 0,
+                              fontWeight: 'bold',
+                              fontFamily: 'monospace'
+                            }}
+                            onClick={() => navigate(`/admin/cards?id=${encodeURIComponent(r.id || r.wasabiCardId || r.cardNo)}`)}>
+                            {r.id || r.wasabiCardId || r.cardNo}
+                          </button>
+                        )},
+                        { key: 'cardType', label: 'Type', render: (r) => r.cardType || r.type || 'Virtual' },
+                        { key: 'last4', label: 'Last 4', render: (r) => r.last4 || r.cardLast4 || '—' },
+                        { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status || r.cardStatus} /> },
+                      ]}
+                      rows={memberCards}
+                    />
+                  ) : (
+                    <p className="admin-muted" style={{ paddingLeft: '8px', fontSize: '13px' }}>No cards issued for this member.</p>
                   )}
                 </AdminDetailSection>
 

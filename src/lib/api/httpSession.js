@@ -1,13 +1,13 @@
 /**
- * Spring Boot backend session — stored client-side after login / sign-up.
- * No JWT; profile fields come from POST /auth/login.
- *
- * Primary: sessionStorage. Demo previews also mirror to localStorage so mobile
- * browsers that drop sessionStorage mid-navigation still keep the preview.
+ * Spring Boot backend session & Inactivity Session Timeout — stored client-side after login.
+ * Session automatically expires after 30 minutes of inactivity.
  */
 
 const HTTP_SESSION_KEY = 'anytap_http_session';
 const DEMO_SESSION_KEY = 'anytap_demo_http_session';
+
+export const DEFAULT_SESSION_TIMEOUT_MINUTES = 30;
+export const DEFAULT_SESSION_TIMEOUT_MS = DEFAULT_SESSION_TIMEOUT_MINUTES * 60 * 1000;
 
 function readJson(storage, key) {
   try {
@@ -33,37 +33,98 @@ function removeKey(storage, key) {
   } catch { /* noop */ }
 }
 
+function checkExpired(session) {
+  if (!session || !session.userId) return null;
+
+  // Demo preview sessions do not force auto-expire unless explicitly logged out
+  if (session.demoSlug || session.demoLockState) return session;
+
+  const now = Date.now();
+  // Backward compatibility: attach expiresAt if missing
+  if (!session.expiresAt) {
+    session.lastActiveAt = now;
+    session.expiresAt = now + DEFAULT_SESSION_TIMEOUT_MS;
+    writeJson(sessionStorage, HTTP_SESSION_KEY, session);
+    writeJson(localStorage, HTTP_SESSION_KEY, session);
+    return session;
+  }
+
+  if (now > session.expiresAt) {
+    console.warn('[SessionTimeout] Session has expired due to inactivity.');
+    clearHttpSession();
+    window.dispatchEvent(new Event('anytap-session-expired'));
+    return null;
+  }
+  return session;
+}
+
 export function getHttpSession() {
-  const fromSession = readJson(sessionStorage, HTTP_SESSION_KEY);
-  if (fromSession?.userId) return fromSession;
-
-  const fromLocal = readJson(localStorage, HTTP_SESSION_KEY);
-  if (fromLocal?.userId) {
-    writeJson(sessionStorage, HTTP_SESSION_KEY, fromLocal);
-    return fromLocal;
+  let session = readJson(sessionStorage, HTTP_SESSION_KEY);
+  if (!session?.userId) {
+    session = readJson(localStorage, HTTP_SESSION_KEY);
+    if (session?.userId) {
+      writeJson(sessionStorage, HTTP_SESSION_KEY, session);
+    }
   }
 
-  const fromDemo = readJson(localStorage, DEMO_SESSION_KEY);
-  if (fromDemo?.userId) {
-    writeJson(sessionStorage, HTTP_SESSION_KEY, fromDemo);
-    return fromDemo;
+  if (!session?.userId) {
+    session = readJson(localStorage, DEMO_SESSION_KEY);
+    if (session?.userId) {
+      writeJson(sessionStorage, HTTP_SESSION_KEY, session);
+    }
   }
-  return fromSession;
+
+  return checkExpired(session);
+}
+
+let lastTouchTime = 0;
+
+export function touchHttpSession() {
+  const now = Date.now();
+  // Throttle to update storage at most once every 15 seconds
+  if (now - lastTouchTime < 15000) return;
+  lastTouchTime = now;
+
+  const current = readJson(sessionStorage, HTTP_SESSION_KEY) || readJson(localStorage, HTTP_SESSION_KEY);
+  if (!current?.userId) return;
+
+  // Don't touch expired sessions
+  if (current.expiresAt && now > current.expiresAt) {
+    checkExpired(current);
+    return;
+  }
+
+  const updated = {
+    ...current,
+    lastActiveAt: now,
+    expiresAt: now + DEFAULT_SESSION_TIMEOUT_MS,
+  };
+
+  writeJson(sessionStorage, HTTP_SESSION_KEY, updated);
+  writeJson(localStorage, HTTP_SESSION_KEY, updated);
 }
 
 /**
  * @param {object|null} session
- * @param {{ notify?: boolean }} [options] — notify:false skips anytap-member-session
- *   (needed so account load patches do not re-trigger loadAccountContext forever).
+ * @param {{ notify?: boolean }} [options]
  */
 export function setHttpSession(session, options = {}) {
   const notify = options.notify !== false;
-  const okSession = writeJson(sessionStorage, HTTP_SESSION_KEY, session);
-  writeJson(localStorage, HTTP_SESSION_KEY, session);
+  const now = Date.now();
+  const sessionWithTimeout = session
+    ? {
+        ...session,
+        lastActiveAt: session.lastActiveAt || now,
+        expiresAt: session.expiresAt || (now + DEFAULT_SESSION_TIMEOUT_MS),
+      }
+    : null;
+
+  const okSession = writeJson(sessionStorage, HTTP_SESSION_KEY, sessionWithTimeout);
+  writeJson(localStorage, HTTP_SESSION_KEY, sessionWithTimeout);
 
   const isDemo = !!(session?.demoSlug || session?.demoLockState);
   if (isDemo) {
-    writeJson(localStorage, DEMO_SESSION_KEY, session);
+    writeJson(localStorage, DEMO_SESSION_KEY, sessionWithTimeout);
   } else {
     removeKey(localStorage, DEMO_SESSION_KEY);
   }
@@ -93,4 +154,31 @@ export function patchHttpSession(patch, options = {}) {
   const next = { ...current, ...patch };
   setHttpSession(next, options);
   return next;
+}
+
+// ────────────── Inactivity Activity Listener Setup ──────────────
+let isListenerInitialized = false;
+
+export function initSessionActivityListener() {
+  if (isListenerInitialized || typeof window === 'undefined') return;
+  isListenerInitialized = true;
+
+  const handleUserActivity = () => {
+    touchHttpSession();
+  };
+
+  const activityEvents = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'];
+  activityEvents.forEach((ev) => {
+    window.addEventListener(ev, handleUserActivity, { passive: true });
+  });
+
+  // Periodic expiration checker loop (every 10 seconds)
+  setInterval(() => {
+    getHttpSession();
+  }, 10000);
+}
+
+// Initialize activity listener immediately on load
+if (typeof window !== 'undefined') {
+  initSessionActivityListener();
 }

@@ -1975,34 +1975,59 @@ button.portal-tx:hover {
   border-top: 1px solid var(--border-default);
 }
 
-.portal-mycards-recent {
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border-default);
-  width: 100%;
-  text-align: left;
+.portal-mycards-recent,
+.portal-mycards--v10 .portal-mycards-recent,
+.portal-page--unified .portal-mycards-recent.portal-dash-section,
+.portal-dash--unified .portal-mycards-recent.portal-dash-section,
+.portal-activity.portal-dash-section.portal-mycards-recent {
+  margin-top: 20px !important;
+  padding: 20px 18px !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+  width: 100% !important;
+  text-align: left !important;
+  box-sizing: border-box !important;
 }
 
-.portal-mycards--v10 .portal-mycards-recent .portal-activity__foot {
-  justify-content: flex-start;
+.portal-mycards--v10 .portal-mycards-recent .portal-activity__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.portal-mycards--v10 .portal-mycards-recent .portal-activity__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
 }
 
 .portal-mycards--v10 .portal-mycards-recent .portal-tx-empty,
 .portal-mycards--v10 .portal-mycards-recent .portal-tx-empty--inline {
-  text-align: left;
-  padding-inline: 0;
+  text-align: center;
+  padding: 20px 0;
 }
 
 .portal-mycards--v10 .portal-mycards-recent .portal-tx-list {
+  display: flex;
+  flex-direction: column;
   gap: 0;
 }
 
 .portal-mycards--v10 .portal-mycards-recent .portal-tx {
-  padding: 14px 0;
+  padding: 12px 0;
   background: transparent;
   border: none;
+  border-bottom: 1px solid #f1f5f9;
   border-radius: 0;
-  border-bottom: 1px solid rgba(20, 23, 28, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .portal-mycards--v10 .portal-mycards-recent .portal-tx:last-child {
@@ -2010,22 +2035,35 @@ button.portal-tx:hover {
 }
 
 .portal-mycards--v10 .portal-mycards-recent button.portal-tx:hover {
-  background: transparent;
-  box-shadow: none;
+  background: #f8fafc;
+}
+
+.portal-mycards--v10 .portal-mycards-recent .portal-activity__foot {
+  margin-top: 14px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .portal-mycards--v10 .portal-mycards-recent .portal-activity__view-all {
-  min-height: auto;
-  padding: 8px 0;
-  border: none;
-  background: transparent;
-  color: var(--brand-primary);
+  width: 100%;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--border-default, #e2e8f0);
+  background: var(--paper, #ffffff);
+  color: var(--text-primary, #0f172a);
   font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
 }
 
 .portal-mycards--v10 .portal-mycards-recent .portal-activity__view-all:hover {
-  background: transparent;
-  color: var(--brand-primary-hover);
+  background: var(--surface-bg-hover, #f8fafc);
+  border-color: var(--border-strong, #cbd5e1);
 }
 
 @media (min-width: 900px) {

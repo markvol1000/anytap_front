@@ -1264,13 +1264,14 @@ export function AccountMyCards({ s }) {
         )}
 
         <RecentActivitySection
-          title="Recent Card Activity"
+          title="Recent Activity"
           items={A.resolvePortalActivityWithHistory(s.activityItems)}
           pageFilter="card"
           card={selectedCard}
           cardLast4={selectedCard?.last4}
           limit={5}
-          className="portal-mycards-recent"
+          viewAllLabel="View All"
+          className="portal-mycards-recent portal-dash-panel portal-recent-tx--unified"
           onItemClick={() => s.go('transactions', { search: { source: 'card' } })}
           onViewAll={() => s.go('transactions', { search: { source: 'card' } })}
           emptyTitle="No card activity yet"

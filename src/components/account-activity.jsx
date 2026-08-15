@@ -99,18 +99,20 @@ export function ActivityRow({ tx, onClick, dateStyle = 'standard', variant = 'de
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span className="portal-tx__when">{when}</span>
             {status === 'failed' ? (
-              <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: '600', textTransform: 'uppercase', backgroundColor: 'rgba(239, 68, 68, 0.12)', padding: '1px 5px', borderRadius: '4px' }}>
-                Failed
+              <span style={{ fontSize: '10px', color: '#b91c1c', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#fee2e2', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.02em' }}>
+                FAILED
               </span>
             ) : status === 'pending' ? (
-              <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600', textTransform: 'uppercase', backgroundColor: 'rgba(245, 158, 11, 0.12)', padding: '1px 5px', borderRadius: '4px' }}>
-                Pending
+              <span style={{ fontSize: '10px', color: '#b45309', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.02em' }}>
+                PENDING
+              </span>
+            ) : (tx.rawStatus === 'authorized' || (!tx.incoming && tx.kind !== 'card_topup' && tx.kind !== 'wallet_deposit' && tx.kind !== 'wallet_receive')) ? (
+              <span style={{ fontSize: '10px', color: '#0f766e', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#ccfbf1', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.02em' }}>
+                AUTHORIZED
               </span>
             ) : (
-              <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '600', textTransform: 'uppercase', backgroundColor: 'rgba(16, 185, 129, 0.12)', padding: '1px 5px', borderRadius: '4px' }}>
-                {(tx.incoming || tx.kind === 'wallet_deposit' || tx.kind === 'wallet_receive' || tx.kind === 'card_topup')
-                  ? (tx.rawStatus && tx.rawStatus !== 'authorized' ? (tx.rawStatus.charAt(0).toUpperCase() + tx.rawStatus.slice(1).toLowerCase()) : 'Completed')
-                  : (tx.rawStatus ? (tx.rawStatus.charAt(0).toUpperCase() + tx.rawStatus.slice(1).toLowerCase()) : 'Authorized')}
+              <span style={{ fontSize: '10px', color: '#15803d', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#dcfce7', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.02em' }}>
+                COMPLETED
               </span>
             )}
           </div>
