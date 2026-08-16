@@ -257,7 +257,9 @@ export function AccountCardRegister({ s }) {
         expiry: expiry,
       });
       if (!result.ok) {
-        setFormError(result.message || 'Card registration failed.');
+        const msg = result.message || 'Card registration failed.';
+        setFormError(msg);
+        s.showToast?.(msg);
         return false;
       }
       if (result.data?.wasabiCardId || result.data?.id || result.data?.cardId) {
@@ -267,7 +269,9 @@ export function AccountCardRegister({ s }) {
       s.showToast?.('Card registered! Receiving activation signal...');
       return true;
     } catch (err) {
-      setFormError(err.message || 'Failed to register card.');
+      const msg = err.message || 'Failed to register card.';
+      setFormError(msg);
+      s.showToast?.(msg);
       return false;
     } finally {
       setLoading(false);
