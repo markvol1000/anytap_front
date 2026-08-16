@@ -277,6 +277,19 @@ function OtpInput({ value, onChange, length = 6 }) {
   );
 }
 
+function extractRefFromUrl(locationSearch) {
+  try {
+    const rawSearch = locationSearch || (typeof window !== 'undefined' ? window.location.search : '') || (typeof window !== 'undefined' ? (window.location.href.split('?')[1] || '') : '') || '';
+    if (!rawSearch) return '';
+    const cleanSearch = rawSearch.startsWith('?') ? rawSearch : '?' + rawSearch;
+    const params = new URLSearchParams(cleanSearch);
+    const ref = params.get('ref') || params.get('refCode') || params.get('referralCode');
+    return ref ? ref.trim().toUpperCase() : '';
+  } catch {
+    return '';
+  }
+}
+
 function SignUpPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -284,7 +297,17 @@ function SignUpPage() {
   const [email, setEmail] = useState(signupDraft?.email ?? '');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
-  const [referral, setReferral] = useState(signupDraft?.referral ?? '');
+  const [referral, setReferral] = useState(() => {
+    const urlRef = extractRefFromUrl(location.search);
+    return urlRef || (signupDraft?.referral ?? '');
+  });
+
+  useEffect(() => {
+    const urlRef = extractRefFromUrl(location.search);
+    if (urlRef) {
+      setReferral(urlRef);
+    }
+  }, [location.search]);
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
   const [agree, setAgree] = useState(false);
