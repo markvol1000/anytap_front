@@ -244,6 +244,24 @@ export function AccountKyc({ s }) {
       return;
     }
 
+    const rawIssueDate = String(kycForm.issueDate || '').replace(/[^\d]/g, '');
+    if (!rawIssueDate) {
+      s.showToast('Please enter your ID document issue date.');
+      return;
+    }
+    if (rawIssueDate.length !== 8) {
+      s.showToast('Please enter your ID document issue date in YYYYMMDD format (8 digits).');
+      return;
+    }
+    const iYear = parseInt(rawIssueDate.substring(0, 4), 10);
+    const iMonth = parseInt(rawIssueDate.substring(4, 6), 10) - 1;
+    const iDay = parseInt(rawIssueDate.substring(6, 8), 10);
+    const issueDateObj = new Date(iYear, iMonth, iDay);
+    if (isNaN(issueDateObj.getTime()) || issueDateObj.getFullYear() !== iYear || issueDateObj.getMonth() !== iMonth || issueDateObj.getDate() !== iDay) {
+      s.showToast('Please enter a valid ID document issue date.');
+      return;
+    }
+
     const phoneCountryCode = String(kycForm.phoneCountryCode || '').trim();
     const phoneNumber = String(kycForm.phoneNumber || '').trim();
     if (!phoneCountryCode || !phoneNumber) {
@@ -430,14 +448,44 @@ export function AccountKyc({ s }) {
                 </select>
               </FormField>
             </div>
-            <FormField label="ID document type">
-              <select className="capply-input" value={kycForm.idDocType} onChange={(e) => setKyc('idDocType', e.target.value)}>
-                {C.ID_DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </FormField>
-            <FormField label="ID document number">
-              <input className="capply-input" value={kycForm.idDocNumber} onChange={(e) => setKyc('idDocNumber', e.target.value)} />
-            </FormField>
+            <div className="capply-form__row">
+              <FormField label="ID document type">
+                <select className="capply-input" value={kycForm.idDocType} onChange={(e) => setKyc('idDocType', e.target.value)}>
+                  {C.ID_DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </FormField>
+              <FormField label="ID document number">
+                <input className="capply-input" value={kycForm.idDocNumber} onChange={(e) => setKyc('idDocNumber', e.target.value)} placeholder="e.g. M12345678" />
+              </FormField>
+            </div>
+            <div className="capply-form__row">
+              <FormField label="ID document issue date">
+                <input
+                  className="capply-input"
+                  type="text"
+                  maxLength={8}
+                  value={kycForm.issueDate}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d]/g, '');
+                    setKyc('issueDate', val);
+                  }}
+                  placeholder="YYYYMMDD (e.g. 20220101)"
+                />
+              </FormField>
+              <FormField label="ID document expiry date">
+                <input
+                  className="capply-input"
+                  type="text"
+                  maxLength={8}
+                  value={kycForm.idNoExpiryDate || ''}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d]/g, '');
+                    setKyc('idNoExpiryDate', val);
+                  }}
+                  placeholder="YYYYMMDD (e.g. 20301231)"
+                />
+              </FormField>
+            </div>
             <div className="capply-form__row capply-form__row--phone">
               <FormField label="Country code">
                 <PhoneCountryCodeSelect

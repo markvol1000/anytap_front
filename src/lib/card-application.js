@@ -348,6 +348,7 @@ export const EMPTY_KYC_FORM = {
   lastName: '',
   fullName: '',
   dateOfBirth: '',
+  issueDate: '',
   nationality: '',
   idDocType: 'Passport',
   idDocNumber: '',
@@ -384,6 +385,7 @@ export function isKycFormValid(form, { requireFiles = false } = {}) {
     form.firstName?.trim()
     && form.lastName?.trim()
     && form.dateOfBirth
+    && form.issueDate?.trim()
     && form.nationality?.trim()
     && form.idDocType
     && form.idDocNumber?.trim()

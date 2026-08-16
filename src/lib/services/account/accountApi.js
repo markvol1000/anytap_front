@@ -927,6 +927,20 @@ export async function submitKycApplication(form = {}) {
       }
       return form.dateOfBirth || '';
     })(),
+    issueDate: (() => {
+      const raw = String(form.issueDate || '').replace(/[^\d]/g, '');
+      if (raw.length === 8) {
+        return `${raw.substring(0, 4)}-${raw.substring(4, 6)}-${raw.substring(6, 8)}`;
+      }
+      return form.issueDate || '';
+    })(),
+    idNoExpiryDate: (() => {
+      const raw = String(form.idNoExpiryDate || '').replace(/[^\d]/g, '');
+      if (raw.length === 8) {
+        return `${raw.substring(0, 4)}-${raw.substring(4, 6)}-${raw.substring(6, 8)}`;
+      }
+      return form.idNoExpiryDate || '2030-12-31';
+    })(),
     nationality: form.nationality || 'KR',
     idNumber: form.idDocNumber || '',
     idType: mapWasabiIdType(form.idDocType || 'PASSPORT'),
@@ -1018,6 +1032,7 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
       mobile: shipping?.phoneNumber || '',
       areaCode: shipping?.phoneCountryCode || '+82',
       birthday: kycForm?.dateOfBirth || '',
+      issueDate: kycForm?.issueDate || '',
       nationality: kycForm?.nationality || session?.nationality || 'KR',
       idNumber: kycForm?.idDocNumber || '',
       idType: kycForm?.idDocType || 'PASSPORT',
@@ -1039,6 +1054,7 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
         ...(files.idBackId ? { idBackId: files.idBackId } : {}),
         ...(files.selfieId ? { selfieId: files.selfieId } : {}),
         birthday: kycForm.dateOfBirth,
+        issueDate: kycForm.issueDate,
         nationality: kycForm.nationality,
         idNumber: kycForm.idDocNumber,
         idType: mapWasabiIdType(kycForm.idDocType),
