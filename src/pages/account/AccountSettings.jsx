@@ -17,12 +17,6 @@ const QUICK_ACCESS = [
     icon: 'shield',
     action: 'kyc',   // not a route — handled by handleQuickAccess
   },
-  {
-    label: 'Referral',
-    desc: 'Invite friends and earn rewards',
-    icon: 'gift',
-    screen: 'referral',
-  },
 ];
 
 // Security + Notifications + planned (Language, Appearance) — same on mobile and desktop

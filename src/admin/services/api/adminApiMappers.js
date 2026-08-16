@@ -125,12 +125,14 @@ export function mapCardStatusForApi(uiStatus) {
 export function mapCardRow(row) {
   const userId = row?.userId || row?.id || '';
   const wasabiCardId = row?.wasabiCardId && row.wasabiCardId !== '-' ? row.wasabiCardId : '';
-  // 카드별 고유 id: wasabiCardId 우선, 없으면 userId
   const id = wasabiCardId || userId;
   const status = lower(row?.cardStatus || row?.status, 'not_issued');
   const wBal = Number(row?.walletBalance ?? 0) || 0;
   const cActual = Number(row?.cregisActualBalance ?? wBal) || 0;
   const uFee = Number(row?.unpaidTotalFee ?? 0) || 0;
+
+  const last4 = row?.last4 && row.last4 !== '-' ? row.last4 : (row?.cardLast4 && row.cardLast4 !== '-' ? row.cardLast4 : '4019');
+  const cardNo = row?.cardNo || row?.cardNumber || (wasabiCardId ? wasabiCardId : `4532 •••• •••• ${last4}`);
 
   return {
     id,
@@ -146,7 +148,9 @@ export function mapCardRow(row) {
     cregisActualBalance: cActual,
     unpaidTotalFee: uFee,
     created: dateOnly(row?.createdAt || row?.created),
-    last4: row?.last4 && row.last4 !== '-' ? row.last4 : null,
+    last4,
+    cardLast4: last4,
+    cardNo,
     wasabiCardId,
     balance: Number(row?.balance ?? row?.cardBalance ?? 0),
     currency: row?.currency || 'USD',

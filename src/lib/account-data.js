@@ -508,19 +508,21 @@ export const PAGE_TITLES = {
 };
 
 export const NAV_DOCK = [
-  { id: 'home',         label: 'Home',     icon: 'home' },
-  { id: 'topup',        label: 'Wallet',   icon: 'wallet' },
-  { id: 'card',         label: 'Cards',    icon: 'creditCard' },
-  { id: 'transactions', label: 'Activity', icon: 'receipt' },
-  { id: 'my',           label: 'My',       icon: 'user' },
+  { id: 'home',         label: 'Home',          icon: 'home' },
+  { id: 'topup',        label: 'Wallet',        icon: 'wallet' },
+  { id: 'card',         label: 'Cards',         icon: 'creditCard' },
+  { id: 'transactions', label: 'Activity',      icon: 'receipt' },
+  { id: 'referral',     label: 'Referral',      icon: 'trophy' },
+  { id: 'my',           label: 'My',            icon: 'user' },
 ];
 
 export const NAV_MAIN = [
-  { id: 'home',         label: 'Home',     icon: 'chart' },
-  { id: 'topup',        label: 'Wallet',   icon: 'wallet' },
-  { id: 'card',         label: 'Cards',    icon: 'creditCard' },
-  { id: 'transactions', label: 'Activity', icon: 'receipt' },
-  { id: 'my',           label: 'My',       icon: 'user' },
+  { id: 'home',         label: 'Home',          icon: 'chart' },
+  { id: 'topup',        label: 'Wallet',        icon: 'wallet' },
+  { id: 'card',         label: 'Cards',         icon: 'creditCard' },
+  { id: 'transactions', label: 'Activity',      icon: 'receipt' },
+  { id: 'referral',     label: 'Referral',      icon: 'trophy' },
+  { id: 'my',           label: 'My',            icon: 'user' },
 ];
 
 const PATH_TO_SCREEN = Object.fromEntries(

@@ -502,7 +502,78 @@ export async function fetchAccountContext() {
 }
 
 export async function fetchReferralContext() {
-  return null;
+  const session = getHttpSession();
+  if (!session?.userId) return null;
+
+  try {
+    const userDetail = await apiGet(`/admin/members/${encodeURIComponent(session.userId)}`).catch(() => null)
+      || await apiGet(`/users/${encodeURIComponent(session.userId)}`).catch(() => null);
+
+    const code = userDetail?.referralCode || session?.referralCode || 'AT001';
+    const availableBalance = Number(userDetail?.unpaidReferrerAllowance ?? userDetail?.availableBalance ?? session?.unpaidReferrerAllowance ?? 0);
+    const totalEarnings = Number(userDetail?.accumulatedReferrerAllowance ?? userDetail?.totalEarnings ?? availableBalance);
+    const pendingBalance = Number(userDetail?.pendingBalance ?? 0);
+
+    let rawMembers = [];
+    try {
+      const res = await apiGet(`/admin/referrals/${encodeURIComponent(code)}/members?pageNum=1&pageSize=100`).catch(() => null);
+      if (res && Array.isArray(res.items)) {
+        rawMembers = res.items;
+      } else if (Array.isArray(res)) {
+        rawMembers = res;
+      }
+    } catch {
+      rawMembers = [];
+    }
+
+    const memberRows = rawMembers.map((m, idx) => {
+      const topUpUsdt = Number(m.topUpUsdt ?? m.totalDeposit ?? m.walletBalance ?? 0);
+      const rewardUsdt = Number(m.rewardUsdt ?? m.referrerReward ?? (topUpUsdt * 0.003));
+      return {
+        id: m.userId || m.id || `ref-m-${idx + 1}`,
+        name: m.name || m.loginId || m.email || `Member ${idx + 1}`,
+        email: m.email || '',
+        status: (m.accountStatus || m.status || 'active').toLowerCase(),
+        cards: Number(m.cards ?? m.cardCount ?? (m.cardStatus && m.cardStatus !== 'not_issued' ? 1 : 0)),
+        topUpUsdt,
+        rewardUsdt,
+        joinedAt: m.createdAt || m.joinedAt || m.joinDate || new Date().toISOString().slice(0, 10),
+      };
+    });
+
+    return {
+      referralStateKey: 'referralApproved',
+      status: 'REFERRAL_APPROVED',
+      isPartner: true,
+      isPending: false,
+      isNormalMember: false,
+      code,
+      inviteLink: `https://anytap.app/sign-up?ref=${code}`,
+      totalEarnings,
+      availableBalance,
+      pendingBalance,
+      minWithdrawalUsdt: 10,
+      statistics: {
+        totalInvites: memberRows.length,
+        activeMembers: memberRows.filter((m) => m.status === 'active').length,
+        conversionRate: memberRows.length > 0 ? `${Math.round((memberRows.filter((m) => m.status === 'active').length / memberRows.length) * 100)}%` : '0%',
+        monthlyEarnings: totalEarnings,
+      },
+      memberRows,
+      monthlyEarnings: [
+        { month: 'Jan', amount: 0 },
+        { month: 'Feb', amount: 0 },
+        { month: 'Mar', amount: 0 },
+        { month: 'Apr', amount: 0 },
+        { month: 'May', amount: 0 },
+        { month: 'Jun', amount: totalEarnings },
+      ],
+      rewardHistory: [],
+    };
+  } catch (err) {
+    console.warn('[accountApi] fetchReferralContext error', err);
+    return null;
+  }
 }
 
 async function compressImageIfNeeded(file, maxBytes = 900 * 1024) {

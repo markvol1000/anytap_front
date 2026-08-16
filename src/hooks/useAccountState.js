@@ -168,7 +168,7 @@ export function useAccountState() {
     return A.getMockContext(scenarioKey);
   }, [isHttpApi, remoteContext, scenarioKey, profileTick]);
   const referralContext = isHttpApi
-    ? A.getEmptyReferralContext()
+    ? (remoteReferral || A.getEmptyReferralContext())
     : A.getReferralContext(referralStateKey);
   const accountState = mockContext.accountState;
   const userCards = mockContext.userCards;
@@ -343,7 +343,7 @@ export function useAccountState() {
   }, [showToast]);
 
   // ── Page title / sub ──────────────────────────────────────────────────────
-  const myActive = ['settings', 'profile', 'security', 'notifications', 'referral', 'support'].includes(screen);
+  const myActive = ['settings', 'profile', 'security', 'notifications', 'support'].includes(screen);
   const referralTitles = screen === 'referral' ? A.referralPageTitles(referralContext) : null;
   const pageTitle = referralTitles?.[0] ?? (A.PAGE_TITLES[screen] || ['', ''])[0];
   const firstName = String(accountState.name || '').trim().split(/\s+/)[0];
@@ -357,6 +357,7 @@ export function useAccountState() {
     if (id === 'card') return screen === 'card' || screen === 'cardApply' || screen === 'cardRegister';
     if (id === 'topup') return screen === 'topup';
     if (id === 'transactions') return screen === 'transactions';
+    if (id === 'referral') return screen === 'referral';
     if (id === 'my') return myActive;
     return false;
   };

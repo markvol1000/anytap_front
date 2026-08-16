@@ -5,6 +5,7 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Icon } from './ui.jsx';
 import { ActivityAmount, ActivityRow, ActivityScopeTabBar } from './account-activity.jsx';
+import { AccountReferral } from './account-referral.jsx';
 import * as A from '../lib/account-data.js';
 
 function TxIcon({ tx }) {
@@ -253,7 +254,7 @@ function TransactionsGroupedFeed({ items, onSelect }) {
   );
 }
 
-export function TransactionsPage({ items = [], initialScope = 'all' }) {
+export function TransactionsPage({ items = [], initialScope = 'all', s }) {
   const [scope, setScope] = useState(initialScope);
   const [dateRange, setDateRange] = useState('90d');
   const [customFrom, setCustomFrom] = useState('');
@@ -306,7 +307,12 @@ export function TransactionsPage({ items = [], initialScope = 'all' }) {
       <div className={`portal-tx-panel portal-tx-panel--tab-${scope}`}>
         <ActivityScopeTabBar scope={scope} onScopeChange={setScope} />
 
-        <div className="portal-tx-panel__surface" id="portal-tx-panel-surface">
+        {scope === 'referral' ? (
+          <div style={{ marginTop: '16px' }}>
+            <AccountReferral s={s || {}} />
+          </div>
+        ) : (
+          <div className="portal-tx-panel__surface" id="portal-tx-panel-surface">
           <TransactionsToolbar
             dateRange={dateRange}
             onDateRangeChange={setDateRange}
@@ -374,6 +380,7 @@ export function TransactionsPage({ items = [], initialScope = 'all' }) {
             </div>
           )}
         </div>
+      )}
       </div>
 
       <TransactionDetailsDrawer

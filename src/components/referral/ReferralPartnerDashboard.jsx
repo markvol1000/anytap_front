@@ -4,8 +4,8 @@ import { ReferralCodeCard } from './ReferralCodeCard.jsx';
 import { ReferralSummaryStats } from './ReferralSummaryStats.jsx';
 import { ReferralRewardFlow } from './ReferralRewardFlow.jsx';
 import { ReferralMembersTable } from './ReferralMembersTable.jsx';
+import { ReferralDailyDepositsTable } from './ReferralDailyDepositsTable.jsx';
 import { ReferralEarningsChart } from './ReferralEarningsChart.jsx';
-import { ReferralWithdrawal } from './ReferralWithdrawal.jsx';
 import { ReferralFaq } from './ReferralFaq.jsx';
 
 export function ReferralPartnerDashboard({ s, referral }) {
@@ -26,19 +26,17 @@ export function ReferralPartnerDashboard({ s, referral }) {
 
       <ReferralRewardFlow />
 
-      <ReferralEarningsChart data={referral.monthlyEarnings} />
-
       <ReferralMembersTable
         members={referral.memberRows}
         onShowToast={s.showToast}
       />
 
-      <ReferralWithdrawal
-        availableBalance={referral.availableBalance}
-        minWithdrawalUsdt={referral.minWithdrawalUsdt}
-        onWithdraw={() => s.requestReferralWithdrawal?.()}
-        onViewHistory={() => s.go?.('transactions', { search: { source: 'rewards' } })}
+      <ReferralDailyDepositsTable
+        deposits={referral.depositLedger}
+        onShowToast={s.showToast}
       />
+
+      <ReferralEarningsChart data={referral.monthlyEarnings} />
 
       <ReferralFaq items={REFERRAL_FAQ} />
     </div>

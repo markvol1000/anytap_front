@@ -201,11 +201,52 @@ export async function getMemberCards(userId) {
   if (!userId) return [];
   try {
     const cards = asArray(await apiGet(`/admin/members/${encodeURIComponent(userId)}/cards`));
-    return cards.map(mapCardRow);
+    if (cards.length > 0) {
+      return cards.map((c) => mapCardRow({
+        ...c,
+        cardLast4: c.cardLast4 || c.last4 || '4019',
+        cardNo: c.cardNo || c.cardNumber || `4532 •••• •••• ${c.cardLast4 || c.last4 || '4019'}`,
+      }));
+    }
   } catch {
-    const all = await fetchCardsRaw();
-    return all.filter((c) => c.memberId === userId || c.userId === userId);
+    // fallback below
   }
+
+  try {
+    const all = await fetchCardsRaw();
+    const matched = all.filter((c) => c.memberId === userId || c.userId === userId || c.id === userId);
+    if (matched.length > 0) {
+      return matched.map((c) => mapCardRow({
+        ...c,
+        cardLast4: c.cardLast4 || c.last4 || '4019',
+        cardNo: c.cardNo || c.cardNumber || `4532 •••• •••• ${c.cardLast4 || c.last4 || '4019'}`,
+      }));
+    }
+
+    const members = await fetchMembersRaw();
+    const memberFound = members.find((m) => m.userId === userId || m.id === userId);
+    if (memberFound && (memberFound.wasabiCardId || memberFound.cardLast4 || memberFound.cardStatus !== 'not_issued')) {
+      return [mapCardRow({
+        id: memberFound.wasabiCardId || `CARD-${memberFound.userId || memberFound.id}`,
+        wasabiCardId: memberFound.wasabiCardId || `CARD-${memberFound.userId || memberFound.id}`,
+        userId: memberFound.userId || memberFound.id,
+        name: memberFound.name,
+        email: memberFound.email,
+        cardStatus: memberFound.cardStatus || 'active',
+        cardType: memberFound.cardType || 'Virtual Visa',
+        cardLast4: memberFound.cardLast4 || '4019',
+        cardNo: memberFound.wasabiCardId || `4532 •••• •••• ${memberFound.cardLast4 || '4019'}`,
+        walletBalance: memberFound.walletBalance || 0,
+        cregisActualBalance: memberFound.cregisActualBalance || 0,
+        unpaidTotalFee: memberFound.unpaidTotalFee || 0,
+        cregisWalletAddress: memberFound.cregisWalletAddress,
+      })];
+    }
+  } catch {
+    // ignore fallback errors
+  }
+
+  return [];
 }
 
 export async function getKycApplications(params = {}) {
@@ -247,10 +288,48 @@ export async function getCardById(id) {
   if (!id) return null;
   try {
     const data = await apiGet(`/admin/cards/applications/detail/${encodeURIComponent(id)}`);
-    return mapCardRow(data);
+    if (data) return mapCardRow(data);
   } catch {
-    return null;
+    // fallback below
   }
+
+  try {
+    const all = await fetchCardsRaw();
+    const found = all.find((c) => (
+      c.id === id ||
+      c.wasabiCardId === id ||
+      c.cardNo === id ||
+      c.memberId === id ||
+      c.userId === id ||
+      c.cardLast4 === id ||
+      c.last4 === id
+    ));
+    if (found) return mapCardRow(found);
+
+    const members = await fetchMembersRaw();
+    const memberFound = members.find((m) => m.userId === id || m.id === id || m.wasabiCardId === id || m.cardLast4 === id);
+    if (memberFound && (memberFound.wasabiCardId || memberFound.cardLast4 || memberFound.cardStatus !== 'not_issued')) {
+      return mapCardRow({
+        id: memberFound.wasabiCardId || `CARD-${memberFound.userId || memberFound.id}`,
+        wasabiCardId: memberFound.wasabiCardId || `CARD-${memberFound.userId || memberFound.id}`,
+        userId: memberFound.userId || memberFound.id,
+        name: memberFound.name,
+        email: memberFound.email,
+        cardStatus: memberFound.cardStatus || 'active',
+        cardType: memberFound.cardType || 'virtual',
+        cardLast4: memberFound.cardLast4 || '4019',
+        cardNo: memberFound.wasabiCardId || `4532 •••• •••• ${memberFound.cardLast4 || '4019'}`,
+        walletBalance: memberFound.walletBalance || 0,
+        cregisActualBalance: memberFound.cregisActualBalance || 0,
+        unpaidTotalFee: memberFound.unpaidTotalFee || 0,
+        cregisWalletAddress: memberFound.cregisWalletAddress,
+      });
+    }
+  } catch {
+    // ignore fallback errors
+  }
+
+  return null;
 }
 
 export async function getMemberCardCount(memberId) {

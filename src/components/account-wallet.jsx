@@ -846,11 +846,15 @@ export function CardTopUpSelectSheet({ s, cards, open, onClose, onSelect }) {
 
 export function QuickTopUpSheet({ s, card, open, onClose }) {
   const [amount, setAmount] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPasswordStep, setShowPasswordStep] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
       setAmount('');
+      setPassword('');
+      setShowPasswordStep(false);
       setLoading(false);
     }
   }, [open, card?.id]);
@@ -858,17 +862,30 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
   if (!open || !card) return null;
 
   const bal = W.parseCardBalanceUsdt(card.balance);
+  const topUpVal = parseFloat(amount) || 0;
+  const isUnderMin = topUpVal > 0 && topUpVal < W.MIN_TOPUP;
+  const walletBal = resolveWalletBalance(s.walletBalance);
+  const isExceeded = topUpVal > 0 && (topUpVal + W.GAS_FEE_CHARGE > walletBal);
+
   const addQuick = (n) => {
     const cur = parseFloat(amount) || 0;
     setAmount(String(cur + n));
   };
 
-  const handleConfirm = async () => {
-    if (loading) return;
+  const handleNextOrConfirm = async () => {
+    if (isUnderMin) {
+      s.showToast?.('⚠️ 최소 충전 금액은 50 USDT 이상이어야 합니다.');
+      return;
+    }
+    if (!showPasswordStep) {
+      setShowPasswordStep(true);
+      return;
+    }
+
+    if (loading || !password || !password.trim()) return;
     setLoading(true);
     try {
-      const topUpVal = parseFloat(amount) || 0;
-      await chargeCard(topUpVal, card?.cardId || card?.id);
+      await chargeCard(topUpVal, card?.cardId || card?.id, password);
       s.deductWalletBalance?.(topUpVal + W.GAS_FEE_CHARGE);
       onClose();
       s.showToast('Top up complete!');
@@ -886,12 +903,34 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
       <button type="button" className="portal-sheet__backdrop" onClick={loading ? undefined : onClose} aria-label="Close" />
       <div className="portal-sheet__panel portal-wallet-sheet">
         <div className="portal-sheet__head">
-          <h3 className="portal-sheet__title">Card Top Up</h3>
+          <h3 className="portal-sheet__title">Card Top Up {showPasswordStep ? '— Confirm Password' : ''}</h3>
           <button type="button" className="portal-sheet__close" onClick={loading ? undefined : onClose} disabled={loading} aria-label="Close">
             <Icon name="close" size={18} />
           </button>
         </div>
-        <p className="portal-wallet-sheet__sub">Move USDT from your wallet to your card.</p>
+
+        {/* High Priority Top Notification Alert for Min Amount < 50 USDT */}
+        {isUnderMin && (
+          <div style={{
+            backgroundColor: '#fef2f2',
+            color: '#991b1b',
+            border: '1px solid #fecaca',
+            padding: '10px 14px',
+            borderRadius: '8px',
+            marginBottom: '14px',
+            fontSize: '13px',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}>
+            <span style={{ fontSize: '16px' }}>⚠️</span>
+            <span>최소 충전 금액은 <strong>50 USDT</strong> 이상이어야 합니다. (Minimum top-up: 50 USDT)</span>
+          </div>
+        )}
+
+        <p className="portal-wallet-sheet__sub">Move USDT from your wallet to your card (Minimum: <strong>50 USDT</strong>).</p>
+
         <div className="portal-wallet-quick-head">
           <CardThumb variant={card.variant} />
           <div>
@@ -899,26 +938,63 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
             <p className="portal-wallet-quick-head__bal">Balance: {bal} USDT</p>
           </div>
         </div>
-        <AmountBlock
-          label="Amount to top up"
-          amount={amount}
-          onChange={setAmount}
-          hint={`Min. ${W.MIN_TOPUP} USDT · Gas fee shown on confirmation`}
-          onQuickAdd={addQuick}
-        />
-        <p className="portal-wallet-quick-wallet">
-          Wallet balance: <strong>{W.formatUsdtAmount(resolveWalletBalance(s.walletBalance))} USDT</strong>
-        </p>
-        <div className="portal-wallet-sheet__actions">
-          <button type="button" className="portal-btn-secondary portal-wallet-sheet__btn" onClick={onClose} disabled={loading}>
-            Cancel
+
+        {!showPasswordStep ? (
+          <>
+            <AmountBlock
+              label="Amount to top up (최소 50 USDT)"
+              amount={amount}
+              onChange={setAmount}
+              hint={`Min. 50 USDT · Gas fee 3.00 USDT`}
+              onQuickAdd={addQuick}
+              isExceeded={isExceeded || isUnderMin}
+            />
+            <p className="portal-wallet-quick-wallet">
+              Wallet balance: <strong>{W.formatUsdtAmount(walletBal)} USDT</strong>
+            </p>
+          </>
+        ) : (
+          <div style={{ margin: '16px 0' }}>
+            <div style={{ padding: '12px 14px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '14px', fontSize: '13px' }}>
+              <div>Top-up Amount: <strong>{topUpVal.toFixed(2)} USDT</strong></div>
+              <div>Gas Fee: <strong>3.00 USDT</strong></div>
+              <div>Total Deduction: <strong>{(topUpVal + 3).toFixed(2)} USDT</strong></div>
+            </div>
+            <label className="portal-wallet-field">
+              <span className="portal-wallet-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
+                Confirm Password (비밀번호 확인)
+              </span>
+              <input
+                className="portal-wallet-field__input"
+                type="password"
+                placeholder="Enter account password to authorize top-up"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                autoFocus
+                autoComplete="current-password"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}
+              />
+            </label>
+          </div>
+        )}
+
+        <div className="portal-wallet-sheet__actions" style={{ marginTop: '16px' }}>
+          <button
+            type="button"
+            className="portal-btn-secondary portal-wallet-sheet__btn"
+            onClick={showPasswordStep ? () => setShowPasswordStep(false) : onClose}
+            disabled={loading}
+          >
+            {showPasswordStep ? 'Back' : 'Cancel'}
           </button>
           <button
             type="button"
             className="portal-btn-primary portal-wallet-sheet__btn"
-            disabled={loading || !W.isValidTopUp(amount) || (parseFloat(amount) || 0) + W.GAS_FEE_CHARGE > resolveWalletBalance(s.walletBalance)}
-            onClick={handleConfirm}>
-            {loading ? <><span className="btn-spinner"></span>Processing...</> : W.topUpCtaLabel(amount)}
+            disabled={loading || isUnderMin || !W.isValidTopUp(amount) || isExceeded || (showPasswordStep && !password.trim())}
+            onClick={handleNextOrConfirm}
+          >
+            {loading ? <><span className="btn-spinner"></span>Processing...</> : showPasswordStep ? 'Confirm & Top Up' : 'Next (Password Confirm)'}
           </button>
         </div>
       </div>
