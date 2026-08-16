@@ -74,7 +74,7 @@ function ApplyCardPage() {
               <div className="aform__sec">Identity (KYC)</div>
               <div className="aform__grid">
                 <FormField label="ID document type" req>
-                  <select required defaultValue=""><option value="" disabled>Select…</option><option>Passport</option><option>National ID</option><option>Driver's license</option></select>
+                  <select required defaultValue="Passport"><option value="Passport">Passport</option><option value="Driver's license">Driver's license</option></select>
                 </FormField>
                 <FormField label="Stablecoin you'll top up with" req>
                   <select required defaultValue=""><option value="" disabled>Select…</option><option>USDT (TRC-20)</option><option>USDT (ERC-20)</option><option>USDC</option></select>
@@ -84,7 +84,7 @@ function ApplyCardPage() {
               <div className="aform__sec">Card</div>
               <div className="aform__grid">
                 <FormField label="Card type" req>
-                  <select required defaultValue=""><option value="" disabled>Select…</option><option>Virtual + Physical (recommended)</option><option>Virtual only</option></select>
+                  <select required defaultValue="Physical"><option value="Physical">Physical</option><option value="Virtual">Virtual</option></select>
                 </FormField>
                 <FormField label="Add to mobile wallet">
                   <select defaultValue=""><option value="" disabled>Select…</option><option>Apple Pay</option><option>Google Pay</option><option>Samsung Pay</option><option>Decide later</option></select>

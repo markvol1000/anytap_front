@@ -152,21 +152,21 @@ export function AccountKyc({ s }) {
     }
 
     if (!kycForm.nationality?.trim()) {
-      s.showToast('Please enter your nationality.');
+      s.showToast('Please select your nationality.');
       return;
     }
     const countryPattern = /^[a-zA-Z]{2}$/;
     if (!countryPattern.test(kycForm.nationality.trim())) {
-      s.showToast('Please enter your 2-letter ISO country code for Nationality (e.g. KR, HK, US).');
+      s.showToast('Please select a valid nationality.');
       return;
     }
 
     if (!kycForm.country?.trim()) {
-      s.showToast('Please enter your country.');
+      s.showToast('Please select your country of residence.');
       return;
     }
     if (!countryPattern.test(kycForm.country.trim())) {
-      s.showToast('Please enter your 2-letter ISO country code for Country of Residence (e.g. KR, HK, US).');
+      s.showToast('Please select a valid country of residence.');
       return;
     }
 

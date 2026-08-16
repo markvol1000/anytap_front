@@ -24,12 +24,20 @@ export function AccountProfile({ s }) {
     return val || 'Not set';
   };
 
+  const fn = String(s.accountState?.firstName || s.profile?.firstName || '').trim();
+  const ln = String(s.accountState?.lastName || s.profile?.lastName || '').trim();
+  const fullNameCombined = (fn || ln)
+    ? `${fn} ${ln}`.trim()
+    : (s.accountState?.name || s.accountState?.fullName || 'User');
+
+  const countryVal = String(s.accountState?.country || s.accountState?.nationality || s.profile?.country || '').trim();
+
   const fields = [
-    { label: 'Full name', value: s.accountState?.name || 'User' },
+    { label: 'Full name', value: fullNameCombined },
     { label: 'Email', value: unset(s.accountState?.email) },
     { label: 'Login ID', value: unset(s.accountState?.loginId || s.accountState?.userId) },
     { label: 'Phone', value: unset(s.accountState?.phone) },
-    { label: 'Country', value: unset(s.accountState?.country) },
+    ...(countryVal && countryVal !== 'Not set' && countryVal !== '—' ? [{ label: 'Country', value: countryVal }] : []),
   ];
 
   const handleChangePassword = async (e) => {
@@ -94,15 +102,8 @@ export function AccountProfile({ s }) {
         ))}
       </div>
 
-      {/* Action buttons */}
+      {/* Action buttons (Edit Profile removed) */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-        <button
-          type="button"
-          className="portal-btn-secondary portal-detail__btn"
-          style={{ flex: 1 }}
-          onClick={() => s.showToast('Edit profile coming soon')}>
-          Edit profile
-        </button>
         <button
           type="button"
           className="portal-btn-primary portal-detail__btn"

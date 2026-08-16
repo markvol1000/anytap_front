@@ -79,13 +79,14 @@ export function bindMemberProfileToUser(userId) {
 /** Prefer saved profile → session fields. No email-local-part inventing. */
 export function resolveMemberDisplayName(source = {}) {
   const profile = getMemberProfile();
-  const beName = (source.firstName && source.lastName)
-    ? `${source.firstName} ${source.lastName}`
-    : (source.firstName || source.lastName || '');
+  const fn = String(source.firstName || profile.firstName || '').trim();
+  const ln = String(source.lastName || profile.lastName || '').trim();
+  if (fn || ln) {
+    return `${ln} ${fn}`.trim();
+  }
   const result = String(
     source.name
     || source.fullName
-    || beName
     || profile.name
     || profile.fullName
     || '',
@@ -126,17 +127,31 @@ export function formatMemberPhone(source = {}) {
 /** Apply KYC form values to local profile + return patch for http session. */
 export function profilePatchFromKycForm(form = {}) {
   const patch = {};
-  const name = String(form.fullName || '').trim();
-  if (name) patch.name = name;
-  const country = String(form.nationality || '').trim();
+  const fn = String(form.firstName || '').trim();
+  const ln = String(form.lastName || '').trim();
+  if (fn) patch.firstName = fn;
+  if (ln) patch.lastName = ln;
+
+  const fullName = (fn || ln) ? `${ln} ${fn}`.trim() : String(form.fullName || '').trim();
+  if (fullName) patch.name = fullName;
+
+  const country = String(form.nationality || form.country || '').trim();
   if (country) {
     patch.country = country;
     patch.nationality = country;
   }
-  const phoneCountryCode = String(form.phoneCountryCode || '').trim();
+
+  const phoneCountryCode = String(form.phoneCountryCode || form.areaCode || '').trim();
   if (phoneCountryCode) patch.phoneCountryCode = phoneCountryCode;
-  const phoneNumber = String(form.phoneNumber || '').trim();
+
+  const phoneNumber = String(form.phoneNumber || form.mobile || form.phone || '').trim();
   if (phoneNumber) patch.phoneNumber = phoneNumber;
+
+  const fullPhone = (phoneCountryCode && phoneNumber)
+    ? `${phoneCountryCode} ${phoneNumber}`
+    : (phoneCountryCode || phoneNumber);
+  if (fullPhone) patch.phone = fullPhone;
+
   if (Object.keys(patch).length) patchMemberProfile(patch);
   return patch;
 }

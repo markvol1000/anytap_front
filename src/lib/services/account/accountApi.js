@@ -914,10 +914,47 @@ export async function submitKycApplication(form = {}) {
     ...(selfieId ? { selfieId } : {}),
   };
 
+  const kycPayload = {
+    email: session.email,
+    firstName: (form.firstName || '').trim(),
+    lastName: (form.lastName || '').trim(),
+    mobile: form.phoneNumber || '',
+    areaCode: form.phoneCountryCode || '+82',
+    birthday: (() => {
+      const raw = String(form.dateOfBirth || '').replace(/[^\d]/g, '');
+      if (raw.length === 8) {
+        return `${raw.substring(0, 4)}-${raw.substring(4, 6)}-${raw.substring(6, 8)}`;
+      }
+      return form.dateOfBirth || '';
+    })(),
+    nationality: form.nationality || 'KR',
+    idNumber: form.idDocNumber || '',
+    idType: mapWasabiIdType(form.idDocType || 'PASSPORT'),
+    gender: form.gender || 'M',
+    country: form.country || '',
+    state: form.state || '',
+    city: form.city || '',
+    addressLine1: form.addressLine1 || '',
+    postalCode: form.postalCode || '',
+    annualSalary: form.annualSalary || '50000 USD',
+    accountPurpose: form.accountPurpose || 'Living Expense',
+    expectedMonthlyVolume: form.expectedMonthlyVolume || '5000 USD',
+    ...filePayload,
+  };
+
   const kycStatus = mapKycStatus(session.kycStatus);
   if (kycStatus === 'rejected') {
-    await apiPost(`/users/${encodeURIComponent(session.userId)}/kyc/resubmit`, filePayload);
-    patchHttpSession({ kycStatus: 'UNDER_REVIEW' });
+    try {
+      await apiPost(`/users/${encodeURIComponent(session.userId)}/kyc/resubmit`, kycPayload);
+    } catch {
+      await apiPost(`/cards/${encodeURIComponent(session.userId)}/register`, kycPayload);
+    }
+    patchHttpSession({
+      kycStatus: 'UNDER_REVIEW',
+      phoneCountryCode: form.phoneCountryCode,
+      phoneNumber: form.phoneNumber,
+      ...profilePatch,
+    });
     await refreshSessionFromUser(session.userId);
     return { ok: true, resubmitted: true };
   }
@@ -925,33 +962,7 @@ export async function submitKycApplication(form = {}) {
   // Prefer member card/holder registration. Temp-user cardholder API only works pre-signup.
   const data = await apiPost(
     `/cards/${encodeURIComponent(session.userId)}/register`,
-    { 
-      email: session.email, 
-      firstName: (form.firstName || '').trim(),
-      lastName: (form.lastName || '').trim(),
-      mobile: form.phoneNumber || '',
-      areaCode: form.phoneCountryCode || '+82',
-      birthday: (() => {
-        const raw = String(form.dateOfBirth || '').replace(/[^\d]/g, '');
-        if (raw.length === 8) {
-          return `${raw.substring(0, 4)}-${raw.substring(4, 6)}-${raw.substring(6, 8)}`;
-        }
-        return form.dateOfBirth || '';
-      })(),
-      nationality: form.nationality || 'KR',
-      idNumber: form.idDocNumber || '',
-      idType: mapWasabiIdType(form.idDocType || 'PASSPORT'),
-      gender: form.gender || 'M',
-      country: form.country || '',
-      state: form.state || '',
-      city: form.city || '',
-      addressLine1: form.addressLine1 || '',
-      postalCode: form.postalCode || '',
-      annualSalary: form.annualSalary || '50000 USD',
-      accountPurpose: form.accountPurpose || 'Living Expense',
-      expectedMonthlyVolume: form.expectedMonthlyVolume || '5000 USD',
-      ...filePayload 
-    },
+    kycPayload,
   );
 
   patchHttpSession({
