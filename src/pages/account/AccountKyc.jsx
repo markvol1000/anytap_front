@@ -7,6 +7,8 @@ import { profilePatchFromKycForm } from '../../lib/member-profile.js';
 import { KycDocField } from '../../components/kyc-doc-field.jsx';
 import { phoneCountryCodeOptions } from '../../lib/phone-country-codes.js';
 
+import { getHttpSession } from '../../lib/api/httpSession.js';
+
 function FormField({ label, children, className = '' }) {
   return (
     <label className={`capply-field ${className}`.trim()}>
@@ -51,10 +53,17 @@ function StickyFoot({ secondaryLabel, primaryLabel, primaryDisabled, onSecondary
 }
 
 export function AccountKyc({ s }) {
-  const [kycForm, setKycForm] = useState({
-    ...C.EMPTY_KYC_FORM,
-    firstName: '',
-    lastName: '',
+  const [kycForm, setKycForm] = useState(() => {
+    const sess = getHttpSession() || {};
+    return {
+      ...C.EMPTY_KYC_FORM,
+      firstName: sess.firstName || '',
+      lastName: sess.lastName || '',
+      phoneCountryCode: sess.phoneCountryCode || '',
+      phoneNumber: sess.phoneNumber || sess.phone || '',
+      nationality: sess.nationality || '',
+      country: sess.country || '',
+    };
   });
   const [kycSubmitting, setKycSubmitting] = useState(false);
   const [kycAwaitingReview, setKycAwaitingReview] = useState(false);
@@ -246,8 +255,8 @@ export function AccountKyc({ s }) {
       return;
     }
     const phoneDigits = phoneNumber.replace(/[^\d]/g, '');
-    if (phoneDigits.length < 5 || phoneDigits.length > 20) {
-      s.showToast('Phone number must be between 5 and 20 digits.');
+    if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+      s.showToast('Please enter a valid mobile number with 7-15 digits.');
       return;
     }
 

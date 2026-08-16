@@ -351,7 +351,7 @@ export const EMPTY_KYC_FORM = {
   nationality: '',
   idDocType: 'Passport',
   idDocNumber: '',
-  phoneCountryCode: '+1',
+  phoneCountryCode: '',
   phoneNumber: '',
   idFrontFile: null,
   idBackFile: null,
