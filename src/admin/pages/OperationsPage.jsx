@@ -850,9 +850,10 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                     <th style={{ padding: '10px 14px' }}>Severity</th>
                     <th style={{ padding: '10px 14px' }}>Exception Class</th>
                     <th style={{ padding: '10px 14px' }}>Target Service</th>
+                    <th style={{ padding: '10px 14px' }}>Source Log & Line (로그 위치)</th>
                     <th style={{ padding: '10px 14px' }}>Logged Time</th>
-                    <th style={{ padding: '10px 14px' }}>Issue Status</th>
-                    <th style={{ padding: '10px 14px' }}>Exception Message Snippet</th>
+                    <th style={{ padding: '10px 14px' }}>Status</th>
+                    <th style={{ padding: '10px 14px' }}>Message Snippet</th>
                     <th style={{ padding: '10px 14px', textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
@@ -871,6 +872,8 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                       statusBorder = '#22c55e';
                     }
 
+                    const logLoc = issue.logPath || `${issue.sourceLogFile || '/var/log/anytap/app.log'}:${issue.logLineNumber || 'L1'}`;
+
                     return (
                       <tr key={issue.id} style={{ borderBottom: '1px solid #1e293b' }}>
                         <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: '700', color: '#ef4444' }}>
@@ -887,6 +890,11 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                         <td style={{ padding: '10px 14px', color: '#38bdf8', fontWeight: '600' }}>
                           {issue.service}
                         </td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <code style={{ fontSize: '11px', color: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '3px 8px', borderRadius: '6px', fontFamily: 'monospace', fontWeight: '600' }}>
+                            📄 {logLoc}
+                          </code>
+                        </td>
                         <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#94a3b8' }}>
                           {new Date(issue.timestamp).toLocaleString()}
                         </td>
@@ -895,7 +903,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                             {issue.status}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 14px', color: '#e2e8f0', maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '10px 14px', color: '#e2e8f0', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {issue.message}
                         </td>
                         <td style={{ padding: '10px 14px', textAlign: 'right' }}>
@@ -905,7 +913,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                             style={{ padding: '4px 10px', fontSize: '12px' }}
                             onClick={() => setSelectedIssue(issue)}
                           >
-                            🔍 Stack Trace
+                            🔍 Log Trace & Report
                           </button>
                         </td>
                       </tr>
@@ -1124,6 +1132,45 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
               </button>
             </div>
 
+            {/* Source Log File Location Banner */}
+            <div style={{ marginBottom: '16px', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', padding: '14px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+              <div>
+                <span style={{ fontSize: '11px', color: '#38bdf8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '3px' }}>
+                  📄 Target Log File & Line Number (장애 발생 실제 로그 위치)
+                </span>
+                <code style={{ fontSize: '13px', color: '#f8fafc', fontWeight: '700', fontFamily: 'monospace' }}>
+                  {selectedIssue.logPath || `${selectedIssue.sourceLogFile || '/var/log/anytap/app.log'}:${selectedIssue.logLineNumber || 'L1'}`}
+                </code>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--secondary"
+                  style={{ padding: '6px 12px', fontSize: '12px' }}
+                  onClick={() => {
+                    const path = selectedIssue.logPath || `${selectedIssue.sourceLogFile || '/var/log/anytap/app.log'}:${selectedIssue.logLineNumber || 'L1'}`;
+                    navigator.clipboard.writeText(path);
+                    setToastMessage(`📋 Log path copied to clipboard: ${path}`);
+                    setTimeout(() => setToastMessage(''), 3000);
+                  }}
+                >
+                  📋 Copy Log Path
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--primary"
+                  style={{ padding: '6px 12px', fontSize: '12px' }}
+                  onClick={() => {
+                    setSearchTerm(selectedIssue.service || selectedIssue.exceptionType || '');
+                    setActiveTab('logs');
+                    setSelectedIssue(null);
+                  }}
+                >
+                  ▶ View in Live System Log Console
+                </button>
+              </div>
+            </div>
+
             {/* Error Message */}
             <div style={{ marginBottom: '16px' }}>
               <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', display: 'block', marginBottom: '6px' }}>
@@ -1134,12 +1181,24 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
               </div>
             </div>
 
+            {/* Incident Root Cause & Action Report Box */}
+            {selectedIssue.rootCauseReport && (
+              <div style={{ marginBottom: '16px', background: 'rgba(34, 197, 94, 0.05)', border: '1px solid rgba(34, 197, 94, 0.25)', borderRadius: '10px', padding: '14px' }}>
+                <span style={{ fontSize: '12px', color: '#4ade80', fontWeight: '700', display: 'block', marginBottom: '6px' }}>
+                  💡 Incident Root Cause & Resolution Report (장애 원인 분석 및 최종 조치 리포트)
+                </span>
+                <div style={{ fontSize: '13px', color: '#e2e8f0', whiteSpace: 'pre-wrap', lineHeight: '1.6', fontFamily: 'sans-serif' }}>
+                  {selectedIssue.rootCauseReport}
+                </div>
+              </div>
+            )}
+
             {/* Stack Trace Code Block */}
             <div style={{ marginBottom: '20px' }}>
               <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', display: 'block', marginBottom: '6px' }}>
                 Full Java Stack Trace Log
               </span>
-              <pre style={{ backgroundColor: '#090d16', padding: '14px', borderRadius: '8px', border: '1px solid #1e293b', color: '#cbd5e1', fontSize: '12px', fontFamily: 'monospace', overflowX: 'auto', whiteSpace: 'pre-wrap', lineHeight: '1.6', maxHeight: '240px' }}>
+              <pre style={{ backgroundColor: '#090d16', padding: '14px', borderRadius: '8px', border: '1px solid #1e293b', color: '#cbd5e1', fontSize: '12px', fontFamily: 'monospace', overflowX: 'auto', whiteSpace: 'pre-wrap', lineHeight: '1.6', maxHeight: '220px' }}>
                 {selectedIssue.stackTrace}
               </pre>
             </div>

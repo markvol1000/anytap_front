@@ -277,6 +277,7 @@ function AmountBlock({
   quickAmounts = W.QUICK_AMOUNTS,
   onQuickAdd,
   isExceeded = false,
+  isUnderMin = false,
 }) {
   const inputId = useId();
 
@@ -304,13 +305,39 @@ function AmountBlock({
     onChange(finalVal);
   };
 
+  const hasError = isExceeded || isUnderMin;
+
   return (
-    <div className="portal-wallet-amt" style={{ background: '#F8FAFC', border: isExceeded ? '2px solid #ef4444' : '2px solid #64748B', borderRadius: '12px', padding: '14px 16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-      <p className="portal-wallet-amt__label" style={{ fontWeight: 600, color: '#475569', marginBottom: '8px' }}>{label}</p>
+    <div className="portal-wallet-amt" style={{
+      background: isUnderMin ? '#fff1f2' : '#F8FAFC',
+      border: hasError ? '2px solid #ef4444' : '2px solid #64748B',
+      borderRadius: '12px',
+      padding: '14px 16px',
+      boxShadow: hasError ? '0 0 10px rgba(239, 68, 68, 0.25)' : '0 1px 3px rgba(0,0,0,0.05)',
+      transition: 'all 0.2s ease',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <p className="portal-wallet-amt__label" style={{ fontWeight: 600, color: hasError ? '#b91c1c' : '#475569', margin: 0 }}>
+          {label}
+        </p>
+        <span style={{
+          backgroundColor: isUnderMin ? '#ef4444' : '#0284c7',
+          color: '#ffffff',
+          fontWeight: '700',
+          fontSize: '11.5px',
+          padding: '3px 9px',
+          borderRadius: '999px',
+          letterSpacing: '0.3px',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+        }}>
+          Min. 50 USDT
+        </span>
+      </div>
+
       <div className="portal-wallet-amt__row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
         <input
           id={inputId}
-          className={`portal-wallet-amt__input${isExceeded ? ' is-exceeded' : ''}`}
+          className={`portal-wallet-amt__input${hasError ? ' is-exceeded' : ''}`}
           type="number"
           min="0"
           step="0.01"
@@ -322,16 +349,28 @@ function AmountBlock({
           style={{
             fontSize: '30px',
             fontWeight: 700,
-            color: isExceeded ? '#ef4444' : '#0f172a',
+            color: hasError ? '#ef4444' : '#0f172a',
             background: 'transparent',
             border: 'none',
             outline: 'none',
             width: '100%',
           }}
         />
-        <span className="portal-wallet-amt__unit" style={{ fontWeight: 700, color: '#334155', fontSize: '16px' }}>USDT</span>
+        <span className="portal-wallet-amt__unit" style={{ fontWeight: 700, color: hasError ? '#b91c1c' : '#334155', fontSize: '16px' }}>USDT</span>
       </div>
-      {hint && <p className="portal-wallet-amt__hint">{hint}</p>}
+
+      {/* Always displayed hint text — color transitions to red when under 50 USDT */}
+      <p style={{
+        marginTop: '10px',
+        marginBottom: '0px',
+        fontSize: '12.5px',
+        fontWeight: isUnderMin ? 700 : 500,
+        color: isUnderMin ? '#ef4444' : '#64748b',
+        transition: 'color 0.2s ease',
+      }}>
+        {hint || `Min. 50 USDT · Gas fee 3.00 USDT`}
+      </p>
+
       {onQuickAdd && (
         <div className="portal-wallet-quick-amt" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '12px' }}>
           {quickAmounts.map((n) => (
@@ -345,7 +384,7 @@ function AmountBlock({
   );
 }
 
-function TransactionSummary({ selectedCard, topUpAmount, gasFee }) {
+function TransactionSummary({ selectedCard, topUpAmount, gasFee, isUnderMin = false }) {
   if (!selectedCard) return null;
 
   const cardBal = parseFloat(W.parseCardBalanceUsdt(selectedCard.balance)) || 0;
@@ -373,6 +412,12 @@ function TransactionSummary({ selectedCard, topUpAmount, gasFee }) {
           <dt>Balance After Top Up</dt>
           <dd className={hasAmount ? 'is-highlight' : ''}>
             {hasAmount ? `${balanceAfter} USDT` : '—'}
+          </dd>
+        </div>
+        <div className="portal-wallet-desk__summary-row">
+          <dt>Minimum Top Up</dt>
+          <dd style={{ color: isUnderMin ? '#ef4444' : 'inherit', fontWeight: isUnderMin ? 700 : 500 }}>
+            50.00 USDT
           </dd>
         </div>
         <div className="portal-wallet-desk__summary-row">
@@ -449,6 +494,7 @@ function WalletTopUpSide({
 
   const walletBal = resolveWalletBalance(s.walletBalance);
   const topUpVal = parseFloat(topUpAmount) || 0;
+  const isUnderMin = topUpVal > 0 && topUpVal < W.MIN_TOPUP;
   const isExceeded = topUpVal > 0 && (topUpVal + W.GAS_FEE_CHARGE > walletBal);
   const canSubmit = W.isValidTopUp(topUpAmount) && !isExceeded;
 
@@ -458,20 +504,23 @@ function WalletTopUpSide({
         label="Top Up Amount"
         amount={topUpAmount}
         onChange={setTopUpAmount}
-        hint={`Min. ${W.MIN_TOPUP} USDT · Gas fee shown on confirmation`}
         onQuickAdd={addTopUpQuick}
         isExceeded={isExceeded}
+        isUnderMin={isUnderMin}
       />
       <TransactionSummary
         selectedCard={selectedCard}
         topUpAmount={topUpAmount}
         gasFee={W.GAS_FEE_CHARGE}
+        isUnderMin={isUnderMin}
       />
       <WalletNotice>Funds topped up to a card cannot be reversed.</WalletNotice>
+
       <button
         type="button"
         className={`portal-btn-primary portal-wallet-charge__cta${canSubmit ? ' is-ready' : ''}`}
         disabled={!canSubmit}
+        style={isUnderMin ? { backgroundColor: '#94a3b8', cursor: 'not-allowed', borderColor: '#cbd5e1' } : undefined}
         onClick={onConfirm}>
         {W.topUpCtaLabel(topUpAmount)}
       </button>
@@ -589,6 +638,17 @@ function WalletNotice({ children }) {
 }
 
 function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onConfirm, confirmLabel, danger, loading = false }) {
+  const [isUnderstood, setIsUnderstood] = useState(false);
+
+  useEffect(() => {
+    setIsUnderstood(false);
+  }, [title]);
+
+  const headerTitle = title || 'Before You Top Up';
+  const noticeTitle = (headerTitle.includes('Transfer') || headerTitle.includes('Withdrawal'))
+    ? 'Before You Send / Withdraw'
+    : 'Before You Top Up';
+
   return (
     <div className="portal-sheet" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" className="portal-sheet__backdrop" onClick={loading ? undefined : onCancel} aria-label="Close" />
@@ -619,6 +679,37 @@ function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onC
             autoComplete="current-password"
           />
         </label>
+
+        {/* Mandatory Terms & I understand Checkbox (Orange Title + Slate Gray Body Theme) */}
+        <div style={{
+          marginTop: '14px',
+          marginBottom: '14px',
+          padding: '14px 16px',
+          backgroundColor: '#ffffff',
+          border: '1.5px solid #f97316',
+          borderRadius: '10px',
+          lineHeight: '1.6',
+          boxShadow: '0 4px 12px rgba(249, 115, 22, 0.08)',
+        }}>
+          <strong style={{ color: '#ea580c', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '900', letterSpacing: '0.3px' }}>
+            ⚠️ {noticeTitle}
+          </strong>
+          <ol style={{ margin: '0 0 12px 20px', padding: 0, color: '#334155', fontWeight: '600', fontSize: '13px' }}>
+            <li style={{ color: '#334155', marginBottom: '4px' }}>Processing may take up to 60 minutes</li>
+            <li style={{ color: '#334155', marginBottom: '4px' }}>Top-up amount is non-refundable</li>
+            <li style={{ color: '#334155' }}>Exchange rate is not 1:1 (may vary)</li>
+          </ol>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#1e293b', fontWeight: '800', fontSize: '14px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+            <input
+              type="checkbox"
+              checked={isUnderstood}
+              onChange={(e) => setIsUnderstood(e.target.checked)}
+              style={{ width: '18px', height: '18px', accentColor: '#f97316', cursor: 'pointer' }}
+            />
+            <span style={{ color: '#1e293b', fontSize: '14px', fontWeight: '800' }}>I understand</span>
+          </label>
+        </div>
+
         {notice && <WalletNotice>{notice}</WalletNotice>}
         <div className="portal-wallet-sheet__actions">
           <button type="button" className="portal-btn-secondary portal-wallet-sheet__btn" onClick={onCancel} disabled={loading}>
@@ -627,7 +718,7 @@ function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onC
           <button
             type="button"
             className={`portal-btn-primary portal-wallet-sheet__btn${danger ? ' portal-wallet-sheet__btn--danger' : ''}`}
-            disabled={loading || !password || !password.trim()}
+            disabled={loading || !password || !password.trim() || !isUnderstood}
             onClick={onConfirm}>
             {loading ? <><span className="btn-spinner"></span>Processing...</> : confirmLabel}
           </button>
@@ -847,6 +938,7 @@ export function CardTopUpSelectSheet({ s, cards, open, onClose, onSelect }) {
 export function QuickTopUpSheet({ s, card, open, onClose }) {
   const [amount, setAmount] = useState('');
   const [password, setPassword] = useState('');
+  const [isUnderstood, setIsUnderstood] = useState(false);
   const [showPasswordStep, setShowPasswordStep] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -854,6 +946,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
     if (open) {
       setAmount('');
       setPassword('');
+      setIsUnderstood(false);
       setShowPasswordStep(false);
       setLoading(false);
     }
@@ -874,7 +967,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
 
   const handleNextOrConfirm = async () => {
     if (isUnderMin) {
-      s.showToast?.('⚠️ 최소 충전 금액은 50 USDT 이상이어야 합니다.');
+      s.showToast?.('Minimum card top-up amount must be 50 USDT or higher.');
       return;
     }
     if (!showPasswordStep) {
@@ -882,7 +975,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
       return;
     }
 
-    if (loading || !password || !password.trim()) return;
+    if (loading || !password || !password.trim() || !isUnderstood) return;
     setLoading(true);
     try {
       await chargeCard(topUpVal, card?.cardId || card?.id, password);
@@ -909,27 +1002,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
           </button>
         </div>
 
-        {/* High Priority Top Notification Alert for Min Amount < 50 USDT */}
-        {isUnderMin && (
-          <div style={{
-            backgroundColor: '#fef2f2',
-            color: '#991b1b',
-            border: '1px solid #fecaca',
-            padding: '10px 14px',
-            borderRadius: '8px',
-            marginBottom: '14px',
-            fontSize: '13px',
-            fontWeight: '600',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}>
-            <span style={{ fontSize: '16px' }}>⚠️</span>
-            <span>최소 충전 금액은 <strong>50 USDT</strong> 이상이어야 합니다. (Minimum top-up: 50 USDT)</span>
-          </div>
-        )}
-
-        <p className="portal-wallet-sheet__sub">Move USDT from your wallet to your card (Minimum: <strong>50 USDT</strong>).</p>
+        <p className="portal-wallet-sheet__sub">Move USDT from your wallet to your card.</p>
 
         <div className="portal-wallet-quick-head">
           <CardThumb variant={card.variant} />
@@ -976,6 +1049,36 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
                 style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}
               />
             </label>
+
+            {/* Mandatory Terms & I understand Checkbox (Orange Title + Slate Gray Body Theme) */}
+            <div style={{
+              marginTop: '14px',
+              marginBottom: '14px',
+              padding: '14px 16px',
+              backgroundColor: '#ffffff',
+              border: '1.5px solid #f97316',
+              borderRadius: '10px',
+              lineHeight: '1.6',
+              boxShadow: '0 4px 12px rgba(249, 115, 22, 0.08)',
+            }}>
+              <strong style={{ color: '#ea580c', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '900', letterSpacing: '0.3px' }}>
+                ⚠️ Before You Top Up
+              </strong>
+              <ol style={{ margin: '0 0 12px 20px', padding: 0, color: '#334155', fontWeight: '600', fontSize: '13px' }}>
+                <li style={{ color: '#334155', marginBottom: '4px' }}>Processing may take up to 60 minutes</li>
+                <li style={{ color: '#334155', marginBottom: '4px' }}>Top-up amount is non-refundable</li>
+                <li style={{ color: '#334155' }}>Exchange rate is not 1:1 (may vary)</li>
+              </ol>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#1e293b', fontWeight: '800', fontSize: '14px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+                <input
+                  type="checkbox"
+                  checked={isUnderstood}
+                  onChange={(e) => setIsUnderstood(e.target.checked)}
+                  style={{ width: '18px', height: '18px', accentColor: '#f97316', cursor: 'pointer' }}
+                />
+                <span style={{ color: '#1e293b', fontSize: '14px', fontWeight: '800' }}>I understand</span>
+              </label>
+            </div>
           </div>
         )}
 
@@ -991,7 +1094,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
           <button
             type="button"
             className="portal-btn-primary portal-wallet-sheet__btn"
-            disabled={loading || isUnderMin || !W.isValidTopUp(amount) || isExceeded || (showPasswordStep && !password.trim())}
+            disabled={loading || isUnderMin || !W.isValidTopUp(amount) || isExceeded || (showPasswordStep && (!password.trim() || !isUnderstood))}
             onClick={handleNextOrConfirm}
           >
             {loading ? <><span className="btn-spinner"></span>Processing...</> : showPasswordStep ? 'Confirm & Top Up' : 'Next (Password Confirm)'}

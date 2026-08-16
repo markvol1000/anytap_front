@@ -15,8 +15,19 @@ import { CardOnboardingActions } from '../components/account-cards.jsx';
 import { resolveFeatureIcon } from '../utils/feature-icons.js';
 import { isPortalDashboardScreen, resolvePortalPageMeta } from '../lib/portal-navigation.js';
 import { resolveUnreadNotifications } from '../lib/api/display-data.js';
-import { hasMemberSession } from '../lib/services/authService.js';
+import { hasAdminSession, getAdminSessionEmail, isAdminEmail, hasMemberSession } from '../lib/services/authService.js';
+import { getHttpSession } from '../lib/api/httpSession.js';
 import { ensureDemoPreviewSession, getActiveDemoSlug } from '../lib/demo-session.js';
+
+function checkIsAdmin(s) {
+  if (hasAdminSession()) return true;
+  if (getAdminSessionEmail()) return true;
+  const session = getHttpSession();
+  if (session?.role === 'admin' || session?.isAdmin || session?.role === 'ADMIN') return true;
+  if (session?.email && (isAdminEmail(session.email) || session.email.toLowerCase().includes('admin'))) return true;
+  if (s?.accountState?.role === 'admin' || s?.accountState?.isAdmin) return true;
+  return false;
+}
 
 // Screen components
 import { AccountHome } from '../components/account-dashboard.jsx';
@@ -51,9 +62,11 @@ function PortalNavIcon({ name, size }) {
 // ─── Sidebar / dock navigation ────────────────────────────────────────────────
 function AccountNav({ s, variant }) {
   let items = variant === 'dock' ? A.NAV_DOCK : A.NAV_MAIN;
+  const isAdmin = checkIsAdmin(s);
   const isReferralEligible = Boolean(
-    (s.referralContext?.isPartner || s.remoteReferral?.isPartner) &&
-    (s.referralContext?.code || s.remoteReferral?.code)
+    isAdmin ||
+    ((s.referralContext?.isPartner || s.remoteReferral?.isPartner) &&
+      (s.referralContext?.code || s.remoteReferral?.code))
   );
 
   // Normal users who are NOT registered in ReferralCode table should NOT see the Referral menu
@@ -102,9 +115,11 @@ function AccountMain({ s }) {
   if (s.screen === 'topup') return <AccountWallet s={s} />;
   if (s.screen === 'transactions') return <AccountCardTransactions s={s} />;
   if (s.screen === 'referral') {
+    const isAdmin = checkIsAdmin(s);
     const isReferralEligible = Boolean(
-      (s.referralContext?.isPartner || s.remoteReferral?.isPartner) &&
-      (s.referralContext?.code || s.remoteReferral?.code)
+      isAdmin ||
+      ((s.referralContext?.isPartner || s.remoteReferral?.isPartner) &&
+        (s.referralContext?.code || s.remoteReferral?.code))
     );
     if (!isReferralEligible) {
       return <Navigate to="/account" replace />;

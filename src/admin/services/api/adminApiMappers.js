@@ -180,6 +180,28 @@ export function paginateLocal(items, {
       list = list.filter((row) => row.accountStatus === value);
       return;
     }
+    if (key === 'startDate') {
+      const startMs = new Date(value).getTime();
+      if (!Number.isNaN(startMs)) {
+        list = list.filter((row) => {
+          const raw = row.createdAt || row.joinDate || row.created_at || row.joinedAt || row.date || row.payoutDate;
+          if (!raw) return true;
+          return new Date(raw).getTime() >= startMs;
+        });
+      }
+      return;
+    }
+    if (key === 'endDate') {
+      const endMs = new Date(value + 'T23:59:59.999Z').getTime();
+      if (!Number.isNaN(endMs)) {
+        list = list.filter((row) => {
+          const raw = row.createdAt || row.joinDate || row.created_at || row.joinedAt || row.date || row.payoutDate;
+          if (!raw) return true;
+          return new Date(raw).getTime() <= endMs;
+        });
+      }
+      return;
+    }
     if (key === 'status') {
       const want = mapCardStatusForApi(value);
       list = list.filter((row) => {

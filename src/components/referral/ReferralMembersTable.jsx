@@ -102,9 +102,8 @@ export function ReferralMembersTable({ members = [], onDetail, onShowToast }) {
             <tr>
               <th scope="col">Member</th>
               <th scope="col">Status</th>
-              <th scope="col">Card Status (카드발급/매수)</th>
+              <th scope="col">Card Status</th>
               <th scope="col">Total Top-up</th>
-              <th scope="col">Reward</th>
               <th scope="col">Joined</th>
             </tr>
           </thead>
@@ -112,6 +111,7 @@ export function ReferralMembersTable({ members = [], onDetail, onShowToast }) {
             {pagedItems.length > 0 ? pagedItems.map((m) => {
               const cardCount = Number(m.cards) || 0;
               const hasCard = cardCount > 0 || (m.cardStatus && m.cardStatus !== 'not_issued');
+              const topUpVal = Number(m.topUpUsdt ?? m.totalTopUp ?? m.totalDeposit ?? 0);
               return (
                 <tr key={m.id || m.name}>
                   <td data-label="Member">
@@ -122,22 +122,23 @@ export function ReferralMembersTable({ members = [], onDetail, onShowToast }) {
                   <td data-label="Card Status">
                     {hasCard ? (
                       <span style={{ color: '#38bdf8', fontWeight: '600', fontSize: '12px', background: 'rgba(56, 189, 248, 0.1)', padding: '3px 8px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-                        💳 발급됨 ({cardCount > 0 ? cardCount : 1}장)
+                        💳 Issued ({cardCount > 0 ? cardCount : 1} card{cardCount > 1 ? 's' : ''})
                       </span>
                     ) : (
                       <span style={{ color: '#64748b', fontSize: '12px', background: 'rgba(255, 255, 255, 0.05)', padding: '3px 8px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-                        미발급 (0장)
+                        Not Issued (0 cards)
                       </span>
                     )}
                   </td>
-                  <td data-label="Top-up">{formatUsdt(m.topUpUsdt)} USDT</td>
-                  <td data-label="Reward" style={{ fontWeight: '700', color: '#34d399' }}>{formatUsdt(m.rewardUsdt)} USDT</td>
+                  <td data-label="Total Top-up" style={{ fontWeight: '700', color: '#38bdf8' }}>
+                    {formatUsdt(topUpVal)} USDT
+                  </td>
                   <td data-label="Joined">{formatDate(m.joinedAt)}</td>
                 </tr>
               );
             }) : (
               <tr>
-                <td colSpan={6} className="portal-ref-dash__table-empty">
+                <td colSpan={5} className="portal-ref-dash__table-empty">
                   No referred members match your search & filter parameters.
                 </td>
               </tr>

@@ -26,6 +26,8 @@ export function ReferralPartnerDashboard({ s, referral }) {
 
       <ReferralRewardFlow />
 
+      <ReferralEarningsChart data={referral.monthlyEarnings} />
+
       <ReferralMembersTable
         members={referral.memberRows}
         onShowToast={s.showToast}
@@ -33,10 +35,9 @@ export function ReferralPartnerDashboard({ s, referral }) {
 
       <ReferralDailyDepositsTable
         deposits={referral.depositLedger}
+        memberRows={referral.memberRows}
         onShowToast={s.showToast}
       />
-
-      <ReferralEarningsChart data={referral.monthlyEarnings} />
 
       <ReferralFaq items={REFERRAL_FAQ} />
     </div>

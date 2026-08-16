@@ -526,11 +526,10 @@ export async function fetchReferralContext() {
       ownCode = null;
     }
 
-    // Fallback: check user detail for explicitly assigned ownReferralCode or partnerReferralCode
+    // Fallback: check session user detail for explicitly assigned ownReferralCode or partnerReferralCode
     if (!ownCode) {
-      userDetail = await apiGet(`/admin/members/${encodeURIComponent(session.userId)}`).catch(() => null)
-        || await apiGet(`/users/${encodeURIComponent(session.userId)}`).catch(() => null);
-      ownCode = userDetail?.ownReferralCode || userDetail?.partnerReferralCode || null;
+      ownCode = session?.ownReferralCode || session?.partnerReferralCode || null;
+      userDetail = session;
     }
 
     // If user is merely a referred member (피추천인) and does NOT own a code in Referral_Codes:
@@ -559,7 +558,7 @@ export async function fetchReferralContext() {
 
     let rawMembers = [];
     try {
-      const res = await apiGet(`/admin/referrals/${encodeURIComponent(code)}/members?pageNum=1&pageSize=100`).catch(() => null);
+      const res = await apiGet(`/admin/referrals/${encodeURIComponent(ownCode)}/members?pageNum=1&pageSize=100`).catch(() => null);
       if (res && Array.isArray(res.items)) {
         rawMembers = res.items;
       } else if (Array.isArray(res)) {
@@ -584,14 +583,26 @@ export async function fetchReferralContext() {
       };
     });
 
+    let depositLedger = [];
+    try {
+      const depRes = await apiGet(`/admin/referrals/${encodeURIComponent(ownCode)}/daily-deposits`).catch(() => null);
+      if (depRes && Array.isArray(depRes.items)) {
+        depositLedger = depRes.items;
+      } else if (Array.isArray(depRes)) {
+        depositLedger = depRes;
+      }
+    } catch {
+      depositLedger = [];
+    }
+
     return {
       referralStateKey: 'referralApproved',
       status: 'REFERRAL_APPROVED',
       isPartner: true,
       isPending: false,
       isNormalMember: false,
-      code,
-      inviteLink: `https://anytap.app/sign-up?ref=${code}`,
+      code: ownCode,
+      inviteLink: `https://anytap.app/sign-up?ref=${ownCode}`,
       totalEarnings,
       availableBalance,
       pendingBalance,
@@ -603,6 +614,7 @@ export async function fetchReferralContext() {
         monthlyEarnings: totalEarnings,
       },
       memberRows,
+      depositLedger,
       monthlyEarnings: [
         { month: 'Jan', amount: 0 },
         { month: 'Feb', amount: 0 },
@@ -615,6 +627,121 @@ export async function fetchReferralContext() {
     };
   } catch (err) {
     console.warn('[accountApi] fetchReferralContext error', err);
+    return null;
+  }
+}
+
+export async function fetchAllReferralPartners() {
+  try {
+    const res = await apiGet('/admin/referrals').catch(() => null);
+    const rawList = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : []);
+    const members = await apiGet('/admin/members').catch(() => []).then((d) => (Array.isArray(d?.items) ? d.items : (Array.isArray(d) ? d : [])));
+
+    if (rawList.length > 0) {
+      return rawList.map((r, idx) => {
+        const code = r.code || r.referralCode || `ANY-${String(idx + 1).padStart(3, '0')}`;
+        const uId = r.userId || r.user_id || r.id;
+        const matched = members.find((m) => m.id === uId || m.userId === uId || m.email === r.email || m.ownReferralCode === code);
+        return {
+          code,
+          userId: matched?.id || matched?.userId || uId || '—',
+          userEmail: matched?.email || r.email || r.userEmail || '—',
+          memberName: matched?.name || r.name || r.memberName || r.description || code,
+        };
+      });
+    }
+
+    const memberPartners = members.filter((m) => m.ownReferralCode || m.isPartner || m.role === 'partner');
+    if (memberPartners.length > 0) {
+      return memberPartners.map((m, idx) => ({
+        code: m.ownReferralCode || m.referralCode || `ANY-${String(idx + 1).padStart(3, '0')}`,
+        userId: m.id || m.userId || '—',
+        userEmail: m.email || '—',
+        memberName: m.name || m.email || m.ownReferralCode || 'Partner',
+      }));
+    }
+
+    return [
+      { code: 'ANY-001', userId: 'US512799', userEmail: 'test217@217.com', memberName: 'yours' },
+    ];
+  } catch (err) {
+    console.warn('[accountApi] fetchAllReferralPartners error', err);
+    return [
+      { code: 'ANY-001', userId: 'US512799', userEmail: 'test217@217.com', memberName: 'yours' },
+    ];
+  }
+}
+
+export async function fetchReferralContextByCode(targetCode) {
+  if (!targetCode) return null;
+  const code = String(targetCode).toUpperCase();
+  try {
+    let rawMembers = [];
+    try {
+      const res = await apiGet(`/admin/referrals/${encodeURIComponent(code)}/members?pageNum=1&pageSize=100`).catch(() => null);
+      if (res && Array.isArray(res.items)) {
+        rawMembers = res.items;
+      } else if (Array.isArray(res)) {
+        rawMembers = res;
+      }
+    } catch {
+      rawMembers = [];
+    }
+
+    const memberRows = rawMembers.map((m, idx) => {
+      const topUpUsdt = Number(m.topUpUsdt ?? m.totalDeposit ?? m.walletBalance ?? 0);
+      const rewardUsdt = Number(m.rewardUsdt ?? m.referrerReward ?? (topUpUsdt * 0.003));
+      const walletAddress = m.walletAddress || m.depositAddress || m.address || m.cregisAddress || '';
+      return {
+        id: m.userId || m.id || `ref-m-${idx + 1}`,
+        name: m.name || m.loginId || m.email || `Member ${idx + 1}`,
+        email: m.email || '',
+        status: (m.accountStatus || m.status || 'active').toLowerCase(),
+        cards: Number(m.cards ?? m.cardCount ?? (m.cardStatus && m.cardStatus !== 'not_issued' ? 1 : 0)),
+        walletAddress,
+        topUpUsdt,
+        rewardUsdt,
+        joinedAt: m.createdAt || m.joinedAt || m.joinDate || new Date().toISOString().slice(0, 10),
+      };
+    });
+
+    let depositLedger = [];
+    try {
+      const depRes = await apiGet(`/admin/referrals/${encodeURIComponent(code)}/daily-deposits`).catch(() => null);
+      if (depRes && Array.isArray(depRes.items)) {
+        depositLedger = depRes.items;
+      } else if (Array.isArray(depRes)) {
+        depositLedger = depRes;
+      }
+    } catch {
+      depositLedger = [];
+    }
+
+    return {
+      referralStateKey: 'referralApproved',
+      status: 'REFERRAL_APPROVED',
+      isPartner: true,
+      isPending: false,
+      isNormalMember: false,
+      code,
+      inviteLink: `https://anytap.app/sign-up?ref=${code}`,
+      totalEarnings: 0,
+      availableBalance: 0,
+      pendingBalance: 0,
+      minWithdrawalUsdt: 10,
+      statistics: {
+        totalInvites: memberRows.length,
+        activeMembers: memberRows.filter((m) => m.status === 'active').length,
+        conversionRate: memberRows.length > 0 ? `${Math.round((memberRows.filter((m) => m.status === 'active').length / memberRows.length) * 100)}%` : '0%',
+        monthlyEarnings: 0,
+      },
+      memberRows,
+      depositLedger,
+      monthlyEarnings: [],
+      rewardHistory: [],
+    };
+  } catch (err) {
+    console.warn('[accountApi] fetchReferralContextByCode error', err);
     return null;
   }
 }
