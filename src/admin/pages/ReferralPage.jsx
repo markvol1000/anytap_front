@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AdminDataTable, AdminMiniTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
@@ -20,6 +20,7 @@ import {
   getReferredMembers,
   getReferralById,
   getReferrals,
+  getActiveMembers,
   updateReferralCode,
   updateMemberReferralCode,
 } from '../services/adminService.js';
@@ -34,11 +35,68 @@ export function ReferralPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  // Active Users List for Referral Partner Registration
+  const [activeMembers, setActiveMembers] = useState([]);
+  const [memberSearch, setMemberSearch] = useState('');
+
   // New Code Form State
   const [newCode, setNewCode] = useState('');
   const [newUserId, setNewUserId] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newRate, setNewRate] = useState('5.0');
+
+  useEffect(() => {
+    if (showCreateModal) {
+      getActiveMembers()
+        .then((list) => setActiveMembers(list || []))
+        .catch(() => setActiveMembers([]));
+    }
+  }, [showCreateModal]);
+
+  const filteredActiveMembers = useMemo(() => {
+    if (!memberSearch.trim()) return activeMembers;
+    const q = memberSearch.toLowerCase().trim();
+    return activeMembers.filter((m) => (
+      (m.id && String(m.id).toLowerCase().includes(q)) ||
+      (m.name && String(m.name).toLowerCase().includes(q)) ||
+      (m.email && String(m.email).toLowerCase().includes(q)) ||
+      (m.loginId && String(m.loginId).toLowerCase().includes(q))
+    ));
+  }, [activeMembers, memberSearch]);
+
+  const existingReferralUserIds = useMemo(() => {
+    const set = new Set();
+    (partnerList.items || []).forEach((r) => {
+      if (r.userId && r.userId !== '—') set.add(String(r.userId).toLowerCase());
+    });
+    return set;
+  }, [partnerList.items]);
+
+  const existingReferralEmails = useMemo(() => {
+    const set = new Set();
+    (partnerList.items || []).forEach((r) => {
+      if (r.userEmail && r.userEmail !== '—') set.add(String(r.userEmail).toLowerCase());
+    });
+    return set;
+  }, [partnerList.items]);
+
+  const handleSelectActiveMember = (mem) => {
+    if (!mem) return;
+    const memId = String(mem.id || mem.userId || '').toLowerCase();
+    const memEmail = String(mem.email || '').toLowerCase();
+    if (existingReferralUserIds.has(memId) || (memEmail && existingReferralEmails.has(memEmail))) {
+      window.alert(`⚠️ 이 회원 (User ID: ${mem.id || mem.userId}, Email: ${mem.email || '—'})은 이미 추천인 코드가 등록되어 있습니다.\n동일한 회원/이메일로는 중복 추천인 등록이 불가능합니다.`);
+      setNewUserId('');
+      setNewDesc('');
+      return;
+    }
+    setNewUserId(mem.id || mem.userId || '');
+    setNewDesc(mem.name || mem.email || '');
+    if (!newCode) {
+      const codeSuggest = `REF_${(mem.id || '00').slice(-4).toUpperCase()}`;
+      setNewCode(codeSuggest);
+    }
+  };
 
   // List 1: Partners / Referral Codes (referral_codes table)
   const partnerList = useAdminList(fetchReferrals);
@@ -111,10 +169,21 @@ export function ReferralPage() {
       window.alert('Please enter a referral code.');
       return;
     }
+    if (!newUserId.trim()) {
+      window.alert('Please search and select an ACTIVE member.');
+      return;
+    }
+
+    const targetUid = newUserId.trim().toLowerCase();
+    if (existingReferralUserIds.has(targetUid)) {
+      window.alert(`⚠️ 이 회원 (User ID: ${newUserId})은 이미 추천인 코드가 등록되어 있습니다.\n동일한 회원/이메일로는 중복 추천인 등록이 불가능합니다.`);
+      return;
+    }
+
     try {
       await createReferralCode({
         code: newCode.trim().toUpperCase(),
-        userId: newUserId.trim() || undefined,
+        userId: newUserId.trim(),
         description: newDesc.trim() || undefined,
         referralRatePercent: parseFloat(newRate) || 5.0,
         status: 'ACTIVE',
@@ -124,12 +193,13 @@ export function ReferralPage() {
       setNewUserId('');
       setNewDesc('');
       setNewRate('5.0');
+      setMemberSearch('');
       partnerList.reload();
-      window.alert('Referral code created successfully.');
+      window.alert(`Referral code '${newCode.trim().toUpperCase()}' created for active member ${newUserId}!`);
     } catch (err) {
       window.alert(err.message || 'Failed to create referral code.');
     }
-  }, [newCode, newUserId, newDesc, newRate, partnerList]);
+  }, [newCode, newUserId, newDesc, newRate, existingReferralUserIds, partnerList]);
 
   const handleAdjust = useCallback(async () => {
     if (!detail) return;
@@ -190,14 +260,39 @@ export function ReferralPage() {
               <AdminFilterBar
                 search={partnerList.search}
                 onSearchChange={partnerList.setSearch}
-                searchPlaceholder="Search referral code or member…"
+                searchPlaceholder="Search code, user ID, email, or member…"
               />
               <AdminTableWrap loading={partnerList.loading} error={partnerList.error} hasData={partnerList.items.length > 0}>
                 <AdminDataTable
                   columns={[
-                    { key: 'referralCode', label: 'Referral Code', render: (r) => <strong style={{ color: '#2563eb' }}>{r.referralCode}</strong> },
-                    { key: 'memberName', label: 'Owner / Partner' },
-                    { key: 'rewardBalance', label: 'Balance', render: (r) => formatUsdt(r.rewardBalance) },
+                    { key: 'referralCode', label: 'Referral Code', render: (r) => <strong style={{ color: '#38bdf8' }}>{r.referralCode}</strong> },
+                    {
+                      key: 'userId',
+                      label: 'User ID (user_id)',
+                      render: (r) => {
+                        const uid = r.userId || '—';
+                        if (!uid || uid === '—') return <span style={{ color: '#64748b' }}>—</span>;
+                        return (
+                          <Link
+                            to={`/admin/members?id=${uid}`}
+                            style={{ color: '#38bdf8', fontWeight: '700', textDecoration: 'underline' }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {uid} ➔
+                          </Link>
+                        );
+                      },
+                    },
+                    {
+                      key: 'userEmail',
+                      label: 'User Email (email)',
+                      render: (r) => (
+                        <span style={{ fontSize: '12px', color: '#cbd5e1' }}>
+                          {r.userEmail || '—'}
+                        </span>
+                      ),
+                    },
+                    { key: 'memberName', label: 'Owner / Partner Name' },
                     { key: 'available', label: 'Available', render: (r) => formatUsdt(r.available) },
                     { key: 'members', label: 'Referred Count' },
                     { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
@@ -400,31 +495,63 @@ export function ReferralPage() {
           <div className="admin-modal" style={{ background: '#1c1e24', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', padding: '24px', maxWidth: '440px', width: '90%', color: '#fff' }}>
             <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Create New Referral Code</h2>
             <form onSubmit={handleCreateCode}>
-              <div style={{ marginBottom: '12px' }}>
-                <label style={{ display: 'block', fontSize: '13px', color: '#999', marginBottom: '4px' }}>Referral Code *</label>
+              {/* Select Active User Field (추천인 가입 조건: Active User) */}
+              <div style={{ marginBottom: '14px', background: 'rgba(56, 189, 248, 0.05)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+                <label style={{ display: 'block', fontSize: '13px', color: '#38bdf8', marginBottom: '6px', fontWeight: '600' }}>
+                  Search & Select Active Member (활성 회원 검색) *
+                </label>
                 <input
                   type="text"
                   className="admin-input"
-                  style={{ width: '100%' }}
-                  placeholder="e.g. AT0002 or VIP_PARTNER"
+                  style={{ width: '100%', marginBottom: '8px', fontSize: '12px' }}
+                  placeholder="Search by name, email, or user ID..."
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                />
+                <select
+                  className="admin-select"
+                  style={{ width: '100%', padding: '8px 10px', fontSize: '12px', background: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '6px' }}
+                  value={newUserId}
+                  onChange={(e) => {
+                    const selected = activeMembers.find((m) => String(m.id || m.userId) === e.target.value);
+                    if (selected) handleSelectActiveMember(selected);
+                    else setNewUserId(e.target.value);
+                  }}
+                  required
+                >
+                  <option value="">-- Select Active Member ({filteredActiveMembers.length} active) --</option>
+                  {filteredActiveMembers.map((m) => (
+                    <option key={m.id || m.userId} value={m.id || m.userId}>
+                      [{m.id || m.userId}] {m.name || m.email || 'Member'} - {m.email || 'no email'}
+                    </option>
+                  ))}
+                </select>
+                {newUserId && (
+                  <div style={{ marginTop: '6px', fontSize: '11px', color: '#34d399', fontWeight: '600' }}>
+                    ✅ Selected Active User: {newUserId} ({newDesc})
+                  </div>
+                )}
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '13px', color: '#cbd5e1', marginBottom: '4px', fontWeight: '600' }}>
+                  Referral Code *
+                </label>
+                <input
+                  type="text"
+                  className="admin-input"
+                  style={{ width: '100%', fontFamily: 'monospace', fontWeight: '700', color: '#38bdf8' }}
+                  placeholder="e.g. AT003 or VIP_PARTNER"
                   value={newCode}
                   onChange={(e) => setNewCode(e.target.value.toUpperCase())}
                   required
                 />
               </div>
+
               <div style={{ marginBottom: '12px' }}>
-                <label style={{ display: 'block', fontSize: '13px', color: '#999', marginBottom: '4px' }}>Partner User ID (Optional)</label>
-                <input
-                  type="text"
-                  className="admin-input"
-                  style={{ width: '100%' }}
-                  placeholder="e.g. M001 or login ID"
-                  value={newUserId}
-                  onChange={(e) => setNewUserId(e.target.value)}
-                />
-              </div>
-              <div style={{ marginBottom: '12px' }}>
-                <label style={{ display: 'block', fontSize: '13px', color: '#999', marginBottom: '4px' }}>Description / Partner Name</label>
+                <label style={{ display: 'block', fontSize: '13px', color: '#cbd5e1', marginBottom: '4px', fontWeight: '600' }}>
+                  Owner / Partner Name
+                </label>
                 <input
                   type="text"
                   className="admin-input"

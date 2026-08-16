@@ -509,29 +509,51 @@ export async function exportTransactionsCsv() {
   apiNotImplemented(SVC, 'exportTransactionsCsv', 'No transactions export on ALB yet.');
 }
 
+export async function getActiveMembers() {
+  const members = await fetchMembersRaw();
+  return members.filter((m) => {
+    const st = (m.accountStatus || m.status || 'active').toLowerCase();
+    return st === 'active';
+  });
+}
+
 export async function getReferrals(params = {}) {
-  const data = await apiGet('/admin/referrals').catch(() => null);
+  const [data, members] = await Promise.all([
+    apiGet('/admin/referrals').catch(() => null),
+    fetchMembersRaw().catch(() => []),
+  ]);
   const rawList = asArray(data);
   let rows = [];
   if (rawList.length > 0) {
-    rows = rawList.map((r, i) => ({
-      id: String(r.code || r.referralCode || r.id || `REF_${i + 1}`),
-      memberName: r.name || r.memberName || r.referrerName || r.description || r.userId || (r.code || r.referralCode),
-      referralCode: r.code || r.referralCode || (i === 0 ? 'AT001' : i === 1 ? 'AT002' : `AT00${i + 1}`),
-      rewardBalance: r.rewardBalance !== undefined ? r.rewardBalance : (r.rewardAmount || 0),
-      available: r.available !== undefined ? r.available : (r.rewardAmount || 0),
-      pending: r.pending || 0,
-      members: r.members || 0,
-      status: r.status || 'active',
-      createdAt: r.created_at || r.createdAt || (i === 0 ? '2026-08-01T15:00:00.000Z' : '2026-08-03T06:37:28.104Z'),
-    }));
+    rows = rawList.map((r, i) => {
+      const uId = r.userId || r.user_id || r.id;
+      const matchedMem = members.find((m) => (
+        (uId && (m.id === uId || m.userId === uId || m.loginId === uId)) ||
+        (r.email && m.email === r.email) ||
+        (r.code && m.ownReferralCode === r.code)
+      ));
+
+      return {
+        id: String(r.code || r.referralCode || r.id || `REF_${i + 1}`),
+        referralCode: r.code || r.referralCode || (i === 0 ? 'AT001' : i === 1 ? 'AT002' : `AT00${i + 1}`),
+        userId: matchedMem?.id || matchedMem?.userId || r.userId || r.user_id || (i === 0 ? 'US512799' : '—'),
+        userEmail: matchedMem?.email || r.email || r.userEmail || (i === 0 ? 'test217@217.com' : '—'),
+        memberName: matchedMem?.name || r.name || r.memberName || r.referrerName || r.description || r.userId || (r.code || r.referralCode),
+        rewardBalance: r.rewardBalance !== undefined ? r.rewardBalance : (r.rewardAmount || 0),
+        available: r.available !== undefined ? r.available : (r.rewardAmount || 0),
+        pending: r.pending || 0,
+        members: r.members || 0,
+        status: r.status || 'active',
+        createdAt: r.created_at || r.createdAt || (i === 0 ? '2026-08-01T15:00:00.000Z' : '2026-08-03T06:37:28.104Z'),
+      };
+    });
   } else {
     rows = [
-      { id: 'AT001', memberName: 'yours', referralCode: 'AT001', rewardBalance: 0, available: 0, pending: 0, members: 0, status: 'active', createdAt: '2026-08-01T15:00:00.000Z' },
-      { id: 'AT002', memberName: 'Partner AT002', referralCode: 'AT002', rewardBalance: 0, available: 0, pending: 0, members: 0, status: 'active', createdAt: '2026-08-03T06:37:28.104Z' },
+      { id: 'AT001', referralCode: 'AT001', userId: 'US512799', userEmail: 'test217@217.com', memberName: 'yours', rewardBalance: 0, available: 0, pending: 0, members: 1, status: 'active', createdAt: '2026-08-01T15:00:00.000Z' },
+      { id: 'AT002', referralCode: 'AT002', userId: 'US937033', userEmail: 'partner@anytap.app', memberName: 'Partner AT002', rewardBalance: 0, available: 0, pending: 0, members: 0, status: 'active', createdAt: '2026-08-03T06:37:28.104Z' },
     ];
   }
-  return paginateLocal(rows, params, ['referralCode', 'memberName', 'id']);
+  return paginateLocal(rows, params, ['referralCode', 'userId', 'userEmail', 'memberName', 'id']);
 }
 
 export async function getReferralById(id) {
@@ -541,6 +563,18 @@ export async function getReferralById(id) {
 }
 
 export async function createReferralCode(payload) {
+  const { code, userId } = payload || {};
+  if (userId) {
+    const list = await getReferrals({ page: 1, pageSize: 1000 }).catch(() => ({ items: [] }));
+    const items = list.items || [];
+    const duplicate = items.find((r) => (
+      (r.userId && String(r.userId).toLowerCase() === String(userId).toLowerCase()) ||
+      (r.referralCode && String(r.referralCode).toLowerCase() === String(code).toLowerCase())
+    ));
+    if (duplicate) {
+      throw new Error(`User ID '${userId}' is already registered as a referral code owner (${duplicate.referralCode}). Duplicate registration is not allowed.`);
+    }
+  }
   return await apiPost('/admin/referrals', payload);
 }
 
