@@ -50,7 +50,17 @@ function PortalNavIcon({ name, size }) {
 
 // ─── Sidebar / dock navigation ────────────────────────────────────────────────
 function AccountNav({ s, variant }) {
-  const items = variant === 'dock' ? A.NAV_DOCK : A.NAV_MAIN;
+  let items = variant === 'dock' ? A.NAV_DOCK : A.NAV_MAIN;
+  const isReferralEligible = Boolean(
+    (s.referralContext?.isPartner || s.remoteReferral?.isPartner) &&
+    (s.referralContext?.code || s.remoteReferral?.code)
+  );
+
+  // Normal users who are NOT registered in ReferralCode table should NOT see the Referral menu
+  if (!isReferralEligible) {
+    items = items.filter((it) => it.id !== 'referral');
+  }
+
   const cls = variant === 'dock' ? 'portal-dock__btn' : 'portal-nav__btn';
   const wrap = variant === 'dock' ? 'portal-dock' : 'portal-nav';
 
@@ -91,7 +101,16 @@ function AccountMain({ s }) {
   if (s.screen === 'cardRegister') return <AccountCardRegister s={s} />;
   if (s.screen === 'topup') return <AccountWallet s={s} />;
   if (s.screen === 'transactions') return <AccountCardTransactions s={s} />;
-  if (s.screen === 'referral') return <AccountReferral s={s} />;
+  if (s.screen === 'referral') {
+    const isReferralEligible = Boolean(
+      (s.referralContext?.isPartner || s.remoteReferral?.isPartner) &&
+      (s.referralContext?.code || s.remoteReferral?.code)
+    );
+    if (!isReferralEligible) {
+      return <Navigate to="/account" replace />;
+    }
+    return <AccountReferral s={s} />;
+  }
   if (s.screen === 'settings') return <AccountSettings s={s} />;
   if (s.screen === 'profile') return <AccountProfile s={s} />;
   if (s.screen === 'security') return <AccountSecurity s={s} />;

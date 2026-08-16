@@ -506,10 +506,53 @@ export async function fetchReferralContext() {
   if (!session?.userId) return null;
 
   try {
-    const userDetail = await apiGet(`/admin/members/${encodeURIComponent(session.userId)}`).catch(() => null)
-      || await apiGet(`/users/${encodeURIComponent(session.userId)}`).catch(() => null);
+    // Verify if the current logged in user owns a referral code in Referral_Codes table (Referrer check)
+    let ownCode = null;
+    let userDetail = null;
 
-    const code = userDetail?.referralCode || session?.referralCode || 'AT001';
+    try {
+      const allReferralCodes = await apiGet('/admin/referrals').catch(() => []);
+      const codeList = Array.isArray(allReferralCodes?.items) ? allReferralCodes.items : (Array.isArray(allReferralCodes) ? allReferralCodes : []);
+      
+      const foundCodeObj = codeList.find((rc) => (
+        (rc.userId && String(rc.userId).toLowerCase() === String(session.userId).toLowerCase()) ||
+        (rc.user_id && String(rc.user_id).toLowerCase() === String(session.userId).toLowerCase())
+      ));
+
+      if (foundCodeObj) {
+        ownCode = foundCodeObj.code || foundCodeObj.referralCode;
+      }
+    } catch {
+      ownCode = null;
+    }
+
+    // Fallback: check user detail for explicitly assigned ownReferralCode or partnerReferralCode
+    if (!ownCode) {
+      userDetail = await apiGet(`/admin/members/${encodeURIComponent(session.userId)}`).catch(() => null)
+        || await apiGet(`/users/${encodeURIComponent(session.userId)}`).catch(() => null);
+      ownCode = userDetail?.ownReferralCode || userDetail?.partnerReferralCode || null;
+    }
+
+    // If user is merely a referred member (피추천인) and does NOT own a code in Referral_Codes:
+    if (!ownCode) {
+      return {
+        referralStateKey: 'normalMember',
+        status: 'NORMAL_MEMBER',
+        isPartner: false,
+        isPending: false,
+        isNormalMember: true,
+        code: null,
+        inviteLink: '',
+        totalEarnings: 0,
+        availableBalance: 0,
+        pendingBalance: 0,
+        minWithdrawalUsdt: 10,
+        statistics: { totalInvites: 0, activeMembers: 0, conversionRate: '0%', monthlyEarnings: 0 },
+        memberRows: [],
+        monthlyEarnings: [],
+        rewardHistory: [],
+      };
+    }
     const availableBalance = Number(userDetail?.unpaidReferrerAllowance ?? userDetail?.availableBalance ?? session?.unpaidReferrerAllowance ?? 0);
     const totalEarnings = Number(userDetail?.accumulatedReferrerAllowance ?? userDetail?.totalEarnings ?? availableBalance);
     const pendingBalance = Number(userDetail?.pendingBalance ?? 0);
