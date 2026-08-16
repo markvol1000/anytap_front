@@ -367,11 +367,13 @@ export function AccountKyc({ s }) {
             <div className="capply-form__row">
               <FormField label="Nationality">
                 <select className="capply-input" value={kycForm.nationality} onChange={(e) => setKyc('nationality', e.target.value)}>
+                  <option value="">Select Nationality</option>
                   {C.KYC_COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
                 </select>
               </FormField>
               <FormField label="Country of Residence">
                 <select className="capply-input" value={kycForm.country} onChange={(e) => setKyc('country', e.target.value)}>
+                  <option value="">Select Country</option>
                   {C.KYC_COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
                 </select>
               </FormField>
