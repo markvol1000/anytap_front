@@ -480,7 +480,9 @@ export async function unlockWallet() {
 
 export async function getTransactions(params = {}) {
   const [rawList, members] = await Promise.all([
-    apiGet('/admin/transactions').then(asArray).catch(() => []),
+    apiGet('/admin/transactions/recent?limit=1000')
+      .then(asArray)
+      .catch(() => apiGet('/admin/transactions?limit=1000').then(asArray).catch(() => [])),
     fetchMembersRaw().catch(() => []),
   ]);
 
