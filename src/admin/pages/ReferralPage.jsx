@@ -181,6 +181,7 @@ export function ReferralPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editTargetRow, setEditTargetRow] = useState(null);
   const [editCode, setEditCode] = useState('');
+  const [editUserId, setEditUserId] = useState('');
   const [editName, setEditName] = useState('');
   const [editStatus, setEditStatus] = useState('ACTIVE');
   const [editRate, setEditRate] = useState('5.0');
@@ -190,6 +191,7 @@ export function ReferralPage() {
     if (!r) return;
     setEditTargetRow(r);
     setEditCode(r.referralCode || r.code || '');
+    setEditUserId(r.userId || r.user_id || '');
     setEditName(r.memberName || r.name || r.description || '');
     setEditStatus((r.status || 'ACTIVE').toUpperCase());
     setEditRate(r.referralRatePercent != null ? String(r.referralRatePercent) : '5.0');
@@ -203,6 +205,7 @@ export function ReferralPage() {
     try {
       await updateReferralCode(targetId, {
         referralCode: editCode.trim().toUpperCase(),
+        userId: editUserId.trim(),
         memberName: editName.trim(),
         status: editStatus.toLowerCase(),
         referralRatePercent: parseFloat(editRate) || 5.0,
@@ -213,6 +216,7 @@ export function ReferralPage() {
         setDetail((prev) => (prev ? {
           ...prev,
           referralCode: editCode.trim().toUpperCase(),
+          userId: editUserId.trim(),
           memberName: editName.trim(),
           status: editStatus.toLowerCase(),
         } : null));
@@ -222,7 +226,7 @@ export function ReferralPage() {
     } catch (err) {
       window.alert(err.message || 'Failed to update referral code.');
     }
-  }, [editTargetRow, editCode, editName, editStatus, editRate, partnerList, detail, setDetail, memberList]);
+  }, [editTargetRow, editCode, editUserId, editName, editStatus, editRate, partnerList, detail, setDetail, memberList]);
 
   const handleCreateCode = useCallback(async (e) => {
     e.preventDefault();
@@ -608,12 +612,13 @@ export function ReferralPage() {
                 <label>1. Search & Select ACTIVE Member (*)</label>
                 <input
                   type="text"
+                  className="admin-input"
                   placeholder="Type member ID, name or email..."
                   value={memberSearch}
                   onChange={(e) => setMemberSearch(e.target.value)}
                   style={{ marginBottom: '8px' }}
                 />
-                <div style={{ maxHeight: '140px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px' }}>
+                <div style={{ maxHeight: '140px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '6px', background: '#f8fafc' }}>
                   {filteredActiveMembers.length === 0 ? (
                     <div style={{ fontSize: '12px', color: '#94a3b8', padding: '8px' }}>No active members found.</div>
                   ) : (
@@ -623,18 +628,19 @@ export function ReferralPage() {
                         <div
                           key={mem.id || mem.userId}
                           style={{
-                            padding: '6px 10px',
+                            padding: '8px 10px',
                             cursor: 'pointer',
-                            borderRadius: '4px',
-                            background: isSelected ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+                            borderRadius: '6px',
+                            background: isSelected ? '#eff6ff' : 'transparent',
                             fontSize: '12px',
                             display: 'flex',
                             justifyContent: 'space-between',
+                            border: isSelected ? '1px solid #3b82f6' : '1px solid transparent',
                           }}
                           onClick={() => handleSelectActiveMember(mem)}
                         >
-                          <span><strong>{mem.name || mem.loginId}</strong> ({mem.id || mem.userId})</span>
-                          <span style={{ color: '#94a3b8' }}>{mem.email || '—'}</span>
+                          <span><strong style={{ color: '#0f172a' }}>{mem.name || mem.loginId}</strong> ({mem.id || mem.userId})</span>
+                          <span style={{ color: '#64748b' }}>{mem.email || '—'}</span>
                         </div>
                       );
                     })
@@ -644,13 +650,14 @@ export function ReferralPage() {
 
               <div className="admin-form-group">
                 <label>Selected User ID (*)</label>
-                <input type="text" value={newUserId} readOnly style={{ background: 'rgba(255,255,255,0.05)', color: '#38bdf8', fontWeight: 'bold' }} />
+                <input type="text" className="admin-input" value={newUserId} readOnly style={{ background: '#f1f5f9', color: '#2563eb', fontWeight: 'bold' }} />
               </div>
 
               <div className="admin-form-group">
                 <label>2. Referral Code (*)</label>
                 <input
                   type="text"
+                  className="admin-input"
                   placeholder="e.g. PARTNER01"
                   value={newCode}
                   onChange={(e) => setNewCode(e.target.value.toUpperCase())}
@@ -662,6 +669,7 @@ export function ReferralPage() {
                 <label>Partner / Owner Description</label>
                 <input
                   type="text"
+                  className="admin-input"
                   placeholder="e.g. Official VIP Partner"
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
@@ -673,6 +681,7 @@ export function ReferralPage() {
                 <input
                   type="number"
                   step="0.1"
+                  className="admin-input"
                   value={newRate}
                   onChange={(e) => setNewRate(e.target.value)}
                   placeholder="5.0"
@@ -705,8 +714,21 @@ export function ReferralPage() {
                 <label>Referral Code (*)</label>
                 <input
                   type="text"
+                  className="admin-input"
                   value={editCode}
                   onChange={(e) => setEditCode(e.target.value.toUpperCase())}
+                  required
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <label>User ID (user_id) (*)</label>
+                <input
+                  type="text"
+                  className="admin-input"
+                  placeholder="e.g. US512799 또는 회원 ID"
+                  value={editUserId}
+                  onChange={(e) => setEditUserId(e.target.value)}
                   required
                 />
               </div>
@@ -715,6 +737,7 @@ export function ReferralPage() {
                 <label>Owner / Partner Name (*)</label>
                 <input
                   type="text"
+                  className="admin-input"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   required
@@ -726,6 +749,7 @@ export function ReferralPage() {
                 <input
                   type="number"
                   step="0.1"
+                  className="admin-input"
                   value={editRate}
                   onChange={(e) => setEditRate(e.target.value)}
                 />
@@ -733,7 +757,7 @@ export function ReferralPage() {
 
               <div className="admin-form-group">
                 <label>Status</label>
-                <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)}>
+                <select className="admin-select" value={editStatus} onChange={(e) => setEditStatus(e.target.value)}>
                   <option value="ACTIVE">ACTIVE</option>
                   <option value="SUSPENDED">SUSPENDED</option>
                   <option value="PENDING">PENDING</option>

@@ -89,15 +89,23 @@ function ChooseCardStep({ cardType, setCardType, blocked }) {
 
       <div className="capply-pick">
         {Object.values(C.CARD_TYPE_OPTIONS).map((opt) => {
+          const isVirtual = opt.id === 'virtual';
           const selected = cardType === opt.id;
           const fee = C.getCardIssuanceFee(opt.id);
+          const isDisabled = blocked || isVirtual;
+
           return (
             <button
               key={opt.id}
               type="button"
-              disabled={blocked}
-              className={`capply-pick__option${selected ? ' is-selected' : ''}`}
-              onClick={() => setCardType(opt.id)}>
+              disabled={isDisabled}
+              className={`capply-pick__option${selected ? ' is-selected' : ''}${isVirtual ? ' is-disabled' : ''}`}
+              style={isVirtual ? { opacity: 0.55, cursor: 'not-allowed', position: 'relative' } : {}}
+              onClick={() => {
+                if (!isVirtual && !blocked) {
+                  setCardType(opt.id);
+                }
+              }}>
               <span className={`capply-pick__radio${selected ? ' is-on' : ''}`} aria-hidden="true" />
               <div className={`capply-pick__visual capply-pick__visual--${opt.id}${selected ? ' is-selected' : ''}`}>
                 <img
@@ -111,10 +119,22 @@ function ChooseCardStep({ cardType, setCardType, blocked }) {
               </div>
               <div className="capply-pick__body">
                 <div className="capply-pick__head">
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <strong className="capply-pick__title">{opt.title}</strong>
+                    {isVirtual ? (
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#f1f5f9',
+                        color: '#64748b',
+                        border: '1px solid #cbd5e1'
+                      }}>Coming Soon</span>
+                    ) : null}
                   </div>
-                  <span className="capply-pick__subtitle">{opt.subtitle}</span>
+                  <span className="capply-pick__subtitle">{isVirtual ? 'Virtual card issuance is currently unavailable' : opt.subtitle}</span>
                 </div>
                 <ul className="capply-pick__benefits">
                   {opt.benefits.map((b) => (
@@ -305,6 +325,10 @@ export function AccountCardApply({ s }) {
   const goToCards = () => s.go('card');
 
   const goNext = () => {
+    if (cardType === 'virtual') {
+      s.showToast?.('Virtual card issuance is currently unavailable. Please select physical card.');
+      return;
+    }
     if (step === 1) {
       setStep(cardType === 'physical' ? 2 : 3);
       return;
@@ -335,7 +359,7 @@ export function AccountCardApply({ s }) {
   };
 
   const handleSubmit = async () => {
-    if (submitting) return;
+    if (submitting || cardType === 'virtual') return;
     setSubmitting(true);
     try {
       const fee = C.getCardIssuanceFee(cardType);
@@ -386,9 +410,10 @@ export function AccountCardApply({ s }) {
     );
   }
 
-  const step1Valid = Boolean(cardType) && !blocked;
+  const step1Valid = Boolean(cardType) && cardType !== 'virtual' && !blocked;
   const step2Valid = C.isShippingValid(shipping);
   const primaryDisabled = submitting
+    || cardType === 'virtual'
     || (step === 1 && !step1Valid)
     || (step === 2 && !step2Valid);
 

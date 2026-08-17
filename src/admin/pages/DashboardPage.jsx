@@ -5,6 +5,7 @@ import { AdminMiniTable } from '../components/AdminDataTable.jsx';
 import { AdminPanel, AdminPagination } from '../components/AdminFilterBar.jsx';
 import { AdminStatusBadge, formatAdminDate, formatUsdt } from '../components/AdminStatusBadge.jsx';
 import {
+  AdminChartDateFilter,
   AdminDashSection,
   AdminDashTabs,
   AdminPendingTaskCard,
@@ -28,6 +29,32 @@ function formatMoney(amount) {
   return `$${Number(amount).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
 
+function getPresetDates(presetId) {
+  const today = new Date();
+  const format = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const todayStr = format(today);
+
+  if (presetId === 'today') {
+    return { start: todayStr, end: todayStr };
+  }
+  if (presetId === '7d') {
+    const d = new Date(today);
+    d.setDate(d.getDate() - 6);
+    return { start: format(d), end: todayStr };
+  }
+  if (presetId === '1m') {
+    const d = new Date(today);
+    d.setMonth(d.getMonth() - 1);
+    return { start: format(d), end: todayStr };
+  }
+  return { start: '', end: '' };
+}
+
 const REQUEST_TABS = [
   { id: 'all', label: 'All' },
   { id: 'kyc', label: 'KYC' },
@@ -43,6 +70,23 @@ export function DashboardPage() {
   const [requestTab, setRequestTab] = useState('all');
   const [requestPage, setRequestPage] = useState(1);
 
+  const [chartPreset, setChartPreset] = useState('all');
+  const [chartStartDate, setChartStartDate] = useState('');
+  const [chartEndDate, setChartEndDate] = useState('');
+  const [activeDateFilter, setActiveDateFilter] = useState({ start: '', end: '' });
+
+  const handleChartPresetChange = (presetId) => {
+    setChartPreset(presetId);
+    const { start, end } = getPresetDates(presetId);
+    setChartStartDate(start);
+    setChartEndDate(end);
+    setActiveDateFilter({ start, end });
+  };
+
+  const handleApplyCustomDates = () => {
+    setActiveDateFilter({ start: chartStartDate, end: chartEndDate });
+  };
+
   useEffect(() => {
     getDashboardData()
       .then(setData)
@@ -56,6 +100,40 @@ export function DashboardPage() {
   const kycRows = data?.recentRequests?.kyc ?? [];
   const cardRows = data?.recentRequests?.card ?? [];
   const withdrawalRows = data?.recentRequests?.withdrawal ?? [];
+
+  const isRowInChartDateRange = (row) => {
+    const { start, end } = activeDateFilter;
+    if (!start && !end) return true;
+
+    const rawDate = row.submittedAt || row.created || row.at || row.createdAt || row.date;
+    if (!rawDate) return true;
+
+    const ts = new Date(rawDate).getTime();
+    if (Number.isNaN(ts)) return true;
+
+    if (start) {
+      const startMs = new Date(`${start}T00:00:00`).getTime();
+      if (ts < startMs) return false;
+    }
+    if (end) {
+      const endMs = new Date(`${end}T23:59:59.999`).getTime();
+      if (ts > endMs) return false;
+    }
+    return true;
+  };
+
+  const chartKycRows = kycRows.filter(isRowInChartDateRange);
+  const chartCardRows = cardRows.filter(isRowInChartDateRange);
+  const chartWithdrawalRows = withdrawalRows.filter(isRowInChartDateRange);
+
+  const chartWalletTxs = (data?.walletTransactions ?? []).filter(isRowInChartDateRange);
+  const chartCardTxs = (data?.cardTransactions ?? []).filter(isRowInChartDateRange);
+
+  const chartTopUpAmount = chartWalletTxs.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const chartPaymentsAmount = chartCardTxs.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+  const displayTopUp = (!activeDateFilter.start && !activeDateFilter.end) ? (summary?.todayTopUp || chartTopUpAmount) : chartTopUpAmount;
+  const displayPayments = (!activeDateFilter.start && !activeDateFilter.end) ? (summary?.todayPayments || chartPaymentsAmount) : chartPaymentsAmount;
 
   let requestRows = [];
   if (requestTab === 'all') {
@@ -149,18 +227,36 @@ export function DashboardPage() {
           {/* 1. VISUAL CHARTS OVERVIEW (Placed ABOVE the list) */}
           <AdminDashSection
             title="Performance & Activity Charts"
-            action={<span className="admin-dash-section__hint">Click chart segment or card to switch menu</span>}>
+            action={
+              <AdminChartDateFilter
+                preset={chartPreset}
+                onPresetChange={handleChartPresetChange}
+                startDate={chartStartDate}
+                endDate={chartEndDate}
+                onStartDateChange={(val) => {
+                  setChartStartDate(val);
+                  setChartPreset('custom');
+                }}
+                onEndDateChange={(val) => {
+                  setChartEndDate(val);
+                  setChartPreset('custom');
+                }}
+                onApply={handleApplyCustomDates}
+              />
+            }>
             <div className="admin-chart-grid">
               <AdminRequestDistributionChart
-                kycCount={kycRows.length}
-                cardCount={cardRows.length}
-                withdrawalCount={withdrawalRows.length}
+                kycCount={chartKycRows.length}
+                cardCount={chartCardRows.length}
+                withdrawalCount={chartWithdrawalRows.length}
               />
               <AdminTxVolumeChart
-                walletTxCount={data.walletTransactions?.length ?? 0}
-                cardTxCount={data.cardTransactions?.length ?? 0}
-                todayTopUp={summary?.todayTopUp ?? 0}
-                todayPayments={summary?.todayPayments ?? 0}
+                walletTxCount={chartWalletTxs.length}
+                cardTxCount={chartCardTxs.length}
+                withdrawalTxCount={chartWithdrawalRows.length}
+                todayTopUp={displayTopUp}
+                todayPayments={displayPayments}
+                walletAssets={summary?.walletAssets ?? 0}
               />
             </div>
           </AdminDashSection>

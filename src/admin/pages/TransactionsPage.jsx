@@ -2,11 +2,90 @@ import { useCallback, useState } from 'react';
 import { AdminDataTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
 import { AdminDetailPanel, AdminDetailRow, AdminSplitLayout } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge, formatAdminDate, formatUsdt } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAdminDate, formatAmountWithCurrency } from '../components/AdminStatusBadge.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { exportTransactionsCsv, getTransactions } from '../services/adminService.js';
 
 const fetchTx = (params) => getTransactions(params);
+
+function CurrencyBadge({ currency }) {
+  const code = String(currency || 'USDT').toUpperCase().trim();
+  if (code === 'USDT') {
+    return (
+      <img
+        src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032"
+        alt="USDT"
+        style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0 }}
+      />
+    );
+  }
+  if (code === 'KRW' || code === '₩') {
+    return (
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '16px',
+        height: '16px',
+        borderRadius: '50%',
+        backgroundColor: '#2563eb',
+        color: '#fff',
+        fontSize: '9px',
+        fontWeight: 'bold',
+        flexShrink: 0
+      }}>₩</span>
+    );
+  }
+  if (code === 'USD' || code === '$') {
+    return (
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '16px',
+        height: '16px',
+        borderRadius: '50%',
+        backgroundColor: '#16a34a',
+        color: '#fff',
+        fontSize: '10px',
+        fontWeight: 'bold',
+        flexShrink: 0
+      }}>$</span>
+    );
+  }
+  if (code === 'EUR' || code === '€') {
+    return (
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '16px',
+        height: '16px',
+        borderRadius: '50%',
+        backgroundColor: '#4f46e5',
+        color: '#fff',
+        fontSize: '10px',
+        fontWeight: 'bold',
+        flexShrink: 0
+      }}>€</span>
+    );
+  }
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1px 5px',
+      borderRadius: '4px',
+      backgroundColor: '#f1f5f9',
+      color: '#334155',
+      fontSize: '10px',
+      fontWeight: '700',
+      border: '1px solid #cbd5e1',
+      flexShrink: 0
+    }}>{code}</span>
+  );
+}
 
 const KIND_OPTIONS = [
   { value: 'all', label: 'All types' },
@@ -113,12 +192,8 @@ export function TransactionsPage() {
                     label: 'Amount', 
                     render: (r) => (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <img 
-                          src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032" 
-                          alt="USDT" 
-                          style={{ width: '16px', height: '16px', borderRadius: '50%' }} 
-                        />
-                        <span>{formatUsdt(r.amount)}</span>
+                        <CurrencyBadge currency={r.currency} />
+                        <span>{formatAmountWithCurrency(r.amount, r.currency || 'USDT')}</span>
                       </div>
                     )
                   },
@@ -161,12 +236,8 @@ export function TransactionsPage() {
               label="Amount" 
               value={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <img 
-                    src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032" 
-                    alt="USDT" 
-                    style={{ width: '18px', height: '18px', borderRadius: '50%' }} 
-                  />
-                  <span style={{ fontWeight: '600' }}>{formatUsdt(selected.amount)}</span>
+                  <CurrencyBadge currency={selected.currency} />
+                  <span style={{ fontWeight: '600' }}>{formatAmountWithCurrency(selected.amount, selected.currency || 'USDT')}</span>
                 </div>
               } 
             />

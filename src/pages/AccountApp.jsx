@@ -62,11 +62,9 @@ function PortalNavIcon({ name, size }) {
 // ─── Sidebar / dock navigation ────────────────────────────────────────────────
 function AccountNav({ s, variant }) {
   let items = variant === 'dock' ? A.NAV_DOCK : A.NAV_MAIN;
-  const isAdmin = checkIsAdmin(s);
   const isReferralEligible = Boolean(
-    isAdmin ||
-    ((s.referralContext?.isPartner || s.remoteReferral?.isPartner) &&
-      (s.referralContext?.code || s.remoteReferral?.code))
+    (s.referralContext?.isPartner || s.remoteReferral?.isPartner) &&
+      (s.referralContext?.code || s.remoteReferral?.code)
   );
 
   // Normal users who are NOT registered in ReferralCode table should NOT see the Referral menu
@@ -115,11 +113,9 @@ function AccountMain({ s }) {
   if (s.screen === 'topup') return <AccountWallet s={s} />;
   if (s.screen === 'transactions') return <AccountCardTransactions s={s} />;
   if (s.screen === 'referral') {
-    const isAdmin = checkIsAdmin(s);
     const isReferralEligible = Boolean(
-      isAdmin ||
-      ((s.referralContext?.isPartner || s.remoteReferral?.isPartner) &&
-        (s.referralContext?.code || s.remoteReferral?.code))
+      (s.referralContext?.isPartner || s.remoteReferral?.isPartner) &&
+        (s.referralContext?.code || s.remoteReferral?.code)
     );
     if (!isReferralEligible) {
       return <Navigate to="/account" replace />;
@@ -148,6 +144,14 @@ function AccountPortal() {
   const showDesktopPageHead = !isDashboard && isDesktop && pageMeta;
   const showGlobalHeader = isDashboard || isDesktop;
 
+  const isReferralEligible = Boolean(
+    (s.referralContext?.isPartner || s.remoteReferral?.isPartner) &&
+      (s.referralContext?.code || s.remoteReferral?.code)
+  );
+  const memberNavItems = isReferralEligible
+    ? A.NAV_MAIN
+    : A.NAV_MAIN.filter((it) => it.id !== 'referral');
+
   useEffect(() => {
     document.body.classList.add('portal-body', 'portal-member');
     document.body.classList.toggle('portal-member--child', showMobilePageBar);
@@ -172,7 +176,7 @@ function AccountPortal() {
             onProfile={() => {
               s.go('settings');
             }}
-            memberNavItems={A.NAV_MAIN}
+            memberNavItems={memberNavItems}
             memberNavActive={s.navActive}
             onMemberNav={s.onMemberNav}
           />
@@ -258,6 +262,24 @@ export function AccountApp() {
     }
     setGate(hasMemberSession() ? 'in' : 'out');
   }, [demoSlug, location.key]);
+
+  useEffect(() => {
+    const handleSessionChange = () => {
+      if (!hasMemberSession()) {
+        setGate('out');
+      } else {
+        setGate('in');
+      }
+    };
+
+    window.addEventListener('anytap-session-expired', handleSessionChange);
+    window.addEventListener('anytap-member-session', handleSessionChange);
+
+    return () => {
+      window.removeEventListener('anytap-session-expired', handleSessionChange);
+      window.removeEventListener('anytap-member-session', handleSessionChange);
+    };
+  }, []);
 
   if (normalizedPath === '/account/history') {
     return <Navigate to="/account/transactions?type=topup" replace />;

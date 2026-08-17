@@ -56,9 +56,31 @@ export function formatAdminDate(value) {
   }
 }
 
-export function formatUsdt(amount) {
-  if (amount == null) return '—';
-  return `${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+export function formatAmountWithCurrency(amount, currency = 'USDT') {
+  if (amount == null || amount === '') return '—';
+  const num = Number(amount);
+  if (Number.isNaN(num)) return '—';
+
+  const code = String(currency || 'USDT').toUpperCase().trim();
+
+  if (code === 'KRW' || code === '₩') {
+    return `${num.toLocaleString('ko-KR', { maximumFractionDigits: 0 })} KRW`;
+  }
+  if (code === 'JPY' || code === '¥') {
+    return `${num.toLocaleString('ja-JP', { maximumFractionDigits: 0 })} JPY`;
+  }
+  if (code === 'USD' || code === '$') {
+    return `${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
+  }
+  if (code === 'EUR' || code === '€') {
+    return `${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR`;
+  }
+
+  return `${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${code}`;
+}
+
+export function formatUsdt(amount, currency = 'USDT') {
+  return formatAmountWithCurrency(amount, currency);
 }
 
 export function shortenAddress(addr, head = 6, tail = 4) {

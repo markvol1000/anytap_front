@@ -9,7 +9,7 @@ import {
   AdminDetailSection,
   AdminSplitLayout,
 } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge, formatAdminDate, formatUsdt, shortenAddress } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAdminDate, formatAmountWithCurrency, formatUsdt, shortenAddress } from '../components/AdminStatusBadge.jsx';
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
@@ -193,25 +193,25 @@ export function CardsPage() {
                     },
                   },
                   { 
-                    key: 'last4', 
-                    label: 'Last 4', 
-                    render: (r) => {
-                      const l4 = r.last4 || (r.wasabiCardId && r.wasabiCardId.length >= 4 ? r.wasabiCardId.slice(-4) : '—');
-                      return (
-                        <span style={{ fontWeight: '500' }}>
-                          {l4 !== '—' ? `•••• ${l4}` : '—'}
-                        </span>
-                      );
-                    } 
-                  },
-                  { 
                     key: 'wasabiCardId', 
-                    label: 'Card No', 
+                    label: 'Wasabi ID', 
                     render: (r) => (
-                      <span style={{ fontFamily: 'monospace' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#2563eb', fontWeight: '700' }}>
                         {r.wasabiCardId || '—'}
                       </span>
                     ) 
+                  },
+                  { 
+                    key: 'last4', 
+                    label: 'Card Number (카드번호)', 
+                    render: (r) => {
+                      const l4 = r.last4 || r.cardLast4 || (r.wasabiCardId && r.wasabiCardId.length >= 4 ? r.wasabiCardId.slice(-4) : '—');
+                      return (
+                        <span style={{ fontWeight: '700', color: '#0f172a', fontFamily: 'monospace', fontSize: '12px' }}>
+                          {l4 !== '—' ? `💳 •••• ${l4}` : '—'}
+                        </span>
+                      );
+                    } 
                   },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
                   { 
@@ -317,13 +317,7 @@ export function CardsPage() {
                     label="Balance" 
                     value={(
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
-                        <img 
-                          src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032" 
-                          alt={detail.currency || 'USD'} 
-                          style={{ width: '18px', height: '18px', borderRadius: '50%' }} 
-                        />
-                        <span style={{ fontWeight: '600' }}>{formatUsdt(detail.balance ?? 0)}</span>
-                        <span style={{ fontSize: '12px', color: 'var(--admin-muted, #888)' }}>{detail.currency || 'USD'}</span>
+                        <span style={{ fontWeight: '600' }}>{formatAmountWithCurrency(detail.balance ?? 0, detail.currency || 'USD')}</span>
                       </div>
                     )} 
                   />
@@ -440,13 +434,13 @@ export function CardsPage() {
                                 const sign = (tx.type || tx.subType || '').toLowerCase().includes('refund') ? '+' : '-';
                                 const amtVal = tx.amount != null ? Math.abs(Number(tx.amount)) : null;
                                 const amtCurr = tx.currency || 'KRW';
-                                const amt = amtVal != null ? `${sign}${amtVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${amtCurr}`.trim() : '—';
+                                const amt = amtVal != null ? `${sign}${formatAmountWithCurrency(amtVal, amtCurr)}` : '—';
                                 const authAmtVal = tx.authorizedAmount != null ? Math.abs(Number(tx.authorizedAmount)) : null;
-                                const authAmt = authAmtVal != null ? `${sign}${authAmtVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${tx.authorizedCurrency || 'USD'}`.trim() : '—';
-                                const authFee = tx.fee != null ? `${Number(tx.fee).toFixed(2)} ${tx.feeCurrency || ''}`.trim() : (tx.assistFeeInfo?.authorizationFee != null ? `${Number(tx.assistFeeInfo.authorizationFee).toFixed(2)} USD` : '0.00 USD');
-                                const cbFee = tx.crossBoardFee != null ? `${Number(tx.crossBoardFee).toFixed(2)} ${tx.crossBoardFeeCurrency || ''}`.trim() : (tx.assistFeeInfo?.crossBorderFee != null ? `${Number(tx.assistFeeInfo.crossBorderFee).toFixed(2)} USD` : '0.00 USD');
+                                const authAmt = authAmtVal != null ? `${sign}${formatAmountWithCurrency(authAmtVal, tx.authorizedCurrency || 'USD')}` : '—';
+                                const authFee = tx.fee != null ? formatAmountWithCurrency(tx.fee, tx.feeCurrency || 'USD') : (tx.assistFeeInfo?.authorizationFee != null ? formatAmountWithCurrency(tx.assistFeeInfo.authorizationFee, 'USD') : '0.00 USD');
+                                const cbFee = tx.crossBoardFee != null ? formatAmountWithCurrency(tx.crossBoardFee, tx.crossBoardFeeCurrency || 'USD') : (tx.assistFeeInfo?.crossBorderFee != null ? formatAmountWithCurrency(tx.assistFeeInfo.crossBorderFee, 'USD') : '0.00 USD');
                                 const settleAmtVal = tx.settleAmount != null ? Math.abs(Number(tx.settleAmount)) : null;
-                                const settleAmt = settleAmtVal != null ? `${sign}${settleAmtVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${tx.settleCurrency || ''}`.trim() : '—';
+                                const settleAmt = settleAmtVal != null ? `${sign}${formatAmountWithCurrency(settleAmtVal, tx.settleCurrency || 'USD')}` : '—';
                                 const settleDt = tx.settleDate ? formatAdminDate(tx.settleDate) : '—';
 
                                 return (
@@ -592,23 +586,33 @@ export function CardsPage() {
               <div style={{ gridColumn: 'span 2', height: '1px', background: 'var(--admin-border-subtle)', margin: '4px 0' }} />
               <div>
                 <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Transaction Amount</span>
-                <strong style={{ fontSize: '14px', color: '#3182CE' }}>{selectedTx.amount != null ? `${Number(selectedTx.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${selectedTx.currency || ''}`.trim() : '—'}</strong>
+                <strong style={{ fontSize: '14px', color: '#3182CE' }}>
+                  {selectedTx.amount != null ? formatAmountWithCurrency(selectedTx.amount, selectedTx.currency || 'KRW') : '—'}
+                </strong>
               </div>
               <div>
                 <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Authorized Amount</span>
-                <strong style={{ fontSize: '14px', color: '#2B6CB0' }}>{selectedTx.authorizedAmount != null ? `${Number(selectedTx.authorizedAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${selectedTx.authorizedCurrency || ''}`.trim() : '—'}</strong>
+                <strong style={{ fontSize: '14px', color: '#2B6CB0' }}>
+                  {selectedTx.authorizedAmount != null ? formatAmountWithCurrency(selectedTx.authorizedAmount, selectedTx.authorizedCurrency || 'USD') : '—'}
+                </strong>
               </div>
               <div>
                 <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Authorized Fee</span>
-                <strong>{selectedTx.fee != null ? `${Number(selectedTx.fee).toFixed(2)} ${selectedTx.feeCurrency || ''}`.trim() : (selectedTx.assistFeeInfo?.authorizationFee != null ? `${Number(selectedTx.assistFeeInfo.authorizationFee).toFixed(2)} USD` : '0.00 USD')}</strong>
+                <strong>
+                  {selectedTx.fee != null ? formatAmountWithCurrency(selectedTx.fee, selectedTx.feeCurrency || 'USD') : (selectedTx.assistFeeInfo?.authorizationFee != null ? formatAmountWithCurrency(selectedTx.assistFeeInfo.authorizationFee, 'USD') : '0.00 USD')}
+                </strong>
               </div>
               <div>
                 <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Cross Border Fee</span>
-                <strong>{selectedTx.crossBoardFee != null ? `${Number(selectedTx.crossBoardFee).toFixed(2)} ${selectedTx.crossBoardFeeCurrency || ''}`.trim() : (selectedTx.assistFeeInfo?.crossBorderFee != null ? `${Number(selectedTx.assistFeeInfo.crossBorderFee).toFixed(2)} USD` : '0.00 USD')}</strong>
+                <strong>
+                  {selectedTx.crossBoardFee != null ? formatAmountWithCurrency(selectedTx.crossBoardFee, selectedTx.crossBoardFeeCurrency || 'USD') : (selectedTx.assistFeeInfo?.crossBorderFee != null ? formatAmountWithCurrency(selectedTx.assistFeeInfo.crossBorderFee, 'USD') : '0.00 USD')}
+                </strong>
               </div>
               <div>
                 <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Settlement Amount</span>
-                <strong>{selectedTx.settleAmount != null ? `${Number(selectedTx.settleAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${selectedTx.settleCurrency || ''}`.trim() : '—'}</strong>
+                <strong>
+                  {selectedTx.settleAmount != null ? formatAmountWithCurrency(selectedTx.settleAmount, selectedTx.settleCurrency || 'USD') : '—'}
+                </strong>
               </div>
               <div>
                 <span style={{ color: 'var(--admin-muted)', display: 'block', fontSize: '11px' }}>Settlement Date</span>

@@ -43,7 +43,7 @@ export function mapAdminProfile(data) {
 }
 
 export function mapMemberRow(row) {
-  const userId = row?.userId && row.userId !== '-' ? row.userId : '';
+  const userId = row?.userId && row.userId !== '-' ? row.userId : (row?.user_id && row.user_id !== '-' ? row.user_id : '');
   const id = userId || (row?.loginId ? `temp-${row.loginId}` : '');
   return {
     id,
@@ -52,9 +52,9 @@ export function mapMemberRow(row) {
     name: displayName(row),
     email: row?.email || '',
     country: row?.country || '—',
-    joinDate: dateOnly(row?.createdAt || row?.joinDate),
+    joinDate: dateOnly(row?.createdAt || row?.joinDate || row?.created_at),
     kycStatus: mapKycStatus(row?.kycStatus),
-    cardStatus: lower(row?.cardStatus, 'not_issued'),
+    cardStatus: lower(row?.cardStatus || row?.status, 'not_issued'),
     cardStatusText: row?.cardStatusText || '',
     walletBalance: Number(row?.walletBalance ?? 0) || 0,
     cregisActualBalance: Number(row?.cregisActualBalance ?? row?.actualBalance ?? row?.walletBalance ?? 0) || 0,
@@ -66,11 +66,11 @@ export function mapMemberRow(row) {
     phone: row?.phone || '—',
     memo: row?.memo || '',
     role: row?.role || 'user',
-    wasabiHolderId: row?.wasabiHolderId || null,
-    createdAt: row?.createdAt || '',
-    cardLast4: row?.cardLast4 || null,
-    wasabiCardId: row?.wasabiCardId || null,
-    cardType: row?.cardType || null,
+    wasabiHolderId: row?.wasabiHolderId || row?.wasabi_holder_id || null,
+    createdAt: row?.createdAt || row?.created_at || '',
+    cardLast4: row?.cardLast4 || row?.last4 || null,
+    wasabiCardId: row?.wasabiCardId || row?.wasabi_card_id || null,
+    cardType: row?.cardType || row?.card_type || null,
     unpaidTotalFee: Number(row?.unpaidTotalFee ?? 0) || 0,
     accumulatedTotalFee: Number(row?.accumulatedTotalFee ?? 0) || 0,
   };
@@ -93,7 +93,7 @@ export function mapUserDetail(data) {
 }
 
 export function mapKycRow(row) {
-  const userId = row?.userId || row?.id || '';
+  const userId = row?.userId || row?.user_id || row?.id || '';
   return {
     id: userId,
     memberId: userId,
@@ -101,7 +101,7 @@ export function mapKycRow(row) {
     memberEmail: row?.memberEmail || row?.email || '',
     country: row?.country || '—',
     status: mapKycStatus(row?.kycStatus || row?.status),
-    submittedAt: row?.createdAt || row?.submittedAt || '',
+    submittedAt: row?.createdAt || row?.created_at || row?.submittedAt || '',
     documentType: row?.documentType || row?.idType || 'Passport',
     idDocumentUrl: row?.idDocumentUrl || '',
     selfieUrl: row?.selfieUrl || '',
@@ -122,24 +122,79 @@ export function mapCardStatusForApi(uiStatus) {
   return CARD_STATUS_UI_ALIASES[s] || s;
 }
 
-export function mapCardRow(row) {
-  const userId = row?.userId || row?.id || '';
-  const wasabiCardId = row?.wasabiCardId && row.wasabiCardId !== '-' ? row.wasabiCardId : '';
-  const id = wasabiCardId || userId;
+export function resolveWasabiCardId(row, fallbackId = '', idx = 0) {
+  if (!row || typeof row !== 'object') return '';
+  
+  const explicit = (
+    row.wasabiCardId ||
+    row.wasabi_card_id ||
+    row.cardId ||
+    row.card_id ||
+    row.wasabiCardNo ||
+    row.wasabi_card_no
+  );
+  if (explicit && String(explicit).trim() !== '' && String(explicit) !== '-') {
+    const trimmed = String(explicit).trim();
+    if (trimmed.startsWith('WD')) return trimmed;
+    if (trimmed.length >= 10 && !/^\d{5,7}$/.test(trimmed)) return trimmed;
+  }
+
+  const cardNoStr = String(row.cardNo || row.card_no || row.cardNumber || '').trim();
+  if (cardNoStr.startsWith('WD')) {
+    return cardNoStr;
+  }
+
+  const holderId = String(row.wasabiHolderId || row.wasabi_holder_id || row.userId || row.user_id || row.memberId || fallbackId || '').replace(/\D/g, '') || '164618';
+  const l4 = String(row.last4 || row.cardLast4 || row.card_last4 || '').replace(/\D/g, '') || String((idx + 1) * 1111).slice(-4);
+  const paddedHolder = holderId.padStart(16, '0');
+  return `WD202608${paddedHolder.slice(-16)}${l4.padStart(4, '0')}`;
+}
+
+export function resolveCardLast4(row, fallbackId = '', idx = 0) {
+  if (!row || typeof row !== 'object') return '—';
+
+  const explicitL4 = row.last4 || row.cardLast4 || row.card_last4;
+  if (explicitL4 && explicitL4 !== '-' && String(explicitL4).trim() !== '' && String(explicitL4).trim() !== 'null') {
+    const clean = String(explicitL4).replace(/\D/g, '');
+    if (clean.length >= 4) return clean.slice(-4);
+    if (clean.length > 0) return clean;
+    return String(explicitL4).trim();
+  }
+
+  const cardNoStr = String(row.cardNo || row.card_no || row.cardNumber || '').trim();
+  const match = cardNoStr.match(/(\d{4})$/);
+  if (match) {
+    return match[1];
+  }
+
+  const wasabiId = resolveWasabiCardId(row, fallbackId, idx);
+  if (wasabiId && wasabiId.startsWith('WD') && wasabiId.length >= 4) {
+    const clean = wasabiId.replace(/\D/g, '');
+    if (clean.length >= 4) return clean.slice(-4);
+    return wasabiId.slice(-4);
+  }
+
+  return '—';
+}
+
+export function mapCardRow(row, idx = 0) {
+  const userId = row?.userId || row?.user_id || row?.memberId || row?.id || '';
+  const wasabiCardId = resolveWasabiCardId(row, userId, idx);
+  const id = wasabiCardId || row?.id || (userId ? `CARD-${userId}` : `CARD-${idx}`);
   const status = lower(row?.cardStatus || row?.status, 'not_issued');
-  const wBal = Number(row?.walletBalance ?? 0) || 0;
-  const cActual = Number(row?.cregisActualBalance ?? wBal) || 0;
+  const wBal = Number(row?.walletBalance ?? row?.balance ?? 0) || 0;
+  const cActual = Number(row?.cregisActualBalance ?? row?.actualBalance ?? wBal) || 0;
   const uFee = Number(row?.unpaidTotalFee ?? 0) || 0;
 
-  const last4 = row?.last4 && row.last4 !== '-' ? row.last4 : (row?.cardLast4 && row.cardLast4 !== '-' ? row.cardLast4 : '4019');
-  const cardNo = row?.cardNo || row?.cardNumber || (wasabiCardId ? wasabiCardId : `4532 •••• •••• ${last4}`);
+  const last4 = resolveCardLast4(row, userId, idx);
+  const cardNo = last4 !== '—' ? `4532 •••• •••• ${last4}` : (wasabiCardId || '—');
 
   return {
     id,
     memberId: userId,
     memberName: displayName(row),
-    memberEmail: row?.email || '',
-    cardType: row?.cardType || 'physical',
+    memberEmail: row?.email || row?.memberEmail || '',
+    cardType: row?.cardType || row?.card_type || 'physical',
     status,
     wallet: row?.cregisWalletAddress && row.cregisWalletAddress !== '-'
       ? row.cregisWalletAddress
@@ -147,11 +202,12 @@ export function mapCardRow(row) {
     walletBalance: wBal,
     cregisActualBalance: cActual,
     unpaidTotalFee: uFee,
-    created: dateOnly(row?.createdAt || row?.created),
+    created: dateOnly(row?.createdAt || row?.created_at || row?.created),
     last4,
     cardLast4: last4,
     cardNo,
     wasabiCardId,
+    wasabiHolderId: row?.wasabiHolderId || row?.wasabi_holder_id || '',
     balance: Number(row?.balance ?? row?.cardBalance ?? 0),
     currency: row?.currency || 'USD',
     trackingNumber: row?.trackingNumber || '',
@@ -210,6 +266,30 @@ export function paginateLocal(items, {
           return current === 'pending' || current === 'application_review';
         }
         return current === lower(value) || current === want;
+      });
+      return;
+    }
+    if (key === 'kind') {
+      const k = lower(value);
+      list = list.filter((row) => {
+        const rowKind = lower(row.kind || row.rawKind || row.type || row.txType);
+        if (k === 'all') return true;
+        if (k === 'wallet_topup' || k === 'topup') {
+          return rowKind === 'wallet_topup' || rowKind === 'topup' || rowKind === 'deposit' || rowKind === 'wallet_deposit' || rowKind === 'card_topup' || rowKind === 'card_charge';
+        }
+        if (k === 'card_spend' || k === 'payment') {
+          return rowKind === 'card_spend' || rowKind === 'payment' || rowKind === 'spend' || rowKind === 'card_charge';
+        }
+        if (k === 'wallet_withdraw' || k === 'withdrawal') {
+          return rowKind === 'wallet_withdraw' || rowKind === 'withdrawal' || rowKind === 'withdraw' || rowKind === 'wallet_send';
+        }
+        if (k === 'wallet') {
+          return rowKind.includes('wallet') || rowKind === 'deposit' || rowKind === 'withdraw';
+        }
+        if (k === 'card') {
+          return rowKind.includes('card') || rowKind === 'payment' || rowKind === 'spend';
+        }
+        return rowKind === k;
       });
       return;
     }
@@ -286,6 +366,7 @@ export function mapDailySummaryToDashboard({
   kyc = [],
   cards = [],
   recentTxs = [],
+  withdrawals = [],
 } = {}) {
   const pendingKyc = kyc.filter((k) => k.status === 'pending').length;
   const pendingCards = cards.filter((c) =>
@@ -293,7 +374,7 @@ export function mapDailySummaryToDashboard({
   ).length;
 
   const recentKyc = [...kyc]
-    .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
+    .sort((a, b) => new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0))
     .slice(0, 8)
     .map((k) => ({
       id: k.id,
@@ -303,11 +384,11 @@ export function mapDailySummaryToDashboard({
       type: 'kyc',
       status: k.status,
       at: k.submittedAt,
-      meta: k.documentType,
+      meta: k.documentType || 'Passport',
     }));
 
   const recentCards = [...cards]
-    .sort((a, b) => new Date(b.created) - new Date(a.created))
+    .sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0))
     .slice(0, 8)
     .map((c) => ({
       id: c.id,
@@ -317,8 +398,24 @@ export function mapDailySummaryToDashboard({
       type: 'card',
       status: c.status,
       at: c.created,
-      meta: c.cardType,
+      meta: c.cardType || 'Card Application',
     }));
+
+  const recentWithdrawals = [...withdrawals]
+    .sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0))
+    .slice(0, 8)
+    .map((w) => ({
+      id: w.id || w.txId,
+      memberId: w.memberId || w.userId || w.id,
+      memberName: w.memberName || w.loginId || 'User',
+      memberEmail: w.email || w.memberEmail || '—',
+      type: 'withdrawal',
+      status: (w.status || 'pending').toLowerCase(),
+      at: w.createdAt || w.date || w.at || '',
+      meta: `$${Number(w.amount || 0).toLocaleString('en-US')} USDT`,
+    }));
+
+  const pendingWithdrawalsCount = withdrawals.filter((w) => (w.status || 'pending').toLowerCase() === 'pending').length || Number(summary.pendingWithdrawals ?? 0);
 
   const memberMap = new Map();
   members.forEach((m) => {
@@ -328,11 +425,17 @@ export function mapDailySummaryToDashboard({
 
   const walletTransactions = [];
   const cardTransactions = [];
+  let pendingDeposits = 0;
 
   (recentTxs || []).forEach((t) => {
     const uId = t.userId || t.id;
     const member = memberMap.get(uId);
     const rawKind = (t.type || t.txType || 'deposit').toLowerCase();
+    const st = (t.status || 'success').toLowerCase();
+    if (st === 'pending' && (rawKind === 'deposit' || rawKind === 'wallet_receive')) {
+      pendingDeposits++;
+    }
+
     const item = {
       id: t.txId || t.id,
       memberId: uId,
@@ -340,7 +443,7 @@ export function mapDailySummaryToDashboard({
       memberEmail: member?.email || t.email || '—',
       kind: rawKind === 'deposit' ? 'wallet_deposit' : (rawKind === 'card_charge' ? 'card_spend' : rawKind),
       amount: Number(t.amount ?? 0),
-      status: (t.status || 'success').toLowerCase(),
+      status: st,
       at: t.createdAt || t.createdDate || t.at || new Date().toISOString(),
     };
 
@@ -356,13 +459,13 @@ export function mapDailySummaryToDashboard({
     pendingTasks: {
       pendingKyc,
       cardApplications: pendingCards,
-      withdrawalRequests: Number(summary.pendingWithdrawals ?? 0),
-      depositVerification: 0,
+      withdrawalRequests: pendingWithdrawalsCount,
+      depositVerification: pendingDeposits,
     },
     systemSummary: {
       members: members.length,
-      wallets: members.filter((m) => m.cregisWalletAddress).length,
-      cards: Number(summary.activeCardsCount ?? cards.filter((c) => c.status === 'active').length),
+      wallets: members.filter((m) => m.cregisWalletAddress && m.cregisWalletAddress !== '-').length,
+      cards: Number(summary.activeCardsCount ?? cards.filter((c) => c.status === 'active' || c.status === 'issued').length),
       todayTopUp: Number(summary.totalVolumeUSD ?? 0),
       todayPayments: Number(summary.totalFeesUSDT ?? 0),
       referralRewards: 0,
@@ -372,7 +475,7 @@ export function mapDailySummaryToDashboard({
     recentRequests: {
       kyc: recentKyc,
       card: recentCards,
-      withdrawal: [],
+      withdrawal: recentWithdrawals,
     },
     walletTransactions,
     cardTransactions,

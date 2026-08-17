@@ -17,6 +17,7 @@ import {
   mapMemberRow,
   mapUserDetail,
   paginateLocal,
+  resolveCardLast4,
 } from './adminApiMappers.js';
 
 const SVC = 'adminApiService';
@@ -105,12 +106,13 @@ export async function getSystemSummary() {
 }
 
 export async function getDashboardData() {
-  const [summary, members, kyc, cards, recentTxs] = await Promise.all([
+  const [summary, members, kyc, cards, recentTxs, withdrawals] = await Promise.all([
     apiGet('/admin/analytics/daily-summary').catch(() => ({})),
     fetchMembersRaw().catch(() => []),
     fetchKycRaw().catch(() => []),
     fetchCardsRaw().catch(() => []),
     apiGet('/admin/transactions/recent').catch(() => []),
+    apiGet('/admin/withdrawals').catch(() => []),
   ]);
   return mapDailySummaryToDashboard({
     summary,
@@ -118,6 +120,7 @@ export async function getDashboardData() {
     kyc,
     cards,
     recentTxs: asArray(recentTxs),
+    withdrawals: asArray(withdrawals),
   });
 }
 
@@ -200,13 +203,16 @@ export async function triggerFeePayout(userId) {
 export async function getMemberCards(userId) {
   if (!userId) return [];
   try {
-    const cards = asArray(await apiGet(`/admin/members/${encodeURIComponent(userId)}/cards`));
-    if (cards.length > 0) {
-      return cards.map((c) => mapCardRow({
-        ...c,
-        cardLast4: c.cardLast4 || c.last4 || '4019',
-        cardNo: c.cardNo || c.cardNumber || `4532 •••• •••• ${c.cardLast4 || c.last4 || '4019'}`,
-      }));
+    const rawCards = asArray(await apiGet(`/admin/members/${encodeURIComponent(userId)}/cards`));
+    if (rawCards.length > 0) {
+      const mapped = rawCards.map((c, i) => mapCardRow(c, i));
+      const seen = new Set();
+      return mapped.filter((c) => {
+        const key = c.wasabiCardId || c.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     }
   } catch {
     // fallback below
@@ -216,31 +222,14 @@ export async function getMemberCards(userId) {
     const all = await fetchCardsRaw();
     const matched = all.filter((c) => c.memberId === userId || c.userId === userId || c.id === userId);
     if (matched.length > 0) {
-      return matched.map((c) => mapCardRow({
-        ...c,
-        cardLast4: c.cardLast4 || c.last4 || '4019',
-        cardNo: c.cardNo || c.cardNumber || `4532 •••• •••• ${c.cardLast4 || c.last4 || '4019'}`,
-      }));
-    }
-
-    const members = await fetchMembersRaw();
-    const memberFound = members.find((m) => m.userId === userId || m.id === userId);
-    if (memberFound && (memberFound.wasabiCardId || memberFound.cardLast4 || memberFound.cardStatus !== 'not_issued')) {
-      return [mapCardRow({
-        id: memberFound.wasabiCardId || `CARD-${memberFound.userId || memberFound.id}`,
-        wasabiCardId: memberFound.wasabiCardId || `CARD-${memberFound.userId || memberFound.id}`,
-        userId: memberFound.userId || memberFound.id,
-        name: memberFound.name,
-        email: memberFound.email,
-        cardStatus: memberFound.cardStatus || 'active',
-        cardType: memberFound.cardType || 'Virtual Visa',
-        cardLast4: memberFound.cardLast4 || '4019',
-        cardNo: memberFound.wasabiCardId || `4532 •••• •••• ${memberFound.cardLast4 || '4019'}`,
-        walletBalance: memberFound.walletBalance || 0,
-        cregisActualBalance: memberFound.cregisActualBalance || 0,
-        unpaidTotalFee: memberFound.unpaidTotalFee || 0,
-        cregisWalletAddress: memberFound.cregisWalletAddress,
-      })];
+      const mapped = matched.map((c, i) => mapCardRow(c, i));
+      const seen = new Set();
+      return mapped.filter((c) => {
+        const key = c.wasabiCardId || c.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     }
   } catch {
     // ignore fallback errors
@@ -490,19 +479,50 @@ export async function unlockWallet() {
 }
 
 export async function getTransactions(params = {}) {
-  const rawList = asArray(await apiGet('/admin/transactions'));
-  const mapped = rawList.map(t => ({
-    id: t.txId || t.id || String(t.id),
-    memberId: t.userId,
-    memberName: t.loginId || 'Unknown',
-    kind: t.transactionType || t.type || 'deposit',
-    amount: t.amount || 0,
-    wallet: t.toAddress || '-',
-    status: (t.status || 'success').toLowerCase(),
-    at: t.createdAt || t.createdDate || '-',
-    reference: t.description || t.txId || '-'
-  }));
-  return paginateLocal(mapped, params, ['kind', 'memberName', 'memberId']);
+  const [rawList, members] = await Promise.all([
+    apiGet('/admin/transactions').then(asArray).catch(() => []),
+    fetchMembersRaw().catch(() => []),
+  ]);
+
+  const memberMap = new Map();
+  members.forEach((m) => {
+    if (m.userId) memberMap.set(m.userId, m);
+    if (m.id) memberMap.set(m.id, m);
+  });
+
+  const mapped = rawList.map((t) => {
+    const uId = t.userId || t.memberId || t.id;
+    const mem = memberMap.get(uId);
+    const rawKind = String(t.type || t.txType || t.kind || t.transactionType || 'deposit').toLowerCase();
+
+    let normalizedKind = rawKind;
+    if (rawKind === 'deposit' || rawKind === 'wallet_deposit' || rawKind === 'card_topup' || rawKind === 'wallet_topup' || rawKind === 'card_charge' || rawKind === 'topup') {
+      normalizedKind = 'wallet_topup';
+    } else if (rawKind === 'card_spend' || rawKind === 'payment' || rawKind === 'spend') {
+      normalizedKind = 'card_spend';
+    } else if (rawKind === 'withdraw' || rawKind === 'withdrawal' || rawKind === 'wallet_withdraw' || rawKind === 'wallet_send') {
+      normalizedKind = 'wallet_withdraw';
+    } else if (rawKind === 'refund') {
+      normalizedKind = 'refund';
+    }
+
+    return {
+      id: String(t.txId || t.id || `TX_${Math.random().toString(36).substr(2, 6)}`),
+      memberId: uId || '-',
+      memberName: mem?.name || t.loginId || uId || 'Unknown',
+      memberEmail: mem?.email || t.email || '—',
+      kind: normalizedKind,
+      rawKind: rawKind,
+      currency: (normalizedKind === 'card_spend' || rawKind.includes('spend') || rawKind.includes('payment')) ? 'KRW' : (t.currency || 'USDT'),
+      amount: Number(t.amount ?? 0),
+      wallet: t.toAddress || t.fromAddress || t.subAddress || '-',
+      status: (t.status || 'success').toLowerCase(),
+      at: t.createdAt || t.createdDate || t.at || '-',
+      reference: t.description || t.txId || t.type || '-'
+    };
+  });
+
+  return paginateLocal(mapped, params, ['kind', 'memberName', 'memberId', 'memberEmail', 'id', 'reference']);
 }
 
 export async function exportTransactionsCsv() {

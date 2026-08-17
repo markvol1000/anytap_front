@@ -24,6 +24,7 @@ import {
   retryCregisWallet,
   triggerFeePayout,
 } from '../services/adminService.js';
+import { resolveWasabiCardId, resolveCardLast4 } from '../services/api/adminApiMappers.js';
 
 const fetchMembers = (params) => getMembers(params);
 const fetchMemberDetail = (id) => getMemberById(id);
@@ -215,12 +216,7 @@ export function MembersPage() {
                   },
                   { key: 'joinDate', label: 'Join Date', render: (r) => formatAdminDate(r.joinDate) },
                   { key: 'kycStatus', label: 'KYC', render: (r) => <AdminStatusBadge status={r.kycStatus} /> },
-                  { key: 'cardStatus', label: 'Card', render: (r) => (
-                    <AdminStatusBadge
-                      status={r.cardStatus}
-                      label={r.cardStatus + (r.cardLast4 ? ` (${r.cardLast4})` : '')}
-                    />
-                  ) },
+                  { key: 'cardStatus', label: 'Card', render: (r) => <AdminStatusBadge status={r.cardStatus} /> },
                   { key: 'walletBalance', label: 'Wallet (Actual) / Unpaid Fee', render: (r) => {
                     const avail = (Number(r.walletBalance) || 0).toFixed(2);
                     const actual = (Number(r.cregisActualBalance ?? r.walletBalance) || 0).toFixed(2);
@@ -273,12 +269,7 @@ export function MembersPage() {
                   <AdminDetailRow label="Country" value={detail.country} />
                   <AdminDetailRow label="Join date" value={formatAdminDate(detail.joinDate)} />
                   <AdminDetailRow label="KYC" value={<AdminStatusBadge status={detail.kycStatus} />} />
-                  <AdminDetailRow label="Card" value={(
-                    <AdminStatusBadge
-                      status={detail.cardStatus}
-                      label={detail.cardStatus + (detail.cardLast4 ? ` (${detail.cardLast4})` : '')}
-                    />
-                  )} />
+                  <AdminDetailRow label="Card" value={<AdminStatusBadge status={detail.cardStatus} />} />
                   <AdminDetailRow label="Wallet" value={(
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', flexWrap: 'wrap' }}>
                       <span style={{
@@ -331,129 +322,83 @@ export function MembersPage() {
 
                 <AdminDetailSection title="Wasabi Connection Info">
                   <AdminDetailRow label="Holder ID" value={detail.wasabiHolderId || '—'} />
-                  {detail.wasabiCardId ? (
-                    <>
-                      <AdminDetailRow label="Card ID" value={detail.wasabiCardId} />
-                      <AdminDetailRow label="Card Type" value={detail.cardType || '—'} />
-                      <AdminDetailRow label="Card Last 4" value={detail.cardLast4 || '—'} />
-                      <AdminDetailRow label="Card Status" value={<AdminStatusBadge status={detail.cardStatus} />} />
-                    </>
-                  ) : (
-                    <p className="admin-muted" style={{ paddingLeft: '8px', fontSize: '13px' }}>No card issued yet.</p>
-                  )}
+                  <AdminDetailRow 
+                    label="Card Count (카드 보유 수량)" 
+                    value={`${memberCards?.length || (detail.cardStatus && detail.cardStatus !== 'not_issued' ? 1 : 0)} cards`} 
+                  />
+                  <AdminDetailRow label="Card Status" value={<AdminStatusBadge status={detail.cardStatus} />} />
                 </AdminDetailSection>
 
                 <AdminDetailSection title="Issued Cards List (발급 카드 리스트)">
                   {memberCardsLoading ? (
                     <p className="admin-loading admin-loading--inline">Loading cards…</p>
-                  ) : (() => {
-                    const effectiveCards = memberCards.length > 0 ? memberCards : (
-                      (detail.wasabiCardId || detail.cardLast4 || (detail.cardStatus && detail.cardStatus !== 'not_issued')) ? [{
-                        id: `CARD-${detail.id}`,
-                        cardId: `CARD-${detail.id}`,
-                        wasabiCardId: detail.wasabiCardId || `WASABI-${detail.id}`,
-                        cardNo: `4532 •••• •••• ${detail.cardLast4 || '4019'}`,
-                        last4: detail.cardLast4 || '4019',
-                        cardLast4: detail.cardLast4 || '4019',
-                        cardType: detail.cardType || 'Virtual Visa',
-                        status: detail.cardStatus || 'active',
-                      }] : []
-                    );
-
-                    if (effectiveCards.length === 0) {
-                      return <p className="admin-muted" style={{ paddingLeft: '8px', fontSize: '13px' }}>No cards issued for this member.</p>;
-                    }
-
-                    return (
-                      <AdminMiniTable
-                        columns={[
-                          {
-                            key: 'wasabiCardId',
-                            label: 'Wasabi ID',
-                            render: (r) => {
-                              const wasabiIdVal = r.wasabiCardId || detail.wasabiCardId || `WASABI-${detail.id}`;
-                              return (
-                                <button
-                                  type="button"
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#c084fc',
-                                    textDecoration: 'underline',
-                                    cursor: 'pointer',
-                                    padding: 0,
-                                    fontWeight: 'bold',
-                                    fontFamily: 'monospace',
-                                    fontSize: '11px',
-                                  }}
-                                  onClick={() => navigate(`/admin/cards?id=${encodeURIComponent(wasabiIdVal)}`)}
-                                  title="Click to view card detail in Cards menu"
-                                >
-                                  {wasabiIdVal}
-                                </button>
-                              );
-                            },
-                          },
-                          {
-                            key: 'cardNo',
-                            label: 'Card Number (카드번호)',
-                            render: (r) => {
-                              const targetId = r.wasabiCardId || r.id || detail.wasabiCardId || detail.id;
-                              const displayNum = r.cardNo || (r.last4 || r.cardLast4 ? `•••• •••• •••• ${r.last4 || r.cardLast4}` : '4532 •••• •••• 4019');
-                              return (
-                                <button
-                                  type="button"
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#f8fafc',
-                                    cursor: 'pointer',
-                                    padding: 0,
-                                    fontWeight: '700',
-                                    fontFamily: 'monospace',
-                                    fontSize: '11px',
-                                    textAlign: 'left',
-                                  }}
-                                  onClick={() => navigate(`/admin/cards?id=${encodeURIComponent(targetId)}`)}
-                                  title="Click to view card detail in Cards menu"
-                                >
-                                  💳 {displayNum}
-                                </button>
-                              );
-                            },
-                          },
-                          {
-                            key: 'cardType',
-                            label: 'Type',
-                            render: (r) => r.cardType || r.type || 'Virtual Visa',
-                          },
-                          {
-                            key: 'status',
-                            label: 'Status',
-                            render: (r) => <AdminStatusBadge status={r.status || r.cardStatus || 'active'} />,
-                          },
-                          {
-                            key: 'action',
-                            label: 'Detail Link',
-                            render: (r) => {
-                              const targetId = r.wasabiCardId || r.id || detail.wasabiCardId || detail.id;
-                              return (
-                                <button
-                                  type="button"
-                                  className="admin-btn admin-btn--primary"
-                                  style={{ padding: '2px 6px', fontSize: '11px', whiteSpace: 'nowrap' }}
-                                  onClick={() => navigate(`/admin/cards?id=${encodeURIComponent(targetId)}`)}
-                                >
-                                  🔍 카드 메뉴 이동
-                                </button>
-                              );
-                            },
-                          },
-                        ]}
-                        rows={effectiveCards}
-                      />
-                    );
-                  })()}
+                  ) : memberCards && memberCards.length > 0 ? (
+                    <AdminMiniTable
+                      columns={[
+                        {
+                          key: 'wasabiCardId',
+                          label: 'Wasabi ID',
+                          render: (r) => (
+                            <button
+                              type="button"
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#2563eb',
+                                textDecoration: 'underline',
+                                cursor: 'pointer',
+                                padding: 0,
+                                fontWeight: '700',
+                                fontFamily: 'monospace',
+                                fontSize: '11px',
+                              }}
+                              onClick={() => navigate(`/admin/cards?id=${encodeURIComponent(r.wasabiCardId || r.id)}`)}
+                              title="Click to view card detail in Cards menu"
+                            >
+                              {r.wasabiCardId || r.id}
+                            </button>
+                          ),
+                        },
+                        {
+                          key: 'cardNo',
+                          label: 'Card Number (카드번호)',
+                          render: (r) => (
+                            <button
+                              type="button"
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#0f172a',
+                                cursor: 'pointer',
+                                padding: 0,
+                                fontWeight: '700',
+                                fontFamily: 'monospace',
+                                fontSize: '12px',
+                                textAlign: 'left',
+                              }}
+                              onClick={() => navigate(`/admin/cards?id=${encodeURIComponent(r.wasabiCardId || r.id)}`)}
+                              title="Click to view card detail in Cards menu"
+                            >
+                              💳 •••• {r.last4 || r.cardLast4 || '—'}
+                            </button>
+                          ),
+                        },
+                        {
+                          key: 'cardType',
+                          label: 'Type',
+                          render: (r) => r.cardType || r.type || 'physical',
+                        },
+                        {
+                          key: 'status',
+                          label: 'Status',
+                          render: (r) => <AdminStatusBadge status={r.status || r.cardStatus || 'active'} />,
+                        },
+                      ]}
+                      rows={memberCards}
+                    />
+                  ) : (
+                    <p className="admin-muted" style={{ paddingLeft: '8px', fontSize: '13px' }}>No cards issued for this member.</p>
+                  )}
                 </AdminDetailSection>
 
                 <AdminDetailSection title="Admin memo">

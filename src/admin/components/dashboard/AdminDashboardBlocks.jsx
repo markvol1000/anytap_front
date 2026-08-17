@@ -142,26 +142,37 @@ export function AdminRequestDistributionChart({ kycCount = 0, cardCount = 0, wit
   const totalCount = kycCount + cardCount + withdrawalCount;
   const safeTotal = totalCount || 1;
 
-  const kycRatio = totalCount ? kycCount / safeTotal : 0.45;
-  const cardRatio = totalCount ? cardCount / safeTotal : 0.35;
-  const withdrawalRatio = totalCount ? withdrawalCount / safeTotal : 0.20;
+  const kycRatio = totalCount ? kycCount / safeTotal : 0;
+  const cardRatio = totalCount ? cardCount / safeTotal : 0;
+  const withdrawalRatio = totalCount ? withdrawalCount / safeTotal : 0;
 
-  const kycPct = Math.round(kycRatio * 100);
-  const cardPct = Math.round(cardRatio * 100);
-  const withdrawalPct = Math.max(0, 100 - kycPct - cardPct);
+  const kycPct = totalCount ? Math.round(kycRatio * 100) : 0;
+  const cardPct = totalCount ? Math.round(cardRatio * 100) : 0;
+  const withdrawalPct = totalCount ? Math.max(0, 100 - kycPct - cardPct) : 0;
 
-  // Compute angles
+  // Compute arc angles dynamically
   const kycAngle = kycRatio * 360;
   const cardAngle = cardRatio * 360;
+  const withdrawalAngle = withdrawalRatio * 360;
 
-  const a0 = 0;
-  const a1 = kycAngle;
-  const a2 = kycAngle + cardAngle;
-  const a3 = 360;
+  let currentAngle = 0;
+  let pathKyc = '';
+  if (kycCount > 0) {
+    pathKyc = describeArc(110, 110, 75, currentAngle, currentAngle + kycAngle);
+    currentAngle += kycAngle;
+  }
 
-  const pathKyc = describeArc(110, 110, 75, a0, a1);
-  const pathCard = describeArc(110, 110, 75, a1, a2);
-  const pathWithdrawal = describeArc(110, 110, 75, a2, a3);
+  let pathCard = '';
+  if (cardCount > 0) {
+    pathCard = describeArc(110, 110, 75, currentAngle, currentAngle + cardAngle);
+    currentAngle += cardAngle;
+  }
+
+  let pathWithdrawal = '';
+  if (withdrawalCount > 0) {
+    pathWithdrawal = describeArc(110, 110, 75, currentAngle, currentAngle + withdrawalAngle);
+    currentAngle += withdrawalAngle;
+  }
 
   return (
     <div className="admin-chart-card">
@@ -177,7 +188,7 @@ export function AdminRequestDistributionChart({ kycCount = 0, cardCount = 0, wit
             <circle cx="110" cy="110" r="75" fill="none" stroke="#e2e8f0" strokeWidth="28" />
             
             {/* KYC Arc Path (Vibrant Royal Blue) */}
-            {pathKyc && (
+            {pathKyc ? (
               <path
                 d={pathKyc}
                 fill="none"
@@ -188,10 +199,10 @@ export function AdminRequestDistributionChart({ kycCount = 0, cardCount = 0, wit
               >
                 <title>{`KYC Requests: ${kycCount} (${kycPct}%) — Click to open KYC menu`}</title>
               </path>
-            )}
+            ) : null}
 
             {/* Card Arc Path (Vibrant Emerald Green) */}
-            {pathCard && (
+            {pathCard ? (
               <path
                 d={pathCard}
                 fill="none"
@@ -202,10 +213,10 @@ export function AdminRequestDistributionChart({ kycCount = 0, cardCount = 0, wit
               >
                 <title>{`Card Applications: ${cardCount} (${cardPct}%) — Click to open Cards menu`}</title>
               </path>
-            )}
+            ) : null}
 
             {/* Withdrawal Arc Path (Vibrant Brand Orange) */}
-            {pathWithdrawal && (
+            {pathWithdrawal ? (
               <path
                 d={pathWithdrawal}
                 fill="none"
@@ -216,7 +227,7 @@ export function AdminRequestDistributionChart({ kycCount = 0, cardCount = 0, wit
               >
                 <title>{`Withdrawal Requests: ${withdrawalCount} (${withdrawalPct}%) — Click to open Withdrawals menu`}</title>
               </path>
-            )}
+            ) : null}
 
             {/* Center Text */}
             <text x="110" y="104" textAnchor="middle" className="admin-donut-center-val">
@@ -256,13 +267,66 @@ export function AdminRequestDistributionChart({ kycCount = 0, cardCount = 0, wit
   );
 }
 
-export function AdminTxVolumeChart({ walletTxCount = 0, cardTxCount = 0, todayTopUp = 0, todayPayments = 0 }) {
-  const items = [
-    { label: 'Wallet Top Up', amount: `$${Number(todayTopUp).toLocaleString('en-US')}`, count: walletTxCount, color: '#2563eb', gradient: 'linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)', route: '/admin/transactions?kind=wallet_topup', heightPct: 85 },
-    { label: 'Card Payments', amount: `$${Number(todayPayments).toLocaleString('en-US')}`, count: cardTxCount, color: '#10b981', gradient: 'linear-gradient(180deg, #10b981 0%, #047857 100%)', route: '/admin/transactions?kind=card_spend', heightPct: 68 },
-    { label: 'Withdrawals', amount: 'Active Queue', count: 0, color: '#ff5500', gradient: 'linear-gradient(180deg, #ff5500 0%, #c23b00 100%)', route: '/admin/withdrawals', heightPct: 45 },
-    { label: 'Deposits Log', amount: 'Verified', count: walletTxCount, color: '#8b5cf6', gradient: 'linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%)', route: '/admin/wallets', heightPct: 75 },
+export function AdminTxVolumeChart({
+  walletTxCount = 0,
+  cardTxCount = 0,
+  withdrawalTxCount = 0,
+  todayTopUp = 0,
+  todayPayments = 0,
+  walletAssets = 0,
+}) {
+  const topUpVal = Number(todayTopUp || 0);
+  const payVal = Number(todayPayments || 0);
+  const withdrawVal = Number(withdrawalTxCount || 0);
+  const assetsVal = Number(walletAssets || 0);
+
+  const rawItems = [
+    {
+      label: 'Wallet Top Up',
+      numericVal: topUpVal,
+      amount: `$${topUpVal.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
+      count: walletTxCount,
+      color: '#2563eb',
+      gradient: 'linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)',
+      route: '/admin/transactions?kind=wallet_topup',
+    },
+    {
+      label: 'Card Payments',
+      numericVal: payVal,
+      amount: `$${payVal.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
+      count: cardTxCount,
+      color: '#10b981',
+      gradient: 'linear-gradient(180deg, #10b981 0%, #047857 100%)',
+      route: '/admin/transactions?kind=card_spend',
+    },
+    {
+      label: 'Withdrawals',
+      numericVal: withdrawVal,
+      amount: `${withdrawVal} reqs`,
+      count: withdrawVal,
+      color: '#ff5500',
+      gradient: 'linear-gradient(180deg, #ff5500 0%, #c23b00 100%)',
+      route: '/admin/withdrawals',
+    },
+    {
+      label: 'Wallet Assets',
+      numericVal: assetsVal,
+      amount: `$${assetsVal.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
+      count: walletTxCount,
+      color: '#8b5cf6',
+      gradient: 'linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%)',
+      route: '/admin/wallets',
+    },
   ];
+
+  const maxVal = Math.max(...rawItems.map((i) => i.numericVal), 1);
+  const items = rawItems.map((item) => {
+    let heightPct = 8;
+    if (item.numericVal > 0) {
+      heightPct = Math.max(18, Math.round((item.numericVal / maxVal) * 100));
+    }
+    return { ...item, heightPct };
+  });
 
   return (
     <div className="admin-chart-card">
@@ -295,6 +359,59 @@ export function AdminTxVolumeChart({ walletTxCount = 0, cardTxCount = 0, todayTo
             </div>
           </Link>
         ))}
+      </div>
+    </div>
+  );
+}
+
+export function AdminChartDateFilter({
+  preset,
+  onPresetChange,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+  onApply,
+}) {
+  return (
+    <div className="admin-chart-filter-bar">
+      <div className="admin-chart-filter-bar__presets">
+        {[
+          { id: 'all', label: '전체' },
+          { id: 'today', label: '오늘' },
+          { id: '7d', label: '최근 7일' },
+          { id: '1m', label: '최근 1달' },
+        ].map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            className={`admin-chart-filter-btn${preset === p.id ? ' is-active' : ''}`}
+            onClick={() => onPresetChange(p.id)}>
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="admin-chart-filter-bar__dates">
+        <input
+          type="date"
+          className="admin-input admin-input--date"
+          value={startDate}
+          onChange={(e) => onStartDateChange(e.target.value)}
+        />
+        <span className="admin-chart-filter-bar__sep">~</span>
+        <input
+          type="date"
+          className="admin-input admin-input--date"
+          value={endDate}
+          onChange={(e) => onEndDateChange(e.target.value)}
+        />
+        <button
+          type="button"
+          className="admin-btn admin-btn--primary admin-btn--sm admin-chart-search-btn"
+          onClick={onApply}>
+          Search
+        </button>
       </div>
     </div>
   );

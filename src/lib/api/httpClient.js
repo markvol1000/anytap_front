@@ -64,6 +64,15 @@ export async function apiRequest(path, options = {}) {
   const isEnvelope = data && typeof data === 'object' && !Array.isArray(data) && 'result' in data;
 
   if (!res.ok || (isEnvelope && data.result === false)) {
+    if (res.status === 401 || res.status === 403) {
+      clearAccessToken();
+      try {
+        sessionStorage.removeItem('anytap_http_session');
+        localStorage.removeItem('anytap_http_session');
+        localStorage.removeItem('anytap_demo_http_session');
+      } catch { /* noop */ }
+      window.dispatchEvent(new Event('anytap-session-expired'));
+    }
     const message = data?.message || data?.error || res.statusText || 'Request failed';
     const err = new Error(message);
     err.status = res.ok ? 400 : res.status;
