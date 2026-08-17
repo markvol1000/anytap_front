@@ -24,7 +24,6 @@ import {
   retryCregisWallet,
   triggerFeePayout,
 } from '../services/adminService.js';
-import { resolveWasabiCardId, resolveCardLast4 } from '../services/api/adminApiMappers.js';
 
 const fetchMembers = (params) => getMembers(params);
 const fetchMemberDetail = (id) => getMemberById(id);
@@ -39,6 +38,7 @@ export function MembersPage() {
   const [memoDraft, setMemoDraft] = useState('');
   const [memberCards, setMemberCards] = useState([]);
   const [memberCardsLoading, setMemberCardsLoading] = useState(false);
+  const [retryLoading, setRetryLoading] = useState(false);
   const list = useAdminList(fetchMembers);
   const { detail, loading: detailLoading, setDetail } = useAdminDetail(fetchMemberDetail, selectedId);
 
@@ -64,6 +64,9 @@ export function MembersPage() {
     setSelectedId(row.id);
     setMemoDraft(row.memo ?? '');
   };
+
+  const walletAddr = String(detail?.cregisWalletAddress || detail?.walletAddress || detail?.depositAddress || '').trim();
+  const hasNoWallet = !walletAddr || walletAddr === '-' || walletAddr === '—' || walletAddr === 'Not allocated' || walletAddr === 'null' || walletAddr === 'undefined';
 
   const handleAction = useCallback(async (action) => {
     if (!detail) return;
@@ -97,16 +100,28 @@ export function MembersPage() {
       } else if (action === 'saveMemo') {
         await saveMemberMemo(detail.id, memoDraft);
         setDetail({ ...detail, memo: memoDraft });
+        window.alert('✅ Internal memo saved successfully.');
       } else if (action === 'retryWallet') {
         const ok = await runConfirm(confirm, {
-          title: 'Retry Cregis Wallet Allocation',
-          message: `Attempt to generate Cregis USDT wallet address for ${detail.name} again?`,
-          confirmLabel: 'Retry',
+          title: 'Generate Wallet (Cregis USDT)',
+          message: `Generate Cregis USDT wallet address for member ${detail.name} (${detail.id})?`,
+          confirmLabel: 'Generate Wallet',
         });
         if (!ok) return;
-        const updated = await retryCregisWallet(detail.id);
-        setDetail(updated);
-        list.reload();
+
+        setRetryLoading(true);
+        try {
+          const res = await retryCregisWallet(detail.id);
+          const allocatedAddress = res?.address || res?.data?.address || (res?.cregisWalletAddress) || 'Allocated';
+          window.alert(`✅ Cregis USDT 지갑 주소가 성공적으로 발급되었습니다!\n\n할당된 주소:\n${allocatedAddress}`);
+          const updated = await getMemberById(detail.id);
+          setDetail(updated);
+          list.reload();
+        } catch (retryErr) {
+          window.alert(`❌ Cregis 지갑 생성 실패:\n${retryErr.message || 'Cregis API 통신 중 오류가 발생했습니다.'}`);
+        } finally {
+          setRetryLoading(false);
+        }
       } else if (action === 'triggerFeePayout') {
         const latestDetail = await getMemberById(detail.id);
         setDetail(latestDetail);
@@ -139,13 +154,13 @@ export function MembersPage() {
 
         const res = await triggerFeePayout(latestDetail.id);
         const msg = res?.message || (typeof res?.data === 'string' ? res.data : 'Fee payout processed successfully.');
-        window.alert(msg);
+        window.alert(`✅ ${msg}`);
         const updated = await getMemberById(latestDetail.id);
         setDetail(updated);
         list.reload();
       }
     } catch (err) {
-      window.alert(err.message);
+      window.alert(`❌ Action error: ${err.message}`);
     }
   }, [confirm, detail, list, memoDraft, setDetail]);
 
@@ -313,11 +328,29 @@ export function MembersPage() {
                 </AdminDetailSection>
 
                 <AdminDetailSection title="Cregis Connection Info">
-                  <AdminDetailRow label="USDT Deposit Address" value={detail.cregisWalletAddress ? (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '12px' }}>
-                      {detail.cregisWalletAddress}
+                  <AdminDetailRow label="USDT Deposit Address" value={(
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '12px' }}>
+                      <span>{hasNoWallet ? 'Not allocated' : walletAddr}</span>
+                      {hasNoWallet ? (
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn--ghost admin-btn--sm"
+                          disabled={retryLoading}
+                          onClick={() => handleAction('retryWallet')}
+                          style={{
+                            padding: '2px 8px',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            color: '#3b82f6',
+                            borderColor: 'rgba(59, 130, 246, 0.3)',
+                            cursor: retryLoading ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          {retryLoading ? '⏳ Generating...' : '⚡ Generate Wallet'}
+                        </button>
+                      ) : null}
                     </div>
-                  ) : 'Not allocated'} />
+                  )} />
                 </AdminDetailSection>
 
                 <AdminDetailSection title="Wasabi Connection Info">
@@ -415,11 +448,23 @@ export function MembersPage() {
                 </AdminDetailSection>
 
                 <AdminActionStack>
-                  {detail.accountStatus === 'pending_wallet' ? (
-                    <button type="button" className="admin-btn admin-btn--primary" style={{ backgroundColor: '#3b82f6', color: '#fff', fontWeight: 'bold' }} onClick={() => handleAction('retryWallet')}>
-                      ⚡ Retry Wallet Allocation
+                  {hasNoWallet ? (
+                    <button 
+                      type="button" 
+                      className="admin-btn admin-btn--primary" 
+                      disabled={retryLoading}
+                      style={{ 
+                        backgroundColor: retryLoading ? '#94a3b8' : '#3b82f6', 
+                        color: '#fff', 
+                        fontWeight: 'bold',
+                        cursor: retryLoading ? 'not-allowed' : 'pointer'
+                      }} 
+                      onClick={() => handleAction('retryWallet')}
+                    >
+                      {retryLoading ? '⏳ Generating Wallet...' : '⚡ Generate Wallet'}
                     </button>
                   ) : null}
+
                   {detail.accountStatus === 'suspended' ? (
                     <button type="button" className="admin-btn admin-btn--primary" onClick={() => handleAction('activate')}>
                       Reactivate member

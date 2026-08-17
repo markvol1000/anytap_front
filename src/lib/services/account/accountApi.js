@@ -395,7 +395,12 @@ export async function fetchLocalTransactions(userId) {
         title = tx.description && tx.description !== '-' ? tx.description : 'Refund';
         incoming = true;
       }
-      const status = String(tx.status || 'SUCCESS').toLowerCase();
+      let status = String(tx.status || 'SUCCESS').toLowerCase();
+      if (status === 'pending_merchant_funding' || status === 'admin_pending') {
+        status = 'pending';
+      } else if (status === 'success') {
+        status = 'completed';
+      }
       return {
         id: tx.txId || `local-${Date.now()}-${Math.random()}`,
         title: title,
@@ -405,8 +410,9 @@ export async function fetchLocalTransactions(userId) {
         feeAmount: Number(tx.feeAmount || 0),
         incoming: incoming,
         failed: status === 'failed',
+        pending: status === 'pending' || status === 'processing',
         kind: kind,
-        status: status === 'success' ? 'completed' : status,
+        status: status,
         txId: tx.txId,
         cardNo: tx.cardNo || tx.wasabiCardId || '',
         reference: tx.txId ? tx.txId.slice(0, 10).toUpperCase() : '',

@@ -4,7 +4,7 @@ import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../
 import { AdminDetailPanel, AdminDetailRow, AdminSplitLayout } from '../components/AdminSplitLayout.jsx';
 import { AdminStatusBadge, formatAdminDate, formatAmountWithCurrency } from '../components/AdminStatusBadge.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
-import { exportTransactionsCsv, getTransactions } from '../services/adminService.js';
+import { exportTransactionsCsv, getTransactions, retryTransaction } from '../services/adminService.js';
 
 const fetchTx = (params) => getTransactions(params);
 
@@ -108,6 +108,8 @@ const shortenTxId = (txId) => {
 
 export function TransactionsPage() {
   const [selectedId, setSelectedId] = useState(null);
+  const [retrying, setRetrying] = useState(false);
+  const [retryMsg, setRetryMsg] = useState(null);
   const list = useAdminList(fetchTx, {}, { urlKeys: ['kind', 'status'] });
 
   const handleExport = useCallback(async () => {
@@ -124,7 +126,26 @@ export function TransactionsPage() {
     URL.revokeObjectURL(url);
   }, [list.filters.kind, list.search]);
 
+  const handleRetry = async (txId) => {
+    if (retrying || !txId) return;
+    setRetrying(true);
+    setRetryMsg(null);
+    try {
+      await retryTransaction(txId);
+      setRetryMsg({ type: 'success', text: 'Transaction retry successful!' });
+      list.refresh?.();
+    } catch (err) {
+      setRetryMsg({ type: 'error', text: err?.message || 'Retry failed. Please check Wasabi Merchant balance.' });
+    } finally {
+      setRetrying(false);
+    }
+  };
+
   const selected = (list.items || []).find((r) => r.id === selectedId);
+  const isSelectedPending = selected && (
+    String(selected.status || '').toLowerCase().includes('pending') ||
+    String(selected.status || '').toLowerCase().includes('processing')
+  );
 
   return (
     <div className="admin-page">
@@ -199,11 +220,31 @@ export function TransactionsPage() {
                   },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
                   { key: 'at', label: 'Date', render: (r) => formatAdminDate(r.at) },
-                  { key: 'reference', label: 'Reference' },
+                  { 
+                    key: 'actions', 
+                    label: 'Action', 
+                    render: (r) => {
+                      const isRowPending = String(r.status || '').toLowerCase().includes('pending') || String(r.status || '').toLowerCase().includes('processing');
+                      if (!isRowPending) return '—';
+                      return (
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn--sm admin-btn--primary"
+                          disabled={retrying}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedId(r.id);
+                            handleRetry(r.id);
+                          }}>
+                          Retry
+                        </button>
+                      );
+                    }
+                  },
                 ]}
                 rows={list.items || []}
                 selectedId={selectedId}
-                onSelectRow={(r) => setSelectedId(r.id)}
+                onSelectRow={(r) => { setSelectedId(r.id); setRetryMsg(null); }}
                 sortKey={list.sortKey}
                 sortDir={list.sortDir}
                 onSort={list.toggleSort}
@@ -244,6 +285,34 @@ export function TransactionsPage() {
             <AdminDetailRow label="Status" value={<AdminStatusBadge status={selected.status} />} />
             <AdminDetailRow label="Date" value={formatAdminDate(selected.at)} />
             <AdminDetailRow label="Reference" value={selected.reference} />
+
+            {retryMsg && (
+              <div style={{
+                marginTop: '12px',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '600',
+                backgroundColor: retryMsg.type === 'success' ? '#dcfce7' : '#fee2e2',
+                color: retryMsg.type === 'success' ? '#15803d' : '#b91c1c',
+                border: `1px solid ${retryMsg.type === 'success' ? '#86efac' : '#fca5a5'}`
+              }}>
+                {retryMsg.text}
+              </div>
+            )}
+
+            {isSelectedPending && (
+              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  disabled={retrying}
+                  className="admin-btn admin-btn--sm admin-btn--primary"
+                  style={{ padding: '6px 14px', fontSize: '13px', fontWeight: '500' }}
+                  onClick={() => handleRetry(selected.id)}>
+                  {retrying ? 'Retrying...' : 'Retry'}
+                </button>
+              </div>
+            )}
           </AdminDetailPanel>
         ) : null}
       />

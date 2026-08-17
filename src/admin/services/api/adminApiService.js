@@ -527,6 +527,11 @@ export async function getTransactions(params = {}) {
   return paginateLocal(mapped, params, ['kind', 'memberName', 'memberId', 'memberEmail', 'id', 'reference']);
 }
 
+export async function retryTransaction(txId) {
+  if (!txId) throw new Error('Transaction ID is required.');
+  return apiPost(`/admin/transactions/${encodeURIComponent(txId)}/retry`);
+}
+
 export async function exportTransactionsCsv() {
   apiNotImplemented(SVC, 'exportTransactionsCsv', 'No transactions export on ALB yet.');
 }
