@@ -81,20 +81,17 @@ export function getAccountScenarios() {
 }
 
 export async function fetchSystemAddress() {
-  const isProd = import.meta.env.MODE === 'prd';
-  const localFallback = isProd ? '' : 'TDVjFu6CQRrhoFcg1mNVjD5QaPKL8fFtyf';
-
   if (isHttpApi) {
     try {
       const { apiGet } = await import('../api/httpClient.js');
       const res = await apiGet('/common/system-address');
-      return res?.tronAddress || localFallback;
+      return res?.data?.tronAddress || res?.tronAddress || '';
     } catch (err) {
       console.warn('Failed to fetch system address from backend:', err);
-      return localFallback;
+      return '';
     }
   }
-  return localFallback;
+  return '';
 }
 
 export {

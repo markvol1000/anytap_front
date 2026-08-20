@@ -13,7 +13,7 @@ export const isMockApi = !isHttpApi;
 
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
-export const MERCHANT_ID = import.meta.env.VITE_MERCHANT_ID || 'test-merchant';
+export const MERCHANT_ID = import.meta.env.VITE_MERCHANT_ID || 'ANYTAP_PRD';
 /** @deprecated Removed from SignUpRequest — kept for env compatibility only */
 export const BACKEND_KYC_KEY = import.meta.env.VITE_BACKEND_KYC_KEY || '';
 

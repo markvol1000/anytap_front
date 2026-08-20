@@ -5,6 +5,7 @@ import { CARD_ISSUANCE_FEE, getCardIssuanceFee } from './account-data.js';
 export { CARD_ISSUANCE_FEE, getCardIssuanceFee };
 
 export const CARD_APPLY_STEPS = [
+  'Card Type',
   'Delivery Address',
   'Review',
   'Complete',

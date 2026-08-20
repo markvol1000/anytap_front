@@ -485,10 +485,35 @@ export function CardsPage() {
                     ) 
                   },
                   { 
+                    key: 'last4', 
+                    label: '카드 4자리', 
+                    render: (r) => {
+                      let last4Str = r.last4 && r.last4 !== '—' && r.last4 !== '-' ? r.last4 : '';
+                      if (!last4Str && r.wasabiCardId && r.wasabiCardId !== '—' && r.wasabiCardId.length >= 4) {
+                        last4Str = r.wasabiCardId.slice(-4);
+                      }
+                      return (
+                        <span style={{
+                          fontFamily: 'monospace',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          color: last4Str ? '#0f172a' : '#94a3b8',
+                          backgroundColor: last4Str ? '#f1f5f9' : 'transparent',
+                          padding: last4Str ? '2px 6px' : '0',
+                          borderRadius: '4px',
+                          border: last4Str ? '1px solid #cbd5e1' : 'none',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {last4Str ? `•••• ${last4Str}` : '—'}
+                        </span>
+                      );
+                    } 
+                  },
+                  { 
                     key: 'wasabiCardId', 
                     label: '카드번호', 
                     render: (r) => {
-                      const cardStr = r.wasabiCardId && r.wasabiCardId !== '—' ? r.wasabiCardId : (r.last4 && r.last4 !== '—' ? `•••• ${r.last4}` : '—');
+                      const cardStr = r.wasabiCardId && r.wasabiCardId !== '—' ? r.wasabiCardId : '—';
                       return (
                         <span style={{ fontFamily: 'monospace', fontSize: '11px', fontWeight: '700', color: '#1e293b' }}>
                           {cardStr}
