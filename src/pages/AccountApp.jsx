@@ -6,6 +6,7 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import { SiteHeader } from '../components/chrome.jsx';
+import { Icon } from '../components/ui.jsx';
 import { useAccountState } from '../hooks/useAccountState.js';
 import { usePortalDesktop } from '../hooks/usePortalDesktop.js';
 import { AccountToast } from '../components/account/AccountToast.jsx';
@@ -55,8 +56,10 @@ import '../styles/account.css';
 // ─── Nav icon (Phosphor) ──────────────────────────────────────────────────────
 function PortalNavIcon({ name, size }) {
   const NavIcon = resolveFeatureIcon(name);
-  if (!NavIcon) return null;
-  return <NavIcon size={size} weight="duotone" aria-hidden="true" />;
+  if (NavIcon) {
+    return <NavIcon size={size} weight="duotone" aria-hidden="true" />;
+  }
+  return <Icon name={name} size={size} stroke={1.75} />;
 }
 
 // ─── Sidebar / dock navigation ────────────────────────────────────────────────

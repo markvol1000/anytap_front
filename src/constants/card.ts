@@ -3,7 +3,7 @@
 // BIN numbers and network names must not be exposed to end users (internal only).
 
 /** Max cards a user can hold simultaneously */
-export const MAX_CARDS_PER_USER = 3;
+export const MAX_CARDS_PER_USER = 999;
 
 /** Fee charged at card issuance — TODO: fetch from Wasabi API config */
 export const CARD_ISSUANCE_FEES = {

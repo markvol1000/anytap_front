@@ -36,14 +36,26 @@ async function parseBody(res) {
   }
 }
 
+function resolveUrl(path) {
+  let cleanPath = String(path || '').replace(/[\.\/]+$/, (match) => (match.includes('/') ? '/' : ''));
+  if (!cleanPath.startsWith('/')) cleanPath = '/' + cleanPath;
+  
+  const baseUrl = API_BASE_URL.replace(/\/$/, '');
+  const hasApiV1Base = baseUrl.endsWith('/api/v1');
+  const hasApiV1Path = cleanPath.startsWith('/api/v1');
+
+  if (!hasApiV1Base && !hasApiV1Path) {
+    cleanPath = '/api/v1' + cleanPath;
+  }
+  return `${baseUrl}${cleanPath}`;
+}
+
 /**
  * @param {string} path — e.g. '/admin/members' (prepended with VITE_API_BASE_URL)
  * @param {RequestInit & { json?: unknown }} options
  */
 export async function apiRequest(path, options = {}) {
   assertApiBaseUrl();
-
-  const cleanPath = String(path || '').replace(/[\.\/]+$/, (match) => (match.includes('/') ? '/' : ''));
 
   const { json, headers: extraHeaders, ...init } = options;
   const headers = new Headers(extraHeaders);
@@ -57,7 +69,8 @@ export async function apiRequest(path, options = {}) {
     body = JSON.stringify(json);
   }
 
-  const res = await fetch(`${API_BASE_URL}${cleanPath}`, { ...init, headers, body });
+  const requestUrl = resolveUrl(path);
+  const res = await fetch(requestUrl, { ...init, headers, body });
   const data = await parseBody(res);
 
   // Spring Boot envelope: { result, message, data, sqlLogs }
@@ -121,7 +134,7 @@ export async function apiUpload(path, file, options = {}) {
   const body = new FormData();
   body.append(fieldName, file);
 
-  let url = `${API_BASE_URL}${path}`;
+  let url = resolveUrl(path);
   if (query && typeof query === 'object') {
     const qs = new URLSearchParams();
     Object.entries(query).forEach(([k, v]) => {

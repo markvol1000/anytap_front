@@ -1028,9 +1028,8 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
     if (err?.status !== 400 && err?.status !== 404) throw err;
   }
 
-  if (!cardInfo && mapCardStatus(session.cardStatus) === 'not_issued') {
-    const nameData = parseFullName(shipping?.recipientName || session?.name || session?.fullName || '');
-    const payload = { 
+  const nameData = parseFullName(shipping?.recipientName || session?.name || session?.fullName || '');
+  const payload = { 
       email: session.email,
       cardType: cardType || 'virtual',
       firstName: nameData.firstName,
@@ -1099,22 +1098,6 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
       reference: data?.cardId || `APP-${session.userId}`,
       cardType: cardType || 'virtual',
     };
-  }
-
-  // Already registered on BE but still not_issued / no live card info — treat as applied.
-  if (!cardInfo && mapCardStatus(getHttpSession()?.cardStatus) === 'not_issued') {
-    patchHttpSession({
-      cardStatus: 'application_review',
-      cardApplicationPending: true,
-      pendingVariant: cardType || 'virtual',
-    });
-  }
-
-  return {
-    ok: true,
-    reference: cardInfo?.cardId || cardInfo?.id || getHttpSession()?.cardId || `CARD-${session.userId}`,
-    cardType: cardType || 'virtual',
-  };
 }
 
 /** Deposit/Top-up funds to Wasabi Card */

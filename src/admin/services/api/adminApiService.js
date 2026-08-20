@@ -269,7 +269,7 @@ export async function getCardApplications(params = {}) {
   const rows = await fetchCardsRaw(params);
   return paginateLocal(rows, {
     ...params,
-    searchKeys: ['memberName', 'memberId', 'memberEmail', 'loginId', 'cardType'],
+    searchKeys: ['memberName', 'memberId', 'memberEmail', 'loginId', 'cardType', 'cardTypeLabel', 'wasabiCardId', 'cardNo', 'last4'],
   });
 }
 
@@ -329,6 +329,11 @@ export async function getMemberCardCount(memberId) {
   } catch {
     return 1;
   }
+}
+
+export async function toggleCardDeliveryStatus(deliveryId, delivered) {
+  if (!deliveryId) return null;
+  return apiPost(`/admin/cards/applications/${encodeURIComponent(deliveryId)}/toggle-delivery`, { delivered });
 }
 
 export async function approveCard(id) {
@@ -1164,4 +1169,4 @@ export async function getDbTableMetrics() {
   ];
 }
 
-export const MAX_CARDS_PER_MEMBER = 3;
+export const MAX_CARDS_PER_MEMBER = 999;

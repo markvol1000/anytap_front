@@ -754,7 +754,7 @@ export function IssuanceDepositPanel({ s, className = '', isModal = false }) {
       aria-label="Card deposit">
       <p className="portal-issuance-deposit__body" style={{ fontSize: '13px', margin: 0, marginBottom: '12px', color: '#94a3b8' }}>
         {paid
-          ? 'Your 300 USDT issuance fee is confirmed. Card preparation is in progress — do not send again.'
+          ? 'Your 100 USDT issuance fee is confirmed. Card preparation is in progress — do not send again.'
           : isIssuance
             ? 'Send exactly this amount via TRC-20. This deposit wallet stays visible until your card ships.'
             : 'Send USDT (TRC-20) to fund your wallet balance.'}
@@ -767,7 +767,7 @@ export function IssuanceDepositPanel({ s, className = '', isModal = false }) {
           <div className="portal-addr" style={{ fontSize: '13px', padding: '8px 12px' }}>{address || 'Loading system wallet...'}</div>
           {isIssuance && (
             <div className="capply-alert capply-alert--info" style={{ marginTop: '8px', marginBottom: '8px', fontSize: '12px', lineHeight: '1.4', padding: '8px 12px', borderRadius: '6px', backgroundColor: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', textAlign: 'left' }}>
-              Once you deposit 300 USDT to the address below, your card will be shipped, and delivery may take up to 2 weeks.
+              Once you deposit 100 USDT to the address below, your card will be shipped, and delivery may take up to 2 weeks.
             </div>
           )}
           <button

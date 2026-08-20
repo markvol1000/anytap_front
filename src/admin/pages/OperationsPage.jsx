@@ -14,8 +14,8 @@ function GradientDonutChart({ primaryPct = 65, secondaryPct = 35, primaryLabel =
   const secondaryStroke = (secondaryPct / 100) * circumference;
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '28px', padding: '12px 0' }}>
-      <div style={{ position: 'relative', width: size, height: size }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '24px', padding: '12px 0' }}>
+      <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', filter: 'drop-shadow(0px 6px 16px rgba(56, 189, 248, 0.3))' }}>
           <defs>
             <linearGradient id="primaryDonutGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -60,7 +60,7 @@ function GradientDonutChart({ primaryPct = 65, secondaryPct = 35, primaryLabel =
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justify: 'center',
+          justifyContent: 'center',
           pointerEvents: 'none',
         }}>
           <span style={{ fontSize: '22px', fontWeight: '800', color: '#f8fafc', fontFamily: 'monospace' }}>
@@ -72,24 +72,24 @@ function GradientDonutChart({ primaryPct = 65, secondaryPct = 35, primaryLabel =
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, minWidth: '220px' }}>
-        <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ width: '14px', height: '14px', borderRadius: '4px', background: 'linear-gradient(135deg, #38bdf8, #1d4ed8)', display: 'inline-block', boxShadow: '0 0 10px rgba(56, 189, 248, 0.5)' }} />
-            <div>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: '#f8fafc', display: 'block' }}>{primaryLabel}</span>
-              <span style={{ fontSize: '11px', color: '#64748b' }}>IP: 10.0.1.101 | Primary Active Gateway</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, minWidth: '220px', maxWidth: '100%' }}>
+        <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+            <span style={{ width: '14px', height: '14px', borderRadius: '4px', background: 'linear-gradient(135deg, #38bdf8, #1d4ed8)', display: 'inline-block', boxShadow: '0 0 10px rgba(56, 189, 248, 0.5)', flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#f8fafc', display: 'block', wordBreak: 'break-word' }}>{primaryLabel}</span>
+              <span style={{ fontSize: '11px', color: '#64748b', display: 'block', wordBreak: 'break-word' }}>IP: 10.0.1.101 | Primary Active Gateway</span>
             </div>
           </div>
           <span style={{ fontSize: '16px', fontWeight: '800', color: '#38bdf8', fontFamily: 'monospace' }}>{primaryPct}%</span>
         </div>
 
-        <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ width: '14px', height: '14px', borderRadius: '4px', background: 'linear-gradient(135deg, #c084fc, #c026d3)', display: 'inline-block', boxShadow: '0 0 10px rgba(192, 132, 252, 0.5)' }} />
-            <div>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: '#f8fafc', display: 'block' }}>{secondaryLabel}</span>
-              <span style={{ fontSize: '11px', color: '#64748b' }}>IP: 10.0.1.102 | Secondary Hot Standby</span>
+        <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+            <span style={{ width: '14px', height: '14px', borderRadius: '4px', background: 'linear-gradient(135deg, #c084fc, #c026d3)', display: 'inline-block', boxShadow: '0 0 10px rgba(192, 132, 252, 0.5)', flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#f8fafc', display: 'block', wordBreak: 'break-word' }}>{secondaryLabel}</span>
+              <span style={{ fontSize: '11px', color: '#64748b', display: 'block', wordBreak: 'break-word' }}>IP: 10.0.1.102 | Secondary Hot Standby</span>
             </div>
           </div>
           <span style={{ fontSize: '16px', fontWeight: '800', color: '#c084fc', fontFamily: 'monospace' }}>{secondaryPct}%</span>
@@ -487,11 +487,12 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
       />
 
       {/* Categorized Operations Sub-Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+      <div className="admin-ops-tabs" style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', flexWrap: 'nowrap' }}>
         <button
           type="button"
           className={`admin-btn ${activeTab === 'cluster' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
           onClick={() => handleTabChange('cluster')}
+          style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
         >
           🖥️ HA Dual Cluster & Java JVM
         </button>
@@ -499,6 +500,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
           type="button"
           className={`admin-btn ${activeTab === 'database' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
           onClick={() => handleTabChange('database')}
+          style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
         >
           💾 DB Backups & Storage ({backupLogs.length})
         </button>
@@ -506,7 +508,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
           type="button"
           className={`admin-btn ${activeTab === 'issues' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
           onClick={() => handleTabChange('issues')}
-          style={{ position: 'relative' }}
+          style={{ position: 'relative', flexShrink: 0, whiteSpace: 'nowrap' }}
         >
           🚨 System Exception Issues ({systemIssues.length})
           {activeIssuedCount > 0 && (
@@ -519,6 +521,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
           type="button"
           className={`admin-btn ${activeTab === 'logs' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
           onClick={() => handleTabChange('logs')}
+          style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
         >
           📑 Live System Logs ({filteredLogs.length})
           {activeTab === 'logs' && (
@@ -547,7 +550,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
           {/* Java Spring Boot Application & JVM Memory Panel */}
           <AdminPanel>
             <AdminDetailSection title="☕ Java Spring Boot Application Process & JVM Memory Status">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', marginTop: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '14px', marginTop: '10px' }}>
                 <div>
                   <span style={{ fontSize: '14px', fontWeight: '800', color: '#f8fafc', fontFamily: 'monospace' }}>
                     {jvmStatus.javaVersion}
@@ -556,12 +559,12 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                     Process PID: <strong>{jvmStatus.pid}</strong> | JVM Uptime: <strong>{jvmStatus.uptime}</strong>
                   </span>
                 </div>
-                <span style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid #22c55e', borderRadius: '12px', padding: '3px 12px', fontSize: '12px', fontWeight: '800' }}>
+                <span style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid #22c55e', borderRadius: '12px', padding: '3px 12px', fontSize: '12px', fontWeight: '800', flexShrink: 0 }}>
                   🟢 {jvmStatus.status}
                 </span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginTop: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '16px', marginTop: '12px' }}>
                 {/* JVM Heap */}
                 <div style={{ backgroundColor: '#0f172a', padding: '14px', borderRadius: '10px', border: '1px solid #334155' }}>
                   <ThickGradientBar
@@ -595,7 +598,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', fontSize: '12px', color: '#94a3b8', marginTop: '14px', paddingTop: '10px', borderTop: '1px dashed #334155' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px', fontSize: '12px', color: '#94a3b8', marginTop: '14px', paddingTop: '10px', borderTop: '1px dashed #334155' }}>
                 <span>GC Collector: <strong style={{ color: '#f8fafc' }}>{jvmStatus.gcCollector}</strong></span>
                 <span>Total GC Runs: <strong style={{ color: '#fbbf24' }}>{jvmStatus.gcTotalCount.toLocaleString()} times</strong></span>
                 <span>Last Pause Duration: <strong style={{ color: '#4ade80' }}>{jvmStatus.gcLastPauseMs} ms</strong></span>
@@ -604,19 +607,19 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
           </AdminPanel>
 
           {/* HA Cluster Nodes Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px' }}>
             {haNodes.map((node) => (
               <AdminPanel key={node.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '16px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
                   <div>
                     <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: '#f8fafc' }}>
                       🖥️ {node.name}
                     </h3>
-                    <span style={{ fontSize: '12px', color: '#38bdf8', fontFamily: 'monospace' }}>
+                    <span style={{ fontSize: '12px', color: '#38bdf8', fontFamily: 'monospace', display: 'block', wordBreak: 'break-word' }}>
                       IP: {node.ip} | Role: {node.role}
                     </span>
                   </div>
-                  <span style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid #22c55e', borderRadius: '12px', padding: '3px 10px', fontSize: '11px', fontWeight: '700' }}>
+                  <span style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid #22c55e', borderRadius: '12px', padding: '3px 10px', fontSize: '11px', fontWeight: '700', flexShrink: 0 }}>
                     {node.status}
                   </span>
                 </div>
@@ -652,7 +655,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                     glowColor="rgba(52, 211, 153, 0.4)"
                   />
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', marginTop: '8px', paddingTop: '10px', borderTop: '1px dashed #334155' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px 16px', fontSize: '12px', color: '#64748b', marginTop: '8px', paddingTop: '10px', borderTop: '1px dashed #334155' }}>
                     <span>Latency: <strong style={{ color: '#38bdf8' }}>{node.latencyMs} ms</strong></span>
                     <span>Traffic Share: <strong style={{ color: '#fbbf24' }}>{node.trafficPct}%</strong></span>
                     <span>Uptime: <strong style={{ color: '#4ade80' }}>{node.uptime}</strong></span>
@@ -681,7 +684,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                   glowColor="rgba(16, 185, 129, 0.4)"
                 />
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '16px', fontSize: '13px', color: '#64748b', marginTop: '10px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '8px 16px', fontSize: '13px', color: '#64748b', marginTop: '10px' }}>
                   <span>Used Space: <strong style={{ color: '#38bdf8' }}>{dbStorage.usedGb} GB</strong></span>
                   <span>Free Space: <strong style={{ color: '#10b981' }}>{dbStorage.freeGb} GB</strong></span>
                   <span>Active DB Connections: <strong style={{ color: '#fbbf24' }}>{dbStorage.activeConnections} / {dbStorage.maxConnections}</strong></span>
@@ -692,9 +695,9 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                 <span style={{ fontSize: '13px', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '8px' }}>
                   🔄 Master ↔ Read Replica Replication Cluster State
                 </span>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', fontSize: '12px', color: '#cbd5e1' }}>
-                  <div>Master Node: <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '700' }}>{dbStorage.masterNode}</span></div>
-                  <div>Replica Node: <span style={{ fontFamily: 'monospace', color: '#c084fc', fontWeight: '700' }}>{dbStorage.replicaNode}</span></div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 20px', fontSize: '12px', color: '#cbd5e1' }}>
+                  <div>Master Node: <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '700', wordBreak: 'break-all' }}>{dbStorage.masterNode}</span></div>
+                  <div>Replica Node: <span style={{ fontFamily: 'monospace', color: '#c084fc', fontWeight: '700', wordBreak: 'break-all' }}>{dbStorage.replicaNode}</span></div>
                   <div>Sync Delay: <span style={{ fontFamily: 'monospace', color: '#10b981', fontWeight: '800' }}>{dbStorage.replicationLagMs} ms ({dbStorage.replicationState})</span></div>
                 </div>
               </div>
@@ -707,18 +710,18 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
               🛡️ DB Backup File Snapshots & Archive Ledger (다운로드 가능 백업 로그 리스트)
             </h3>
 
-            <div style={{ overflowX: 'auto', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #334155' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <div style={{ overflowX: 'auto', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #334155', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', minWidth: '700px', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#1e293b', borderBottom: '1px solid #334155', textAlign: 'left', color: '#94a3b8' }}>
-                    <th style={{ padding: '12px 14px' }}>Backup ID</th>
-                    <th style={{ padding: '12px 14px' }}>Created Timestamp</th>
-                    <th style={{ padding: '12px 14px' }}>Dump File Name</th>
-                    <th style={{ padding: '12px 14px' }}>Backup Type</th>
-                    <th style={{ padding: '12px 14px' }}>File Size</th>
-                    <th style={{ padding: '12px 14px' }}>Checksum (SHA-256)</th>
-                    <th style={{ padding: '12px 14px' }}>Status</th>
-                    <th style={{ padding: '12px 14px', textAlign: 'right' }}>Download Action</th>
+                    <th style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>Backup ID</th>
+                    <th style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>Created Timestamp</th>
+                    <th style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>Dump File Name</th>
+                    <th style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>Backup Type</th>
+                    <th style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>File Size</th>
+                    <th style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>Checksum (SHA-256)</th>
+                    <th style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>Status</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'right', whiteSpace: 'nowrap' }}>Download Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -751,7 +754,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                         <button
                           type="button"
                           className="admin-btn admin-btn--primary"
-                          style={{ padding: '5px 12px', fontSize: '12px' }}
+                          style={{ padding: '5px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}
                           onClick={() => handleDownloadBackupFile(bk)}
                         >
                           ⬇ Download (.gz)
@@ -769,17 +772,17 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
             <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#f8fafc', marginBottom: '12px' }}>
               📊 AnyTabData Database Tables & Storage Numerical Ledger
             </h3>
-            <div style={{ overflowX: 'auto', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #334155' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <div style={{ overflowX: 'auto', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #334155', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', minWidth: '650px', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#1e293b', borderBottom: '1px solid #334155', textAlign: 'left', color: '#94a3b8' }}>
-                    <th style={{ padding: '10px 14px' }}>Table Name</th>
-                    <th style={{ padding: '10px 14px' }}>Total Rows</th>
-                    <th style={{ padding: '10px 14px' }}>Data Size</th>
-                    <th style={{ padding: '10px 14px' }}>Index Size</th>
-                    <th style={{ padding: '10px 14px' }}>Total Size</th>
-                    <th style={{ padding: '10px 14px' }}>Storage Share (%)</th>
-                    <th style={{ padding: '10px 14px' }}>State</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Table Name</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Total Rows</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Data Size</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Index Size</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Total Size</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Storage Share (%)</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>State</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -809,29 +812,29 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
       {activeTab === 'issues' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Top Issue Summary Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
-            <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '14px 18px' }}>
-              <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Total Recorded Exception Issues</span>
-              <strong style={{ fontSize: '22px', fontWeight: '800', color: '#f8fafc', fontFamily: 'monospace' }}>{systemIssues.length}</strong>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '12px' }}>
+            <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '12px 14px' }}>
+              <span style={{ fontSize: '11px', color: '#94a3b8', display: 'block', wordBreak: 'break-word' }}>Total Exception Issues</span>
+              <strong style={{ fontSize: '20px', fontWeight: '800', color: '#f8fafc', fontFamily: 'monospace' }}>{systemIssues.length}</strong>
             </div>
 
-            <div style={{ backgroundColor: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '14px 18px' }}>
-              <span style={{ fontSize: '12px', color: '#f87171', display: 'block' }}>Active ISSUED Errors</span>
-              <strong style={{ fontSize: '22px', fontWeight: '800', color: '#ef4444', fontFamily: 'monospace' }}>
+            <div style={{ backgroundColor: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '12px 14px' }}>
+              <span style={{ fontSize: '11px', color: '#f87171', display: 'block', wordBreak: 'break-word' }}>Active ISSUED Errors</span>
+              <strong style={{ fontSize: '20px', fontWeight: '800', color: '#ef4444', fontFamily: 'monospace' }}>
                 {systemIssues.filter((i) => i.status === 'ISSUED').length}
               </strong>
             </div>
 
-            <div style={{ backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '10px', padding: '14px 18px' }}>
-              <span style={{ fontSize: '12px', color: '#facc15', display: 'block' }}>Under Investigation</span>
-              <strong style={{ fontSize: '22px', fontWeight: '800', color: '#eab308', fontFamily: 'monospace' }}>
+            <div style={{ backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '10px', padding: '12px 14px' }}>
+              <span style={{ fontSize: '11px', color: '#facc15', display: 'block', wordBreak: 'break-word' }}>Under Investigation</span>
+              <strong style={{ fontSize: '20px', fontWeight: '800', color: '#eab308', fontFamily: 'monospace' }}>
                 {systemIssues.filter((i) => i.status === 'INVESTIGATING').length}
               </strong>
             </div>
 
-            <div style={{ backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '10px', padding: '14px 18px' }}>
-              <span style={{ fontSize: '12px', color: '#4ade80', display: 'block' }}>Resolved Exception Logs</span>
-              <strong style={{ fontSize: '22px', fontWeight: '800', color: '#22c55e', fontFamily: 'monospace' }}>
+            <div style={{ backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '10px', padding: '12px 14px' }}>
+              <span style={{ fontSize: '11px', color: '#4ade80', display: 'block', wordBreak: 'break-word' }}>Resolved Logs</span>
+              <strong style={{ fontSize: '20px', fontWeight: '800', color: '#22c55e', fontFamily: 'monospace' }}>
                 {systemIssues.filter((i) => i.status === 'RESOLVED').length}
               </strong>
             </div>
@@ -842,19 +845,19 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
             <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#f8fafc', marginBottom: '14px' }}>
               🚨 Database System Issues & Exception Log Ledger (시스템 예외 발생 로그 원장)
             </h3>
-            <div style={{ overflowX: 'auto', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #334155' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <div style={{ overflowX: 'auto', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #334155', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', minWidth: '920px', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#1e293b', borderBottom: '1px solid #334155', textAlign: 'left', color: '#94a3b8' }}>
-                    <th style={{ padding: '10px 14px' }}>Issue ID</th>
-                    <th style={{ padding: '10px 14px' }}>Severity</th>
-                    <th style={{ padding: '10px 14px' }}>Exception Class</th>
-                    <th style={{ padding: '10px 14px' }}>Target Service</th>
-                    <th style={{ padding: '10px 14px' }}>Source Log & Line (로그 위치)</th>
-                    <th style={{ padding: '10px 14px' }}>Logged Time</th>
-                    <th style={{ padding: '10px 14px' }}>Status</th>
-                    <th style={{ padding: '10px 14px' }}>Message Snippet</th>
-                    <th style={{ padding: '10px 14px', textAlign: 'right' }}>Actions</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Issue ID</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Severity</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Exception Class</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Target Service</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Source Log & Line (로그 위치)</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Logged Time</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Status</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>Message Snippet</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -910,7 +913,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                           <button
                             type="button"
                             className="admin-btn admin-btn--secondary"
-                            style={{ padding: '4px 10px', fontSize: '12px' }}
+                            style={{ padding: '4px 10px', fontSize: '12px', whiteSpace: 'nowrap' }}
                             onClick={() => setSelectedIssue(issue)}
                           >
                             🔍 Log Trace & Report
@@ -930,12 +933,12 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
       {activeTab === 'logs' && (
         <AdminPanel>
           {/* Controls Bar */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '16px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '16px', alignItems: 'center' }}>
             <input
               type="text"
               className="admin-input"
               placeholder="Search logs by keyword, IP, trace ID..."
-              style={{ flex: 1, minWidth: '220px' }}
+              style={{ flex: '1 1 180px', minWidth: '140px' }}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -944,7 +947,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
               className="admin-input"
               value={serviceFilter}
               onChange={(e) => setServiceFilter(e.target.value)}
-              style={{ width: '160px' }}
+              style={{ flex: '1 1 130px', minWidth: '120px' }}
             >
               <option value="ALL">All Services</option>
               <option value="API Gateway">API Gateway</option>
@@ -958,7 +961,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
               className="admin-input"
               value={logFilter}
               onChange={(e) => setLogFilter(e.target.value)}
-              style={{ width: '130px' }}
+              style={{ flex: '1 1 110px', minWidth: '100px' }}
             >
               <option value="ALL">All Levels</option>
               <option value="INFO">INFO</option>
@@ -970,6 +973,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
             <button
               type="button"
               className="admin-btn admin-btn--secondary"
+              style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
               onClick={handleDownloadLogs}
             >
               ⬇ Export (.log)
@@ -978,7 +982,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
 
           {/* Terminal Console View */}
           <div style={{ backgroundColor: '#090d16', border: '1px solid #1e293b', borderRadius: '10px', padding: '16px', fontFamily: 'monospace', fontSize: '12px', minHeight: '480px', maxHeight: '650px', overflowY: 'auto' }}>
-            <div style={{ borderBottom: '1px solid #1e293b', paddingBottom: '8px', marginBottom: '12px', color: '#64748b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ borderBottom: '1px solid #1e293b', paddingBottom: '8px', marginBottom: '12px', color: '#64748b', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
               <span>SYSTEM LOG CONSOLE TERMINAL — {filteredLogs.length} LOG ENTRIES LOADED</span>
               <span style={{ color: '#ef4444', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ width: '8px', height: '8px', backgroundColor: '#ef4444', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 8px #ef4444' }} />
@@ -1008,7 +1012,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                 return (
                   <div
                     key={l.id || i}
-                    style={{ padding: '6px 0', borderBottom: '1px solid #0f172a', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'baseline', lineHeight: '1.5' }}
+                    style={{ padding: '6px 0', borderBottom: '1px solid #0f172a', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'baseline', lineHeight: '1.5' }}
                   >
                     <span style={{ color: '#64748b' }}>[{l.timestamp}]</span>
                     <span style={{ backgroundColor: badgeBg, color: badgeColor, padding: '1px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: '700' }}>
@@ -1043,7 +1047,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
             alignItems: 'center',
             justify: 'center',
             zIndex: 9999,
-            padding: '20px',
+            padding: '12px',
             cursor: 'pointer',
           }}
           onClick={() => setSelectedIssue(null)}
@@ -1061,21 +1065,22 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
               borderRadius: '16px',
               width: '100%',
               maxWidth: '740px',
-              maxHeight: '88vh',
+              maxHeight: '90vh',
               overflowY: 'auto',
-              padding: '26px',
+              padding: '18px 16px',
               boxShadow: '0 25px 60px -10px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.15)',
               cursor: 'default',
               position: 'relative',
               margin: 'auto',
               animation: 'modalPopCenter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              boxSizing: 'border-box',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Bar Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #334155', paddingBottom: '14px', marginBottom: '18px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid #334155', paddingBottom: '14px', marginBottom: '18px' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '4px' }}>
                   <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: '800', fontFamily: 'monospace' }}>
                     {selectedIssue.id} ({selectedIssue.severity})
                   </span>
@@ -1091,10 +1096,10 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                     {selectedIssue.status}
                   </span>
                 </div>
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#f8fafc' }}>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#f8fafc', wordBreak: 'break-word' }}>
                   {selectedIssue.exceptionType}
                 </h3>
-                <span style={{ fontSize: '12px', color: '#38bdf8' }}>
+                <span style={{ fontSize: '12px', color: '#38bdf8', display: 'block', wordBreak: 'break-word' }}>
                   Target Service: {selectedIssue.service} | Logged: {new Date(selectedIssue.timestamp).toLocaleString()}
                 </span>
               </div>
@@ -1107,16 +1112,18 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                   backgroundColor: '#1e293b',
                   border: '1px solid #334155',
                   color: '#94a3b8',
-                  width: '36px',
-                  height: '36px',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
-                  justify: 'center',
-                  fontSize: '18px',
+                  justifyContent: 'center',
+                  fontSize: '16px',
                   fontWeight: '700',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
+                  flexShrink: 0,
+                  marginLeft: 'auto',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = '#ef4444';
@@ -1138,15 +1145,15 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                 <span style={{ fontSize: '11px', color: '#38bdf8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '3px' }}>
                   📄 Target Log File & Line Number (장애 발생 실제 로그 위치)
                 </span>
-                <code style={{ fontSize: '13px', color: '#f8fafc', fontWeight: '700', fontFamily: 'monospace' }}>
+                <code style={{ fontSize: '12px', color: '#f8fafc', fontWeight: '700', fontFamily: 'monospace', wordBreak: 'break-all' }}>
                   {selectedIssue.logPath || `${selectedIssue.sourceLogFile || '/var/log/anytap/app.log'}:${selectedIssue.logLineNumber || 'L1'}`}
                 </code>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   className="admin-btn admin-btn--secondary"
-                  style={{ padding: '6px 12px', fontSize: '12px' }}
+                  style={{ padding: '6px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}
                   onClick={() => {
                     const path = selectedIssue.logPath || `${selectedIssue.sourceLogFile || '/var/log/anytap/app.log'}:${selectedIssue.logLineNumber || 'L1'}`;
                     navigator.clipboard.writeText(path);
@@ -1159,7 +1166,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                 <button
                   type="button"
                   className="admin-btn admin-btn--primary"
-                  style={{ padding: '6px 12px', fontSize: '12px' }}
+                  style={{ padding: '6px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}
                   onClick={() => {
                     setSearchTerm(selectedIssue.service || selectedIssue.exceptionType || '');
                     setActiveTab('logs');
@@ -1176,7 +1183,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
               <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', display: 'block', marginBottom: '6px' }}>
                 Error Detail Message
               </span>
-              <div style={{ backgroundColor: '#1e293b', padding: '12px 14px', borderRadius: '8px', border: '1px solid #334155', color: '#f87171', fontSize: '13px', fontFamily: 'monospace' }}>
+              <div style={{ backgroundColor: '#1e293b', padding: '12px 14px', borderRadius: '8px', border: '1px solid #334155', color: '#f87171', fontSize: '13px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
                 {selectedIssue.message}
               </div>
             </div>
@@ -1187,7 +1194,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                 <span style={{ fontSize: '12px', color: '#4ade80', fontWeight: '700', display: 'block', marginBottom: '6px' }}>
                   💡 Incident Root Cause & Resolution Report (장애 원인 분석 및 최종 조치 리포트)
                 </span>
-                <div style={{ fontSize: '13px', color: '#e2e8f0', whiteSpace: 'pre-wrap', lineHeight: '1.6', fontFamily: 'sans-serif' }}>
+                <div style={{ fontSize: '13px', color: '#e2e8f0', whiteSpace: 'pre-wrap', lineHeight: '1.6', fontFamily: 'sans-serif', wordBreak: 'break-word' }}>
                   {selectedIssue.rootCauseReport}
                 </div>
               </div>
@@ -1198,7 +1205,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
               <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', display: 'block', marginBottom: '6px' }}>
                 Full Java Stack Trace Log
               </span>
-              <pre style={{ backgroundColor: '#090d16', padding: '14px', borderRadius: '8px', border: '1px solid #1e293b', color: '#cbd5e1', fontSize: '12px', fontFamily: 'monospace', overflowX: 'auto', whiteSpace: 'pre-wrap', lineHeight: '1.6', maxHeight: '220px' }}>
+              <pre style={{ backgroundColor: '#090d16', padding: '14px', borderRadius: '8px', border: '1px solid #1e293b', color: '#cbd5e1', fontSize: '12px', fontFamily: 'monospace', overflowX: 'auto', whiteSpace: 'pre-wrap', lineHeight: '1.6', maxHeight: '220px', wordBreak: 'break-all' }}>
                 {selectedIssue.stackTrace}
               </pre>
             </div>
@@ -1206,10 +1213,10 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
             {/* Action Buttons Section */}
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #334155', paddingTop: '16px', gap: '12px' }}>
               <div>
-                <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', display: 'block', marginBottom: '4px' }}>
+                <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', display: 'block', marginBottom: '6px' }}>
                   Update Issue Status:
                 </span>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     className="admin-btn"
@@ -1218,11 +1225,12 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                       backgroundColor: selectedIssue.status === 'ISSUED' ? '#ef4444' : '#1e293b',
                       color: '#ffffff',
                       border: '1px solid #ef4444',
-                      padding: '6px 14px',
+                      padding: '6px 12px',
                       fontSize: '12px',
                       fontWeight: '700',
                       borderRadius: '6px',
                       cursor: 'pointer',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     Set ISSUED
@@ -1235,11 +1243,12 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                       backgroundColor: selectedIssue.status === 'INVESTIGATING' ? '#eab308' : '#1e293b',
                       color: '#ffffff',
                       border: '1px solid #eab308',
-                      padding: '6px 14px',
+                      padding: '6px 12px',
                       fontSize: '12px',
                       fontWeight: '700',
                       borderRadius: '6px',
                       cursor: 'pointer',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     Set INVESTIGATING
@@ -1252,11 +1261,12 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                       backgroundColor: selectedIssue.status === 'RESOLVED' ? '#22c55e' : '#166534',
                       color: '#ffffff',
                       border: '1px solid #22c55e',
-                      padding: '6px 14px',
+                      padding: '6px 12px',
                       fontSize: '12px',
                       fontWeight: '700',
                       borderRadius: '6px',
                       cursor: 'pointer',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     Mark as RESOLVED
@@ -1268,7 +1278,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
                 type="button"
                 className="admin-btn admin-btn--secondary"
                 onClick={() => setSelectedIssue(null)}
-                style={{ padding: '8px 18px', fontSize: '13px' }}
+                style={{ padding: '8px 18px', fontSize: '13px', whiteSpace: 'nowrap' }}
               >
                 Done / Close
               </button>

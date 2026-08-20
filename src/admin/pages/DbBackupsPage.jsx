@@ -49,8 +49,8 @@ function StorageGaugeDonut({ usedPct = 14.85, freePct = 85.15, usedGb = 14.85, f
   const usedStroke = (usedPct / 100) * circumference;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '24px', padding: '8px 0' }}>
-      <div style={{ position: 'relative', width: size, height: size }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '24px', padding: '8px 0' }}>
+      <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', filter: 'drop-shadow(0px 4px 12px rgba(16, 185, 129, 0.3))' }}>
           <defs>
             <linearGradient id="storageUsedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -85,7 +85,7 @@ function StorageGaugeDonut({ usedPct = 14.85, freePct = 85.15, usedGb = 14.85, f
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justify: 'center',
+          justifyContent: 'center',
           pointerEvents: 'none',
         }}>
           <span style={{ fontSize: '20px', fontWeight: '800', color: '#34d399', fontFamily: 'monospace' }}>
@@ -97,10 +97,10 @@ function StorageGaugeDonut({ usedPct = 14.85, freePct = 85.15, usedGb = 14.85, f
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
-        <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, minWidth: '220px', maxWidth: '100%' }}>
+        <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'linear-gradient(135deg, #38bdf8, #0284c7)', display: 'inline-block' }} />
+            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'linear-gradient(135deg, #38bdf8, #0284c7)', display: 'inline-block', flexShrink: 0 }} />
             <span style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1' }}>사용 중인 용량</span>
           </div>
           <span style={{ fontSize: '14px', fontWeight: '800', color: '#38bdf8', fontFamily: 'monospace' }}>
@@ -108,9 +108,9 @@ function StorageGaugeDonut({ usedPct = 14.85, freePct = 85.15, usedGb = 14.85, f
           </span>
         </div>
 
-        <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'linear-gradient(135deg, #34d399, #059669)', display: 'inline-block' }} />
+            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'linear-gradient(135deg, #34d399, #059669)', display: 'inline-block', flexShrink: 0 }} />
             <span style={{ fontSize: '13px', fontWeight: '700', color: '#34d399' }}>안전 잔여 여유 용량</span>
           </div>
           <span style={{ fontSize: '14px', fontWeight: '800', color: '#34d399', fontFamily: 'monospace' }}>
@@ -386,7 +386,7 @@ INSERT INTO Fee_Master VALUES ('CARD_WITHDRAWAL', 'FIXED', 3.0000, 0.0000, 'Card
       />
 
       {/* ── Section 1: DB 용량, 메모리 및 잔여 여유 용량 차트 패널 ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px', marginBottom: '20px' }}>
         {/* 디스크 저장 공간 & 잔여 용량 차트 */}
         <AdminPanel>
           <div style={{ borderBottom: '1px solid #334155', paddingBottom: '10px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

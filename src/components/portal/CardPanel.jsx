@@ -131,7 +131,7 @@ export function CardPanel({
         </div>
 
         {showMaxHint && (
-          <p className="portal-dash-wf__cards-max">Maximum 3 cards issued</p>
+          <p className="portal-dash-wf__cards-max">Cards issued</p>
         )}
       </div>
 

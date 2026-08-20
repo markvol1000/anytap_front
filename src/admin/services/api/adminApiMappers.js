@@ -180,40 +180,64 @@ export function resolveCardLast4(row, fallbackId = '', idx = 0) {
 export function mapCardRow(row, idx = 0) {
   const userId = row?.userId || row?.user_id || row?.memberId || row?.id || '';
   const wasabiCardId = resolveWasabiCardId(row, userId, idx);
-  const id = wasabiCardId || row?.id || (userId ? `CARD-${userId}` : `CARD-${idx}`);
-  const status = lower(row?.cardStatus || row?.status, 'not_issued');
+  const id = row?.id || wasabiCardId || (userId ? `CARD-${userId}` : `CARD-${idx}`);
+  const status = lower(row?.cardStatus || row?.status, 'applied');
   const wBal = Number(row?.walletBalance ?? row?.balance ?? 0) || 0;
   const cActual = Number(row?.cregisActualBalance ?? row?.actualBalance ?? wBal) || 0;
   const uFee = Number(row?.unpaidTotalFee ?? 0) || 0;
 
   const last4 = resolveCardLast4(row, userId, idx);
-  const cardNo = last4 !== '—' ? `4532 •••• •••• ${last4}` : (wasabiCardId || '—');
+  const cardNo = last4 !== '—' ? `4532 •••• •••• ${last4}` : (wasabiCardId && wasabiCardId !== '-' ? wasabiCardId : '—');
+
+  const cardTypeRaw = row?.cardType || row?.card_type || 'physical';
+  const cardTypeLabel = row?.cardTypeLabel || (cardTypeRaw === 'physical' ? '실물카드' : '가상카드');
 
   return {
     id,
+    deliveryId: row?.deliveryId || null,
     memberId: userId,
-    memberName: displayName(row),
+    userId,
+    memberName: row?.memberName || displayName(row),
     memberEmail: row?.email || row?.memberEmail || '',
-    cardType: row?.cardType || row?.card_type || 'physical',
+    email: row?.email || row?.memberEmail || '',
+    cardType: cardTypeRaw,
+    cardTypeLabel,
     status,
+    cardStatus: status,
+    txIdInput: row?.txIdInput || '—',
+    actualTxId: row?.actualTxId || '—',
+    depositAmount: row?.depositAmount != null ? row.depositAmount : 0,
+    delivered: Boolean(row?.delivered) || status === 'active',
+    deliveredAt: row?.deliveredAt || null,
+    shippingInfo: row?.shippingInfo || {
+      recipientName: row?.memberName || displayName(row),
+      postalCode: '—',
+      address: '—',
+      detailAddress: '',
+      phoneNumber: '—',
+    },
     wallet: row?.cregisWalletAddress && row.cregisWalletAddress !== '-'
       ? row.cregisWalletAddress
       : (row?.wallet || '—'),
     walletBalance: wBal,
     cregisActualBalance: cActual,
     unpaidTotalFee: uFee,
-    created: dateOnly(row?.createdAt || row?.created_at || row?.created),
+    created: dateOnly(row?.submittedAt || row?.createdAt || row?.created_at || row?.created),
+    createdAt: row?.submittedAt || row?.createdAt || row?.created_at,
+    submittedAt: row?.submittedAt || row?.createdAt || row?.created_at,
     last4,
     cardLast4: last4,
     cardNo,
-    wasabiCardId,
+    wasabiCardId: row?.wasabiCardId || wasabiCardId || '—',
     wasabiHolderId: row?.wasabiHolderId || row?.wasabi_holder_id || '',
     balance: Number(row?.balance ?? row?.cardBalance ?? 0),
     currency: row?.currency || 'USD',
     trackingNumber: row?.trackingNumber || '',
     carrier: row?.carrier || '',
     loginId: row?.loginId || '',
-    rejectReason: row?.rejectReason || '',
+    rejectReason: row?.rejectReason || row?.failureReason || '',
+    failureReason: row?.failureReason || row?.rejectReason || '',
+    failureHistory: Array.isArray(row?.failureHistory) ? row.failureHistory : [],
   };
 }
 
@@ -237,10 +261,10 @@ export function paginateLocal(items, {
       return;
     }
     if (key === 'startDate') {
-      const startMs = new Date(value).getTime();
+      const startMs = new Date(value.includes('T') ? value : value + 'T00:00:00').getTime();
       if (!Number.isNaN(startMs)) {
         list = list.filter((row) => {
-          const raw = row.createdAt || row.joinDate || row.created_at || row.joinedAt || row.date || row.payoutDate;
+          const raw = row.submittedAt || row.createdAt || row.created || row.joinDate || row.created_at || row.joinedAt || row.date || row.payoutDate;
           if (!raw) return true;
           return new Date(raw).getTime() >= startMs;
         });
@@ -248,22 +272,38 @@ export function paginateLocal(items, {
       return;
     }
     if (key === 'endDate') {
-      const endMs = new Date(value + 'T23:59:59.999Z').getTime();
+      const endMs = new Date(value.includes('T') ? value : value + 'T23:59:59.999').getTime();
       if (!Number.isNaN(endMs)) {
         list = list.filter((row) => {
-          const raw = row.createdAt || row.joinDate || row.created_at || row.joinedAt || row.date || row.payoutDate;
+          const raw = row.submittedAt || row.createdAt || row.created || row.joinDate || row.created_at || row.joinedAt || row.date || row.payoutDate;
           if (!raw) return true;
           return new Date(raw).getTime() <= endMs;
         });
       }
       return;
     }
+    if (key === 'delivered') {
+      list = list.filter((row) => {
+        const isDeliv = Boolean(row.delivered || row.status === 'active' || row.cardStatus === 'active');
+        if (String(value) === 'true') return isDeliv === true;
+        if (String(value) === 'false') return isDeliv === false;
+        return true;
+      });
+      return;
+    }
+    if (key === 'cardType') {
+      list = list.filter((row) => {
+        const cType = lower(row.cardType || row.card_type || 'physical');
+        return cType === lower(value);
+      });
+      return;
+    }
     if (key === 'status') {
       const want = mapCardStatusForApi(value);
       list = list.filter((row) => {
-        const current = lower(row.status || row.kycStatus || row.cardStatus);
-        if (value === 'pending') {
-          return current === 'pending' || current === 'application_review';
+        const current = lower(row.cardStatus || row.status || row.kycStatus);
+        if (value === 'pending' || value === 'applied') {
+          return current === 'applied' || current === 'pending' || current === 'under_review' || current === 'application_review' || current === 'not_issued' || current === 'kyc_submitted' || current === 'registered';
         }
         return current === lower(value) || current === want;
       });

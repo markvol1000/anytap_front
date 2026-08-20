@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Stack,
   Storefront,
+  Trophy,
   User,
   Users,
   Wallet,
@@ -59,6 +60,7 @@ const FEATURE_ICONS = {
   home: House,
   settings: Gear,
   mail: Envelope,
+  trophy: Trophy,
 };
 
 function resolveFeatureIcon(name) {
