@@ -22,9 +22,14 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
   const card = s.activePhysicalTargetCard ?? s.currentCard;
   const cardNoDisplay = card?.last4 ? `Card ending in ${card.last4}` : 'Physical Card';
   const isAlreadyActive = card?.status === 'active';
+  const hasSecureCode = card?.hasSecureCode !== false;
 
   const handleActivate = async () => {
     if (isAlreadyActive) return;
+    if (!hasSecureCode) {
+      setErrorMsg('Activation Unavailable');
+      return;
+    }
     setErrorMsg('');
 
     if (pin.trim().length !== 6 || !/^\d{6}$/.test(pin)) {
@@ -102,6 +107,12 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
           </div>
         )}
 
+        {!hasSecureCode && !isAlreadyActive && (
+          <div className="cregister-alert cregister-alert--error" style={{ marginBottom: '16px', padding: '10px', borderRadius: '6px', background: '#FFF0F0', color: '#E53E3E', fontSize: '14px' }} role="alert">
+            Activation Unavailable
+          </div>
+        )}
+
         {errorMsg && (
           <div className="cregister-alert cregister-alert--error" style={{ marginBottom: '16px', padding: '10px', borderRadius: '6px', background: '#FFF0F0', color: '#E53E3E', fontSize: '14px' }} role="alert">
             {errorMsg}
@@ -120,8 +131,8 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
               maxLength={6}
               placeholder="••••••"
               value={pin}
-              disabled={isAlreadyActive}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D2D6DC', fontSize: '16px', backgroundColor: isAlreadyActive ? '#F7FAFC' : '#FFFFFF', cursor: isAlreadyActive ? 'not-allowed' : 'auto' }}
+              disabled={isAlreadyActive || !hasSecureCode}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D2D6DC', fontSize: '16px', backgroundColor: (isAlreadyActive || !hasSecureCode) ? '#F7FAFC' : '#FFFFFF', cursor: (isAlreadyActive || !hasSecureCode) ? 'not-allowed' : 'auto' }}
               onChange={(e) => {
                 setErrorMsg('');
                 setPin(e.target.value.replace(/\D/g, '').slice(0, 6));
@@ -143,8 +154,8 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
               maxLength={6}
               placeholder="••••••"
               value={confirmPin}
-              disabled={isAlreadyActive}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D2D6DC', fontSize: '16px', backgroundColor: isAlreadyActive ? '#F7FAFC' : '#FFFFFF', cursor: isAlreadyActive ? 'not-allowed' : 'auto' }}
+              disabled={isAlreadyActive || !hasSecureCode}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D2D6DC', fontSize: '16px', backgroundColor: (isAlreadyActive || !hasSecureCode) ? '#F7FAFC' : '#FFFFFF', cursor: (isAlreadyActive || !hasSecureCode) ? 'not-allowed' : 'auto' }}
               onChange={(e) => {
                 setErrorMsg('');
                 setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6));
@@ -172,18 +183,18 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
               display: 'flex', 
               justifyContent: 'center', 
               alignItems: 'center', 
-              backgroundColor: (loading || isAlreadyActive) ? '#CBD5E0' : undefined, 
-              cursor: (loading || isAlreadyActive) ? 'not-allowed' : 'pointer',
+              backgroundColor: (loading || isAlreadyActive || !hasSecureCode) ? '#CBD5E0' : undefined, 
+              cursor: (loading || isAlreadyActive || !hasSecureCode) ? 'not-allowed' : 'pointer',
               opacity: loading ? 0.7 : 1,
             }}
-            disabled={loading || isAlreadyActive}
+            disabled={loading || isAlreadyActive || !hasSecureCode}
             onClick={handleActivate}>
             {loading ? (
               <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="portal-spin" style={{ width: '16px', height: '16px' }} />
                 <span>Activating...</span>
               </span>
-            ) : (isAlreadyActive ? 'Card Active' : 'Activate Card')}
+            ) : (isAlreadyActive ? 'Card Active' : (!hasSecureCode ? 'Activation Unavailable' : 'Activate Card'))}
           </button>
         </div>
       </div>

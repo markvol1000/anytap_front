@@ -360,7 +360,7 @@ function CardSlide({
 
 export function CardOnboardingActions({ s, layout = 'inline' }) {
   const applyDisabled = !s.kycApproved && !s.cardApplicationPending;
-  const applyLimited = !s.cardLimit?.canAdd;
+  const applyLimited = s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3);
 
   const goApply = () => {
     if (!s.kycApproved && !s.cardApplicationPending) {
@@ -368,26 +368,36 @@ export function CardOnboardingActions({ s, layout = 'inline' }) {
       s.go?.('kyc');
       return;
     }
-    if (s.cardLimit && !s.cardLimit.canAdd) {
-      s.showToast?.(`Maximum limit of ${s.cardLimit.max} cards reached.`);
+    if (applyLimited) {
+      s.showToast?.(`Maximum limit of ${s.cardLimit?.max || 3} cards reached.`);
       return;
     }
     s.go?.('cardApply');
   };
-  const goRegister = () => s.go?.('cardRegister');
+  const goRegister = () => {
+    if (applyLimited) {
+      s.showToast?.(`Maximum limit of ${s.cardLimit?.max || 3} cards reached.`);
+      return;
+    }
+    s.go?.('cardRegister');
+  };
 
   if (layout === 'header') {
     return (
       <div className="portal-card-onboard portal-card-onboard--header">
         <button
           type="button"
+          disabled={applyLimited}
           className="btn btn--accent btn--sm portal-card-onboard__header-btn"
+          style={applyLimited ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
           onClick={goApply}>
           + Apply New Card
         </button>
         <button
           type="button"
+          disabled={applyLimited}
           className="btn btn--outline btn--sm portal-card-onboard__header-btn"
+          style={applyLimited ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
           onClick={goRegister}>
           Register Existing Card
         </button>
@@ -400,26 +410,33 @@ export function CardOnboardingActions({ s, layout = 'inline' }) {
       <div className="portal-card-onboard portal-card-onboard--cards">
         <button
           type="button"
+          disabled={applyLimited}
           className="portal-card-onboard__card"
+          style={applyLimited ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
           onClick={goApply}>
           <span className="portal-card-onboard__icon" aria-hidden="true">
             <Icon name="plus" size={24} stroke={1.75} />
           </span>
           <span className="portal-card-onboard__body">
             <span className="portal-card-onboard__title">Apply New Card</span>
-            <span className="portal-card-onboard__desc">Request a new Anytap card.</span>
+            <span className="portal-card-onboard__desc">{applyLimited ? 'Maximum limit of 3 cards reached.' : 'Request a new Anytap card.'}</span>
           </span>
           <span className="portal-card-onboard__arrow" aria-hidden="true">
             <Icon name="chevron" size={18} stroke={2} />
           </span>
         </button>
-        <button type="button" className="portal-card-onboard__card" onClick={goRegister}>
+        <button
+          type="button"
+          disabled={applyLimited}
+          className="portal-card-onboard__card"
+          style={applyLimited ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+          onClick={goRegister}>
           <span className="portal-card-onboard__icon" aria-hidden="true">
             <Icon name="scan" size={24} stroke={1.75} />
           </span>
           <span className="portal-card-onboard__body">
             <span className="portal-card-onboard__title">Register Existing Card</span>
-            <span className="portal-card-onboard__desc">Activate a pre-issued card you received.</span>
+            <span className="portal-card-onboard__desc">{applyLimited ? 'Maximum limit of 3 cards reached.' : 'Activate a pre-issued card you received.'}</span>
           </span>
           <span className="portal-card-onboard__arrow" aria-hidden="true">
             <Icon name="chevron" size={18} stroke={2} />
@@ -433,11 +450,18 @@ export function CardOnboardingActions({ s, layout = 'inline' }) {
     <div className="portal-card-onboard portal-card-onboard--inline">
       <button
         type="button"
+        disabled={applyLimited}
         className="portal-card-onboard__link"
+        style={applyLimited ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
         onClick={goApply}>
         + Apply New Card
       </button>
-      <button type="button" className="portal-card-onboard__link" onClick={goRegister}>
+      <button
+        type="button"
+        disabled={applyLimited}
+        className="portal-card-onboard__link"
+        style={applyLimited ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+        onClick={goRegister}>
         + Register Existing Card
       </button>
     </div>
@@ -478,14 +502,16 @@ function CardOnboardingSheet({ s, open, onClose, hint }) {
         <div className="portal-card-onboard portal-card-onboard--cards portal-card-onboard--sheet">
           <button
             type="button"
+            disabled={s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)}
             className="portal-card-onboard__card portal-card-onboard__card--sheet"
+            style={(s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)) ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
             onClick={goApply}>
             <span className="portal-card-onboard__icon" aria-hidden="true">
               <Icon name="plus" size={24} stroke={1.75} />
             </span>
             <span className="portal-card-onboard__body">
               <span className="portal-card-onboard__title">Apply New Card</span>
-              <span className="portal-card-onboard__desc">Request a new Anytap card.</span>
+              <span className="portal-card-onboard__desc">{(s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)) ? 'Maximum limit of 3 cards reached.' : 'Request a new Anytap card.'}</span>
             </span>
             <span className="portal-card-onboard__arrow" aria-hidden="true">
               <Icon name="chevron" size={18} stroke={2} />
@@ -494,8 +520,14 @@ function CardOnboardingSheet({ s, open, onClose, hint }) {
 
           <button
             type="button"
+            disabled={s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)}
             className="portal-card-onboard__card portal-card-onboard__card--sheet"
+            style={(s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)) ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
             onClick={() => {
+              if (s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)) {
+                s.showToast?.('Maximum limit of 3 cards reached.');
+                return;
+              }
               onClose();
               s.go('cardRegister');
             }}>
@@ -504,7 +536,7 @@ function CardOnboardingSheet({ s, open, onClose, hint }) {
             </span>
             <span className="portal-card-onboard__body">
               <span className="portal-card-onboard__title">Register Existing Card</span>
-              <span className="portal-card-onboard__desc">Activate a pre-issued card you received.</span>
+              <span className="portal-card-onboard__desc">{(s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)) ? 'Maximum limit of 3 cards reached.' : 'Activate a pre-issued card you received.'}</span>
             </span>
             <span className="portal-card-onboard__arrow" aria-hidden="true">
               <Icon name="chevron" size={18} stroke={2} />

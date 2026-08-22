@@ -389,6 +389,8 @@ function TransactionSummary({ selectedCard, topUpAmount, gasFee, isUnderMin = fa
 
   const cardBal = parseFloat(W.parseCardBalanceUsdt(selectedCard.balance)) || 0;
   const topUpVal = parseFloat(topUpAmount) || 0;
+  const cardFee = topUpVal * (W.CARD_CHARGE_FEE_RATE || 0.02);
+  const totalDeduction = topUpVal + cardFee + gasFee;
   const balanceAfter = (cardBal + topUpVal).toFixed(2);
   const hasAmount = topUpVal > 0;
 
@@ -415,14 +417,18 @@ function TransactionSummary({ selectedCard, topUpAmount, gasFee, isUnderMin = fa
           </dd>
         </div>
         <div className="portal-wallet-desk__summary-row">
-          <dt>Minimum Top Up</dt>
-          <dd style={{ color: isUnderMin ? '#ef4444' : 'inherit', fontWeight: isUnderMin ? 700 : 500 }}>
-            50.00 USDT
-          </dd>
+          <dt>Card Fee (2%)</dt>
+          <dd>{hasAmount ? `${cardFee.toFixed(2)} USDT` : '0.00 USDT'}</dd>
         </div>
         <div className="portal-wallet-desk__summary-row">
-          <dt>Estimated Network Fee</dt>
+          <dt>Network Gas Fee</dt>
           <dd>{gasFee.toFixed(2)} USDT</dd>
+        </div>
+        <div className="portal-wallet-desk__summary-row">
+          <dt>Total Deduction from Wallet</dt>
+          <dd className={hasAmount ? 'is-emphasis' : ''}>
+            {hasAmount ? `${totalDeduction.toFixed(2)} USDT` : '—'}
+          </dd>
         </div>
       </dl>
     </section>
@@ -652,7 +658,7 @@ function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onC
   return (
     <div className="portal-sheet" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" className="portal-sheet__backdrop" onClick={loading ? undefined : onCancel} aria-label="Close" />
-      <div className="portal-sheet__panel portal-wallet-sheet">
+      <div className="portal-sheet__panel portal-wallet-sheet" style={{ minHeight: '520px', maxHeight: 'min(92vh, 760px)', padding: '24px 24px calc(28px + env(safe-area-inset-bottom, 0px))' }}>
         <div className="portal-sheet__head">
           <h3 className="portal-sheet__title">{title}</h3>
           <button type="button" className="portal-sheet__close" onClick={loading ? undefined : onCancel} disabled={loading} aria-label="Close">
@@ -677,6 +683,7 @@ function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onC
             onChange={(e) => onPassword(e.target.value)}
             disabled={loading}
             autoComplete="current-password"
+            style={{ width: '100%', height: '48px', padding: '12px 14px', fontSize: '15px', borderRadius: '8px' }}
           />
         </label>
 
@@ -994,7 +1001,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
   return (
     <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Card top up">
       <button type="button" className="portal-sheet__backdrop" onClick={loading ? undefined : onClose} aria-label="Close" />
-      <div className="portal-sheet__panel portal-wallet-sheet">
+      <div className="portal-sheet__panel portal-wallet-sheet" style={{ minHeight: '520px', maxHeight: 'min(92vh, 760px)', padding: '24px 24px calc(28px + env(safe-area-inset-bottom, 0px))' }}>
         <div className="portal-sheet__head">
           <h3 className="portal-sheet__title">Card Top Up {showPasswordStep ? '— Confirm Password' : ''}</h3>
           <button type="button" className="portal-sheet__close" onClick={loading ? undefined : onClose} disabled={loading} aria-label="Close">
@@ -1030,8 +1037,9 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
           <div style={{ margin: '16px 0' }}>
             <div style={{ padding: '12px 14px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '14px', fontSize: '13px' }}>
               <div>Top-up Amount: <strong>{topUpVal.toFixed(2)} USDT</strong></div>
+              <div>Card Charge Fee (2%): <strong>{(topUpVal * 0.02).toFixed(2)} USDT</strong></div>
               <div>Gas Fee: <strong>3.00 USDT</strong></div>
-              <div>Total Deduction: <strong>{(topUpVal + 3).toFixed(2)} USDT</strong></div>
+              <div>Total Deduction: <strong>{(topUpVal + topUpVal * 0.02 + 3).toFixed(2)} USDT</strong></div>
             </div>
             <label className="portal-wallet-field">
               <span className="portal-wallet-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
@@ -1046,7 +1054,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
                 disabled={loading}
                 autoFocus
                 autoComplete="current-password"
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}
+                style={{ width: '100%', height: '48px', padding: '12px 14px', fontSize: '15px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}
               />
             </label>
 
@@ -1141,10 +1149,13 @@ export function AccountWallet({ s }) {
 
   const selectedCard = activeCards.find((c) => c.id === selectedCardId) ?? null;
   const topUpVal = parseFloat(topUpAmount) || 0;
+  const cardFeeVal = topUpVal * (W.CARD_CHARGE_FEE_RATE || 0.02);
+  const gasFeeVal = W.GAS_FEE_CHARGE || 3.00;
+  const totalChargeFee = cardFeeVal + gasFeeVal;
   const sendVal = parseFloat(sendAmount) || 0;
   const walletBal = resolveWalletBalance(s.walletBalance);
   const sendExceeded = sendVal > 0 && (sendVal + W.GAS_FEE_SEND > walletBal);
-  const chargeTotal = (topUpVal + W.GAS_FEE_CHARGE).toFixed(2);
+  const chargeTotal = (topUpVal + totalChargeFee).toFixed(2);
 
   const addTopUpQuick = (n) => {
     const cur = parseFloat(topUpAmount) || 0;
@@ -1163,7 +1174,7 @@ export function AccountWallet({ s }) {
     setLoading(true);
     try {
       await chargeCard(topUpVal, selectedCard?.cardId || selectedCard?.id);
-      s.deductWalletBalance?.(topUpVal + W.GAS_FEE_CHARGE);
+      s.deductWalletBalance?.(topUpVal + totalChargeFee);
       closeConfirm();
       setTopUpAmount('');
       s.showToast('Card charged successfully!');
@@ -1375,7 +1386,8 @@ export function AccountWallet({ s }) {
           rows={[
             { label: 'Card', value: A.maskCardShort(selectedCard.last4) },
             { label: 'Charge Amount', value: `${topUpVal.toFixed(2)} USDT`, emphasis: true },
-            { label: 'Gas Fee', value: `${W.GAS_FEE_CHARGE.toFixed(2)} USDT` },
+            { label: 'Card Fee (2%)', value: `${cardFeeVal.toFixed(2)} USDT` },
+            { label: 'Gas Fee', value: `${gasFeeVal.toFixed(2)} USDT` },
             { label: 'Total from Wallet', value: `${chargeTotal} USDT`, emphasis: true },
           ]}
           password={password}

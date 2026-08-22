@@ -244,29 +244,6 @@ export function WalletsPage() {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '10px' }}>
                     <button
                       type="button"
-                      className="admin-btn admin-btn--primary admin-btn--sm"
-                      onClick={() => handleSingleWalletSync(detail.memberId || detail.id)}
-                      disabled={singleSyncStatus === 'syncing'}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        backgroundColor: singleSyncStatus === 'syncing' ? '#64748b' : (singleSyncStatus === 'success' ? '#10b981' : (singleSyncStatus === 'error' ? '#ef4444' : '#2563eb')),
-                        borderColor: 'transparent',
-                        color: '#ffffff',
-                        fontWeight: '600',
-                        padding: '5px 10px',
-                        borderRadius: '6px',
-                        cursor: singleSyncStatus === 'syncing' ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      {singleSyncStatus === 'syncing' && '⏳ 동기화 중...'}
-                      {singleSyncStatus === 'success' && `✅ ${singleSyncMsg}`}
-                      {singleSyncStatus === 'error' && '❌ 동기화 실패'}
-                      {singleSyncStatus === 'idle' && '⚡ Cregis 입금 동기화'}
-                    </button>
-                    <button
-                      type="button"
                       className="admin-btn admin-btn--ghost admin-btn--sm"
                       onClick={() => fetchDepositList(detail.memberId || detail.id, 1)}
                       style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}
@@ -290,24 +267,6 @@ export function WalletsPage() {
                         <span style={{ color: 'var(--admin-text-muted, #888)' }}>
                           ({formatUsdt(detail.cregisActualBalance ?? detail.balance)}) / {formatUsdt(detail.unpaidTotalFee ?? 0)} Unpaid Fee
                         </span>
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn--ghost admin-btn--sm"
-                          onClick={handleSweepFee}
-                          title="Sweep unpaid fee to Cregis master wallet"
-                          style={{
-                            padding: '2px 6px',
-                            fontSize: '11px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '3px',
-                            color: '#3b82f6',
-                            borderColor: 'rgba(59, 130, 246, 0.3)',
-                            marginLeft: '4px'
-                          }}
-                        >
-                          💸 Sweep Fee
-                        </button>
                       </div>
                     } 
                   />

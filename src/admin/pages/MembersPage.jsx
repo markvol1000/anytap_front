@@ -304,24 +304,6 @@ export function MembersPage() {
                       <span style={{ color: 'var(--admin-text-muted, #888)' }}>
                         ({formatUsdt(detail.cregisActualBalance ?? detail.walletBalance ?? 0)}) / {formatUsdt(detail.unpaidTotalFee ?? 0)} Unpaid Fee
                       </span>
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn--ghost admin-btn--sm"
-                        onClick={() => handleAction('triggerFeePayout')}
-                        title="Sweep unpaid fee to Cregis master wallet"
-                        style={{
-                          padding: '2px 6px',
-                          fontSize: '11px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '3px',
-                          color: '#3b82f6',
-                          borderColor: 'rgba(59, 130, 246, 0.3)',
-                          marginLeft: '4px'
-                        }}
-                      >
-                        💸 Sweep Fee
-                      </button>
                     </div>
                   )} />
                   <AdminDetailRow label="Account" value={<AdminStatusBadge status={detail.accountStatus} />} />

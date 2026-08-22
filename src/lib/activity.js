@@ -25,12 +25,11 @@ export const ACTIVITY = [
   { id: 'tx-wr', title: 'Transfer Received', at: '2026-06-11T09:00:00', amount: 250.00, incoming: true, failed: false, kind: 'wallet_receive', status: 'completed', txId: 'a1b2c3d4e5f67890', reference: 'AT-WL-WR' },
 ];
 
-/** Scope tabs — All | Wallet | Cards | Referral List (Transactions & Activity page) */
+/** Scope tabs — All | Wallet | Cards (Transactions & Activity page) */
 export const ACTIVITY_SCOPE_FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'wallet', label: 'Wallet' },
   { id: 'card', label: 'Cards' },
-  { id: 'referral', label: 'Referral List' },
 ];
 
 /** @deprecated Use ACTIVITY_SCOPE_FILTERS on transactions page */

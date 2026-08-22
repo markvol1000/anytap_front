@@ -14,8 +14,7 @@ const OPS_NAV = [
 ];
 
 const SYSTEM_NAV = [
-  { to: '/admin/db-backups', label: 'DB Backups', icon: 'database' },
-  { to: '/admin/operations', label: 'Operations & System Health', icon: 'server' },
+  { to: '/admin/operations', label: 'Operations', icon: 'server' },
   { to: '/admin/notifications', label: 'Notifications', icon: 'bell' },
   { to: '/admin/content', label: 'Content Management', icon: 'fileText' },
   { to: '/admin/settings', label: 'Settings', icon: 'settings' },

@@ -223,7 +223,7 @@ export function useAccountState() {
   const showToast = useCallback((m) => {
     setToast(m);
     clearTimeout(timers.current.toast);
-    timers.current.toast = setTimeout(() => setToast(''), 1900);
+    timers.current.toast = setTimeout(() => setToast(''), 6000);
   }, []);
 
   const copy = useCallback((text, msg) => {

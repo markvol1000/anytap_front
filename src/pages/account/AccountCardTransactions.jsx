@@ -8,8 +8,7 @@ import * as A from '../../lib/account-data.js';
 
 export function AccountCardTransactions({ s }) {
   const [searchParams] = useSearchParams();
-  const rawScope = searchParams.get('scope') || searchParams.get('type');
-  const initialScope = (rawScope === 'referral' || rawScope === 'rewards') ? 'referral' : A.resolveActivityFilterFromSearch(searchParams);
+  const initialScope = A.resolveActivityFilterFromSearch(searchParams);
   const items = A.resolvePortalActivityWithHistory(s.activityItems);
 
   return <TransactionsPage items={items} initialScope={initialScope} s={s} />;

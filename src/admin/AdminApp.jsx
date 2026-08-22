@@ -32,7 +32,7 @@ export function AdminApp() {
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="referral" element={<ReferralPage />} />
         <Route path="withdrawals" element={<WithdrawalsPage />} />
-        <Route path="db-backups" element={<DbBackupsPage />} />
+        <Route path="db-backups" element={<Navigate to="/admin/operations?tab=db-backups" replace />} />
         <Route path="operations" element={<OperationsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="content" element={<ContentPage />} />

@@ -44,8 +44,9 @@ export function CardsDesktopInfoPanel({ card, s }) {
           Your card has been issued. Click the button below to set your PIN and activate it.
         </p>
         <button
-          type="button"
+          type="button" 
           className="portal-btn-primary"
+          disabled="disabled"
           style={{ width: '100%', height: '48px', borderRadius: '12px', fontSize: '15px', fontWeight: '600' }}
           onClick={() => s.openActivePhysical(card)}
         >

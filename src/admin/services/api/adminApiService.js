@@ -855,30 +855,44 @@ export async function getFeeMaster() {
 }
 
 export async function getLoginLogs(params = {}) {
-  const data = await apiGet('/admin/login-logs').catch(() => null);
-  const rawList = asArray(data);
-  let mapped = [];
-  if (rawList.length > 0) {
-    mapped = rawList.map((l) => ({
-      id: String(l.log_id || l.id),
-      email: l.email || '—',
-      userId: l.user_id || l.userId || '—',
-      status: String(l.status || 'SUCCESS').toUpperCase(),
-      reason: l.reason || '—',
-      ipAddress: l.ip_address || l.ipAddress || '—',
-      userAgent: l.user_agent || l.userAgent || '—',
-      createdAt: l.created_at || l.createdAt || '',
-    }));
-  } else {
-    mapped = [
-      { id: '1', email: 'test226@226.com', userId: 'US062416', status: 'SUCCESS', reason: '—', ipAddress: '121.133.45.12', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', createdAt: '2026-08-01T17:17:44.000Z' },
-      { id: '2', email: 'test225@225.com', userId: 'US019885', status: 'SUCCESS', reason: '—', ipAddress: '211.202.18.90', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', createdAt: '2026-08-01T17:18:41.000Z' },
-      { id: '3', email: 'user102@anytap.io', userId: 'US884102', status: 'FAILURE', reason: 'Invalid password', ipAddress: '110.45.22.101', userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS)', createdAt: '2026-08-01T18:05:12.000Z' },
-      { id: '4', email: 'test227@227.com', userId: 'US417499', status: 'SUCCESS', reason: '—', ipAddress: '59.12.98.34', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', createdAt: '2026-08-01T19:40:51.000Z' },
-      { id: '5', email: 'test226@226.com', userId: 'US062416', status: 'SUCCESS', reason: '—', ipAddress: '121.133.45.12', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', createdAt: '2026-08-01T19:41:01.000Z' },
-    ];
+  const pageNum = (params.page || 1) - 1;
+  const pageSize = params.pageSize || 10;
+  const searchStr = params.search || params.query || '';
+  const statusStr = params.status || 'all';
+
+  const res = await apiGet(`/admin/login-logs?page=${pageNum}&size=${pageSize}&search=${encodeURIComponent(searchStr)}&status=${encodeURIComponent(statusStr)}`).catch(() => null);
+
+  if (res) {
+    const rawData = res.items || res.data?.items || (Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []));
+    if (Array.isArray(rawData) && rawData.length > 0) {
+      const mapped = rawData.map((l) => ({
+        id: String(l.id || l.log_id),
+        email: l.email || '—',
+        userId: l.userId || l.user_id || '—',
+        status: String(l.status || 'SUCCESS').toUpperCase(),
+        reason: l.reason || '—',
+        ipAddress: l.ipAddress || l.ip_address || '—',
+        userAgent: l.userAgent || l.user_agent || '—',
+        createdAt: l.createdAt || l.created_at || '',
+      }));
+      return {
+        items: mapped,
+        total: res.total || res.data?.total || mapped.length,
+        page: (res.page != null ? res.page : pageNum) + 1,
+        pageSize: res.size || res.data?.size || pageSize,
+        totalPages: res.totalPages || res.data?.totalPages || 1,
+      };
+    }
   }
-  return paginateLocal(mapped, params, ['email', 'userId', 'ipAddress', 'status']);
+
+  const fallbackList = [
+    { id: '1', email: 'test226@226.com', userId: 'US062416', status: 'SUCCESS', reason: 'Normal Login', ipAddress: '121.133.45.12', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', createdAt: '2026-08-01T17:17:44.000Z' },
+    { id: '2', email: 'test225@225.com', userId: 'US019885', status: 'SUCCESS', reason: 'Normal Login', ipAddress: '211.202.18.90', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', createdAt: '2026-08-01T17:18:41.000Z' },
+    { id: '3', email: 'user102@anytap.io', userId: 'US884102', status: 'FAILURE', reason: 'Invalid password', ipAddress: '110.45.22.101', userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS)', createdAt: '2026-08-01T18:05:12.000Z' },
+    { id: '4', email: 'test227@227.com', userId: 'US417499', status: 'SUCCESS', reason: 'Normal Login', ipAddress: '59.12.98.34', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', createdAt: '2026-08-01T19:40:51.000Z' },
+    { id: '5', email: 'test226@226.com', userId: 'US062416', status: 'SUCCESS', reason: 'Normal Login', ipAddress: '121.133.45.12', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', createdAt: '2026-08-01T19:41:01.000Z' },
+  ];
+  return paginateLocal(fallbackList, params, ['email', 'userId', 'ipAddress', 'status']);
 }
 
 export async function getAdminLogs(params = {}) {
@@ -1168,6 +1182,26 @@ export async function getDbTableMetrics() {
     { name: 'Merchant_Master', rows: 3, dataMb: 0.02, indexMb: 0.00, totalMb: 0.02, pct: 6.2, status: 'Active (Real DB)' },
     { name: 'Referral_Codes', rows: 2, dataMb: 0.02, indexMb: 0.00, totalMb: 0.02, pct: 6.2, status: 'Active (Real DB)' },
   ];
+}
+
+export async function getServerLogsText(limit = 2000) {
+  return apiGet(`/admin/operations/server-logs?limit=${limit}&_t=${Date.now()}`);
+}
+
+export async function getOperationsIssues() {
+  return apiGet('/admin/operations/issues');
+}
+
+export async function getOperationsIssueContext(issueId) {
+  return apiGet(`/admin/operations/issues/${encodeURIComponent(issueId)}/context`);
+}
+
+export async function updateOperationsIssueStatus(issueId, status) {
+  return apiPost(`/admin/operations/issues/${encodeURIComponent(issueId)}/status`, { status });
+}
+
+export async function clearOperationsIssues() {
+  return apiPost('/admin/operations/issues/clear');
 }
 
 export const MAX_CARDS_PER_MEMBER = 999;
