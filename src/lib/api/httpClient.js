@@ -149,7 +149,7 @@ export async function apiUpload(path, file, options = {}) {
   const isEnvelope = data && typeof data === 'object' && !Array.isArray(data) && 'result' in data;
 
   if (!res.ok || (isEnvelope && data.result === false)) {
-    const message = data?.message || data?.error || res.statusText || 'Upload failed';
+    const message = data?.message || data?.error || (res.statusText && res.statusText !== 'OK' ? res.statusText : '') || 'Image upload failed. Please check your internet connection or try another JPG/PNG photo.';
     const err = new Error(message);
     err.status = res.ok ? 400 : res.status;
     err.data = data;

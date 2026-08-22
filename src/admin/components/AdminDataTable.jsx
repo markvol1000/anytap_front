@@ -6,15 +6,24 @@ export function AdminDataTable({
   rowKey = 'id',
   selectedId,
   onSelectRow,
+  onDoubleClickRow,
   sortKey,
   sortDir,
   onSort,
-  page,
-  totalPages,
-  total,
-  onPageChange,
+  page: pageProp,
+  totalPages: totalPagesProp,
+  total: totalProp,
+  onPageChange: onPageChangeProp,
+  pagination,
   emptyMessage = 'No records found',
 }) {
+  const page = pagination?.page ?? pageProp;
+  const totalPages = pagination?.totalPages ?? totalPagesProp;
+  const total = pagination?.total ?? totalProp;
+  const pageSize = pagination?.pageSize;
+  const onPageChange = pagination?.onPageChange ?? onPageChangeProp;
+  const onPageSizeChange = pagination?.onPageSizeChange;
+
   return (
     <>
       <div className="admin-table-scroll">
@@ -55,6 +64,7 @@ export function AdminDataTable({
                   key={id}
                   className={active ? 'is-selected' : ''}
                   onClick={() => onSelectRow?.(row)}
+                  onDoubleClick={() => (onDoubleClickRow ? onDoubleClickRow(row) : onSelectRow?.(row))}
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -78,7 +88,9 @@ export function AdminDataTable({
           page={page}
           totalPages={totalPages}
           total={total}
+          pageSize={pageSize}
           onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
         />
       ) : null}
     </>

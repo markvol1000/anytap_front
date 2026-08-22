@@ -63,25 +63,63 @@ export function AdminTableWrap({ children, loading, error, hasData = false }) {
   );
 }
 
-export function AdminPagination({ page, totalPages, total, onPageChange }) {
+export function AdminPagination({ page, totalPages, total, pageSize, onPageChange, onPageSizeChange }) {
   return (
-    <div className="admin-pagination">
-      <span className="admin-pagination__info">{total} total</span>
-      <div className="admin-pagination__controls">
+    <div className="admin-pagination" style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '12px 16px',
+      borderTop: '1px solid #e2e8f0',
+      backgroundColor: '#ffffff'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#64748b' }}>
+        <span>총 <strong style={{ color: '#0f172a' }}>{total}</strong> 건</span>
+        {onPageSizeChange && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>페이지당:</span>
+            <select
+              value={pageSize || 10}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              style={{
+                padding: '2px 6px',
+                fontSize: '12px',
+                borderRadius: '4px',
+                border: '1px solid #cbd5e1',
+                color: '#1e293b',
+                backgroundColor: '#ffffff'
+              }}
+            >
+              <option value={10}>10개</option>
+              <option value={20}>20개</option>
+              <option value={50}>50개</option>
+              <option value={100}>100개</option>
+            </select>
+          </div>
+        )}
+      </div>
+
+      <div className="admin-pagination__controls" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <button
           type="button"
           className="admin-btn admin-btn--ghost admin-btn--sm"
           disabled={page <= 1}
-          onClick={() => onPageChange(page - 1)}>
-          Previous
+          onClick={() => onPageChange(page - 1)}
+          style={{ padding: '4px 10px', fontSize: '12px' }}
+        >
+          ‹ 이전
         </button>
-        <span className="admin-pagination__page">{page} / {totalPages}</span>
+        <span className="admin-pagination__page" style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>
+          {page} / {totalPages || 1} 페이지
+        </span>
         <button
           type="button"
           className="admin-btn admin-btn--ghost admin-btn--sm"
-          disabled={page >= totalPages}
-          onClick={() => onPageChange(page + 1)}>
-          Next
+          disabled={page >= (totalPages || 1)}
+          onClick={() => onPageChange(page + 1)}
+          style={{ padding: '4px 10px', fontSize: '12px' }}
+        >
+          다음 ›
         </button>
       </div>
     </div>

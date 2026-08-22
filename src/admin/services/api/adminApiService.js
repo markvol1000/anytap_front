@@ -41,7 +41,8 @@ async function fetchCardsRaw(params = {}) {
   if (params?.page) query.append('pageNum', params.page);
   if (params?.limit) query.append('pageSize', params.limit);
   const queryString = query.toString() ? `?${query.toString()}` : '';
-  return asArray(await apiGet(`/admin/cards/applications${queryString}`)).map(mapCardRow);
+  const endpoint = params.onlyRegistered ? '/admin/cards' : '/admin/reports/cards';
+  return asArray(await apiGet(`${endpoint}${queryString}`)).map(mapCardRow);
 }
 
 function resolveUserId(id) {
@@ -269,7 +270,7 @@ export async function getCardApplications(params = {}) {
   const rows = await fetchCardsRaw(params);
   return paginateLocal(rows, {
     ...params,
-    searchKeys: ['memberName', 'memberId', 'memberEmail', 'loginId', 'cardType', 'cardTypeLabel', 'wasabiCardId', 'cardNo', 'last4'],
+    searchKeys: ['wasabiHolderId', 'holderId', 'memberName', 'memberId', 'memberEmail', 'loginId', 'cardType', 'cardTypeLabel', 'wasabiCardId', 'cardNo', 'last4', 'cregisWalletAddress', 'wallet'],
   });
 }
 

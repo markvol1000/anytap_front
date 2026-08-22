@@ -216,6 +216,7 @@ export function mapCardRow(row, idx = 0) {
       detailAddress: '',
       phoneNumber: '—',
     },
+    cregisWalletAddress: row?.cregisWalletAddress || row?.wallet || '—',
     wallet: row?.cregisWalletAddress && row.cregisWalletAddress !== '-'
       ? row.cregisWalletAddress
       : (row?.wallet || '—'),
@@ -256,6 +257,17 @@ export function paginateLocal(items, {
     if (value == null || value === '' || value === 'all') return;
     if (['page', 'pageSize', 'search', 'sortKey', 'sortDir', 'searchKeys'].includes(key)) return;
 
+    if (key === 'onlyRegistered') {
+      if (String(value) === 'true') {
+        list = list.filter((row) => {
+          const st = lower(row.cardStatus || row.status);
+          const hasRealCard = row.wasabiCardId && row.wasabiCardId !== '—' && row.wasabiCardId !== '-' && row.wasabiCardId !== 'null';
+          const isRegisteredStatus = ['active', 'issued', 'registered', 'creating', 'deposit_received', 'shipping', 'frozen', 'suspended'].includes(st);
+          return hasRealCard || (isRegisteredStatus && st !== 'not_issued' && st !== 'applied' && st !== 'under_review' && st !== 'pending');
+        });
+      }
+      return;
+    }
     if (key === 'accountStatus') {
       list = list.filter((row) => row.accountStatus === value);
       return;
@@ -336,10 +348,13 @@ export function paginateLocal(items, {
     list = list.filter((row) => lower(row[key]) === lower(value));
   });
 
-  if (search?.trim() && searchKeys.length) {
+  if (search?.trim()) {
     const q = search.trim().toLowerCase();
+    const keysToUse = searchKeys && searchKeys.length ? searchKeys : [
+      'wasabiHolderId', 'holderId', 'wasabiCardId', 'memberEmail', 'email', 'memberName', 'loginId', 'userId', 'cregisWalletAddress', 'wallet', 'address', 'last4'
+    ];
     list = list.filter((row) =>
-      searchKeys.some((k) => String(row[k] ?? '').toLowerCase().includes(q)),
+      keysToUse.some((k) => String(row[k] ?? '').toLowerCase().includes(q)),
     );
   }
 

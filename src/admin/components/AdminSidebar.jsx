@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { Icon } from '../../components/ui.jsx';
 
 const OPS_NAV = [
@@ -6,6 +6,7 @@ const OPS_NAV = [
   { to: '/admin/members', label: 'Members', icon: 'users' },
   { to: '/admin/kyc', label: 'KYC', icon: 'shield' },
   { to: '/admin/cards', label: 'Cards', icon: 'creditCard' },
+  { to: '/admin/reports', label: 'Reports', icon: 'list' },
   { to: '/admin/wallets', label: 'Wallets', icon: 'wallet' },
   { to: '/admin/transactions', label: 'Transactions', icon: 'receipt' },
   { to: '/admin/referral', label: 'Referral List', icon: 'trophy' },
@@ -41,17 +42,62 @@ function initials(name) {
 }
 
 function NavItems({ items }) {
-  return items.map((item) => (
-    <NavLink
-      key={item.to}
-      to={item.to}
-      end={item.end}
-      className={({ isActive }) =>
-        `admin-sidebar__link${isActive ? ' is-active' : ''}`}>
-      <Icon name={item.icon} size={17} stroke={1.75} />
-      <span>{item.label}</span>
-    </NavLink>
-  ));
+  const location = useLocation();
+  const currentPath = location.pathname;
+
+  return items.map((item) => {
+    if (item.subItems) {
+      const isParentActive = currentPath.startsWith(item.to);
+      return (
+        <div key={item.to} className="admin-sidebar__group" style={{ marginBottom: '4px' }}>
+          <NavLink
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) =>
+              `admin-sidebar__link${isActive || isParentActive ? ' is-active' : ''}`}>
+            <Icon name={item.icon} size={17} stroke={1.75} />
+            <span>{item.label}</span>
+          </NavLink>
+          <div className="admin-sidebar__subnav" style={{ paddingLeft: '28px', marginTop: '2px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {item.subItems.map((sub) => (
+              <NavLink
+                key={sub.to}
+                to={sub.to}
+                className={({ isActive }) =>
+                  `admin-sidebar__sublink${isActive ? ' is-active' : ''}`}
+                style={({ isActive }) => ({
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '5px 10px',
+                  fontSize: '12px',
+                  borderRadius: '6px',
+                  color: isActive ? 'var(--admin-primary, #2563EB)' : 'var(--admin-sidebar-text, #64748B)',
+                  backgroundColor: isActive ? 'var(--admin-primary-bg, #EFF6FF)' : 'transparent',
+                  fontWeight: isActive ? '600' : '400',
+                  textDecoration: 'none'
+                })}>
+                <span>{sub.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        end={item.end}
+        className={({ isActive }) => {
+          const isPrefixActive = !item.end && item.to !== '/admin' && currentPath.startsWith(item.to);
+          return `admin-sidebar__link${isActive || isPrefixActive ? ' is-active' : ''}`;
+        }}>
+        <Icon name={item.icon} size={17} stroke={1.75} />
+        <span>{item.label}</span>
+      </NavLink>
+    );
+  });
 }
 
 export function AdminSidebar({ admin }) {
