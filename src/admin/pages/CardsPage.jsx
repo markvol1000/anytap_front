@@ -376,44 +376,209 @@ export function CardsPage() {
                   <AdminDetailRow label="카드상태" value={<AdminStatusBadge status={detail.cardStatus || detail.status} />} />
                 </AdminDetailSection>
 
+                {/* Single-line Compact Card & Wallet Balances Section */}
+                <AdminDetailSection title="💰 카드 및 지갑 잔액 현황">
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                    padding: '8px 12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '12px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ color: '#16a34a', fontWeight: '600' }}>💳 카드 잔액:</span>
+                      <span style={{ fontWeight: '800', color: '#15803d' }}>
+                        ${Number(detail.cardBalance ?? detail.balance ?? 0).toFixed(2)} USD
+                      </span>
+                    </div>
+                    <div style={{ width: '1px', height: '14px', backgroundColor: '#cbd5e1' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ color: '#2563eb', fontWeight: '600' }}>🔗 지갑 잔액:</span>
+                      <span style={{ fontWeight: '800', color: '#1d4ed8' }}>
+                        {Number(detail.cregisActualBalance ?? detail.walletBalance ?? 0).toFixed(2)} USDT
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '6px' }}>
+                    <AdminDetailRow 
+                      label="Cregis 입금 지갑" 
+                      value={<CopyableTxId txId={detail.cregisWalletAddress && detail.cregisWalletAddress !== '-' ? detail.cregisWalletAddress : detail.wallet} color="#2563eb" />} 
+                    />
+                  </div>
+                </AdminDetailSection>
+
+                {/* Card Deposit / Recharge History Section */}
+                <AdminDetailSection title="🔋 카드 충전/예치금 입금 내역">
+                  {((detail.cardDeposits || []).length === 0 && (detail.recentDeposits || []).length === 0) ? (
+                    <div style={{ fontSize: '12px', color: '#94a3b8', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
+                      카드 충전(예치금) 내역이 없습니다.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '200px', overflowY: 'auto' }}>
+                      {[...(detail.cardDeposits || []), ...(detail.recentDeposits || [])].map((dep, idx) => (
+                        <div key={dep.referenceId || dep.txHash || idx} style={{
+                          padding: '8px 10px',
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: '12px'
+                        }}>
+                          <div>
+                            <div style={{ fontWeight: '600', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>⚡ 카드 충전</span>
+                              <span style={{ fontSize: '10px', color: '#64748b', fontFamily: 'monospace' }}>
+                                ({dep.wasabiTxId ? shortenAddress(dep.wasabiTxId, 4, 4) : (dep.referenceId ? shortenAddress(dep.referenceId, 4, 4) : 'Direct')})
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+                              {formatAdminDate(dep.createdAt || dep.chainTime || dep.date)}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontWeight: '700', color: '#059669' }}>
+                              +{Number(dep.depositAmount || dep.amount || 0).toFixed(2)} USDT
+                            </div>
+                            <span style={{
+                              fontSize: '10px',
+                              padding: '1px 5px',
+                              borderRadius: '3px',
+                              backgroundColor: (dep.status === 'CONFIRMED' || dep.wasabiTxId) ? '#dcfce7' : '#fef3c7',
+                              color: (dep.status === 'CONFIRMED' || dep.wasabiTxId) ? '#166534' : '#92400e',
+                              fontWeight: '600'
+                            }}>
+                              {(dep.status === 'CONFIRMED' || dep.wasabiTxId) ? '✓ 충전완료' : '⏳ 대기중'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </AdminDetailSection>
+
+                {/* Card Transactions & Auth History */}
+                <AdminDetailSection title="🛒 카드 최근 결제/승인 거래 내역">
+                  {txLoading ? (
+                    <div style={{ fontSize: '12px', color: '#64748b', padding: '8px' }}>결제 내역 불러오는 중…</div>
+                  ) : (((txs?.items || []).length === 0) && ((detail.cardTransactions || []).length === 0)) ? (
+                    <div style={{ fontSize: '12px', color: '#94a3b8', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
+                      카드 승인/결제 거래 내역이 없습니다.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '250px', overflowY: 'auto' }}>
+                      {[...(txs?.items || []), ...(detail.cardTransactions || [])].map((t, idx) => (
+                        <div key={t.id || t.txId || idx} style={{
+                          padding: '8px 10px',
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: '12px'
+                        }}>
+                          <div>
+                            <div style={{ fontWeight: '600', color: '#1e293b' }}>
+                              {t.merchantName || t.merchant || t.description || '가맹점 결제'}
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+                              {formatAdminDate(t.at || t.createdDate || t.txTime)}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontWeight: '700', color: '#047857' }}>
+                              ${Number(t.amount || t.transAmount || 0).toFixed(2)}
+                            </div>
+                            <span style={{
+                              fontSize: '10px',
+                              padding: '1px 5px',
+                              borderRadius: '3px',
+                              backgroundColor: (t.status === 'SUCCESS' || t.status === 'APPROVED' || !t.status) ? '#e0f2fe' : '#fee2e2',
+                              color: (t.status === 'SUCCESS' || t.status === 'APPROVED' || !t.status) ? '#0369a1' : '#b91c1c',
+                              fontWeight: '600'
+                            }}>
+                              {t.status || 'SUCCESS'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </AdminDetailSection>
+
                 <AdminDetailSection title="카드 조작 (Quick Actions)">
-                  <AdminActionStack>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {(detail.cardStatus === 'frozen' || detail.status === 'frozen') ? (
                       <button
                         type="button"
-                        className="admin-btn admin-btn--primary"
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          borderRadius: '6px',
+                          border: '1px solid #16a34a',
+                          backgroundColor: '#f0fdf4',
+                          color: '#15803d',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
                         onClick={() => runCardAction('Unfreeze Card', unfreezeCard)}
                       >
-                        🔓 카드 일시정지 해제 (Unfreeze)
+                        🔓 정지 해제
                       </button>
                     ) : (
                       <button
                         type="button"
-                        className="admin-btn admin-btn--warning"
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          borderRadius: '6px',
+                          border: '1px solid #f59e0b',
+                          backgroundColor: '#fffbeb',
+                          color: '#b45309',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
                         onClick={() => runCardAction('Freeze Card', freezeCard, { danger: true })}
                       >
-                        ❄️ 카드 일시정지 (Freeze)
+                        ❄️ 카드 일시정지
                       </button>
                     )}
                     <button
                       type="button"
-                      className="admin-btn admin-btn--secondary"
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        backgroundColor: '#ffffff',
+                        color: '#334155',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
                       onClick={() => runCardAction('Activate Card', activateCard, {
                         showInput: true,
                         inputPlaceholder: '6-digit PIN code',
                         message: '카드 활성화를 위한 6자리 PIN 코드를 입력해 주세요.',
                       })}
                     >
-                      🔑 PIN 설정 및 활성화 (Activate)
+                      🔑 PIN 설정 및 활성화
                     </button>
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn--danger"
-                      onClick={() => runCardAction('Terminate Card', terminateCard, { danger: true })}
-                    >
-                      🚫 카드 해지 (Terminate)
-                    </button>
-                  </AdminActionStack>
+                  </div>
                 </AdminDetailSection>
 
                 {/* Dev-Only Simulated Transaction Panel */}
@@ -462,41 +627,6 @@ export function CardsPage() {
                     </div>
                   </AdminDetailSection>
                 )}
-
-                {/* Card Transactions History */}
-                <AdminDetailSection title="💳 카드 최근 결제/승인 내역">
-                  {txLoading ? (
-                    <div style={{ fontSize: '12px', color: '#64748b', padding: '8px' }}>결제 내역 불러오는 중…</div>
-                  ) : (txs?.items || []).length === 0 ? (
-                    <div style={{ fontSize: '12px', color: '#94a3b8', padding: '8px' }}>카드 거래 내역이 없습니다.</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {(txs.items || []).map((t, idx) => (
-                        <div key={t.id || idx} style={{
-                          padding: '8px 10px',
-                          backgroundColor: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '6px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          fontSize: '12px'
-                        }}>
-                          <div>
-                            <div style={{ fontWeight: '600', color: '#1e293b' }}>{t.merchantName || t.description || '가맹점 결제'}</div>
-                            <div style={{ fontSize: '10px', color: '#64748b' }}>{formatAdminDate(t.at || t.createdDate)}</div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontWeight: '700', color: '#047857' }}>${Number(t.amount || 0).toFixed(2)}</div>
-                            <span style={{ fontSize: '10px', padding: '1px 4px', borderRadius: '3px', backgroundColor: '#e0f2fe', color: '#0369a1' }}>
-                              {t.status || 'SUCCESS'}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </AdminDetailSection>
               </>
             )}
           </AdminDetailPanel>
