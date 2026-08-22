@@ -103,6 +103,9 @@ export function CardsPage() {
   const [txs, setTxs] = useState({ items: [], total: 0, totalPages: 1 });
   const [txLoading, setTxLoading] = useState(false);
 
+  const [depositPage, setDepositPage] = useState(1);
+  const [txSectionPage, setTxSectionPage] = useState(1);
+
   const [simAmount, setSimAmount] = useState('10.00');
   const [simMerchant, setSimMerchant] = useState('Starbucks Coffee');
   const [simDescription, setSimDescription] = useState('Admin Test Transaction');
@@ -124,6 +127,8 @@ export function CardsPage() {
 
   useEffect(() => {
     setTxPage(1);
+    setDepositPage(1);
+    setTxSectionPage(1);
     loadTxs(1);
   }, [selectedId, detail?.memberId, detail?.wasabiCardId, loadTxs]);
 
@@ -413,103 +418,231 @@ export function CardsPage() {
 
                 {/* Card Deposit / Recharge History Section */}
                 <AdminDetailSection title="🔋 카드 충전/예치금 입금 내역">
-                  {((detail.cardDeposits || []).length === 0 && (detail.recentDeposits || []).length === 0) ? (
-                    <div style={{ fontSize: '12px', color: '#94a3b8', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
-                      카드 충전(예치금) 내역이 없습니다.
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '200px', overflowY: 'auto' }}>
-                      {[...(detail.cardDeposits || []), ...(detail.recentDeposits || [])].map((dep, idx) => (
-                        <div key={dep.referenceId || dep.txHash || idx} style={{
-                          padding: '8px 10px',
-                          backgroundColor: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '6px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          fontSize: '12px'
-                        }}>
-                          <div>
-                            <div style={{ fontWeight: '600', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span>⚡ 카드 충전</span>
-                              <span style={{ fontSize: '10px', color: '#64748b', fontFamily: 'monospace' }}>
-                                ({dep.wasabiTxId ? shortenAddress(dep.wasabiTxId, 4, 4) : (dep.referenceId ? shortenAddress(dep.referenceId, 4, 4) : 'Direct')})
-                              </span>
-                            </div>
-                            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
-                              {formatAdminDate(dep.createdAt || dep.chainTime || dep.date)}
-                            </div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontWeight: '700', color: '#059669' }}>
-                              +{Number(dep.depositAmount || dep.amount || 0).toFixed(2)} USDT
-                            </div>
-                            <span style={{
-                              fontSize: '10px',
-                              padding: '1px 5px',
-                              borderRadius: '3px',
-                              backgroundColor: (dep.status === 'CONFIRMED' || dep.wasabiTxId) ? '#dcfce7' : '#fef3c7',
-                              color: (dep.status === 'CONFIRMED' || dep.wasabiTxId) ? '#166534' : '#92400e',
-                              fontWeight: '600'
-                            }}>
-                              {(dep.status === 'CONFIRMED' || dep.wasabiTxId) ? '✓ 충전완료' : '⏳ 대기중'}
-                            </span>
-                          </div>
+                  {(() => {
+                    const allDeposits = [...(detail.cardDeposits || []), ...(detail.recentDeposits || [])];
+                    const totalDepositCount = allDeposits.length;
+                    const totalDepositPages = Math.max(1, Math.ceil(totalDepositCount / 10));
+                    const pagedDeposits = allDeposits.slice((depositPage - 1) * 10, depositPage * 10);
+
+                    if (totalDepositCount === 0) {
+                      return (
+                        <div style={{ fontSize: '12px', color: '#94a3b8', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
+                          카드 충전(예치금) 내역이 없습니다.
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      );
+                    }
+
+                    return (
+                      <>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                          {pagedDeposits.map((dep, idx) => (
+                            <div key={dep.referenceId || dep.txHash || idx} style={{
+                              padding: '6px 10px',
+                              backgroundColor: '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '6px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              fontSize: '11px',
+                              gap: '8px',
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontWeight: '600', color: '#1e293b' }}>⚡ 카드 충전</span>
+                                <span style={{ fontSize: '10px', color: '#64748b', fontFamily: 'monospace' }}>
+                                  ({dep.wasabiTxId ? shortenAddress(dep.wasabiTxId, 4, 4) : (dep.referenceId ? shortenAddress(dep.referenceId, 4, 4) : 'Direct')})
+                                </span>
+                                <span style={{ color: '#cbd5e1' }}>•</span>
+                                <span style={{ fontSize: '10px', color: '#64748b' }}>
+                                  {formatAdminDate(dep.createdAt || dep.chainTime || dep.date)}
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontWeight: '700', color: '#059669' }}>
+                                  +{Number(dep.depositAmount || dep.amount || 0).toFixed(2)} USDT
+                                </span>
+                                <span style={{
+                                  fontSize: '9px',
+                                  padding: '1px 5px',
+                                  borderRadius: '3px',
+                                  backgroundColor: (dep.status === 'CONFIRMED' || dep.wasabiTxId) ? '#dcfce7' : '#fef3c7',
+                                  color: (dep.status === 'CONFIRMED' || dep.wasabiTxId) ? '#166534' : '#92400e',
+                                  fontWeight: '600'
+                                }}>
+                                  {(dep.status === 'CONFIRMED' || dep.wasabiTxId) ? '✓ 충전완료' : '⏳ 대기중'}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Deposit Pagination Controls */}
+                        {totalDepositPages > 1 && (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginTop: '8px',
+                            paddingTop: '6px',
+                            borderTop: '1px solid #f1f5f9',
+                            fontSize: '11px',
+                            color: '#64748b'
+                          }}>
+                            <button
+                              type="button"
+                              disabled={depositPage <= 1}
+                              onClick={() => setDepositPage(p => Math.max(1, p - 1))}
+                              style={{
+                                padding: '3px 8px',
+                                fontSize: '11px',
+                                borderRadius: '4px',
+                                border: '1px solid #cbd5e1',
+                                backgroundColor: depositPage <= 1 ? '#f1f5f9' : '#ffffff',
+                                color: depositPage <= 1 ? '#94a3b8' : '#334155',
+                                cursor: depositPage <= 1 ? 'not-allowed' : 'pointer'
+                              }}
+                            >
+                              ‹ 이전
+                            </button>
+                            <span>
+                              {depositPage} / {totalDepositPages} 페이지 (총 {totalDepositCount}건)
+                            </span>
+                            <button
+                              type="button"
+                              disabled={depositPage >= totalDepositPages}
+                              onClick={() => setDepositPage(p => Math.min(totalDepositPages, p + 1))}
+                              style={{
+                                padding: '3px 8px',
+                                fontSize: '11px',
+                                borderRadius: '4px',
+                                border: '1px solid #cbd5e1',
+                                backgroundColor: depositPage >= totalDepositPages ? '#f1f5f9' : '#ffffff',
+                                color: depositPage >= totalDepositPages ? '#94a3b8' : '#334155',
+                                cursor: depositPage >= totalDepositPages ? 'not-allowed' : 'pointer'
+                              }}
+                            >
+                              다음 ›
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </AdminDetailSection>
 
                 {/* Card Transactions & Auth History */}
                 <AdminDetailSection title="🛒 카드 최근 결제/승인 거래 내역">
                   {txLoading ? (
                     <div style={{ fontSize: '12px', color: '#64748b', padding: '8px' }}>결제 내역 불러오는 중…</div>
-                  ) : (((txs?.items || []).length === 0) && ((detail.cardTransactions || []).length === 0)) ? (
-                    <div style={{ fontSize: '12px', color: '#94a3b8', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
-                      카드 승인/결제 거래 내역이 없습니다.
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '250px', overflowY: 'auto' }}>
-                      {[...(txs?.items || []), ...(detail.cardTransactions || [])].map((t, idx) => (
-                        <div key={t.id || t.txId || idx} style={{
-                          padding: '8px 10px',
-                          backgroundColor: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '6px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          fontSize: '12px'
-                        }}>
-                          <div>
-                            <div style={{ fontWeight: '600', color: '#1e293b' }}>
-                              {t.merchantName || t.merchant || t.description || '가맹점 결제'}
-                            </div>
-                            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
-                              {formatAdminDate(t.at || t.createdDate || t.txTime)}
-                            </div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontWeight: '700', color: '#047857' }}>
-                              ${Number(t.amount || t.transAmount || 0).toFixed(2)}
-                            </div>
-                            <span style={{
-                              fontSize: '10px',
-                              padding: '1px 5px',
-                              borderRadius: '3px',
-                              backgroundColor: (t.status === 'SUCCESS' || t.status === 'APPROVED' || !t.status) ? '#e0f2fe' : '#fee2e2',
-                              color: (t.status === 'SUCCESS' || t.status === 'APPROVED' || !t.status) ? '#0369a1' : '#b91c1c',
-                              fontWeight: '600'
-                            }}>
-                              {t.status || 'SUCCESS'}
-                            </span>
-                          </div>
+                  ) : (() => {
+                    const allTxs = [...(txs?.items || []), ...(detail.cardTransactions || [])];
+                    const totalTxCount = allTxs.length;
+                    const totalTxPages = Math.max(1, Math.ceil(totalTxCount / 10));
+                    const pagedTxs = allTxs.slice((txSectionPage - 1) * 10, txSectionPage * 10);
+
+                    if (totalTxCount === 0) {
+                      return (
+                        <div style={{ fontSize: '12px', color: '#94a3b8', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
+                          카드 승인/결제 거래 내역이 없습니다.
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      );
+                    }
+
+                    return (
+                      <>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                          {pagedTxs.map((t, idx) => (
+                            <div key={t.id || t.txId || idx} style={{
+                              padding: '6px 10px',
+                              backgroundColor: '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '6px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              fontSize: '11px',
+                              gap: '8px',
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontWeight: '600', color: '#1e293b', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                  {t.merchantName || t.merchant || t.description || '가맹점 결제'}
+                                </span>
+                                <span style={{ color: '#cbd5e1' }}>•</span>
+                                <span style={{ fontSize: '10px', color: '#64748b' }}>
+                                  {formatAdminDate(t.at || t.createdDate || t.txTime)}
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontWeight: '700', color: '#047857' }}>
+                                  ${Number(t.amount || t.transAmount || 0).toFixed(2)}
+                                </span>
+                                <span style={{
+                                  fontSize: '9px',
+                                  padding: '1px 5px',
+                                  borderRadius: '3px',
+                                  backgroundColor: (t.status === 'SUCCESS' || t.status === 'APPROVED' || !t.status) ? '#e0f2fe' : '#fee2e2',
+                                  color: (t.status === 'SUCCESS' || t.status === 'APPROVED' || !t.status) ? '#0369a1' : '#b91c1c',
+                                  fontWeight: '600'
+                                }}>
+                                  {t.status || 'SUCCESS'}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Transaction Pagination Controls */}
+                        {totalTxPages > 1 && (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginTop: '8px',
+                            paddingTop: '6px',
+                            borderTop: '1px solid #f1f5f9',
+                            fontSize: '11px',
+                            color: '#64748b'
+                          }}>
+                            <button
+                              type="button"
+                              disabled={txSectionPage <= 1}
+                              onClick={() => setTxSectionPage(p => Math.max(1, p - 1))}
+                              style={{
+                                padding: '3px 8px',
+                                fontSize: '11px',
+                                borderRadius: '4px',
+                                border: '1px solid #cbd5e1',
+                                backgroundColor: txSectionPage <= 1 ? '#f1f5f9' : '#ffffff',
+                                color: txSectionPage <= 1 ? '#94a3b8' : '#334155',
+                                cursor: txSectionPage <= 1 ? 'not-allowed' : 'pointer'
+                              }}
+                            >
+                              ‹ 이전
+                            </button>
+                            <span>
+                              {txSectionPage} / {totalTxPages} 페이지 (총 {totalTxCount}건)
+                            </span>
+                            <button
+                              type="button"
+                              disabled={txSectionPage >= totalTxPages}
+                              onClick={() => setTxSectionPage(p => Math.min(totalTxPages, p + 1))}
+                              style={{
+                                padding: '3px 8px',
+                                fontSize: '11px',
+                                borderRadius: '4px',
+                                border: '1px solid #cbd5e1',
+                                backgroundColor: txSectionPage >= totalTxPages ? '#f1f5f9' : '#ffffff',
+                                color: txSectionPage >= totalTxPages ? '#94a3b8' : '#334155',
+                                cursor: txSectionPage >= totalTxPages ? 'not-allowed' : 'pointer'
+                              }}
+                            >
+                              다음 ›
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </AdminDetailSection>
 
                 <AdminDetailSection title="카드 조작 (Quick Actions)">
