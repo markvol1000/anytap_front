@@ -277,9 +277,7 @@ function ScreenTopup() {
           <Icon name="chevron" size={14} />
         </div>
         <label className="hwscr__lbl">Amount</label>
-        <div className="tpu__amt">500<span>USDT</span><span className="tpu__caret"></span>
-          <span className="hwscr__click hwscr__click--amt"><svg viewBox="0 0 24 24" width="34" height="34" fill="#0a0a0d"><path d="M4 2l16 9-7 1.5L9 20 4 2z"/></svg></span>
-        </div>
+        <div className="tpu__amt">500<span>USDT</span><span className="tpu__caret"></span></div>
         <div className="tpu__quick"><span>+100</span><span>+500</span><span className="is-on">Max</span></div>
         <div className="tpu__sum">
           <div className="tpu__sum-row"><span>You add</span><strong>500 USDT</strong></div>
