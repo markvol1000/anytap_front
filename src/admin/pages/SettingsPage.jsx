@@ -134,7 +134,7 @@ export function SettingsPage() {
     <div className="admin-page admin-page--settings">
       <AdminPageHeader
         title="Settings & System Configurations"
-        description="View fee rates, Wasabi/Cregis API keys, master addresses, and all DB System_Config parameters (Read-only)."
+        description="View and manage system fee rates, limits, and referral settings."
       />
 
       {/* Tabs */}
@@ -142,8 +142,6 @@ export function SettingsPage() {
         {[
           { id: 'fees', label: '💰 Fees & Limits' },
           { id: 'referrals', label: '🤝 Referral Management' },
-          { id: 'api', label: '🔌 Wasabi & Cregis API' },
-          { id: 'all', label: '🗄️ System_Config DB Ledger' },
         ].map((t) => (
           <button
             key={t.id}

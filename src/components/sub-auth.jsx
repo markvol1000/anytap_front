@@ -90,36 +90,24 @@ function AuthDevModeBadge() {
   );
 }
 
-function applyAuthError(code, { showToast, setFieldHint, setErrorFields }) {
+function applyAuthError(result, { showToast, setFieldHint, setErrorFields }) {
+  const code = typeof result === 'string' ? result : result?.code;
+  const customMsg = typeof result === 'object' ? result?.message : null;
   const err = AUTH_ERRORS[code];
-  if (!err) return;
-  if (err.toast) showToast(err.toast);
-  setFieldHint(err.hint || '');
-  setErrorFields({
-    email: err.fields.includes('email'),
-    password: err.fields.includes('password'),
-  });
-}
 
-function applySignupError(code, { showToast, setHints, setErrors }) {
-  const err = AUTH_ERRORS[code];
-  if (!err) {
-    showToast('Sign up failed. Please try again.');
-    return;
+  const toastMsg = customMsg || err?.toast || 'Login failed. Please try again.';
+  showToast(toastMsg);
+
+  if (err) {
+    setFieldHint(err.hint || customMsg || '');
+    setErrorFields({
+      email: err.fields?.includes('email') || false,
+      password: err.fields?.includes('password') || false,
+    });
+  } else {
+    setFieldHint(customMsg || '');
+    setErrorFields({ email: true, password: true });
   }
-  if (err.toast) showToast(err.toast);
-  const nextHints = { email: '', password: '', passwordConfirm: '', agree: '' };
-  const nextErrors = { email: false, password: false, passwordConfirm: false, agree: false };
-  if (err.fields.includes('email')) {
-    nextHints.email = err.hint || '';
-    nextErrors.email = true;
-  }
-  if (err.fields.includes('password')) {
-    nextHints.password = err.hint || '';
-    nextErrors.password = true;
-  }
-  setHints(nextHints);
-  setErrors(nextErrors);
 }
 
 // ─────────────── Login ───────────────
@@ -167,7 +155,7 @@ function LoginPage() {
       navigate(typeof from === 'string' && from.startsWith('/account') ? from : '/account', { replace: true });
       return;
     }
-    applyAuthError(result.code, { showToast, setFieldHint, setErrorFields });
+    applyAuthError(result, { showToast, setFieldHint, setErrorFields });
   };
 
   return (

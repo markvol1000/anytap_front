@@ -30,9 +30,14 @@ export const AUTH_ERRORS = {
     fields: ['email'],
   },
   ACCOUNT_LOCKED: {
-    toast: 'Your account has been temporarily locked. Please try again later.',
-    hint: 'Your account has been temporarily locked. Please try again later.',
-    fields: ['password'],
+    toast: 'Account is locked due to failed login attempts. Please reset your password.',
+    hint: 'Account is locked. Please reset your password to unlock.',
+    fields: ['email', 'password'],
+  },
+  LOCKED: {
+    toast: 'Account is locked. Please reset your password to unlock.',
+    hint: 'Account is locked. Please reset your password to unlock.',
+    fields: ['email', 'password'],
   },
   SERVER_ERROR: {
     toast: 'Something went wrong. Please try again.',

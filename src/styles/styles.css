@@ -1,10 +1,10 @@
 /* Anytap homepage — custom layout atop design-system tokens */
 
-/* Hide unwanted arrow icons and blinking text caret on Max button */
-[class*="max"] svg, [class*="Max"] svg, [class*="max"] i, [class*="Max"] i, .max-btn svg, .max-btn i {
+/* Hide unwanted arrow icons and blinking text caret ONLY on Max button */
+.max-btn svg, .max-btn i, [class*="max-btn"] svg, [class*="max-btn"] i {
   display: none !important;
 }
-[class*="max"], [class*="Max"], .max-btn, button, input:focus, span:focus {
+.max-btn, [class*="max-btn"] {
   caret-color: transparent !important;
 }
 
