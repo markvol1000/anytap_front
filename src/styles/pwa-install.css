@@ -149,6 +149,13 @@ body.has-mobile-cta.portal-member .pwa-install--floating {
   bottom: calc(138px + env(safe-area-inset-bottom));
 }
 
+/* Desktop account: no bottom dock — keep banner in the corner */
+@media (min-width: 900px) {
+  body.portal-member .pwa-install--floating {
+    bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+}
+
 body.has-pwa-install-banner.has-mobile-cta main {
   padding-bottom: 160px;
 }

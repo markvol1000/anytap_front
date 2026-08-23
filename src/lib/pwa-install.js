@@ -1,6 +1,18 @@
 /**
  * PWA install prompt — visit / dismiss state (localStorage).
  * Banner UX only; browser BeforeInstallPrompt is triggered from usePwaInstall.
+ *
+ * Show rules (by situation):
+ * 1) Marketing (logged out, SiteShell) — floating banner
+ *    - Timing: 2nd+ visit OR 30s dwell
+ *    - Hidden on auth paths: /login, /sign-up, /forgot-password, /apply-card
+ * 2) Account (logged in, /account/*) — floating banner (mobile + desktop)
+ *    - Timing: 3s after portal load
+ * 3) Never when:
+ *    - Already installed / running as standalone PWA
+ *    - User dismissed (7 days) or rejected install ≥3 times (30 days)
+ *    - localStorage installed flag is set
+ * 4) Dev preview: ?forcePwa=1 forces UI regardless of gates
  */
 
 const STORAGE = {

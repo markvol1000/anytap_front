@@ -136,7 +136,7 @@ export function resolvePortalScreenGate(screen, accountState) {
     if (memberState === MEMBER_STATE.CARD_ISSUING && showsIssuanceDepositWallet(cardStatus)) {
       return guide(
         'Issuance fee deposit is on Home',
-        'The 300 USDT issuance address is shown on the dashboard until shipping starts. Your personal spending wallet opens only after card registration.',
+        'The 100 USDT issuance address is shown on the dashboard until shipping starts. Your personal spending wallet opens only after card registration.',
         { label: 'View deposit on Home', nextScreen: 'home' },
       );
     }

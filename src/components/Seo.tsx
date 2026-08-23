@@ -8,6 +8,7 @@ import {
   OG_IMAGE_WIDTH,
   resolveSeo,
 } from '../lib/seo.ts';
+import { SOCIAL_LINKS, SITE_ORIGIN, TWITTER_HANDLE } from '../lib/site.ts';
 
 function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
   const selector = `meta[${attr}="${key}"]`;
@@ -28,6 +29,17 @@ function upsertLink(rel: string, href: string) {
     document.head.appendChild(el);
   }
   el.setAttribute('href', href);
+}
+
+function upsertJsonLd(id: string, data: unknown) {
+  let el = document.head.querySelector(`script#${id}`) as HTMLScriptElement | null;
+  if (!el) {
+    el = document.createElement('script');
+    el.type = 'application/ld+json';
+    el.id = id;
+    document.head.appendChild(el);
+  }
+  el.textContent = JSON.stringify(data);
 }
 
 /** Updates document title + meta tags on every route change. */
@@ -57,10 +69,19 @@ export function Seo() {
     upsertMeta('property', 'og:image:alt', OG_IMAGE_ALT);
 
     upsertMeta('name', 'twitter:card', 'summary_large_image');
+    upsertMeta('name', 'twitter:site', TWITTER_HANDLE);
     upsertMeta('name', 'twitter:title', seo.title);
     upsertMeta('name', 'twitter:description', seo.description);
     upsertMeta('name', 'twitter:image', image);
     upsertMeta('name', 'twitter:image:alt', OG_IMAGE_ALT);
+
+    upsertJsonLd('org-jsonld', {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'Anytap',
+      url: SITE_ORIGIN,
+      sameAs: SOCIAL_LINKS.map((s) => s.href),
+    });
   }, [pathname]);
 
   return null;

@@ -63,7 +63,8 @@ function ApplyCardPage() {
               <div className="aform__sec">Account</div>
               <div className="aform__grid">
                 <FormField label="Email" req><input type="email" required placeholder="Enter your email" /></FormField>
-                <FormField label="Full legal name" req><input type="text" required placeholder="Enter your full legal name" /></FormField>
+                <FormField label="Last name" req><input type="text" required placeholder="Surname" autoComplete="family-name" /></FormField>
+                <FormField label="First name" req><input type="text" required placeholder="Given name" autoComplete="given-name" /></FormField>
                 <FormField label="Date of birth" req><input type="text" required placeholder="MM / DD / YYYY" lang="en" inputMode="numeric" /></FormField>
                 <FormField label="Country / Region" req>
                   <select required defaultValue=""><option value="" disabled>Select…</option><option>United States</option><option>Singapore</option><option>United Arab Emirates</option><option>United Kingdom</option><option>Vietnam</option><option>Japan</option><option>Other</option></select>
@@ -74,7 +75,7 @@ function ApplyCardPage() {
               <div className="aform__sec">Identity (KYC)</div>
               <div className="aform__grid">
                 <FormField label="ID document type" req>
-                  <select required defaultValue="Passport"><option value="Passport">Passport</option><option value="Driver's license">Driver's license</option></select>
+                  <select required defaultValue=""><option value="" disabled>Select…</option><option>Passport</option><option>Driver's license</option></select>
                 </FormField>
                 <FormField label="Stablecoin you'll top up with" req>
                   <select required defaultValue=""><option value="" disabled>Select…</option><option>USDT (TRC-20)</option><option>USDT (ERC-20)</option><option>USDC</option></select>
@@ -84,7 +85,7 @@ function ApplyCardPage() {
               <div className="aform__sec">Card</div>
               <div className="aform__grid">
                 <FormField label="Card type" req>
-                  <select required defaultValue="Physical"><option value="Physical">Physical</option><option value="Virtual">Virtual</option></select>
+                  <select required defaultValue=""><option value="" disabled>Select…</option><option>Physical</option><option disabled>Virtual (coming soon)</option></select>
                 </FormField>
                 <FormField label="Add to mobile wallet">
                   <select defaultValue=""><option value="" disabled>Select…</option><option>Apple Pay</option><option>Google Pay</option><option>Samsung Pay</option><option>Decide later</option></select>
@@ -95,7 +96,7 @@ function ApplyCardPage() {
 
               <div className="aform__actions">
                 <button type="submit" className="btn btn--accent btn--lg">Submit application <Icon name="arrowRight" size={16} /></button>
-                <span className="aform__note">A one-time USD 100 issuance fee covers both the virtual and physical card. A 3% fee applies on stablecoin top-ups.</span>
+                <span className="aform__note">A one-time USD 100 issuance fee applies for the physical card. A 3% fee applies on stablecoin top-ups. Virtual cards are coming soon.</span>
               </div>
             </form>
           )}
@@ -235,9 +236,18 @@ function ContactPage() {
         sub="Need a hand? Tell us what's going on and our team will get back to you. For lost or stolen cards, we monitor 24/7." />
       <Band>
         <div className="aform-wrap aform-wrap--narrow">
-          <p className="aform__note" style={{ textAlign: 'center', marginBottom: 20 }}>
+          <p className="aform__note" style={{ textAlign: 'center', marginBottom: 12 }}>
             Prefer email?{' '}
             <a href={SUPPORT_MAILTO}>{SUPPORT_EMAIL}</a>
+          </p>
+          <p className="aform__note" style={{ textAlign: 'center', marginBottom: 20 }}>
+            Official SNS:{' '}
+            {SOCIAL_LINKS.map((s, i) => (
+              <span key={s.label}>
+                {i > 0 ? ' · ' : null}
+                <a href={s.href} target="_blank" rel="noopener noreferrer">{s.label}</a>
+              </span>
+            ))}
           </p>
           {done ? (
             <FormDone title="Message sent" msg="Thanks for reaching out. Our support team will reply to your email shortly. For urgent card loss, your card has been flagged for review." />

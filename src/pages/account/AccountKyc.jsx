@@ -6,7 +6,7 @@ import { isHttpApi } from '../../lib/api/config.js';
 import { profilePatchFromKycForm } from '../../lib/member-profile.js';
 import { KycDocField } from '../../components/kyc-doc-field.jsx';
 import { phoneCountryCodeOptions } from '../../lib/phone-country-codes.js';
-
+import { nationalityOptions } from '../../lib/nationality-options.ts';
 import { getHttpSession } from '../../lib/api/httpSession.js';
 
 function FormField({ label, children, className = '' }) {
@@ -16,6 +16,14 @@ function FormField({ label, children, className = '' }) {
       {children}
     </label>
   );
+}
+
+function todayDateInputValue() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function PhoneCountryCodeSelect({ value, onChange }) {
@@ -28,6 +36,22 @@ function PhoneCountryCodeSelect({ value, onChange }) {
       aria-label="Country code">
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  );
+}
+
+function NationalitySelect({ value, onChange }) {
+  const options = nationalityOptions(value);
+  return (
+    <select
+      className="capply-input capply-input--select"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label="Nationality">
+      <option value="" disabled>Select¡¦</option>
+      {options.map((opt) => (
+        <option key={opt} value={opt}>{opt}</option>
       ))}
     </select>
   );
@@ -51,6 +75,17 @@ function StickyFoot({ secondaryLabel, primaryLabel, primaryDisabled, onSecondary
     </footer>
   );
 }
+function initialKycForm(accountState) {
+  const existingName = accountState?.name ?? '';
+  const split = C.splitFullName(existingName);
+  return {
+    ...C.EMPTY_KYC_FORM,
+    firstName: split.firstName,
+    lastName: split.lastName,
+    fullName: existingName,
+  };
+}
+
 
 export function AccountKyc({ s }) {
   const [kycForm, setKycForm] = useState(() => {
