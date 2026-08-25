@@ -1,7 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { Icon } from '../components/ui.jsx';
 import { apiPost } from '../lib/api/httpClient.js';
 import { RichMessageRenderer } from '../components/RichMessageRenderer.jsx';
+import {
+  hasAdminSession,
+  hasMemberSession,
+  hasMockSession,
+  isAdminEmail,
+  getMockSessionEmail,
+} from '../lib/services/authService.js';
+import { hasDemoAdminAccess } from '../lib/demo-session.js';
+import { getHttpSession } from '../lib/api/httpSession.js';
 
 const QUICK_PROMPTS = [
   '서버 상태 알려줘',
@@ -11,6 +21,18 @@ const QUICK_PROMPTS = [
 ];
 
 export function AnyBotPage() {
+  const location = useLocation();
+  const session = getHttpSession();
+  const isMemberAdmin = hasMemberSession() && session && String(session.role).toUpperCase() === 'ADMIN';
+
+  const canAccess = hasDemoAdminAccess()
+    || isMemberAdmin
+    || hasAdminSession()
+    || (hasMockSession() && isAdminEmail(getMockSessionEmail()));
+
+  if (!canAccess) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([

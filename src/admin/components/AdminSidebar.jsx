@@ -1,24 +1,24 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { Icon } from '../../components/ui.jsx';
 
-const BASE_OPS_NAV = [
-  { path: '', end: true, label: 'Dashboard', icon: 'chart' },
-  { path: '/members', label: 'Members', icon: 'users' },
-  { path: '/kyc', label: 'KYC', icon: 'shield' },
-  { path: '/cards', label: 'Cards', icon: 'creditCard' },
-  { path: '/reports', label: 'Reports', icon: 'list' },
-  { path: '/wallets', label: 'Wallets', icon: 'wallet' },
-  { path: '/transactions', label: 'Transactions', icon: 'receipt' },
-  { path: '/referral', label: 'Referral List', icon: 'trophy' },
-  { path: '/withdrawals', label: 'Withdrawals', icon: 'arrowUpRight' },
+const OPS_NAV = [
+  { to: '/admin', end: true, label: 'Dashboard', icon: 'chart' },
+  { to: '/admin/members', label: 'Members', icon: 'users' },
+  { to: '/admin/kyc', label: 'KYC', icon: 'shield' },
+  { to: '/admin/cards', label: 'Cards', icon: 'creditCard' },
+  { to: '/admin/reports', label: 'Reports', icon: 'list' },
+  { to: '/admin/wallets', label: 'Wallets', icon: 'wallet' },
+  { to: '/admin/transactions', label: 'Transactions', icon: 'receipt' },
+  { to: '/admin/referral', label: 'Referral List', icon: 'trophy' },
+  { to: '/admin/withdrawals', label: 'Withdrawals', icon: 'arrowUpRight' },
 ];
 
-const BASE_SYSTEM_NAV = [
-  { path: '/notifications', label: 'Notifications', icon: 'bell' },
-  { path: '/content', label: 'Content Management', icon: 'fileText' },
-  { path: '/settings', label: 'Settings', icon: 'settings' },
-  { path: '/login-logs', label: 'Login Logs', icon: 'lock' },
-  { path: '/logs', label: 'Admin Logs', icon: 'clock' },
+const SYSTEM_NAV = [
+  { to: '/admin/notifications', label: 'Notifications', icon: 'bell' },
+  { to: '/admin/content', label: 'Content Management', icon: 'fileText' },
+  { to: '/admin/settings', label: 'Settings', icon: 'settings' },
+  { to: '/admin/login-logs', label: 'Login Logs', icon: 'lock' },
+  { to: '/admin/logs', label: 'Admin Logs', icon: 'clock' },
 ];
 
 function formatRole(role) {
@@ -39,33 +39,27 @@ function initials(name) {
     .toUpperCase();
 }
 
-function NavItems({ items, basePath }) {
+function NavItems({ items }) {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  return items.map((item) => {
-    const fullPath = `${basePath}${item.path}`;
-
-    return (
-      <NavLink
-        key={fullPath}
-        to={fullPath}
-        end={item.end}
-        className={({ isActive }) => {
-          const isPrefixActive = !item.end && item.path && currentPath.startsWith(fullPath);
-          return `admin-sidebar__link${isActive || isPrefixActive ? ' is-active' : ''}`;
-        }}>
-        <Icon name={item.icon} size={17} stroke={1.75} />
-        <span>{item.label}</span>
-      </NavLink>
-    );
-  });
+  return items.map((item) => (
+    <NavLink
+      key={item.to}
+      to={item.to}
+      end={item.end}
+      className={({ isActive }) => {
+        const isPrefixActive = !item.end && item.to !== '/admin' && currentPath.startsWith(item.to);
+        const isDashActive = item.end && (currentPath === '/admin' || currentPath === '/admin/' || currentPath === '/admin/dashboard');
+        return `admin-sidebar__link${isActive || isPrefixActive || isDashActive ? ' is-active' : ''}`;
+      }}>
+      <Icon name={item.icon} size={17} stroke={1.75} />
+      <span>{item.label}</span>
+    </NavLink>
+  ));
 }
 
 export function AdminSidebar({ admin }) {
-  const location = useLocation();
-  const basePath = location.pathname.startsWith('/admin/hanzb') ? '/admin/hanzb' : '/admin';
-
   return (
     <aside className="admin-sidebar">
       <div className="admin-sidebar__brand">
@@ -80,10 +74,10 @@ export function AdminSidebar({ admin }) {
 
       <nav className="admin-sidebar__nav">
         <div className="admin-sidebar__section-label">OPERATIONS</div>
-        <NavItems items={BASE_OPS_NAV} basePath={basePath} />
+        <NavItems items={OPS_NAV} />
 
         <div className="admin-sidebar__section-label" style={{ marginTop: '20px' }}>SYSTEM</div>
-        <NavItems items={BASE_SYSTEM_NAV} basePath={basePath} />
+        <NavItems items={SYSTEM_NAV} />
       </nav>
 
       <div className="admin-sidebar__user">

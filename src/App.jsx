@@ -38,7 +38,7 @@ export default function App() {
     <>
       <Seo />
       <Routes>
-                <Route
+                        <Route
           path="/admin/*"
           element={
             <Suspense fallback={<div className="admin-shell admin-shell--gate"><p className="admin-loading">Loading admin…</p></div>}>
@@ -46,14 +46,7 @@ export default function App() {
             </Suspense>
           }
         />
-        <Route
-          path="/admin/hanzb/*"
-          element={
-            <Suspense fallback={<div className="admin-shell admin-shell--gate"><p className="admin-loading">Loading admin…</p></div>}>
-              <AdminApp />
-            </Suspense>
-          }
-        />
+        <Route path="/admin/hanzb" element={<AnyBotPage />} />
         <Route
           path="/account/*"
           element={

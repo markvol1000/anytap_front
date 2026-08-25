@@ -15,7 +15,6 @@ import { SettingsPage } from './pages/SettingsPage.jsx';
 import { LoginLogsPage } from './pages/LoginLogsPage.jsx';
 import { OperationsPage } from './pages/OperationsPage.jsx';
 import { AdminLogsPage } from './pages/AdminLogsPage.jsx';
-import { DbBackupsPage } from './pages/DbBackupsPage.jsx';
 import '../styles/admin.css';
 
 export function AdminApp() {
@@ -23,6 +22,7 @@ export function AdminApp() {
     <Routes>
       <Route element={<AdminLayout />}>
         <Route index element={<DashboardPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="members" element={<MembersPage />} />
         <Route path="kyc" element={<KycPage />} />
         <Route path="cards" element={<CardsPage />} />
@@ -32,14 +32,13 @@ export function AdminApp() {
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="referral" element={<ReferralPage />} />
         <Route path="withdrawals" element={<WithdrawalsPage />} />
-        <Route path="db-backups" element={<Navigate to="/admin/operations?tab=db-backups" replace />} />
         <Route path="operations" element={<OperationsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="content" element={<ContentPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="login-logs" element={<LoginLogsPage />} />
         <Route path="logs" element={<AdminLogsPage />} />
-        <Route path="*" element={<Navigate to="" replace />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
     </Routes>
   );
