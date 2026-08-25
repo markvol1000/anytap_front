@@ -21,8 +21,8 @@ export function EventLogsPage() {
   return (
     <div className="admin-page">
       <AdminPageHeader
-        title="이벤트 로그"
-        description="시스템 이벤트와 사용자 행동을 추적합니다."
+        title="System Event Logs"
+        description="Track system events and user activity audit trail."
       />
 
       <AdminSplitLayout
@@ -31,16 +31,16 @@ export function EventLogsPage() {
             <AdminFilterBar
               search={list.search}
               onSearchChange={list.setSearch}
-              searchPlaceholder="유저 ID, 이벤트 타입 검색…"
+              searchPlaceholder="Search User ID, Event Type..."
             />
             <AdminTableWrap loading={list.loading} error={list.error} hasData={list.items.length > 0}>
               <AdminDataTable
                 columns={[
-                  { key: 'userId', label: '사용자 ID' },
-                  { key: 'eventType', label: '이벤트' },
+                  { key: 'userId', label: 'User ID' },
+                  { key: 'eventType', label: 'Event Type' },
                   { key: 'ipAddress', label: 'IP' },
-                  { key: 'apiResponseCode', label: '응답 코드' },
-                  { key: 'at', label: '시간', render: (r) => formatAdminDate(r.at) },
+                  { key: 'apiResponseCode', label: 'Response Code' },
+                  { key: 'at', label: 'Time', render: (r) => formatAdminDate(r.at) },
                 ]}
                 rows={list.items}
                 selectedId={selectedId}
@@ -57,14 +57,14 @@ export function EventLogsPage() {
           </AdminPanel>
         )}
         right={(
-          <AdminDetailPanel title="이벤트 상세">
+          <AdminDetailPanel title="Event Details">
             {detail ? (
-              <AdminDetailSection title="이벤트">
-                <AdminDetailRow label="사용자 ID" value={detail.userId} />
-                <AdminDetailRow label="이벤트 타입" value={detail.eventType} />
+              <AdminDetailSection title="Event Info">
+                <AdminDetailRow label="User ID" value={detail.userId} />
+                <AdminDetailRow label="Event Type" value={detail.eventType} />
                 <AdminDetailRow label="IP" value={detail.ipAddress} />
-                <AdminDetailRow label="응답 코드" value={detail.apiResponseCode} />
-                <AdminDetailRow label="시간" value={formatAdminDate(detail.at)} />
+                <AdminDetailRow label="Response Code" value={detail.apiResponseCode} />
+                <AdminDetailRow label="Timestamp" value={formatAdminDate(detail.at)} />
               </AdminDetailSection>
             ) : null}
           </AdminDetailPanel>

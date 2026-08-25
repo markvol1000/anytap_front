@@ -113,12 +113,12 @@ export function MembersPage() {
         try {
           const res = await retryCregisWallet(detail.id);
           const allocatedAddress = res?.address || res?.data?.address || (res?.cregisWalletAddress) || 'Allocated';
-          window.alert(`✅ Cregis USDT 지갑 주소가 성공적으로 발급되었습니다!\n\n할당된 주소:\n${allocatedAddress}`);
+          window.alert(`✅ Cregis USDT wallet address issued successfully!\n\nAssigned Address:\n${allocatedAddress}`);
           const updated = await getMemberById(detail.id);
           setDetail(updated);
           list.reload();
         } catch (retryErr) {
-          window.alert(`❌ Cregis 지갑 생성 실패:\n${retryErr.message || 'Cregis API 통신 중 오류가 발생했습니다.'}`);
+          window.alert(`❌ Cregis wallet creation failed:\n${retryErr.message || 'Cregis API communication error occurred.'}`);
         } finally {
           setRetryLoading(false);
         }
@@ -197,7 +197,7 @@ export function MembersPage() {
                   { key: 'email', label: 'Email' },
                   {
                     key: 'walletAddress',
-                    label: 'Wallet Address (지갑주소)',
+                    label: 'Wallet Address',
                     render: (r) => {
                       const addr = r.cregisWalletAddress || r.walletAddress || r.depositAddress || '';
                       if (!addr || addr === '-') {
@@ -338,13 +338,13 @@ export function MembersPage() {
                 <AdminDetailSection title="Wasabi Connection Info">
                   <AdminDetailRow label="Holder ID" value={detail.wasabiHolderId || '—'} />
                   <AdminDetailRow 
-                    label="Card Count (카드 보유 수량)" 
+                    label="Card Count" 
                     value={`${memberCards?.length || (detail.cardStatus && detail.cardStatus !== 'not_issued' ? 1 : 0)} cards`} 
                   />
                   <AdminDetailRow label="Card Status" value={<AdminStatusBadge status={detail.cardStatus} />} />
                 </AdminDetailSection>
 
-                <AdminDetailSection title="Issued Cards List (발급 카드 리스트)">
+                <AdminDetailSection title="Issued Cards List">
                   {memberCardsLoading ? (
                     <p className="admin-loading admin-loading--inline">Loading cards…</p>
                   ) : memberCards && memberCards.length > 0 ? (
@@ -376,7 +376,7 @@ export function MembersPage() {
                         },
                         {
                           key: 'cardNo',
-                          label: 'Card Number (카드번호)',
+                          label: 'Card Number',
                           render: (r) => (
                             <button
                               type="button"

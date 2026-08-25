@@ -58,7 +58,7 @@ export function WalletsPage() {
     try {
       const res = await syncUserCregisDeposits(targetUserId);
       const count = res?.syncedCount ?? res?.data?.syncedCount ?? 0;
-      setSingleSyncMsg(count > 0 ? `완료 (${count}건 동기화)` : '완료 (누락 없음)');
+      setSingleSyncMsg(count > 0 ? `Completed (${count} synced)` : 'Completed (No missing items)');
       setSingleSyncStatus('success');
 
       if (detail) {
@@ -70,7 +70,7 @@ export function WalletsPage() {
 
       setTimeout(() => setSingleSyncStatus('idle'), 4000);
     } catch (err) {
-      setSingleSyncMsg('실패');
+      setSingleSyncMsg('Failed');
       setSingleSyncStatus('error');
       setTimeout(() => setSingleSyncStatus('idle'), 4000);
     }
@@ -273,7 +273,7 @@ export function WalletsPage() {
                   <AdminDetailRow label="Status" value={<AdminStatusBadge status={detail.status} />} />
                 </AdminDetailSection>
 
-                <AdminDetailSection title="💳 Unified Wallet Transaction & On-Chain History (통합 거래 & 온체인 입금 원장)">
+                <AdminDetailSection title="💳 Unified Wallet Transaction & On-Chain History Ledger">
                   <AdminMiniTable
                     columns={[
                       { key: 'title', label: 'Type' },
@@ -310,7 +310,7 @@ export function WalletsPage() {
                       },
                       {
                         key: 'feeAmount',
-                        label: 'Fee (수수료)',
+                        label: 'Fee',
                         render: (r) => (
                           <span style={{ fontSize: '12px', color: r.feeAmount > 0 ? '#E53E3E' : 'var(--admin-text-muted, #888)' }}>
                             {r.feeAmount > 0 ? formatUsdt(r.feeAmount) : '-'}

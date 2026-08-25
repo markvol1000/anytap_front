@@ -397,7 +397,10 @@ export function AccountMyCardsDesktop({ s }) {
             items={A.resolvePortalActivityWithHistory(s.activityItems)}
             card={selectedCard}
             cardLast4={selectedCard?.last4}
-            onViewAll={() => s.go('transactions', { search: { source: 'card' } })}
+            onViewAll={() => {
+              const targetCardId = selectedCard?.last4 || selectedCard?.id || selectedCard?.cardNo || s?.currentCard?.last4;
+              s.go('transactions', { search: { source: 'card', cardId: targetCardId, last4: targetCardId } });
+            }}
           />
         </div>
 

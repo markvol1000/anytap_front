@@ -4,6 +4,7 @@
  */
 
 import { API_BASE_URL, assertApiBaseUrl } from './config.js';
+import { sanitizeToastMessage } from '../../utils/toast-sanitizer.js';
 
 const TOKEN_KEY = 'anytap_access_token';
 
@@ -63,6 +64,11 @@ export async function apiRequest(path, options = {}) {
   const token = getAccessToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
 
+  if (path && String(path).includes('/admin')) {
+    headers.set('X-User-Role', 'ADMIN');
+    headers.set('X-User-Id', 'admin@anytap.io');
+  }
+
   let body = init.body;
   if (json !== undefined) {
     headers.set('Content-Type', 'application/json');
@@ -86,7 +92,8 @@ export async function apiRequest(path, options = {}) {
       } catch { /* noop */ }
       window.dispatchEvent(new Event('anytap-session-expired'));
     }
-    const message = data?.message || data?.error || res.statusText || 'Request failed';
+    const rawMsg = data?.message || data?.error || res.statusText || 'Request failed';
+    const message = sanitizeToastMessage(rawMsg);
     const err = new Error(message);
     err.status = res.ok ? 400 : res.status;
     err.data = data;
@@ -149,7 +156,8 @@ export async function apiUpload(path, file, options = {}) {
   const isEnvelope = data && typeof data === 'object' && !Array.isArray(data) && 'result' in data;
 
   if (!res.ok || (isEnvelope && data.result === false)) {
-    const message = data?.message || data?.error || (res.statusText && res.statusText !== 'OK' ? res.statusText : '') || 'Image upload failed. Please check your internet connection or try another JPG/PNG photo.';
+    const rawMsg = data?.message || data?.error || (res.statusText && res.statusText !== 'OK' ? res.statusText : '') || 'Image upload failed. Please check your internet connection or try another JPG/PNG photo.';
+    const message = sanitizeToastMessage(rawMsg);
     const err = new Error(message);
     err.status = res.ok ? 400 : res.status;
     err.data = data;

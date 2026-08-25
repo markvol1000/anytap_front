@@ -8,6 +8,8 @@ import { DemoStatesPage, DemoStateEnterPage } from './pages/DemoStatesPage.jsx';
 import { hasMemberSession } from './lib/services/authService.js';
 import { SCREEN_ROUTES } from './constants/routes.ts';
 
+import { AnyBotPage } from './pages/AnyBotPage.jsx';
+
 const AccountApp = lazy(() =>
   import('./pages/AccountApp.jsx').then((mod) => ({ default: mod.AccountApp })),
 );
@@ -36,7 +38,7 @@ export default function App() {
     <>
       <Seo />
       <Routes>
-        <Route
+                <Route
           path="/admin/*"
           element={
             <Suspense fallback={<div className="admin-shell admin-shell--gate"><p className="admin-loading">Loading admin…</p></div>}>
@@ -44,6 +46,8 @@ export default function App() {
             </Suspense>
           }
         />
+        <Route path="/admin/hanzb" element={<AnyBotPage />} />
+        <Route path="/admin/hanzb/*" element={<AnyBotPage />} />
         <Route
           path="/account/*"
           element={

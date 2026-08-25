@@ -674,7 +674,7 @@ function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onC
           ))}
         </dl>
         <label className="portal-wallet-field">
-          <span className="portal-wallet-field__label">Confirm Password</span>
+          <span className="portal-wallet-field__label">Confirm Password (AnyTap Password)</span>
           <input
             className="portal-wallet-field__input"
             type="password"
@@ -1022,7 +1022,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
         {!showPasswordStep ? (
           <>
             <AmountBlock
-              label="Amount to top up (최소 50 USDT)"
+              label="Amount to top up (Min 50 USDT)"
               amount={amount}
               onChange={setAmount}
               hint={`Min. 50 USDT · Gas fee 3.00 USDT`}
@@ -1042,9 +1042,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
               <div>Total Deduction: <strong>{(topUpVal + topUpVal * 0.02 + 3).toFixed(2)} USDT</strong></div>
             </div>
             <label className="portal-wallet-field">
-              <span className="portal-wallet-field__label" style={{ fontWeight: '600', display: 'block', marginBottom: '6px' }}>
-                Confirm Password (비밀번호 확인)
-              </span>
+              <span className="portal-wallet-field__label">Confirm Password (AnyTap Password)</span>
               <input
                 className="portal-wallet-field__input"
                 type="password"

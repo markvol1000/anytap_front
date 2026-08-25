@@ -169,7 +169,7 @@ export function SettingsPage() {
                     {feeMaster.find(f => f.feeCode === 'CARD_CHARGE_FIXED')?.fixedAmount ?? 3.0} USDT
                   </div>
                   <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                    Wasabi 카드 충전 고정 수수료 (3.00 USDT)
+                    Wasabi Card Charge Fixed Fee (3.00 USDT)
                   </span>
                 </div>
 
@@ -181,7 +181,7 @@ export function SettingsPage() {
                     {((feeMaster.find(f => f.feeCode === 'A1')?.rateValue ?? 0.03) * 100).toFixed(1)}%
                   </div>
                   <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                    USDT 입금(지갑입금처리) 수수료율 (3.0%)
+                    USDT Deposit Processing Fee Rate (3.0%)
                   </span>
                 </div>
               </AdminDetailSection>
@@ -197,7 +197,7 @@ export function SettingsPage() {
                     {((feeMaster.find(f => f.feeCode === 'A4')?.rateValue ?? 0.003) * 100).toFixed(1)}%
                   </div>
                   <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                    추천인 수당 요율 (0.3%)
+                    Referral Commission Rate (0.3%)
                   </span>
                 </div>
 
@@ -209,7 +209,7 @@ export function SettingsPage() {
                     {((feeMaster.find(f => f.feeCode === 'ANYTAP_SUB' || f.feeCode === 'SUBSIDY')?.rateValue ?? 0.0085) * 100).toFixed(2)}%
                   </div>
                   <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                    Wasabi 충전 시 보충 수수료율 (0.85%)
+                    Wasabi Top-Up Subsidy Rate (0.85%)
                   </span>
                 </div>
               </AdminDetailSection>
@@ -297,7 +297,7 @@ export function SettingsPage() {
                     <span style={{ fontSize: '14px', fontWeight: '600', color: '#38bdf8' }}>%</span>
                   </div>
                   <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                    신규 추천인 코드 생성 시 기본 적용되는 수수료 적립 요율 (기본: 0.00%)
+                    Default commission accumulation rate for new referral code creation (Default: 0.00%)
                   </span>
                 </div>
 
@@ -311,12 +311,12 @@ export function SettingsPage() {
                     onChange={(e) => patch('REFERRAL_SYSTEM_STATUS', e.target.value)}
                     style={{ width: '100%', maxWidth: '240px', fontWeight: '600' }}
                   >
-                    <option value="ACTIVE">ACTIVE (시스템 전체 추천인 적립 활성)</option>
-                    <option value="INACTIVE">INACTIVE (추천인 적립 일시 중지)</option>
-                    <option value="MAINTENANCE">MAINTENANCE (시스템 점검중)</option>
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                    <option value="MAINTENANCE">MAINTENANCE (System Maintenance)</option>
                   </select>
                   <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                    추천인 커미션 적립 및 가입 시스템의 전체 활성화 상태
+                    Overall activation status of referral commission and signup system
                   </span>
                 </div>
 
@@ -334,7 +334,7 @@ export function SettingsPage() {
                     style={{ fontFamily: 'monospace', fontWeight: '700', fontSize: '14px', width: '160px' }}
                   />
                   <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                    파트너 회원 커미션 정산 출금 최소 신청 단위 (기본: 10 USDT)
+                    Minimum payout withdrawal unit for partner commission (Default: 10 USDT)
                   </span>
                 </div>
 
@@ -362,13 +362,13 @@ export function SettingsPage() {
                       Table: AnyTabData.Referral_Codes (7 Columns)
                     </div>
                     <ul style={{ margin: 0, paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '4px', color: '#cbd5e1' }}>
-                      <li><code>code</code> VARCHAR(20) PRIMARY KEY — 추천인 코드</li>
-                      <li><code>user_id</code> VARCHAR(50) — 파트너 회원 ID</li>
-                      <li><code>name</code> VARCHAR(100) — 파트너/회원 이름</li>
-                      <li><code>description</code> VARCHAR(255) — 파트너 설명/라벨</li>
-                      <li><code>status</code> VARCHAR(20) DEFAULT 'ACTIVE' — 활성 상태</li>
-                      <li><code>referral_rate_percent</code> DECIMAL(5,2) DEFAULT 0.00 — 요율</li>
-                      <li><code>created_at</code> / <code>updated_at</code> DATETIME(6) — 생성/수정 일시</li>
+                      <li><code>code</code> VARCHAR(20) PRIMARY KEY — Referral code</li>
+                      <li><code>user_id</code> VARCHAR(50) — Partner User ID</li>
+                      <li><code>name</code> VARCHAR(100) — Partner/Member name</li>
+                      <li><code>description</code> VARCHAR(255) — Partner description/label</li>
+                      <li><code>status</code> VARCHAR(20) DEFAULT 'ACTIVE' — Active status</li>
+                      <li><code>referral_rate_percent</code> DECIMAL(5,2) DEFAULT 0.00 — Commission rate</li>
+                      <li><code>created_at</code> / <code>updated_at</code> DATETIME(6) — Created/Updated date</li>
                     </ul>
                   </div>
                 </div>

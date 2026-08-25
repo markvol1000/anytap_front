@@ -9,7 +9,19 @@ import * as A from '../../lib/account-data.js';
 export function AccountCardTransactions({ s }) {
   const [searchParams] = useSearchParams();
   const initialScope = A.resolveActivityFilterFromSearch(searchParams);
-  const items = A.resolvePortalActivityWithHistory(s.activityItems);
+  const initialCardId = searchParams.get('cardId')
+    || searchParams.get('cardLast4')
+    || searchParams.get('last4')
+    || (initialScope === 'card' && (s?.currentCard?.last4 || s?.currentCard?.id || s?.currentCard?.cardNo))
+    || 'all';
+  const items = A.resolvePortalActivityWithHistory(s?.activityItems || []);
 
-  return <TransactionsPage items={items} initialScope={initialScope} s={s} />;
+  return (
+    <TransactionsPage
+      items={items}
+      initialScope={initialScope}
+      initialCardId={initialCardId}
+      s={s}
+    />
+  );
 }

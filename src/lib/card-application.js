@@ -469,3 +469,13 @@ export function isShippingValid(form) {
 export function canCancelApplication(application) {
   return application?.paymentStatus === 'waiting';
 }
+
+export function splitFullName(fullName) {
+  const name = String(fullName || '').trim();
+  if (!name) return { firstName: '', lastName: '' };
+  const parts = name.split(/\s+/);
+  if (parts.length === 1) return { firstName: parts[0], lastName: '' };
+  const lastName = parts[parts.length - 1];
+  const firstName = parts.slice(0, parts.length - 1).join(' ');
+  return { firstName, lastName };
+}

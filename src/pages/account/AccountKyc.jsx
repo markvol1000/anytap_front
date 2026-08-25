@@ -9,9 +9,9 @@ import { phoneCountryCodeOptions } from '../../lib/phone-country-codes.js';
 import { nationalityOptions } from '../../lib/nationality-options.ts';
 import { getHttpSession } from '../../lib/api/httpSession.js';
 
-function FormField({ label, children, className = '' }) {
+function FormField({ label, children, className = '', htmlFor }) {
   return (
-    <label className={`capply-field ${className}`.trim()}>
+    <label className={`capply-field ${className}`.trim()} htmlFor={htmlFor}>
       <span className="capply-field__label">{label}</span>
       {children}
     </label>
@@ -26,10 +26,13 @@ function todayDateInputValue() {
   return `${y}-${m}-${d}`;
 }
 
-function PhoneCountryCodeSelect({ value, onChange }) {
+function PhoneCountryCodeSelect({ value, onChange, id = "phoneCountryCode", name = "phoneCountryCode", style }) {
   const options = phoneCountryCodeOptions(value);
   return (
     <select
+      id={id}
+      name={name}
+      style={style}
       className="capply-input capply-input--select"
       value={value}
       onChange={(e) => onChange(e.target.value)}
@@ -41,15 +44,18 @@ function PhoneCountryCodeSelect({ value, onChange }) {
   );
 }
 
-function NationalitySelect({ value, onChange }) {
+function NationalitySelect({ value, onChange, id = "nationality", name = "nationality", style }) {
   const options = nationalityOptions(value);
   return (
     <select
+      id={id}
+      name={name}
+      style={style}
       className="capply-input capply-input--select"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label="Nationality">
-      <option value="" disabled>Select¡¦</option>
+      <option value="" disabled>Select</option>
       {options.map((opt) => (
         <option key={opt} value={opt}>{opt}</option>
       ))}
@@ -103,6 +109,30 @@ export function AccountKyc({ s }) {
   const [kycSubmitting, setKycSubmitting] = useState(false);
   const [kycAwaitingReview, setKycAwaitingReview] = useState(false);
   const [kycRetryOpen, setKycRetryOpen] = useState(false);
+  const [errorField, setErrorField] = useState('');
+
+  const focusAndHighlight = (fieldId, message) => {
+    if (message) s.showToast(message);
+    if (!fieldId) return;
+    setErrorField(fieldId);
+    window.setTimeout(() => {
+      const el = document.getElementById(fieldId) || document.querySelector(`[name="${fieldId}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (typeof el.focus === 'function') {
+          el.focus({ preventScroll: true });
+        } else {
+          const btn = el.querySelector('button, input');
+          if (btn && typeof btn.focus === 'function') {
+            btn.focus({ preventScroll: true });
+          }
+        }
+        if (typeof el.select === 'function' && el.tagName === 'INPUT') {
+          try { el.select(); } catch { /* noop */ }
+        }
+      }
+    }, 50);
+  };
 
   const kycStatusForGate = kycAwaitingReview && !s.profileReady
     ? 'under_review'
@@ -114,15 +144,19 @@ export function AccountKyc({ s }) {
   const verified = s.profileReady || kycApplyStatus === 'approved';
   const showForm = !blocked && !rejected && !verified;
 
-  const setKyc = (key, val) => setKycForm((f) => ({ ...f, [key]: val }));
+  const setKyc = (key, val) => {
+    setErrorField((cur) => (cur === key ? '' : cur));
+    setKycForm((f) => ({ ...f, [key]: val }));
+  };
 
   const handleAddressChange = (key, rawValue) => {
+    setErrorField((cur) => (cur === key ? '' : cur));
     const invalidCharPattern = /[^a-zA-Z0-9\s-]/;
     if (invalidCharPattern.test(rawValue)) {
       s.showToast("Address only supports English alphabets, numbers, hyphens(-), and spaces. Special characters (,.#/) and Korean are not allowed.");
     }
     const cleaned = rawValue.replace(/[^a-zA-Z0-9\s-]/g, '');
-    setKyc(key, cleaned);
+    setKycForm((f) => ({ ...f, [key]: cleaned }));
   };
 
   const goHome = () => s.go('home');
@@ -133,47 +167,47 @@ export function AccountKyc({ s }) {
 
     const firstName = String(kycForm.firstName || '').trim();
     if (!firstName) {
-      s.showToast('Please enter your English first name.');
+      focusAndHighlight('firstName', 'Please enter your English first name.');
       return;
     }
     if (firstName.length < 2 || firstName.length > 32) {
-      s.showToast('First name must be between 2 and 32 characters.');
+      focusAndHighlight('firstName', 'First name must be between 2 and 32 characters.');
       return;
     }
     if (!/^[a-zA-Z\s]+$/.test(firstName)) {
-      s.showToast('First name only supports English alphabets and spaces.');
+      focusAndHighlight('firstName', 'First name only supports English alphabets and spaces.');
       return;
     }
 
     const lastName = String(kycForm.lastName || '').trim();
     if (!lastName) {
-      s.showToast('Please enter your English last name.');
+      focusAndHighlight('lastName', 'Please enter your English last name.');
       return;
     }
     if (lastName.length < 2 || lastName.length > 32) {
-      s.showToast('Last name must be between 2 and 32 characters.');
+      focusAndHighlight('lastName', 'Last name must be between 2 and 32 characters.');
       return;
     }
     if (!/^[a-zA-Z\s]+$/.test(lastName)) {
-      s.showToast('Last name only supports English alphabets and spaces.');
+      focusAndHighlight('lastName', 'Last name only supports English alphabets and spaces.');
       return;
     }
 
     const totalNameLen = (firstName + " " + lastName).length;
     if (totalNameLen > 32) {
-      s.showToast('The combined length of First Name and Last Name cannot exceed 32 characters.');
+      focusAndHighlight('firstName', 'The combined length of First Name and Last Name cannot exceed 32 characters.');
       return;
     }
 
     const invalidPattern = /\b(test|sandbox|mock)\b/i;
     if (invalidPattern.test(firstName) || invalidPattern.test(lastName)) {
-      s.showToast('Please enter your real legal name. "Test", "Sandbox", or "Mock" names are not allowed.');
+      focusAndHighlight(invalidPattern.test(firstName) ? 'firstName' : 'lastName', 'Please enter your real legal name. "Test", "Sandbox", or "Mock" names are not allowed.');
       return;
     }
 
     const rawDob = String(kycForm.dateOfBirth || '').replace(/[^\d]/g, '');
     if (rawDob.length !== 8) {
-      s.showToast('Please enter your date of birth in YYYYMMDD format (8 digits).');
+      focusAndHighlight('dateOfBirth', 'Please enter your date of birth in YYYYMMDD format (8 digits).');
       return;
     }
     const year = parseInt(rawDob.substring(0, 4), 10);
@@ -181,7 +215,7 @@ export function AccountKyc({ s }) {
     const day = parseInt(rawDob.substring(6, 8), 10);
     const birthDate = new Date(year, month, day);
     if (isNaN(birthDate.getTime()) || birthDate.getFullYear() !== year || birthDate.getMonth() !== month || birthDate.getDate() !== day) {
-      s.showToast('Please enter a valid date of birth.');
+      focusAndHighlight('dateOfBirth', 'Please enter a valid date of birth.');
       return;
     }
     const today = new Date();
@@ -191,101 +225,101 @@ export function AccountKyc({ s }) {
       age--;
     }
     if (age < 18 || age > 100) {
-      s.showToast('Please ensure that the date range is between 18 - 100 years from the current year.');
+      focusAndHighlight('dateOfBirth', 'Please ensure that the date range is between 18 - 100 years from the current year.');
       return;
     }
 
     if (!kycForm.nationality?.trim()) {
-      s.showToast('Please select your nationality.');
+      focusAndHighlight('nationality', 'Please select your nationality.');
       return;
     }
     const countryPattern = /^[a-zA-Z]{2}$/;
     if (!countryPattern.test(kycForm.nationality.trim())) {
-      s.showToast('Please select a valid nationality.');
+      focusAndHighlight('nationality', 'Please select a valid nationality.');
       return;
     }
 
     if (!kycForm.country?.trim()) {
-      s.showToast('Please select your country of residence.');
+      focusAndHighlight('country', 'Please select your country of residence.');
       return;
     }
     if (!countryPattern.test(kycForm.country.trim())) {
-      s.showToast('Please select a valid country of residence.');
+      focusAndHighlight('country', 'Please select a valid country of residence.');
       return;
     }
 
     if (!kycForm.state?.trim()) {
-      s.showToast('Please enter your state or region.');
+      focusAndHighlight('state', 'Please enter your state or region.');
       return;
     }
     if (!/^[a-zA-Z0-9\s-]+$/.test(kycForm.state.trim())) {
-      s.showToast('State/Region only supports English alphabets, numbers, hyphens(-), and spaces.');
+      focusAndHighlight('state', 'State/Region only supports English alphabets, numbers, hyphens(-), and spaces.');
       return;
     }
 
     if (!kycForm.city?.trim()) {
-      s.showToast('Please enter your city.');
+      focusAndHighlight('city', 'Please enter your city.');
       return;
     }
     if (!/^[a-zA-Z0-9\s-]+$/.test(kycForm.city.trim())) {
-      s.showToast('City only supports English alphabets, numbers, hyphens(-), and spaces.');
+      focusAndHighlight('city', 'City only supports English alphabets, numbers, hyphens(-), and spaces.');
       return;
     }
 
     if (!kycForm.addressLine1?.trim()) {
-      s.showToast('Please enter your address.');
+      focusAndHighlight('addressLine1', 'Please enter your address.');
       return;
     }
     const addr = kycForm.addressLine1.trim();
     if (addr.length < 2 || addr.length > 40) {
-      s.showToast('Address must be between 2 and 40 characters.');
+      focusAndHighlight('addressLine1', 'Address must be between 2 and 40 characters.');
       return;
     }
     if (!/^[a-zA-Z0-9\s-]+$/.test(addr)) {
-      s.showToast('Street Address only supports English alphabets, numbers, hyphens(-), and spaces.');
+      focusAndHighlight('addressLine1', 'Street Address only supports English alphabets, numbers, hyphens(-), and spaces.');
       return;
     }
 
     if (!kycForm.postalCode?.trim()) {
-      s.showToast('Please enter your postal code.');
+      focusAndHighlight('postalCode', 'Please enter your postal code.');
       return;
     }
     const post = kycForm.postalCode.trim();
     if (post.length < 2 || post.length > 15) {
-      s.showToast('Postal code must be between 2 and 15 characters.');
+      focusAndHighlight('postalCode', 'Postal code must be between 2 and 15 characters.');
       return;
     }
     if (!/^[a-zA-Z0-9]+$/.test(post)) {
-      s.showToast('Postal code must contain English letters and numbers only.');
+      focusAndHighlight('postalCode', 'Postal code must contain English letters and numbers only.');
       return;
     }
 
     if (!kycForm.idDocType) {
-      s.showToast('Please select an ID document type.');
+      focusAndHighlight('idDocType', 'Please select an ID document type.');
       return;
     }
 
     const idDocNumber = String(kycForm.idDocNumber || '').trim();
     if (!idDocNumber) {
-      s.showToast('Please enter your ID document number.');
+      focusAndHighlight('idDocNumber', 'Please enter your ID document number.');
       return;
     }
     if (idDocNumber.length < 2 || idDocNumber.length > 50) {
-      s.showToast('ID document number must be between 2 and 50 characters.');
+      focusAndHighlight('idDocNumber', 'ID document number must be between 2 and 50 characters.');
       return;
     }
     if (!/^[a-zA-Z0-9-]+$/.test(idDocNumber)) {
-      s.showToast('ID document number supports English letters, numbers, and hyphens(-) only.');
+      focusAndHighlight('idDocNumber', 'ID document number supports English letters, numbers, and hyphens(-) only.');
       return;
     }
 
     const rawIssueDate = String(kycForm.issueDate || '').replace(/[^\d]/g, '');
     if (!rawIssueDate) {
-      s.showToast('Please enter your ID document issue date.');
+      focusAndHighlight('issueDate', 'Please enter your ID document issue date.');
       return;
     }
     if (rawIssueDate.length !== 8) {
-      s.showToast('Please enter your ID document issue date in YYYYMMDD format (8 digits).');
+      focusAndHighlight('issueDate', 'Please enter your ID document issue date in YYYYMMDD format (8 digits).');
       return;
     }
     const iYear = parseInt(rawIssueDate.substring(0, 4), 10);
@@ -293,33 +327,33 @@ export function AccountKyc({ s }) {
     const iDay = parseInt(rawIssueDate.substring(6, 8), 10);
     const issueDateObj = new Date(iYear, iMonth, iDay);
     if (isNaN(issueDateObj.getTime()) || issueDateObj.getFullYear() !== iYear || issueDateObj.getMonth() !== iMonth || issueDateObj.getDate() !== iDay) {
-      s.showToast('Please enter a valid ID document issue date.');
+      focusAndHighlight('issueDate', 'Please enter a valid ID document issue date.');
       return;
     }
 
     const phoneCountryCode = String(kycForm.phoneCountryCode || '').trim();
     const phoneNumber = String(kycForm.phoneNumber || '').trim();
     if (!phoneCountryCode || !phoneNumber) {
-      s.showToast('Please enter your phone number.');
+      focusAndHighlight(phoneNumber ? 'phoneCountryCode' : 'phoneNumber', 'Please enter your phone number.');
       return;
     }
     if (phoneCountryCode.length < 2 || phoneCountryCode.length > 5) {
-      s.showToast('Phone country code must be between 2 and 5 characters.');
+      focusAndHighlight('phoneCountryCode', 'Phone country code must be between 2 and 5 characters.');
       return;
     }
     const phoneDigits = phoneNumber.replace(/[^\d]/g, '');
     if (phoneDigits.length < 7 || phoneDigits.length > 15) {
-      s.showToast('Please enter a valid mobile number with 7-15 digits.');
+      focusAndHighlight('phoneNumber', 'Please enter a valid mobile number with 7-15 digits.');
       return;
     }
 
     if (isHttpApi && !kycForm.idFrontFile && !kycForm.idFrontId) {
-      s.showToast('Please upload the front image of your ID document.');
+      focusAndHighlight('idFrontFile', 'Please upload the front image of your ID document.');
       return;
     }
 
     if (isHttpApi && !kycForm.selfieFile && !kycForm.selfieId) {
-      s.showToast('Please upload a selfie photo.');
+      focusAndHighlight('selfieFile', 'Please upload a selfie photo.');
       return;
     }
     setKycSubmitting(true);
@@ -341,6 +375,23 @@ export function AccountKyc({ s }) {
       } else {
         s.showToast(errMsg);
       }
+      const lowerMsg = errMsg.toLowerCase();
+      if (lowerMsg.includes('phone') || lowerMsg.includes('mobile') || lowerMsg.includes('cell')) focusAndHighlight('phoneNumber');
+      else if (lowerMsg.includes('first name') || lowerMsg.includes('firstname')) focusAndHighlight('firstName');
+      else if (lowerMsg.includes('last name') || lowerMsg.includes('lastname')) focusAndHighlight('lastName');
+      else if (lowerMsg.includes('birth') || lowerMsg.includes('dob')) focusAndHighlight('dateOfBirth');
+      else if (lowerMsg.includes('nationality')) focusAndHighlight('nationality');
+      else if (lowerMsg.includes('country') || lowerMsg.includes('residence')) focusAndHighlight('country');
+      else if (lowerMsg.includes('state') || lowerMsg.includes('region') || lowerMsg.includes('province')) focusAndHighlight('state');
+      else if (lowerMsg.includes('city')) focusAndHighlight('city');
+      else if (lowerMsg.includes('address') || lowerMsg.includes('street')) focusAndHighlight('addressLine1');
+      else if (lowerMsg.includes('postal') || lowerMsg.includes('zip')) focusAndHighlight('postalCode');
+      else if (lowerMsg.includes('doc type') || lowerMsg.includes('document type')) focusAndHighlight('idDocType');
+      else if (lowerMsg.includes('id document number') || lowerMsg.includes('document number') || lowerMsg.includes('id number') || lowerMsg.includes('id_number') || lowerMsg.includes('id_no') || lowerMsg.includes('doc_no')) focusAndHighlight('idDocNumber');
+      else if (lowerMsg.includes('issue date')) focusAndHighlight('issueDate');
+      else if (lowerMsg.includes('expir')) focusAndHighlight('idNoExpiryDate');
+      else if (lowerMsg.includes('front')) focusAndHighlight('idFrontFile');
+      else if (lowerMsg.includes('selfie')) focusAndHighlight('selfieFile');
     } finally {
       setKycSubmitting(false);
     }
@@ -398,17 +449,20 @@ export function AccountKyc({ s }) {
           </div>
           <div className="capply-form">
             <div className="capply-form__row">
-              <FormField label="First name (English)">
-                <input className="capply-input" value={kycForm.firstName} onChange={(e) => setKyc('firstName', e.target.value)} placeholder="e.g. Gildong" />
+              <FormField label="First name (English)" htmlFor="firstName">
+                <input id="firstName" name="firstName" className="capply-input" style={errorField === 'firstName' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.firstName} onChange={(e) => setKyc('firstName', e.target.value)} placeholder="e.g. John" />
               </FormField>
-              <FormField label="Last name (English)">
-                <input className="capply-input" value={kycForm.lastName} onChange={(e) => setKyc('lastName', e.target.value)} placeholder="e.g. Hong" />
+              <FormField label="Last name (English)" htmlFor="lastName">
+                <input id="lastName" name="lastName" className="capply-input" style={errorField === 'lastName' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.lastName} onChange={(e) => setKyc('lastName', e.target.value)} placeholder="e.g. Smith" />
               </FormField>
             </div>
             <div className="capply-form__row">
-              <FormField label="Date of birth">
+              <FormField label="Date of birth" htmlFor="dateOfBirth">
                 <input
+                  id="dateOfBirth"
+                  name="dateOfBirth"
                   className="capply-input"
+                  style={errorField === 'dateOfBirth' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined}
                   type="text"
                   maxLength={8}
                   value={kycForm.dateOfBirth}
@@ -419,45 +473,45 @@ export function AccountKyc({ s }) {
                   placeholder="yyyymmdd"
                 />
               </FormField>
-              <FormField label="Gender">
-                <select className="capply-input" value={kycForm.gender} onChange={(e) => setKyc('gender', e.target.value)}>
+              <FormField label="Gender" htmlFor="gender">
+                <select id="gender" name="gender" className="capply-input" style={errorField === 'gender' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.gender} onChange={(e) => setKyc('gender', e.target.value)}>
                   <option value="M">Male</option>
                   <option value="F">Female</option>
                 </select>
               </FormField>
             </div>
             <div className="capply-form__row">
-              <FormField label="Nationality">
-                <select className="capply-input" value={kycForm.nationality} onChange={(e) => setKyc('nationality', e.target.value)}>
+              <FormField label="Nationality" htmlFor="nationality">
+                <select id="nationality" name="nationality" className="capply-input" style={errorField === 'nationality' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.nationality} onChange={(e) => setKyc('nationality', e.target.value)}>
                   <option value="">Select Nationality</option>
                   {C.KYC_COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
                 </select>
               </FormField>
-              <FormField label="Country of Residence">
-                <select className="capply-input" value={kycForm.country} onChange={(e) => setKyc('country', e.target.value)}>
+              <FormField label="Country of Residence" htmlFor="country">
+                <select id="country" name="country" className="capply-input" style={errorField === 'country' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.country} onChange={(e) => setKyc('country', e.target.value)}>
                   <option value="">Select Country</option>
                   {C.KYC_COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
                 </select>
               </FormField>
             </div>
             <div className="capply-form__row">
-              <FormField label="State / Region">
-                <input className="capply-input" value={kycForm.state} onChange={(e) => handleAddressChange('state', e.target.value)} placeholder="e.g. Seoul" />
+              <FormField label="State / Region" htmlFor="state">
+                <input id="state" name="state" className="capply-input" style={errorField === 'state' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.state} onChange={(e) => handleAddressChange('state', e.target.value)} placeholder="e.g. California" />
               </FormField>
-              <FormField label="City">
-                <input className="capply-input" value={kycForm.city} onChange={(e) => handleAddressChange('city', e.target.value)} placeholder="e.g. Gangnam-gu" />
+              <FormField label="City" htmlFor="city">
+                <input id="city" name="city" className="capply-input" style={errorField === 'city' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.city} onChange={(e) => handleAddressChange('city', e.target.value)} placeholder="e.g. Los Angeles" />
               </FormField>
             </div>
             <div className="capply-form__row">
-              <FormField label="Street Address">
-                <input className="capply-input" value={kycForm.addressLine1} onChange={(e) => handleAddressChange('addressLine1', e.target.value)} placeholder="e.g. Gangnam-daero 123" />
+              <FormField label="Street Address" htmlFor="addressLine1">
+                <input id="addressLine1" name="addressLine1" className="capply-input" style={errorField === 'addressLine1' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.addressLine1} onChange={(e) => handleAddressChange('addressLine1', e.target.value)} placeholder="e.g. 100 Main Street" />
               </FormField>
-              <FormField label="Postal Code">
-                <input className="capply-input" value={kycForm.postalCode} onChange={(e) => setKyc('postalCode', e.target.value)} placeholder="e.g. 06123" />
+              <FormField label="Postal Code" htmlFor="postalCode">
+                <input id="postalCode" name="postalCode" className="capply-input" style={errorField === 'postalCode' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.postalCode} onChange={(e) => setKyc('postalCode', e.target.value)} placeholder="e.g. 90210" />
               </FormField>
             </div>
-            <FormField label="Annual Salary">
-              <select className="capply-input" value={kycForm.annualSalary} onChange={(e) => setKyc('annualSalary', e.target.value)}>
+            <FormField label="Annual Salary" htmlFor="annualSalary">
+              <select id="annualSalary" name="annualSalary" className="capply-input" style={errorField === 'annualSalary' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.annualSalary} onChange={(e) => setKyc('annualSalary', e.target.value)}>
                 <option value="10000 USD">Under 10,000 USD</option>
                 <option value="30000 USD">10,000 - 30,000 USD</option>
                 <option value="50000 USD">30,000 - 50,000 USD</option>
@@ -466,16 +520,16 @@ export function AccountKyc({ s }) {
               </select>
             </FormField>
             <div className="capply-form__row">
-              <FormField label="Purpose of Account">
-                <select className="capply-input" value={kycForm.accountPurpose} onChange={(e) => setKyc('accountPurpose', e.target.value)}>
+              <FormField label="Purpose of Account" htmlFor="accountPurpose">
+                <select id="accountPurpose" name="accountPurpose" className="capply-input" style={errorField === 'accountPurpose' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.accountPurpose} onChange={(e) => setKyc('accountPurpose', e.target.value)}>
                   <option value="Living Expense">Living Expense</option>
                   <option value="Savings">Savings</option>
                   <option value="Investment">Investment</option>
                   <option value="Business">Business</option>
                 </select>
               </FormField>
-              <FormField label="Expected Monthly Volume">
-                <select className="capply-input" value={kycForm.expectedMonthlyVolume} onChange={(e) => setKyc('expectedMonthlyVolume', e.target.value)}>
+              <FormField label="Expected Monthly Volume" htmlFor="expectedMonthlyVolume">
+                <select id="expectedMonthlyVolume" name="expectedMonthlyVolume" className="capply-input" style={errorField === 'expectedMonthlyVolume' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.expectedMonthlyVolume} onChange={(e) => setKyc('expectedMonthlyVolume', e.target.value)}>
                   <option value="1000 USD">Under 1,000 USD</option>
                   <option value="5000 USD">1,000 - 5,000 USD</option>
                   <option value="10000 USD">5,000 - 10,000 USD</option>
@@ -484,19 +538,22 @@ export function AccountKyc({ s }) {
               </FormField>
             </div>
             <div className="capply-form__row">
-              <FormField label="ID document type">
-                <select className="capply-input" value={kycForm.idDocType} onChange={(e) => setKyc('idDocType', e.target.value)}>
+              <FormField label="ID document type" htmlFor="idDocType">
+                <select id="idDocType" name="idDocType" className="capply-input" style={errorField === 'idDocType' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.idDocType} onChange={(e) => setKyc('idDocType', e.target.value)}>
                   {C.ID_DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </FormField>
-              <FormField label="ID document number">
-                <input className="capply-input" value={kycForm.idDocNumber} onChange={(e) => setKyc('idDocNumber', e.target.value)} placeholder="e.g. M12345678" />
+              <FormField label="ID document number" htmlFor="idDocNumber">
+                <input id="idDocNumber" name="idDocNumber" className="capply-input" style={errorField === 'idDocNumber' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.idDocNumber} onChange={(e) => setKyc('idDocNumber', e.target.value)} placeholder="e.g. M12345678" />
               </FormField>
             </div>
             <div className="capply-form__row">
-              <FormField label="ID document issue date">
+              <FormField label="ID document issue date" htmlFor="issueDate">
                 <input
+                  id="issueDate"
+                  name="issueDate"
                   className="capply-input"
+                  style={errorField === 'issueDate' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined}
                   type="text"
                   maxLength={8}
                   value={kycForm.issueDate}
@@ -522,20 +579,25 @@ export function AccountKyc({ s }) {
               </FormField>
             </div>
             <div className="capply-form__row capply-form__row--phone">
-              <FormField label="Country code">
+              <FormField label="Country code" htmlFor="phoneCountryCode">
                 <PhoneCountryCodeSelect
+                  id="phoneCountryCode"
+                  name="phoneCountryCode"
+                  style={errorField === 'phoneCountryCode' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined}
                   value={kycForm.phoneCountryCode}
                   onChange={(code) => setKyc('phoneCountryCode', code)}
                 />
               </FormField>
-              <FormField label="Phone number">
-                <input className="capply-input" type="tel" value={kycForm.phoneNumber} onChange={(e) => setKyc('phoneNumber', e.target.value)} />
+              <FormField label="Phone number" htmlFor="phoneNumber">
+                <input id="phoneNumber" name="phoneNumber" className="capply-input" style={errorField === 'phoneNumber' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} type="tel" value={kycForm.phoneNumber} onChange={(e) => setKyc('phoneNumber', e.target.value)} />
               </FormField>
             </div>
             <p className="capply-doc__lead">
               On mobile you can take a photo or upload a file. On desktop, upload an image file.
             </p>
             <KycDocField
+              id="idFrontFile"
+              style={errorField === 'idFrontFile' ? { border: '2px solid #e53e3e', borderRadius: '12px' } : undefined}
               label="ID document front"
               required
               facing="environment"
@@ -559,6 +621,8 @@ export function AccountKyc({ s }) {
               }}
             />
             <KycDocField
+              id="selfieFile"
+              style={errorField === 'selfieFile' ? { border: '2px solid #e53e3e', borderRadius: '12px' } : undefined}
               label="Selfie (required)"
               required
               facing="user"

@@ -74,10 +74,10 @@ export function AdminPagination({ page, totalPages, total, pageSize, onPageChang
       backgroundColor: '#ffffff'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#64748b' }}>
-        <span>총 <strong style={{ color: '#0f172a' }}>{total}</strong> 건</span>
+        <span>Total <strong style={{ color: '#0f172a' }}>{total}</strong> items</span>
         {onPageSizeChange && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span>페이지당:</span>
+            <span>Per page:</span>
             <select
               value={pageSize || 10}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
@@ -90,10 +90,10 @@ export function AdminPagination({ page, totalPages, total, pageSize, onPageChang
                 backgroundColor: '#ffffff'
               }}
             >
-              <option value={10}>10개</option>
-              <option value={20}>20개</option>
-              <option value={50}>50개</option>
-              <option value={100}>100개</option>
+              <option value={10}>10 per page</option>
+              <option value={20}>20 per page</option>
+              <option value={50}>50 per page</option>
+              <option value={100}>100 per page</option>
             </select>
           </div>
         )}
@@ -107,10 +107,10 @@ export function AdminPagination({ page, totalPages, total, pageSize, onPageChang
           onClick={() => onPageChange(page - 1)}
           style={{ padding: '4px 10px', fontSize: '12px' }}
         >
-          ‹ 이전
+          ‹ Prev
         </button>
         <span className="admin-pagination__page" style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>
-          {page} / {totalPages || 1} 페이지
+          {page} / {totalPages || 1} Pages
         </span>
         <button
           type="button"
@@ -119,7 +119,7 @@ export function AdminPagination({ page, totalPages, total, pageSize, onPageChang
           onClick={() => onPageChange(page + 1)}
           style={{ padding: '4px 10px', fontSize: '12px' }}
         >
-          다음 ›
+          Next ›
         </button>
       </div>
     </div>

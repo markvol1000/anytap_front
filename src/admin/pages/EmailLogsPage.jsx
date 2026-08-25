@@ -21,8 +21,8 @@ export function EmailLogsPage() {
   return (
     <div className="admin-page">
       <AdminPageHeader
-        title="이메일 로그"
-        description="이메일 전송 이력 및 상태를 확인합니다."
+        title="Email Audit Logs"
+        description="View email transmission history and status logs."
       />
 
       <AdminSplitLayout
@@ -31,17 +31,17 @@ export function EmailLogsPage() {
             <AdminFilterBar
               search={list.search}
               onSearchChange={list.setSearch}
-              searchPlaceholder="수신자, 제목, 상태 검색…"
+              searchPlaceholder="Search Recipient, Subject, Status..."
             />
             <AdminTableWrap loading={list.loading} error={list.error} hasData={list.items.length > 0}>
               <AdminDataTable
                 columns={[
-                  { key: 'recipient', label: '수신자' },
-                  { key: 'subject', label: '제목' },
-                  { key: 'status', label: '상태' },
+                  { key: 'recipient', label: 'Recipient' },
+                  { key: 'subject', label: 'Subject' },
+                  { key: 'status', label: 'Status' },
                   { key: 'ipAddress', label: 'IP' },
-                  { key: 'apiResponseCode', label: '응답 코드' },
-                  { key: 'at', label: '시간', render: (r) => formatAdminDate(r.at) },
+                  { key: 'apiResponseCode', label: 'Response Code' },
+                  { key: 'at', label: 'Time', render: (r) => formatAdminDate(r.at) },
                 ]}
                 rows={list.items}
                 selectedId={selectedId}
@@ -58,15 +58,15 @@ export function EmailLogsPage() {
           </AdminPanel>
         )}
         right={(
-          <AdminDetailPanel title="이메일 상세">
+          <AdminDetailPanel title="Email Details">
             {detail ? (
-              <AdminDetailSection title="이메일">
-                <AdminDetailRow label="수신자" value={detail.recipient} />
-                <AdminDetailRow label="제목" value={detail.subject} />
-                <AdminDetailRow label="상태" value={detail.status} />
+              <AdminDetailSection title="Email Info">
+                <AdminDetailRow label="Recipient" value={detail.recipient} />
+                <AdminDetailRow label="Subject" value={detail.subject} />
+                <AdminDetailRow label="Status" value={detail.status} />
                 <AdminDetailRow label="IP" value={detail.ipAddress} />
-                <AdminDetailRow label="응답 코드" value={detail.apiResponseCode} />
-                <AdminDetailRow label="시간" value={formatAdminDate(detail.at)} />
+                <AdminDetailRow label="Response Code" value={detail.apiResponseCode} />
+                <AdminDetailRow label="Timestamp" value={formatAdminDate(detail.at)} />
               </AdminDetailSection>
             ) : null}
           </AdminDetailPanel>

@@ -9,6 +9,7 @@ import { checkReferralCode } from '../lib/services/authService.js';
 import { API_MODE, isHttpApi } from '../lib/api/config.js';
 import { AUTH_ERRORS, SIGNUP_ERRORS, SIGNUP_VERIFY } from '../utils/auth-messages.js';
 import { useAuthToast } from '../hooks/useAuthToast.js';
+import { sanitizeToastMessage } from '../utils/toast-sanitizer.js';
 import { englishFormProps, englishFieldProps, handleEnglishSubmit } from '../utils/formValidation.js';
 import { checkPasswordRules, passwordPolicyOk } from '../lib/password-policy.ts';
 
@@ -73,9 +74,10 @@ function OutlinePasswordInputAuth(props) {
 
 function AuthToast({ msg }) {
   if (!msg) return null;
+  const cleanMsg = sanitizeToastMessage(msg);
   return (
     <div className="auth-toast" role="alert" aria-live="assertive">
-      {msg}
+      {cleanMsg}
     </div>
   );
 }

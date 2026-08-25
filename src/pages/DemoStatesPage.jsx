@@ -85,14 +85,14 @@ export function DemoStatesPage() {
     <section className="login-screen" style={{ paddingBottom: 48 }}>
       <div className="shell login-screen__inner" style={{ maxWidth: 640 }}>
         <p className="verify-inbox__eyebrow">Preview · member states</p>
-        <h1 className="login-screen__title">상태·페이지 바로가기</h1>
+        <h1 className="login-screen__title">Status & Page Shortcuts</h1>
         <p className="login-screen__lede">
-          링크를 열면 로그인 없이 해당 화면으로 바로 이동합니다. (UI 미리보기용 · API 데이터는 비어 있을 수 있음)
-          페이지 항목의 <strong>API needs</strong>가 백엔드에 필요한 정보입니다.
+          Open link to navigate directly to screen. (UI Preview · API data may be empty)
+          The <strong>API needs</strong> field of each page indicates the information required by the backend.
         </p>
         {!isHttpApi && (
           <p className="login-screen__hint" style={{ marginBottom: 16 }}>
-            지금 Mock 모드입니다. HTTP API(`VITE_API_MODE=http`)에서 시드 계정이 동작합니다.
+            Currently in Mock mode. Seed accounts operate in HTTP API mode.
           </p>
         )}
 

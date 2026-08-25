@@ -171,14 +171,6 @@ export function DashboardPage() {
     <div className="admin-page admin-page--dashboard">
       <header className="admin-dash-head">
         <h1 className="admin-dash-head__title">Dashboard</h1>
-        {summary ? (
-          <Link
-            to="/admin/settings"
-            className={`admin-dash-head__status admin-dash-head__status--${isMaintenance ? 'red' : 'green'}`}>
-            <span className="admin-dash-head__status-dot" aria-hidden="true" />
-            {isMaintenance ? 'Maintenance' : 'All systems operational'}
-          </Link>
-        ) : null}
       </header>
 
       {loading ? <p className="admin-loading">Loading…</p> : null}

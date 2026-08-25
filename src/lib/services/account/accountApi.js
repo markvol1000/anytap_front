@@ -337,7 +337,11 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
     cardApplications: [],
     transactions: activityItems,
     activityItems,
-    topUpHistory: activityItems.filter((item) => item.kind === 'card_topup' || item.kind === 'wallet_topup'),
+    topUpHistory: activityItems.filter((item) => (
+      ['card_topup', 'wallet_topup', 'refund', 'reversal', 'card_charge_fee'].includes(item.kind) ||
+      item.status === 'refunded' ||
+      item.status === 'cancelled'
+    )),
     referralCode: null,
   };
 }
@@ -366,11 +370,23 @@ export async function fetchLocalTransactions(userId) {
     const data = await apiGet(`/cards/${encodeURIComponent(userId)}/local-transactions`);
     if (!Array.isArray(data)) return [];
     return data.map((tx) => {
-      let kind = 'unknown';
-      let title = tx.description || 'Transaction';
-      let incoming = true;
       const type = String(tx.txType || '').toUpperCase();
-      if (type === 'DEPOSIT') {
+      const statusRaw = String(tx.status || 'SUCCESS').toUpperCase();
+      const desc = String(tx.description || '');
+
+      const isFailed = statusRaw.includes('FAIL') || statusRaw.includes('REJECT') || statusRaw.includes('DECLINE');
+      const isCancelled = statusRaw.includes('CANCEL');
+      const isRefundedStatus = !isFailed && !isCancelled && (statusRaw === 'REFUNDED' || type === 'REFUND');
+
+      let kind = 'unknown';
+      let title = desc && desc !== '-' ? desc : 'Transaction';
+      let incoming = false;
+
+      if (isRefundedStatus) {
+        kind = 'refund';
+        title = desc && desc !== '-' ? desc : 'Card Top Up Refund';
+        incoming = true;
+      } else if (type === 'DEPOSIT') {
         kind = 'wallet_topup';
         title = 'Wallet Deposit';
         incoming = true;
@@ -388,19 +404,27 @@ export async function fetchLocalTransactions(userId) {
         incoming = false;
       } else if (type === 'CARD_SPEND') {
         kind = 'card_spend';
-        title = tx.description && tx.description !== '-' ? tx.description : 'Card Purchase';
+        title = desc && desc !== '-' ? desc : 'Card Purchase';
         incoming = false;
-      } else if (type === 'REFUND') {
-        kind = 'refund';
-        title = tx.description && tx.description !== '-' ? tx.description : 'Refund';
+      } else {
+        kind = 'wallet_topup';
+        title = desc && desc !== '-' ? desc : 'Transaction';
         incoming = true;
       }
-      let status = String(tx.status || 'SUCCESS').toLowerCase();
-      if (status === 'pending_merchant_funding' || status === 'admin_pending') {
+
+      let status = 'completed';
+      if (isFailed) {
+        status = 'failed';
+      } else if (statusRaw.includes('PENDING') || statusRaw.includes('WAIT')) {
         status = 'pending';
-      } else if (status === 'success') {
+      } else if (isRefundedStatus) {
+        status = 'refunded';
+      } else if (isCancelled) {
+        status = 'cancelled';
+      } else {
         status = 'completed';
       }
+
       return {
         id: tx.txId || `local-${Date.now()}-${Math.random()}`,
         title: title,
@@ -409,7 +433,7 @@ export async function fetchLocalTransactions(userId) {
         rawAmount: Number(tx.rawAmount || tx.amount || 0),
         feeAmount: Number(tx.feeAmount || 0),
         incoming: incoming,
-        failed: status === 'failed',
+        failed: isFailed,
         pending: status === 'pending' || status === 'processing',
         kind: kind,
         status: status,
@@ -1000,10 +1024,10 @@ export async function submitKycApplication(form = {}) {
 
 function parseFullName(fullName) {
   const name = String(fullName || '').trim();
-  if (!name) return { firstName: 'Gildong', lastName: 'Hong' };
+  if (!name) return { firstName: '', lastName: '' };
   const parts = name.split(/\s+/);
   if (parts.length === 1) {
-    return { firstName: parts[0], lastName: 'Hong' };
+    return { firstName: parts[0], lastName: '' };
   }
   const lastName = parts[parts.length - 1];
   const firstName = parts.slice(0, parts.length - 1).join(' ');
@@ -1014,6 +1038,25 @@ function parseFullName(fullName) {
 export async function submitCardApplication({ cardType, shipping, kycForm } = {}) {
   const session = getHttpSession();
   if (!session?.userId || !session?.email) throw new Error('Not authenticated');
+
+  const isPhysical = cardType === 'physical';
+
+  // Frontend Pre-validation before sending to backend
+  if (isPhysical && shipping) {
+    const missingShipping = [];
+    if (!shipping.recipientName?.trim()) missingShipping.push('Recipient Name (수령인)');
+    if (!shipping.country?.trim()) missingShipping.push('Country (국가)');
+    if (!shipping.city?.trim()) missingShipping.push('City');
+    if (!shipping.addressLine1?.trim()) missingShipping.push('Address');
+    if (!shipping.postalCode?.trim()) missingShipping.push('Postal Code');
+    if (!shipping.phoneNumber?.trim()) missingShipping.push('Phone Number');
+    
+    if (missingShipping.length > 0) {
+      const msg = `Please fill in all required shipping fields: ${missingShipping.join(', ')}`;
+      console.warn('[accountApi] Pre-submit validation failed:', msg);
+      throw new Error(msg);
+    }
+  }
 
   let kycStatus = mapKycStatus(session.kycStatus);
   if (kycStatus !== 'approved' && kycForm) {
@@ -1032,15 +1075,15 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
   const payload = { 
       email: session.email,
       cardType: cardType || 'virtual',
-      firstName: nameData.firstName,
-      lastName: nameData.lastName,
-      mobile: shipping?.phoneNumber || '',
-      areaCode: shipping?.phoneCountryCode || '+82',
-      birthday: kycForm?.dateOfBirth || '',
+      firstName: nameData.firstName || (session?.firstName ?? ''),
+      lastName: nameData.lastName || (session?.lastName ?? ''),
+      mobile: shipping?.phoneNumber || session?.phone || '',
+      areaCode: shipping?.phoneCountryCode || session?.areaCode || '',
+      birthday: kycForm?.dateOfBirth || session?.birthday || '',
       issueDate: kycForm?.issueDate || '',
-      nationality: kycForm?.nationality || session?.nationality || 'KR',
+      nationality: kycForm?.nationality || session?.nationality || '',
       idNumber: kycForm?.idDocNumber || '',
-      idType: kycForm?.idDocType || 'PASSPORT',
+      idType: kycForm?.idDocType ? mapWasabiIdType(kycForm.idDocType) : '',
       // Shipping Address Info
       shippingRecipientName: shipping?.recipientName || '',
       shippingCountry: shipping?.country || '',

@@ -22,8 +22,8 @@ export function UsageHistoryPage() {
   return (
     <div className="admin-page">
       <AdminPageHeader
-        title="사용량 기록"
-        description="IP와 API 응답 코드를 포함한 관리 작업 기록을 확인합니다."
+        title="Usage Audit History"
+        description="View admin audit logs including IP addresses and API response codes."
       />
 
       <AdminSplitLayout
@@ -32,14 +32,14 @@ export function UsageHistoryPage() {
             <AdminFilterBar
               search={list.search}
               onSearchChange={list.setSearch}
-              searchPlaceholder="IP 또는 응답 코드 검색…"
+              searchPlaceholder="Search IP or Response Code..."
             />
             <AdminTableWrap loading={list.loading} error={list.error} hasData={list.items.length > 0}>
               <AdminDataTable
                 columns={[
                   { key: 'adminName', label: 'Admin' },
                   { key: 'ipAddress', label: 'IP' },
-                  { key: 'apiResponseCode', label: '응답 코드' },
+                  { key: 'apiResponseCode', label: 'Response Code' },
                   { key: 'action', label: 'Action' },
                   { key: 'at', label: 'When', render: (r) => formatAdminDate(r.at) },
                 ]}
@@ -58,15 +58,15 @@ export function UsageHistoryPage() {
           </AdminPanel>
         )}
         right={(
-          <AdminDetailPanel title="로그 상세">
+          <AdminDetailPanel title="Log Details">
             {detail ? (
-              <AdminDetailSection title="세부 정보">
+              <AdminDetailSection title="Detailed Info">
                 <AdminDetailRow label="Admin" value={detail.adminName} />
                 <AdminDetailRow label="Admin ID" value={detail.adminId} />
                 <AdminDetailRow label="IP" value={detail.ipAddress} />
-                <AdminDetailRow label="응답 코드" value={detail.apiResponseCode} />
+                <AdminDetailRow label="Response Code" value={detail.apiResponseCode} />
                 <AdminDetailRow label="Action" value={detail.action} />
-                <AdminDetailRow label="시간" value={formatAdminDate(detail.at)} />
+                <AdminDetailRow label="Timestamp" value={formatAdminDate(detail.at)} />
               </AdminDetailSection>
             ) : null}
           </AdminDetailPanel>

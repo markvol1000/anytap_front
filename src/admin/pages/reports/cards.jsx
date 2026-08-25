@@ -51,7 +51,7 @@ function CopyableTxId({ txId, color = '#333333', bgColor = '#FFEB3B' }) {
   return (
     <span
       onClick={handleCopy}
-      title={`클릭하여 전체 TXID 복사: ${txId}`}
+      title={`Click to copy full TXID: ${txId}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -137,27 +137,27 @@ export function CardsReportPage() {
   const handleExportCsv = useCallback(() => {
     const items = (list.items || []).filter(r => r.cardStatus !== 'active' && r.status !== 'active');
     if (items.length === 0) {
-      window.alert('다운로드할 데이터가 없습니다.');
+      window.alert('No data available for download.');
       return;
     }
 
     const headers = [
-      '신청일시',
-      '회원ID',
-      '이메일',
-      '성명',
-      '카드종류',
-      '카드상태',
-      'TXID(고객입력)',
-      '실TXID',
-      '보증금(USDT)',
-      '카드 4자리',
-      '카드번호',
-      '배송상태',
-      '수령인',
-      '우편번호',
-      '배송주소',
-      '연락처'
+      'Application Date',
+      'User ID',
+      'Email',
+      'Name',
+      'Card Type',
+      'Card Status',
+      'TXID (User Input)',
+      'Actual TXID',
+      'Deposit (USDT)',
+      'Card Last 4 Digits',
+      'Card Number',
+      'Shipping Status',
+      'Recipient',
+      'Postal Code',
+      'Shipping Address',
+      'Contact Phone'
     ];
 
     const escapeCsv = (val) => {
@@ -170,14 +170,14 @@ export function CardsReportPage() {
       const dateStr = r.submittedAt || r.createdAt || r.created || '';
       const email = r.memberEmail || r.email || r.loginId || '';
       const memberName = r.memberName || '';
-      const cardType = r.cardTypeLabel || (r.cardType === 'physical' ? '실물카드' : '가상카드');
+      const cardType = r.cardTypeLabel || (r.cardType === 'physical' ? 'Physical Card' : 'Virtual Card');
       const cardStatus = r.cardStatus || r.status || '';
       const txInput = r.txIdInput || '-';
       const txActual = r.actualTxId || '-';
       const deposit = Number(r.depositAmount ?? 0).toFixed(2);
       const last4 = r.last4 || '';
       const cardNo = r.wasabiCardId || '';
-      const isDeliv = (r.delivered || r.cardStatus === 'active' || r.status === 'active') ? '배송완료' : '미배송';
+      const isDeliv = (r.delivered || r.cardStatus === 'active' || r.status === 'active') ? 'Delivered' : 'Not Delivered';
       const ship = r.shippingInfo || {};
       const recipient = ship.recipientName || r.recipientName || '';
       const postalCode = ship.postalCode || r.postalCode || '';
@@ -246,16 +246,16 @@ export function CardsReportPage() {
             transition: 'all 0.15s ease',
           })}
         >
-          💳 카드 신청 현황
+          💳 Card Application Status
         </NavLink>
       </div>
 
       {/* Top Header & Buttons */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#333333', margin: 0 }}>카드 신청 현황</h1>
+          <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#333333', margin: 0 }}>Card Application Status</h1>
           <p style={{ fontSize: '13px', color: '#666666', margin: '4px 0 0 0' }}>
-            관리자 카드 신청 목록 및 상세 배송 정보 관리 대시보드
+            Admin Dashboard for Card Applications and Shipping Details Management
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -305,20 +305,7 @@ export function CardsReportPage() {
       </div>
 
       {/* Filter Control Bar */}
-      <div className="filters" style={{
-        display: 'flex',
-        alignItems: 'center',
-        justify: 'space-between',
-        padding: '14px 20px',
-        marginBottom: '20px',
-        backgroundColor: '#ffffff',
-        border: '1px solid #E0E0E0',
-        borderRadius: '8px',
-        flexWrap: 'wrap',
-        gap: '16px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '13px', fontWeight: '700', color: '#333333' }}>조회 조건 :</span>
+      <div className="filters" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0 20px 0' }}>
           <div style={{ display: 'inline-flex', borderRadius: '6px', border: '1px solid #E0E0E0', overflow: 'hidden' }}>
             <button
               type="button"
@@ -365,10 +352,9 @@ export function CardsReportPage() {
                 cursor: 'pointer',
               }}
             >
-              전체
+              All
             </button>
           </div>
-        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '12px', color: '#666666', fontWeight: '500' }}>📅 2024.01. ~ 1.7. :</span>
@@ -414,7 +400,7 @@ export function CardsReportPage() {
                   columns={[
                     { 
                       key: 'created', 
-                      label: '신청일시', 
+                      label: 'Application Date', 
                       render: (r) => (
                         <span style={{ fontSize: '12px', color: '#333333', whiteSpace: 'nowrap' }}>
                           {formatAdminDate(r.submittedAt || r.createdAt || r.created)}
@@ -481,7 +467,7 @@ export function CardsReportPage() {
                                   borderLeft: '1px solid #E0E0E0',
                                   borderTop: '1px solid #E0E0E0',
                                 }} />
-                                아이디를 클릭하면 해당 신청자의 상세 배송 정보를 하단 테이블에 로드합니다.
+                                Click an ID to load the detailed shipping information in the table below.
                               </div>
                             )}
                           </div>
@@ -490,12 +476,12 @@ export function CardsReportPage() {
                     },
                     { 
                       key: 'memberName', 
-                      label: '성명', 
-                      render: (r) => <span style={{ fontWeight: '600', fontSize: '12px', color: '#333333' }}>{r.memberName || '김재권'}</span> 
+                      label: 'Name', 
+                      render: (r) => <span style={{ fontWeight: '600', fontSize: '12px', color: '#333333' }}>{r.memberName || 'John Doe'}</span> 
                     },
                     { 
                       key: 'cardType', 
-                      label: '카드종류', 
+                      label: 'Card Type', 
                       render: (r) => (
                         <span style={{
                           padding: '2px 8px',
@@ -506,13 +492,13 @@ export function CardsReportPage() {
                           color: r.cardType === 'physical' ? '#007BFF' : '#4b5563',
                           border: '1px solid #E0E0E0'
                         }}>
-                          {r.cardTypeLabel || (r.cardType === 'physical' ? '실물카드' : '가상카드')}
+                          {r.cardTypeLabel || (r.cardType === 'physical' ? 'Physical Card' : 'Virtual Card')}
                         </span>
                       ) 
                     },
                     { 
                       key: 'txIdInput', 
-                      label: 'TXID->고객입력', 
+                      label: 'TXID (User Input)', 
                       render: (r, idx) => (
                         <span style={{
                           backgroundColor: idx === 0 ? '#FFEB3B' : '#fffde7',
@@ -531,7 +517,7 @@ export function CardsReportPage() {
                     },
                     { 
                       key: 'depositAmount', 
-                      label: '입금금액', 
+                      label: 'Deposit Amount', 
                       render: (r, idx) => (
                         <span style={{
                           fontWeight: '700',
@@ -550,7 +536,7 @@ export function CardsReportPage() {
                     },
                     { 
                       key: 'wasabiCardId', 
-                      label: '카드번호', 
+                      label: 'Card Number', 
                       render: (r) => {
                         let cardStr = r.wasabiCardId && r.wasabiCardId !== '—' ? r.wasabiCardId : '';
                         if (!cardStr && r.last4) cardStr = `•••• ${r.last4}`;
@@ -563,7 +549,7 @@ export function CardsReportPage() {
                     },
                     { 
                       key: 'delivered', 
-                      label: '배송', 
+                      label: 'Shipping', 
                       render: (r) => {
                         const isCompleted = r.delivered || r.cardStatus === 'active' || r.status === 'active';
                         return (
@@ -577,7 +563,7 @@ export function CardsReportPage() {
                                   await toggleCardDeliveryStatus(targetId, !r.delivered);
                                   list.reload();
                                 } catch (err) {
-                                  window.alert('배송 상태 업데이트 실패: ' + err.message);
+                                  window.alert('Shipping status update failed: ' + err.message);
                                 }
                               }
                             }}
@@ -629,10 +615,10 @@ export function CardsReportPage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                 <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#333333' }}>
-                  배송 정보 - 상세 {detail ? `(${detail.memberName || detail.memberEmail})` : ''}
+                  Shipping Info - Details {detail ? `(${detail.memberName || detail.memberEmail})` : ''}
                 </h2>
                 <span style={{ fontSize: '11px', color: '#64748b' }}>
-                  상단 목록에서 아이디를 클릭하면 해당 신청자의 상세 배송 정보가 표시됩니다.
+                  Click an ID in the top list to display the detailed shipping info of the applicant.
                 </span>
               </div>
 
@@ -640,10 +626,10 @@ export function CardsReportPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', backgroundColor: '#ffffff', border: '1px solid #E0E0E0' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#F5F5F5', borderBottom: '1px solid #E0E0E0' }}>
-                      <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: '600', color: '#333333', borderRight: '1px solid #E0E0E0', width: '20%' }}>수취인명</th>
-                      <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: '600', color: '#333333', borderRight: '1px solid #E0E0E0', width: '20%' }}>우편번호</th>
-                      <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: '600', color: '#333333', borderRight: '1px solid #E0E0E0', width: '40%' }}>상세 주소</th>
-                      <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: '600', color: '#333333', width: '20%' }}>연락처</th>
+                      <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: '600', color: '#333333', borderRight: '1px solid #E0E0E0', width: '20%' }}>Recipient Name</th>
+                      <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: '600', color: '#333333', borderRight: '1px solid #E0E0E0', width: '20%' }}>Postal Code</th>
+                      <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: '600', color: '#333333', borderRight: '1px solid #E0E0E0', width: '40%' }}>Detailed Address</th>
+                      <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: '600', color: '#333333', width: '20%' }}>Contact Phone</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -651,13 +637,13 @@ export function CardsReportPage() {
                     {detail ? (
                       <tr style={{ borderBottom: '1px solid #E0E0E0', backgroundColor: '#eff6ff' }}>
                         <td style={{ padding: '12px 14px', borderRight: '1px solid #E0E0E0', fontWeight: '600', color: '#333333' }}>
-                          {detail.shippingInfo?.recipientName || detail.memberName || '김재권'}
+                          {detail.shippingInfo?.recipientName || detail.memberName || 'John Doe'}
                         </td>
                         <td style={{ padding: '12px 14px', borderRight: '1px solid #E0E0E0', fontFamily: 'monospace', color: '#333333' }}>
                           {detail.shippingInfo?.postalCode || '06123'}
                         </td>
                         <td style={{ padding: '12px 14px', borderRight: '1px solid #E0E0E0', color: '#333333' }}>
-                          {detail.shippingInfo?.address ? `${detail.shippingInfo.address} ${detail.shippingInfo.detailAddress || ''}`.trim() : '서울특별시 강남구 테헤란로 123'}
+                          {detail.shippingInfo?.address ? `${detail.shippingInfo.address} ${detail.shippingInfo.detailAddress || ''}`.trim() : '123 Main Street, Suite 400'}
                         </td>
                         <td style={{ padding: '12px 14px', fontFamily: 'monospace', color: '#333333' }}>
                           {detail.shippingInfo?.phoneNumber || detail.phone || '010-1234-5678'}
@@ -682,10 +668,10 @@ export function CardsReportPage() {
         )}
         right={(
           <AdminDetailPanel
-            title="Card 신청 상세 정보"
+            title="Card Application Details"
             loading={detailLoading}
             hasData={Boolean(detail)}
-            emptyText="목록에서 카드 신청 내역을 선택해 주세요."
+            emptyText="Please select a card application record from the list."
           >
             {detail && (
               <>
@@ -699,7 +685,7 @@ export function CardsReportPage() {
                     color: '#991b1b'
                   }}>
                     <div style={{ fontWeight: '700', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      ⚠️ 실패 / 거절 상세 사유 (Failure Reason)
+                      ⚠️ Failure / Rejection Reason
                     </div>
                     <div style={{ fontSize: '12px', marginTop: '4px', color: '#b91c1c', wordBreak: 'break-word', lineHeight: '1.4' }}>
                       {detail.failureReason}
@@ -707,29 +693,29 @@ export function CardsReportPage() {
                   </div>
                 )}
 
-                <AdminDetailSection title="신청자 기본 정보">
-                  <AdminDetailRow label="회원 ID" value={detail.memberId || detail.userId || '—'} copyable />
-                  <AdminDetailRow label="이메일" value={detail.memberEmail || detail.email || '—'} copyable />
-                  <AdminDetailRow label="성명" value={detail.memberName || detail.loginId || '—'} />
-                  <AdminDetailRow label="신청일시" value={formatAdminDate(detail.submittedAt || detail.createdAt)} />
-                  <AdminDetailRow label="카드종류" value={detail.cardTypeLabel || (detail.cardType === 'physical' ? '실물카드' : '가상카드')} />
-                  <AdminDetailRow label="신청상태" value={<AdminStatusBadge status={detail.cardStatus || detail.status} />} />
+                <AdminDetailSection title="Applicant Basic Info">
+                  <AdminDetailRow label="Member ID" value={detail.memberId || detail.userId || '—'} copyable />
+                  <AdminDetailRow label="Email" value={detail.memberEmail || detail.email || '—'} copyable />
+                  <AdminDetailRow label="Full Name" value={detail.memberName || detail.loginId || '—'} />
+                  <AdminDetailRow label="Application Date" value={formatAdminDate(detail.submittedAt || detail.createdAt)} />
+                  <AdminDetailRow label="Card Type" value={detail.cardType || 'Physical'} />
+                  <AdminDetailRow label="Status" value={<AdminStatusBadge status={detail.cardStatus || detail.status} />} />
                 </AdminDetailSection>
 
                 {detail.shippingInfo && (
-                  <AdminDetailSection title="실물카드 배송지 정보">
-                    <AdminDetailRow label="수령인" value={detail.shippingInfo.recipientName || '—'} />
-                    <AdminDetailRow label="연락처" value={detail.shippingInfo.phoneNumber || '—'} copyable />
-                    <AdminDetailRow label="우편번호" value={detail.shippingInfo.postalCode || '—'} copyable />
-                    <AdminDetailRow label="배송 주소" value={`${detail.shippingInfo.address || ''} ${detail.shippingInfo.detailAddress || ''}`} copyable />
-                    <AdminDetailRow label="배송 상태" value={detail.delivered ? '배송 완료' : '미배송 (처리대기)'} />
+                  <AdminDetailSection title="Shipping Address Info">
+                    <AdminDetailRow label="Recipient" value={detail.shippingInfo.recipientName || '—'} />
+                    <AdminDetailRow label="Phone Number" value={detail.shippingInfo.phoneNumber || '—'} copyable />
+                    <AdminDetailRow label="Postal Code" value={detail.shippingInfo.postalCode || '—'} copyable />
+                    <AdminDetailRow label="Shipping Address" value={`${detail.shippingInfo.address || ''} ${detail.shippingInfo.detailAddress || ''}`} copyable />
+                    <AdminDetailRow label="Delivery Status" value={detail.delivered ? 'Delivered' : 'Pending'} />
                   </AdminDetailSection>
                 )}
 
-                <AdminDetailSection title="보증금 & TXID 검증">
-                  <AdminDetailRow label="입금 금액" value={`${Number(detail.depositAmount ?? 0).toFixed(2)} USDT`} />
-                  <AdminDetailRow label="고객입력 TXID" value={detail.txIdInput || '—'} copyable />
-                  <AdminDetailRow label="실제 와사비 TXID" value={detail.actualTxId || '—'} copyable />
+                <AdminDetailSection title="Deposit & TXID Verification">
+                  <AdminDetailRow label="Deposit Amount" value={`${Number(detail.depositAmount ?? 0).toFixed(2)} USDT`} />
+                  <AdminDetailRow label="User Input TXID" value={detail.txIdInput || '—'} copyable />
+                  <AdminDetailRow label="Actual TXID" value={detail.actualTxId || '—'} copyable />
                 </AdminDetailSection>
               </>
             )}
@@ -759,16 +745,16 @@ export function CardsReportPage() {
             padding: '24px',
             boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
           }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '700', color: '#333333' }}>+ Add Applicant (신규 카드 신청자 등록)</h3>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '700', color: '#333333' }}>+ Add Applicant (Register New Card Applicant)</h3>
             <p style={{ fontSize: '13px', color: '#666666', marginBottom: '20px' }}>
-              신규 회원 및 실물 카드 발급 신청 정보를 시스템에 등록합니다.
+              Register new member and physical card application details into the system.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <input type="text" placeholder="이메일 (ID)" style={{ padding: '8px 12px', fontSize: '13px', border: '1px solid #E0E0E0', borderRadius: '4px' }} />
-              <input type="text" placeholder="성명" style={{ padding: '8px 12px', fontSize: '13px', border: '1px solid #E0E0E0', borderRadius: '4px' }} />
+              <input type="text" placeholder="Email (ID)" style={{ padding: '8px 12px', fontSize: '13px', border: '1px solid #E0E0E0', borderRadius: '4px' }} />
+              <input type="text" placeholder="Full Name" style={{ padding: '8px 12px', fontSize: '13px', border: '1px solid #E0E0E0', borderRadius: '4px' }} />
               <select style={{ padding: '8px 12px', fontSize: '13px', border: '1px solid #E0E0E0', borderRadius: '4px' }}>
-                <option value="physical">실물카드</option>
-                <option value="virtual">가상카드</option>
+                <option value="physical">Physical Card</option>
+                <option value="virtual">Virtual Card</option>
               </select>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}>
@@ -777,18 +763,18 @@ export function CardsReportPage() {
                 onClick={() => setShowAddModal(false)}
                 style={{ padding: '8px 16px', fontSize: '13px', border: '1px solid #E0E0E0', backgroundColor: '#ffffff', borderRadius: '4px', cursor: 'pointer' }}
               >
-                취소
+                Cancel
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  window.alert('신규 신청자가 생성되었습니다.');
+                  window.alert('New applicant has been created.');
                   setShowAddModal(false);
                   list.reload();
                 }}
                 style={{ padding: '8px 16px', fontSize: '13px', border: 'none', backgroundColor: '#007BFF', color: '#ffffff', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}
               >
-                등록 완료
+                Register
               </button>
             </div>
           </div>

@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { Icon } from '../../components/ui.jsx';
 
 const OPS_NAV = [
-  { to: '/admin', end: true, label: 'Dashboard', icon: 'chart' },
+  { to: '/admin/hanzb', end: true, label: 'Dashboard', icon: 'chart' },
   { to: '/admin/members', label: 'Members', icon: 'users' },
   { to: '/admin/kyc', label: 'KYC', icon: 'shield' },
   { to: '/admin/cards', label: 'Cards', icon: 'creditCard' },

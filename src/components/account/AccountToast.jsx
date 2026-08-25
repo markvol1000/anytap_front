@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { sanitizeToastMessage } from '../../utils/toast-sanitizer.js';
 
 export function AccountToast({ msg, onClear }) {
   const [visible, setVisible] = useState(false);
@@ -21,7 +22,8 @@ export function AccountToast({ msg, onClear }) {
 
   useEffect(() => {
     if (msg) {
-      setText(msg);
+      const cleanMsg = sanitizeToastMessage(msg);
+      setText(cleanMsg);
       setVisible(true);
       startTimer(6000);
     }

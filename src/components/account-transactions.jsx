@@ -50,10 +50,39 @@ function TransactionsToolbar({
   onStatusChange,
   searchQuery,
   onSearchQueryChange,
+  scope,
+  cards = [],
+  selectedCardId = 'all',
+  onCardChange,
 }) {
   return (
     <div className="portal-tx-panel__toolbar">
       <div className="portal-tx-page__toolbar">
+        {cards && cards.length > 0 && (scope === 'card' || scope === 'all') && (
+          <div className="portal-tx-page__toolbar-card">
+            <label className="portal-tx-page__field portal-tx-page__field--card-select">
+              <span className="portal-tx-page__field-label">Card</span>
+              <select
+                className="portal-tx-page__select"
+                value={selectedCardId}
+                onChange={(e) => onCardChange?.(e.target.value)}
+                aria-label="Select card">
+                <option value="all">All Cards</option>
+                {cards.map((c) => {
+                  const last4 = c.last4 || (c.cardNo ? c.cardNo.slice(-4) : '');
+                  const label = `${c.variant === 'physical' ? 'Physical' : 'Virtual'} Card${last4 ? ` (*${last4})` : ''}`;
+                  const val = c.last4 || c.id || c.cardNo;
+                  return (
+                    <option key={c.id || val} value={val}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+          </div>
+        )}
+
         <div className="portal-tx-page__toolbar-date">
           <label className="portal-tx-page__field portal-tx-page__field--date-range">
             <span className="portal-tx-page__field-label">Date</span>
@@ -254,13 +283,30 @@ function TransactionsGroupedFeed({ items, onSelect }) {
   );
 }
 
-export function TransactionsPage({ items = [], initialScope = 'all', s }) {
+export function TransactionsPage({ items = [], initialScope = 'all', initialCardId = 'all', s }) {
   const [scope, setScope] = useState(initialScope);
   const [dateRange, setDateRange] = useState('90d');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [status, setStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Owned user cards for selector dropdown
+  const cards = useMemo(() => {
+    if (s?.userCards && s.userCards.length > 0) return s.userCards;
+    return A.resolveUserCards(s?.accountState || {});
+  }, [s?.userCards, s?.accountState]);
+
+  // Determine initial selected card ID
+  const resolvedInitialCardId = useMemo(() => {
+    if (initialCardId && initialCardId !== 'all') return initialCardId;
+    if (initialScope === 'card' && s?.currentCard) {
+      return s.currentCard.last4 || s.currentCard.id || s.currentCard.cardNo || 'all';
+    }
+    return 'all';
+  }, [initialCardId, initialScope, s?.currentCard]);
+
+  const [selectedCardId, setSelectedCardId] = useState(resolvedInitialCardId);
   const [selectedTx, setSelectedTx] = useState(null);
   const [copiedTxId, setCopiedTxId] = useState('');
   const [page, setPage] = useState(1);
@@ -270,10 +316,16 @@ export function TransactionsPage({ items = [], initialScope = 'all', s }) {
     setScope(initialScope);
   }, [initialScope]);
 
+  useEffect(() => {
+    if (resolvedInitialCardId) {
+      setSelectedCardId(resolvedInitialCardId);
+    }
+  }, [resolvedInitialCardId]);
+
   // Reset page to 1 when any filter changes
   useEffect(() => {
     setPage(1);
-  }, [scope, dateRange, customFrom, customTo, status, searchQuery]);
+  }, [scope, dateRange, customFrom, customTo, status, searchQuery, selectedCardId]);
 
   const filtered = useMemo(
     () => A.applyTransactionFilters(items, {
@@ -283,8 +335,10 @@ export function TransactionsPage({ items = [], initialScope = 'all', s }) {
       customTo,
       status,
       searchQuery,
+      cardLast4: selectedCardId,
+      cardId: selectedCardId,
     }),
-    [items, scope, dateRange, customFrom, customTo, status, searchQuery],
+    [items, scope, dateRange, customFrom, customTo, status, searchQuery, selectedCardId],
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -324,6 +378,10 @@ export function TransactionsPage({ items = [], initialScope = 'all', s }) {
             onStatusChange={setStatus}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
+            scope={scope}
+            cards={cards}
+            selectedCardId={selectedCardId}
+            onCardChange={setSelectedCardId}
           />
 
           <div className="portal-wallet-notice" style={{ margin: '12px 16px', padding: '10px 14px' }} role="note">

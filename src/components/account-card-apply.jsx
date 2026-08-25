@@ -137,36 +137,38 @@ function DetailsStep({ shipping, setShip }) {
       <h2 className="capply-section__title">Delivery address</h2>
       <p className="capply-section__lead">Where should we ship your physical Visa card?</p>
       <div className="capply-form">
-        <FormField label="Recipient name">
-          <input className="capply-input" value={shipping.recipientName} placeholder="e.g. Hong Gildong" onChange={(e) => setShip('recipientName', e.target.value)} />
+        <FormField label="Recipient name" htmlFor="shipping_recipientName">
+          <input id="shipping_recipientName" name="recipientName" className="capply-input" value={shipping.recipientName} placeholder="e.g. John Smith" onChange={(e) => setShip('recipientName', e.target.value)} />
         </FormField>
-        <FormField label="Country">
-          <input className="capply-input" value={shipping.country} placeholder="e.g. South Korea" onChange={(e) => setShip('country', e.target.value)} />
+        <FormField label="Country" htmlFor="shipping_country">
+          <input id="shipping_country" name="country" className="capply-input" value={shipping.country} placeholder="e.g. United States" onChange={(e) => setShip('country', e.target.value)} />
         </FormField>
-        <FormField label="State / Province">
-          <input className="capply-input" value={shipping.state} placeholder="e.g. Seoul" onChange={(e) => setShip('state', e.target.value)} />
+        <FormField label="State / Province" htmlFor="shipping_state">
+          <input id="shipping_state" name="state" className="capply-input" value={shipping.state} placeholder="e.g. California" onChange={(e) => setShip('state', e.target.value)} />
         </FormField>
-        <FormField label="City">
-          <input className="capply-input" value={shipping.city} placeholder="e.g. Gangnam-gu" onChange={(e) => setShip('city', e.target.value)} />
+        <FormField label="City" htmlFor="shipping_city">
+          <input id="shipping_city" name="city" className="capply-input" value={shipping.city} placeholder="e.g. Los Angeles" onChange={(e) => setShip('city', e.target.value)} />
         </FormField>
-        <FormField label="Address line 1">
-          <input className="capply-input" value={shipping.addressLine1} placeholder="e.g. 123 Teheran-ro" onChange={(e) => setShip('addressLine1', e.target.value)} />
+        <FormField label="Address line 1" htmlFor="shipping_addressLine1">
+          <input id="shipping_addressLine1" name="addressLine1" className="capply-input" value={shipping.addressLine1} placeholder="e.g. 100 Main Street" onChange={(e) => setShip('addressLine1', e.target.value)} />
         </FormField>
-        <FormField label="Address line 2 (optional)">
-          <input className="capply-input" value={shipping.addressLine2} placeholder="e.g. Apt 402, Building B" onChange={(e) => setShip('addressLine2', e.target.value)} />
+        <FormField label="Address line 2 (optional)" htmlFor="shipping_addressLine2">
+          <input id="shipping_addressLine2" name="addressLine2" className="capply-input" value={shipping.addressLine2} placeholder="e.g. Apt 402, Building B" onChange={(e) => setShip('addressLine2', e.target.value)} />
         </FormField>
-        <FormField label="Postal code">
-          <input className="capply-input" value={shipping.postalCode} placeholder="e.g. 06123" onChange={(e) => setShip('postalCode', e.target.value)} />
+        <FormField label="Postal code" htmlFor="shipping_postalCode">
+          <input id="shipping_postalCode" name="postalCode" className="capply-input" value={shipping.postalCode} placeholder="e.g. 90210" onChange={(e) => setShip('postalCode', e.target.value)} />
         </FormField>
         <div className="capply-form__row capply-form__row--phone">
-          <FormField label="Country code">
+          <FormField label="Country code" htmlFor="shipping_phoneCountryCode">
             <PhoneCountryCodeSelect
+              id="shipping_phoneCountryCode"
+              name="phoneCountryCode"
               value={shipping.phoneCountryCode}
               onChange={(code) => setShip('phoneCountryCode', code)}
             />
           </FormField>
-          <FormField label="Phone number">
-            <input className="capply-input" type="tel" value={shipping.phoneNumber} placeholder="e.g. 01012345678" onChange={(e) => setShip('phoneNumber', e.target.value)} />
+          <FormField label="Phone number" htmlFor="shipping_phoneNumber">
+            <input id="shipping_phoneNumber" name="phoneNumber" className="capply-input" type="tel" value={shipping.phoneNumber} placeholder="e.g. 2125550199" onChange={(e) => setShip('phoneNumber', e.target.value)} />
           </FormField>
         </div>
       </div>
@@ -423,8 +425,8 @@ export function AccountCardApply({ s }) {
       }
       setStep(4);
       s.showToast('Card application submitted successfully');
-    } catch {
-      s.showToast('Could not submit application. Please try again.');
+    } catch (err) {
+      s.showToast(err?.message || 'Could not submit application. Please try again.');
     } finally {
       setSubmitting(false);
     }

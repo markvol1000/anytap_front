@@ -26,6 +26,7 @@ function useMobileDocCapture() {
  * @param {'environment'|'user'} facing — rear for ID docs, front for selfie
  */
 export function KycDocField({
+  id,
   label,
   file,
   onChange,
@@ -74,7 +75,7 @@ export function KycDocField({
   };
 
   return (
-    <div className="capply-field capply-doc">
+    <div id={id} className="capply-field capply-doc">
       <span className="capply-field__label">
         {label}
         {required ? ' *' : ''}

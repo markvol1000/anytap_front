@@ -21,7 +21,7 @@ export function LoginLogsPage() {
   return (
     <div className="admin-page">
       <AdminPageHeader
-        title="Login Logs (로그인 이력)"
+        title="Login Audit Logs"
         description="Audit trail of user authentication attempts, IP addresses, and login statuses."
       />
 

@@ -194,12 +194,13 @@ function SiteHeader({
             ))}
           </nav>
 
-          <div className="topbar__cta">
+                    <div className="topbar__cta">
             {showAdminPortal && (
               <Link to="/admin" className="btn btn--ghost btn--sm topbar__admin" onClick={closeNav}>
                 Admin
               </Link>
             )}
+
             {member ? (
               <>
                 <button
@@ -321,12 +322,13 @@ function SiteHeader({
             )}
           </nav>
 
-          <div className="mobnav__foot">
+                    <div className="mobnav__foot">
             {!member && !isLoggedIn && showAdminPortal && (
               <Link to="/admin" className="btn btn--outline mobnav__admin" onClick={closeNav}>
                 Admin portal
               </Link>
             )}
+
             {member ? (
               <button
                 type="button"
@@ -342,11 +344,7 @@ function SiteHeader({
                 <Link to="/account" className="btn btn--accent btn--lg mobnav__cta" onClick={closeNav}>
                   My account <Icon name="arrowRight" size={16} />
                 </Link>
-                {showAdminPortal && (
-                  <Link to="/admin" className="btn btn--outline mobnav__admin" onClick={closeNav}>
-                    Admin portal
-                  </Link>
-                )}
+
               </>
             ) : (
               <>

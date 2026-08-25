@@ -93,7 +93,7 @@ export function ReferralPage() {
     const memId = String(mem.id || mem.userId || '').toLowerCase();
     const memEmail = String(mem.email || '').toLowerCase();
     if (existingReferralUserIds.has(memId) || (memEmail && existingReferralEmails.has(memEmail))) {
-      window.alert(`⚠️ 이 회원 (User ID: ${mem.id || mem.userId}, Email: ${mem.email || '—'})은 이미 추천인 코드가 등록되어 있습니다.\n동일한 회원/이메일로는 중복 추천인 등록이 불가능합니다.`);
+      window.alert(`⚠️ This member (User ID: ${mem.id || mem.userId}, Email: ${mem.email || '—'}) already has a referral code registered.\nDuplicate referral registration is not allowed for the same user/email.`);
       setNewUserId('');
       setNewDesc('');
       return;
@@ -241,7 +241,7 @@ export function ReferralPage() {
 
     const targetUid = newUserId.trim().toLowerCase();
     if (existingReferralUserIds.has(targetUid)) {
-      window.alert(`⚠️ 이 회원 (User ID: ${newUserId})은 이미 추천인 코드가 등록되어 있습니다.\n동일한 회원/이메일로는 중복 추천인 등록이 불가능합니다.`);
+      window.alert(`⚠️ This member (User ID: ${newUserId}) already has a referral code registered.\nDuplicate referral registration is not allowed for the same user/email.`);
       return;
     }
 
@@ -304,33 +304,33 @@ export function ReferralPage() {
       {/* ── TOP KPI SUMMARY CARDS ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px', marginBottom: '16px' }}>
         <div className="admin-card" style={{ padding: '16px 20px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)' }}>
-          <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', fontWeight: '600' }}>💰 총 피추천 회원 입금액 (Total Deposit)</div>
+          <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', fontWeight: '600' }}>💰 Total Referred Deposits</div>
           <div style={{ fontSize: '22px', fontWeight: '800', color: '#0284c7' }}>{formatUsdt(totalReferredDeposit)}</div>
         </div>
         <div className="admin-card" style={{ padding: '16px 20px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)' }}>
-          <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', fontWeight: '600' }}>🎁 총 발생/지급 수당 (Total Commission)</div>
+          <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', fontWeight: '600' }}>🎁 Total Commission</div>
           <div style={{ fontSize: '22px', fontWeight: '800', color: '#059669' }}>{formatUsdt(totalCommissionPaid)}</div>
         </div>
         <div className="admin-card" style={{ padding: '16px 20px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)' }}>
-          <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', fontWeight: '600' }}>🏷️ 추천인 코드 / 파트너 수</div>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#7c3aed' }}>{partnerList.total || partnerList.items.length} 개</div>
+          <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', fontWeight: '600' }}>🏷️ Referral Code / Partner Count</div>
+          <div style={{ fontSize: '22px', fontWeight: '800', color: '#7c3aed' }}>{partnerList.total || partnerList.items.length}</div>
         </div>
         <div className="admin-card" style={{ padding: '16px 20px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)' }}>
-          <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', fontWeight: '600' }}>👥 연결 피추천 회원 총수</div>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#ea580c' }}>{totalReferredMembersCount} 명</div>
+          <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', fontWeight: '600' }}>👥 Total Referred Members</div>
+          <div style={{ fontSize: '22px', fontWeight: '800', color: '#ea580c' }}>{totalReferredMembersCount}</div>
         </div>
       </div>
 
       {/* ── DATE RANGE & FILTER CONTROL BAR WITH SEARCH BUTTON ── */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', background: '#ffffff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)', marginBottom: '16px' }}>
-        <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>📅 기간 및 검색 조건 (Date & Filter):</span>
+        <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>📅 Date & Search Filter:</span>
         
         {/* Preset Quick Buttons */}
         <div style={{ display: 'flex', gap: '4px' }}>
-          <button type="button" className={`admin-btn ${datePreset === 'all' ? 'admin-btn--primary' : 'admin-btn--secondary'}`} style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '600' }} onClick={() => handleDatePreset('all')}>전체</button>
-          <button type="button" className={`admin-btn ${datePreset === 'today' ? 'admin-btn--primary' : 'admin-btn--secondary'}`} style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '600' }} onClick={() => handleDatePreset('today')}>오늘</button>
-          <button type="button" className={`admin-btn ${datePreset === '7d' ? 'admin-btn--primary' : 'admin-btn--secondary'}`} style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '600' }} onClick={() => handleDatePreset('7d')}>최근 7일</button>
-          <button type="button" className={`admin-btn ${datePreset === '30d' ? 'admin-btn--primary' : 'admin-btn--secondary'}`} style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '600' }} onClick={() => handleDatePreset('30d')}>최근 30일</button>
+          <button type="button" className={`admin-btn ${datePreset === 'all' ? 'admin-btn--primary' : 'admin-btn--secondary'}`} style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '600' }} onClick={() => handleDatePreset('all')}>All</button>
+          <button type="button" className={`admin-btn ${datePreset === 'today' ? 'admin-btn--primary' : 'admin-btn--secondary'}`} style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '600' }} onClick={() => handleDatePreset('today')}>Today</button>
+          <button type="button" className={`admin-btn ${datePreset === '7d' ? 'admin-btn--primary' : 'admin-btn--secondary'}`} style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '600' }} onClick={() => handleDatePreset('7d')}>Last 7 Days</button>
+          <button type="button" className={`admin-btn ${datePreset === '30d' ? 'admin-btn--primary' : 'admin-btn--secondary'}`} style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '600' }} onClick={() => handleDatePreset('30d')}>Last 30 Days</button>
         </div>
 
         {/* Date Inputs */}
@@ -354,7 +354,7 @@ export function ReferralPage() {
         <div style={{ flex: '1', minWidth: '200px' }}>
           <input
             type="text"
-            placeholder="추천인 코드, 사용자 ID, 이메일 검색..."
+            placeholder="Search Referral Code, User ID, Email..."
             value={partnerList.search}
             onChange={(e) => {
               partnerList.setSearch(e.target.value);
@@ -371,7 +371,7 @@ export function ReferralPage() {
           style={{ padding: '6px 16px', fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap' }}
           onClick={handleApplyFilter}
         >
-          🔍 조회 (Search Filter)
+          🔍 Search Filter
         </button>
       </div>
 
@@ -433,7 +433,7 @@ export function ReferralPage() {
                     },
                     { key: 'memberName', label: 'Owner / Partner Name' },
                     { key: 'joinDate', label: 'Joined', render: (r) => formatAdminDate(r.joinDate || r.createdAt || r.created_at) },
-                    { key: 'totalDeposit', label: 'Total Deposit (총 입금액)', render: (r) => <strong style={{ color: '#38bdf8' }}>{formatUsdt(r.totalDeposit)}</strong> },
+                    { key: 'totalDeposit', label: 'Total Deposit', render: (r) => <strong style={{ color: '#38bdf8' }}>{formatUsdt(r.totalDeposit)}</strong> },
                     { key: 'available', label: 'Reward Balance', render: (r) => formatUsdt(r.available) },
                     { key: 'members', label: 'Referred Count' },
                     { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
@@ -539,8 +539,8 @@ export function ReferralPage() {
                           },
                           { key: 'email', label: 'Email' },
                           { key: 'joinDate', label: 'Joined', render: (r) => formatAdminDate(r.joinDate || r.createdAt || r.created_at) },
-                          { key: 'totalDeposit', label: 'Total Deposit (입금액)', render: (r) => <strong style={{ color: '#38bdf8' }}>{formatUsdt(r.totalDeposit)}</strong> },
-                          { key: 'earnedCommission', label: 'Commission (발생 수당)', render: (r) => <strong style={{ color: '#10b981' }}>{formatUsdt(r.earnedCommission)}</strong> },
+                          { key: 'totalDeposit', label: 'Total Deposit', render: (r) => <strong style={{ color: '#38bdf8' }}>{formatUsdt(r.totalDeposit)}</strong> },
+                          { key: 'earnedCommission', label: 'Earned Commission', render: (r) => <strong style={{ color: '#10b981' }}>{formatUsdt(r.earnedCommission)}</strong> },
                           { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
                         ]}
                         rows={memberList.items}
@@ -726,7 +726,7 @@ export function ReferralPage() {
                 <input
                   type="text"
                   className="admin-input"
-                  placeholder="e.g. US512799 또는 회원 ID"
+                  placeholder="e.g. US512799 or User ID"
                   value={editUserId}
                   onChange={(e) => setEditUserId(e.target.value)}
                   required

@@ -47,7 +47,7 @@ export const DEMO_MEMBER_STATES = [
     label: '① KYC Required',
     email: 'kyc-required@anytap.io',
     loginId: 'kycreq001',
-    note: 'KYC 미시작 · 데모에서 PENDING 강제 (백엔드 seed 대기)',
+    note: 'KYC Not Started · Forced PENDING in demo',
     path: '/account',
     apiNeeds: ['kycStatus=PENDING', 'cardStatus=not_issued'],
     sessionOverride: lock({
@@ -62,7 +62,7 @@ export const DEMO_MEMBER_STATES = [
     label: '② KYC Pending',
     email: 'kyc-pending@anytap.io',
     loginId: 'kycpend001',
-    note: 'KYC 심사중 · 데모에서 UNDER_REVIEW 강제 (백엔드 seed 대기)',
+    note: 'KYC Under Review · Forced UNDER_REVIEW in demo',
     path: '/account',
     apiNeeds: ['kycStatus=UNDER_REVIEW|REJECTED', 'cardStatus=not_issued'],
     sessionOverride: lock({
@@ -92,7 +92,7 @@ export const DEMO_MEMBER_STATES = [
     label: '④ Issuing · $100 deposit',
     email: 'card-deposit@anytap.io',
     loginId: 'deposit001',
-    note: '발급비 입금 지갑 + QR 노출',
+    note: 'Issuance Fee Deposit Wallet + QR Exposed',
     path: '/account',
     apiNeeds: [
       'cardStatus=application_review',
@@ -111,7 +111,7 @@ export const DEMO_MEMBER_STATES = [
     label: '④ Issuing · Shipping',
     email: 'card-shipping@anytap.io',
     loginId: 'shipping001',
-    note: '배송중 · 입금 지갑 숨김',
+    note: 'In Transit · Deposit Wallet Hidden',
     path: '/account',
     apiNeeds: [
       'cardStatus=shipping',
@@ -133,7 +133,7 @@ export const DEMO_MEMBER_STATES = [
     label: '⑤ Activate Card',
     email: 'activate-card@anytap.io',
     loginId: 'activate001',
-    note: '수령 후 카드 등록',
+    note: 'Register Card After Receipt',
     path: '/account',
     apiNeeds: [
       'cardStatus=issued',
@@ -467,7 +467,7 @@ export const DEMO_MEMBER_STATES = [
     email: 'test@test.co.kr',
     loginId: 'admin',
     note: '운영 KPI · 대기 큐 요약',
-    path: '/admin',
+    path: '/admin/hanzb',
     apiNeeds: [
       'GET /admin/me',
       'GET /admin/dashboard (또는 /kpis + /pending-tasks + /summary)',

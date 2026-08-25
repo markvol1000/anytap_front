@@ -13,6 +13,7 @@ import { resolveWalletAddress } from '../lib/api/display-data.js';
 import * as A from '../lib/account-data.js';
 import { clearMockSession, clearAdminSession, attemptLogout } from '../lib/services/authService.js';
 import { hasCompletedKycProfile } from '../lib/member-profile.js';
+import { sanitizeToastMessage } from '../utils/toast-sanitizer.js';
 
 export function useAccountState() {
   const navigate = useNavigate();
@@ -221,7 +222,8 @@ export function useAccountState() {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const showToast = useCallback((m) => {
-    setToast(m);
+    const cleanMsg = sanitizeToastMessage(m);
+    setToast(cleanMsg);
     clearTimeout(timers.current.toast);
     timers.current.toast = setTimeout(() => setToast(''), 6000);
   }, []);

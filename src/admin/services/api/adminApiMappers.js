@@ -190,7 +190,7 @@ export function mapCardRow(row, idx = 0) {
   const cardNo = last4 !== '—' ? `4532 •••• •••• ${last4}` : (wasabiCardId && wasabiCardId !== '-' ? wasabiCardId : '—');
 
   const cardTypeRaw = row?.cardType || row?.card_type || 'physical';
-  const cardTypeLabel = row?.cardTypeLabel || (cardTypeRaw === 'physical' ? '실물카드' : '가상카드');
+  const cardTypeLabel = row?.cardTypeLabel || (cardTypeRaw === 'physical' ? 'Physical Card' : 'Virtual Card');
 
   return {
     id,

@@ -90,7 +90,7 @@ function StorageGaugeDonut({ usedPct = 14.85, freePct = 85.15, usedGb = 14.85, f
             {freePct}%
           </span>
           <span style={{ fontSize: '10px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>
-            잔여 여유 용량
+            Available Spare Capacity
           </span>
         </div>
       </div>
@@ -99,7 +99,7 @@ function StorageGaugeDonut({ usedPct = 14.85, freePct = 85.15, usedGb = 14.85, f
         <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'linear-gradient(135deg, #007BFF, #00C6FF)', display: 'inline-block', flexShrink: 0 }} />
-            <span style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>사용 중인 용량</span>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: '#334155' }}>Used Capacity</span>
           </div>
           <span style={{ fontSize: '14px', fontWeight: '800', color: '#007BFF', fontFamily: 'monospace' }}>
             {usedGb} GB ({usedPct}%)
@@ -109,7 +109,7 @@ function StorageGaugeDonut({ usedPct = 14.85, freePct = 85.15, usedGb = 14.85, f
         <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'linear-gradient(135deg, #10B981, #059669)', display: 'inline-block', flexShrink: 0 }} />
-            <span style={{ fontSize: '13px', fontWeight: '700', color: '#10B981' }}>안전 잔여 여유 용량</span>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#10B981' }}>Safe Available Spare Capacity</span>
           </div>
           <span style={{ fontSize: '14px', fontWeight: '800', color: '#10B981', fontFamily: 'monospace' }}>
             {freeGb} GB ({freePct}%)
@@ -124,11 +124,11 @@ const RDS_BACKUP_CONFIG = {
   instanceId: 'database-1 (Master AnyTabData)',
   engine: 'MySQL 8.4.9 (Aurora Multi-AZ)',
   allocatedStorage: '100 GB (gp2 / KMS Encrypted)',
-  retentionPeriod: '30일 (Retention Period)',
+  retentionPeriod: '30 Days (Retention Period)',
   backupWindowUtc: '17:05 - 17:35 UTC',
-  backupWindowKst: '매일 KST 새벽 02:05 ~ 02:35',
-  pitrSupport: '최근 30일 초 단위 시점 복구 지원 (WAL Replication 활성화)',
-  latestRestorableKst: '2026-08-16 01:00:00 KST (실시간 지원 중)',
+  backupWindowKst: 'Daily KST 02:05 ~ 02:35 AM',
+  pitrSupport: '30-day point-in-time recovery support (WAL replication enabled)',
+  latestRestorableKst: '2026-08-16 01:00:00 KST (Live Support Active)',
   status: 'Available',
 };
 
@@ -201,7 +201,7 @@ const INITIAL_SNAPSHOTS = [
     id: 'rds-snap-20260816-auto',
     identifier: 'anytap-db-auto-2026-08-16-02-05',
     type: 'automated',
-    typeLabel: 'Automated 정기 백업',
+    typeLabel: 'Automated Scheduled Backup',
     targetDb: 'database-1 (AnyTabData)',
     status: 'available',
     kstTime: '2026-08-16 02:05:12 KST',
@@ -213,7 +213,7 @@ const INITIAL_SNAPSHOTS = [
     id: 'rds-snap-20260815-auto',
     identifier: 'anytap-db-auto-2026-08-15-02-05',
     type: 'automated',
-    typeLabel: 'Automated 정기 백업',
+    typeLabel: 'Automated Scheduled Backup',
     targetDb: 'database-1 (AnyTabData)',
     status: 'available',
     kstTime: '2026-08-15 02:05:08 KST',
@@ -225,7 +225,7 @@ const INITIAL_SNAPSHOTS = [
     id: 'rds-snap-20260814-manual',
     identifier: 'anytap-db-manual-pre-migration-01',
     type: 'manual',
-    typeLabel: 'Manual 수동 스냅샷',
+    typeLabel: 'Manual Snapshot',
     targetDb: 'database-1 (AnyTabData)',
     status: 'available',
     kstTime: '2026-08-14 15:40:22 KST',
@@ -260,7 +260,7 @@ export function DbBackupsSection({ showToast }) {
       navigator.clipboard.writeText(identifier);
     }
     setCopiedId(identifier);
-    if (showToast) showToast(`📋 스냅샷 ID [${identifier}] 복사 완료`);
+    if (showToast) showToast(`📋 Snapshot ID [${identifier}] copied`);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -282,7 +282,7 @@ USE AnyTabData;
     a.download = backup.filename;
     a.click();
     URL.revokeObjectURL(url);
-    if (showToast) showToast(`⬇ 백업 파일 [${backup.filename}] 다운로드가 시작되었습니다.`);
+    if (showToast) showToast(`⬇ Backup file [${backup.filename}] download started.`);
   };
 
   const handleCreateManualBackup = (e) => {
@@ -294,7 +294,7 @@ USE AnyTabData;
       setIsCreatingBackup(false);
       setIsBackupModalOpen(false);
       setBackupTagInput('');
-      if (showToast) showToast(`✅ 수동 RDS 스냅샷 [anytap-db-${tag}] 생성 완료!`);
+      if (showToast) showToast(`✅ Manual RDS Snapshot [anytap-db-${tag}] creation completed!`);
     }, 1200);
   };
 
@@ -311,7 +311,7 @@ USE AnyTabData;
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* ── Section 1: Storage Capacity Donut & Resource Metrics Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-        <AdminPanel title="💾 AWS RDS MySQL 8.4.9 총 저장 용량 점유율">
+        <AdminPanel title="💾 AWS RDS MySQL 8.4.9 Total Storage Capacity Usage">
           <StorageGaugeDonut
             usedPct={DB_METRICS.usedStoragePct}
             freePct={DB_METRICS.freeStoragePct}
@@ -321,13 +321,13 @@ USE AnyTabData;
           />
         </AdminPanel>
 
-        <AdminPanel title="⚡ RDS DB 인스턴스 메모리 & 리소스 모니터링">
+        <AdminPanel title="⚡ RDS DB Instance Memory & Resource Monitoring">
           <div style={{ padding: '8px 0' }}>
             <ThickGradientBar
               percent={DB_METRICS.usedRamPct}
               fromColor="#007BFF"
               toColor="#00C6FF"
-              labelLeft={`DB 메모리 (Buffer Pool) 사용량: ${DB_METRICS.usedRamGb} GB / ${DB_METRICS.totalRamGb} GB`}
+              labelLeft={`DB Memory (Buffer Pool) Usage: ${DB_METRICS.usedRamGb} GB / ${DB_METRICS.totalRamGb} GB`}
               labelRight={`${DB_METRICS.usedRamPct}%`}
             />
 
@@ -361,13 +361,13 @@ USE AnyTabData;
         </AdminPanel>
       </div>
 
-      {/* ── Section 2: RDS 정기 백업 정책 ── */}
-      <AdminPanel title="⚙️ RDS 정기 백업 & 시점 복구(PITR) 정책">
+      {/* ── Section 2: RDS Scheduled Backup & PITR Policy ── */}
+      <AdminPanel title="⚙️ RDS Scheduled Backup & Point-in-Time Recovery (PITR) Policy">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
           <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '14px', borderRadius: '10px', display: 'flex', gap: '12px', alignItems: 'center' }}>
             <Icon name="database" size={24} style={{ color: '#007BFF' }} />
             <div>
-              <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '600', display: 'block' }}>RDS 인스턴스</span>
+              <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '600', display: 'block' }}>RDS Instance</span>
               <span style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A' }}>{RDS_BACKUP_CONFIG.instanceId}</span>
               <span style={{ fontSize: '11px', color: '#007BFF', display: 'block' }}>{RDS_BACKUP_CONFIG.engine}</span>
             </div>
@@ -376,36 +376,36 @@ USE AnyTabData;
           <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '14px', borderRadius: '10px', display: 'flex', gap: '12px', alignItems: 'center' }}>
             <Icon name="clock" size={24} style={{ color: '#10B981' }} />
             <div>
-              <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '600', display: 'block' }}>자동 백업 주기</span>
+              <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '600', display: 'block' }}>Auto Backup Cycle</span>
               <span style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A' }}>{RDS_BACKUP_CONFIG.backupWindowKst}</span>
-              <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>보존기간: {RDS_BACKUP_CONFIG.retentionPeriod}</span>
+              <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>Retention Period: {RDS_BACKUP_CONFIG.retentionPeriod}</span>
             </div>
           </div>
 
           <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '14px', borderRadius: '10px', display: 'flex', gap: '12px', alignItems: 'center' }}>
             <Icon name="shield" size={24} style={{ color: '#8B5CF6' }} />
             <div>
-              <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '600', display: 'block' }}>시점 복구 (PITR)</span>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: '#10B981' }}>초 단위 실시간 복구 가능</span>
-              <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>최신 복구: {RDS_BACKUP_CONFIG.latestRestorableKst}</span>
+              <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '600', display: 'block' }}>Point-In-Time Recovery (PITR)</span>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#10B981' }}>Second-level real-time recovery enabled</span>
+              <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>Latest Recovery: {RDS_BACKUP_CONFIG.latestRestorableKst}</span>
             </div>
           </div>
         </div>
       </AdminPanel>
 
-      {/* ── Section 3: 다운로드 가능한 백업 덤프 파일 ── */}
-      <AdminPanel title="🛡️ 다운로드 가능 DB 백업 덤프 파일">
+      {/* ── Section 3: Available Backup Dump Files ── */}
+      <AdminPanel title="🛡️ Available DB Backup Dump Files">
         <div style={{ overflowX: 'auto' }}>
           <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Backup ID</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>생성 일시 (KST)</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>덤프 파일명</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>백업 유형</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>용량</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>상태</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: '12px', color: '#475569' }}>다운로드</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Creation Date (KST)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Dump Filename</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Backup Type</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Size</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Status</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: '12px', color: '#475569' }}>Download</th>
               </tr>
             </thead>
             <tbody>
@@ -418,7 +418,7 @@ USE AnyTabData;
                   <td style={{ padding: '10px 12px', fontSize: '13px', color: '#10B981', fontWeight: '700' }}>{bk.fileSize}</td>
                   <td style={{ padding: '10px 12px' }}>
                     <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: '700', backgroundColor: '#DCFCE7', color: '#15803D' }}>
-                      VERIFIED (정상)
+                      VERIFIED (Normal)
                     </span>
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right' }}>
@@ -446,13 +446,13 @@ USE AnyTabData;
         </div>
       </AdminPanel>
 
-      {/* ── Section 4: RDS 백업(스냅샷) 이력 리스트 ── */}
-      <AdminPanel title="📋 RDS 정기 스냅샷 이력 리스트">
+      {/* ── Section 4: RDS Scheduled Snapshot History List ── */}
+      <AdminPanel title="📋 RDS Scheduled Snapshot History List">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '240px' }}>
             <input
               type="text"
-              placeholder="스냅샷 이름 또는 날짜 검색..."
+              placeholder="Search snapshot name or date..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
@@ -481,7 +481,7 @@ USE AnyTabData;
                 cursor: 'pointer',
               }}
             >
-              전체 ({INITIAL_SNAPSHOTS.length})
+              All ({INITIAL_SNAPSHOTS.length})
             </button>
             <button
               type="button"
@@ -522,13 +522,13 @@ USE AnyTabData;
           <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>백업 일시 (KST)</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>스냅샷 Identifier</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>유형</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>대상 DB</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>상태</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>용량</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>복구 상태 (PITR)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Backup Date (KST)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Snapshot Identifier</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Type</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Target DB</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Status</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Size</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Recovery Status (PITR)</th>
               </tr>
             </thead>
             <tbody>
@@ -551,7 +551,7 @@ USE AnyTabData;
                   <td style={{ padding: '10px 12px', fontSize: '13px', color: '#64748B' }}>{snap.targetDb}</td>
                   <td style={{ padding: '10px 12px' }}>
                     <span style={{ padding: '3px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: '700', backgroundColor: '#DCFCE7', color: '#15803D' }}>
-                      Available (정상)
+                      Available (Normal)
                     </span>
                   </td>
                   <td style={{ padding: '10px 12px', fontSize: '13px', color: '#0F172A', fontWeight: '700' }}>{snap.size}</td>
@@ -575,7 +575,7 @@ export function DbBackupsPage() {
     <div className="admin-page" style={{ backgroundColor: '#ffffff', minHeight: '100vh', padding: '24px', color: '#333333' }}>
       <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#333333', marginBottom: '8px' }}>Database Backup Management</h1>
       <p style={{ fontSize: '13px', color: '#666666', marginBottom: '24px' }}>
-        MySQL 데이터베이스 자동/수동 백업 생성, 덤프 다운로드 및 시점 복구(PITR) 관리
+        MySQL database automated/manual backup, dump download and point-in-time recovery (PITR) management
       </p>
       <DbBackupsSection />
     </div>

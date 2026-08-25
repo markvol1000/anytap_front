@@ -258,12 +258,95 @@ export async function approveKyc(id) {
   return getKycById(userId);
 }
 
-export async function rejectKyc(id) {
+export async function rejectKyc(id, reason = '') {
   const userId = resolveUserId(id);
-  // OpenAPI reject has no request body; reason is UI-only until backend adds it.
-  await apiPost(`/admin/kyc/${encodeURIComponent(userId)}/reject`);
+  await apiPost(`/admin/kyc/${encodeURIComponent(userId)}/reject`, { reason });
   const row = await getKycById(userId);
-  return row || mapKycRow({ userId, kycStatus: 'REJECTED' });
+  return {
+    ...(row || mapKycRow({ userId, kycStatus: 'REJECTED' })),
+    status: 'rejected',
+    rejectReason: reason || 'Document verification rejected',
+  };
+}
+
+export async function getKycHistory(userId, email = '') {
+  if (!userId && !email) return [];
+  try {
+    const cleanId = String(userId || '').replace(/\.+$/, '');
+    const cleanEmail = String(email || '').trim();
+
+    // 1. Fetch login-logs (contains FAIL_KYC_API, FAIL_KYC_VALIDATION from CardController)
+    const searchTarget = cleanEmail || cleanId;
+    const loginLogsRes = await apiGet(`/admin/login-logs?search=${encodeURIComponent(searchTarget)}&size=100`).catch(() => null);
+    const rawLoginLogs = asArray(loginLogsRes);
+
+    // 2. Fetch event-logs (contains KYC_APPROVED, KYC_REJECTED)
+    const eventLogsRes = await apiGet(`/admin/event-logs?userId=${encodeURIComponent(cleanId)}&size=100`).catch(() => null);
+    const rawEventLogs = asArray(eventLogsRes);
+    const allAdminLogs = rawEventLogs.length > 0 ? rawEventLogs : asArray(await apiGet('/admin/logs').catch(() => []));
+
+    const combined = [];
+
+    // Map login logs (e.g. FAIL_KYC_API, FAIL_KYC_VALIDATION)
+    rawLoginLogs.forEach((l, idx) => {
+      const st = String(l.status || l.eventType || '').toUpperCase();
+      if (st.includes('KYC') || st.includes('FAIL')) {
+        combined.push({
+          id: l.id || `LOGIN_LOG_${idx + 1}`,
+          eventType: st,
+          status: 'rejected',
+          reason: l.reason || l.description || l.message || 'KYC verification submission failed',
+          at: l.attemptedAt || l.createdAt || l.createdDate || l.loggedAt || '',
+        });
+      }
+    });
+
+    // Map event logs (e.g. KYC_APPROVED, KYC_REJECTED)
+    allAdminLogs.forEach((l, idx) => {
+      const match = (cleanId && (l.userId === cleanId || l.memberId === cleanId || l.id === cleanId)) ||
+                    (cleanEmail && l.email === cleanEmail);
+      if (match) {
+        const evtType = String(l.eventType || l.type || 'KYC_ATTEMPT').toUpperCase();
+        if (evtType.includes('KYC') || evtType.includes('REJECT') || evtType.includes('APPROV') || evtType.includes('FAIL')) {
+          let status = 'pending';
+          if (evtType.includes('APPROVED') || evtType.includes('ACTIVE') || evtType.includes('SUCCESS')) {
+            status = 'approved';
+          } else if (evtType.includes('REJECTED') || evtType.includes('FAIL') || evtType.includes('DECLINED')) {
+            status = 'rejected';
+          }
+
+          let reason = l.ipAddress || l.description || l.message || l.memo || '';
+          if (!reason || reason.startsWith('127.') || reason.startsWith('192.') || reason.startsWith('10.')) {
+            if (status === 'approved') reason = 'Identity verification approved';
+            else if (status === 'rejected') reason = 'Verification document rejected / validation failed';
+            else reason = 'KYC verification submitted';
+          }
+
+          combined.push({
+            id: l.id || l.logId || `EVENT_LOG_${idx + 1}`,
+            eventType: evtType,
+            status,
+            reason,
+            at: l.createdAt || l.loggedAt || l.timestamp || l.date || '',
+          });
+        }
+      }
+    });
+
+    // Deduplicate by timestamp + reason and sort descending
+    const seen = new Set();
+    const uniqueList = combined.filter((item) => {
+      const key = `${item.eventType}_${item.at}_${item.reason}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return uniqueList.sort((a, b) => new Date(b.at) - new Date(a.at));
+  } catch (err) {
+    console.error('Failed to fetch KYC history', err);
+    return [];
+  }
 }
 
 export async function getCardApplications(params = {}) {
@@ -365,11 +448,11 @@ export async function activateCard(id, pin = '') {
 
   const cleanPin = String(pin || '').trim();
   if (!cleanPin || !/^\d{6}$/.test(cleanPin)) {
-    throw new Error('PIN 번호 6자리를 입력해야 합니다.');
+    throw new Error('Must enter a 6-digit PIN code.');
   }
 
   if (!cardNo) {
-    throw new Error('카드 번호를 찾을 수 없습니다.');
+    throw new Error('Card number not found.');
   }
 
   await apiPost(`/admin/members/${encodeURIComponent(userId)}/cards/${encodeURIComponent(cardNo)}/activate`, { pin: cleanPin });
@@ -843,14 +926,14 @@ export async function getFeeMaster() {
   const data = await apiGet('/admin/fees').catch(() => null);
   if (Array.isArray(data) && data.length > 0) return data;
   return [
-    { feeCode: 'A1', calculationType: 'Rate (2)', description: 'USDT 입금(지갑입금처리) 수수료율 (3.0%)', fixedAmount: 0.0, rateValue: 0.03, updatedAt: '2026-07-03' },
-    { feeCode: 'CARD_CHARGE_FIXED', calculationType: 'Fixed (1)', description: 'Wasabi 카드 충전 고정 수수료 (3.00 USDT)', fixedAmount: 3.0, rateValue: 0.0, updatedAt: '2026-08-12' },
-    { feeCode: 'A3', calculationType: 'Rate (2)', description: 'Wasabi 카드 충전 수수료율 (0.0%)', fixedAmount: 0.0, rateValue: 0.0, updatedAt: '2026-08-12' },
-    { feeCode: 'A4', calculationType: 'Rate (2)', description: '추천인 수당 요율 (0.3%)', fixedAmount: 0.0, rateValue: 0.003, updatedAt: '2026-07-03' },
-    { feeCode: 'ANYTAP_SUB', calculationType: 'Rate (2)', description: 'Wasabi 충전 시 보충 수수료율 (0.85%)', fixedAmount: 0.0, rateValue: 0.0085, updatedAt: '2026-08-05' },
-    { feeCode: 'B1', calculationType: 'Rate (2)', description: 'Wasabi 충전 원가율 (0.0%)', fixedAmount: 0.0, rateValue: 0.0, updatedAt: '2026-07-03' },
-    { feeCode: 'B2', calculationType: 'Rate (2)', description: '해외 결제 수수료율 원가 (0.5%)', fixedAmount: 0.0, rateValue: 0.005, updatedAt: '2026-07-03' },
-    { feeCode: 'SUBSIDY', calculationType: 'Rate (2)', description: 'Wasabi 충전 시 보충 수수료율 (0.85%)', fixedAmount: 0.0, rateValue: 0.0085, updatedAt: '2026-08-05' },
+    { feeCode: 'A1', calculationType: 'Rate (2)', description: 'USDT Deposit Processing Fee Rate (3.0%)', fixedAmount: 0.0, rateValue: 0.03, updatedAt: '2026-07-03' },
+    { feeCode: 'CARD_CHARGE_FIXED', calculationType: 'Fixed (1)', description: 'Wasabi Card Charge Fixed Fee (3.00 USDT)', fixedAmount: 3.0, rateValue: 0.0, updatedAt: '2026-08-12' },
+    { feeCode: 'A3', calculationType: 'Rate (2)', description: 'Wasabi Card Charge Fee Rate (0.0%)', fixedAmount: 0.0, rateValue: 0.0, updatedAt: '2026-08-12' },
+    { feeCode: 'A4', calculationType: 'Rate (2)', description: 'Referral Commission Rate (0.3%)', fixedAmount: 0.0, rateValue: 0.003, updatedAt: '2026-07-03' },
+    { feeCode: 'ANYTAP_SUB', calculationType: 'Rate (2)', description: 'Wasabi Top-Up Subsidy Rate (0.85%)', fixedAmount: 0.0, rateValue: 0.0085, updatedAt: '2026-08-05' },
+    { feeCode: 'B1', calculationType: 'Rate (2)', description: 'Wasabi Top-Up Base Rate (0.0%)', fixedAmount: 0.0, rateValue: 0.0, updatedAt: '2026-07-03' },
+    { feeCode: 'B2', calculationType: 'Rate (2)', description: 'International Card Transaction Base Rate (0.5%)', fixedAmount: 0.0, rateValue: 0.005, updatedAt: '2026-07-03' },
+    { feeCode: 'SUBSIDY', calculationType: 'Rate (2)', description: 'Wasabi Top-Up Subsidy Rate (0.85%)', fixedAmount: 0.0, rateValue: 0.0085, updatedAt: '2026-08-05' },
   ];
 }
 
@@ -1042,7 +1125,7 @@ export async function getServerStatus() {
         sourceLogFile: '/var/log/anytap/wasabi-card-service.log',
         logLineNumber: 'L318',
         logPath: '/var/log/anytap/wasabi-card-service.log:L318',
-        rootCauseReport: '원인: (1) 50 USDT 미만 충전 시 클라이언트 미검증 요청 전송, (2) Fee_Master 고정 3 USDT 수수료 미반영, (3) 2차 비밀번호 미검증 요청.\n조치결과: 50 USDT 미만 최상단 알림 팝업 및 차단, 비밀번호 확인 모달 복원, 고정 3 USDT 수수료 수식 적용, 자동 잔액 Sync 연동 완료 (정상화됨).',
+        rootCauseReport: 'Root Cause: (1) Client unverified request sent when charging less than 50 USDT, (2) Fee_Master fixed 3 USDT fee not applied, (3) Secondary password unverified request.\nResolution: Top alert popup & block for under 50 USDT, password verification modal restored, fixed 3 USDT formula applied, auto balance sync linked (resolved).',
         stackTrace: 'com.anytap.exception.WasabiCardChargeException: Wasabi top-up charge failed [HTTP 400 Bad Request]\n\tat com.anytap.card.WasabiClient.deposit(WasabiClient.java:318)\n\tat com.anytap.service.CardService.chargeCard(CardService.java:145)\n\tat com.anytap.controller.CardController.chargeCard(CardController.java:82)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)',
         timestamp: '2026-08-16T17:35:10.000Z',
         status: 'RESOLVED',
@@ -1056,7 +1139,7 @@ export async function getServerStatus() {
         sourceLogFile: '/var/log/anytap/cregis-webhook.log',
         logLineNumber: 'L142',
         logPath: '/var/log/anytap/cregis-webhook.log:L142',
-        rootCauseReport: '원인: Cregis TRC20 서명 검증 게이트웨이 타임아웃 발생.\n조치결과: 서명 검증 재시도 큐 적용 및 타임아웃 시간 5초 ➔ 15초 확장 조치.',
+        rootCauseReport: 'Root Cause: Cregis TRC20 signature verification gateway timeout occurred.\nResolution: Signature verification retry queue applied and timeout extended from 5s to 15s.',
         stackTrace: 'java.net.SocketTimeoutException: Read timed out\n\tat java.base/java.net.SocketInputStream.socketRead0(Native Method)\n\tat com.anytap.webhook.CregisClient.verifySignature(CregisClient.java:142)\n\tat com.anytap.webhook.WebhookController.handleDeposit(WebhookController.java:55)',
         timestamp: '2026-08-16T00:15:22.000Z',
         status: 'ISSUED',
@@ -1070,7 +1153,7 @@ export async function getServerStatus() {
         sourceLogFile: '/var/log/anytap/wallet-sync-job.log',
         logLineNumber: 'L88',
         logPath: '/var/log/anytap/wallet-sync-job.log:L88',
-        rootCauseReport: '원인: 동시 락 경합으로 인한 DB 락 타임아웃.\n조치결과: 트랜잭션 분리 및 분산 락(Redis Lock) 도입 검토 중.',
+        rootCauseReport: 'Root Cause: DB lock timeout due to concurrent lock contention.\nResolution: Transaction separation and distributed lock (Redis Lock) introduction under review.',
         stackTrace: 'org.springframework.dao.CannotAcquireLockException: Lock wait timeout exceeded\n\tat com.anytap.service.WalletService.syncBalance(WalletService.java:88)\n\tat com.anytap.job.SyncTask.execute(SyncTask.java:34)',
         timestamp: '2026-08-15T22:40:10.000Z',
         status: 'INVESTIGATING',
@@ -1084,7 +1167,7 @@ export async function getServerStatus() {
         sourceLogFile: '/var/log/anytap/wasabi-api-client.log',
         logLineNumber: 'L210',
         logPath: '/var/log/anytap/wasabi-api-client.log:L210',
-        rootCauseReport: '원인: Wasabi API 호출 빈도 과다 (Rate Limit 429).\n조치결과: 인메모리 캐싱(TTL 30초) 적용하여 호출 횟수 85% 감소 조치 완료.',
+        rootCauseReport: 'Root Cause: Excessive Wasabi API call frequency (Rate Limit 429).\nResolution: In-memory caching (TTL 30s) applied, reducing call frequency by 85%.',
         stackTrace: 'com.anytap.exception.WasabiApiException: Provider rate limit exceeded\n\tat com.anytap.card.WasabiClient.getCardInfo(WasabiClient.java:210)\n\tat com.anytap.service.CardService.refreshCardState(CardService.java:102)',
         timestamp: '2026-08-15T18:12:05.000Z',
         status: 'RESOLVED',

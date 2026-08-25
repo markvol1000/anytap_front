@@ -377,10 +377,10 @@ export function AdminChartDateFilter({
     <div className="admin-chart-filter-bar">
       <div className="admin-chart-filter-bar__presets">
         {[
-          { id: 'all', label: '전체' },
-          { id: 'today', label: '오늘' },
-          { id: '7d', label: '최근 7일' },
-          { id: '1m', label: '최근 1달' },
+          { id: 'all', label: 'All' },
+          { id: 'today', label: 'Today' },
+          { id: '7d', label: 'Last 7 Days' },
+          { id: '1m', label: 'Last 30 Days' },
         ].map((p) => (
           <button
             key={p.id}

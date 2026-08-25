@@ -55,9 +55,11 @@ const WALLET_KINDS = new Set([
   'wallet_withdraw',
   'wallet_send',
   'wallet_receive',
-  'card_topup',
   'wallet_fee',
+  'card_topup',
   'card_charge_fee',
+  'refund',
+  'reversal',
 ]);
 const CARD_KINDS = new Set(['card_spend', 'card_topup', 'card_charge_fee', 'refund', 'reversal']);
 const REWARD_KINDS = new Set([
@@ -170,9 +172,19 @@ export function filterActivityForRewardsPage(items) {
   return items.filter(isRewardActivity);
 }
 
-export function filterActivityByCard(items, last4) {
-  if (!last4 || last4 === 'all') return items;
-  return items.filter((t) => t.cardLast4 === last4);
+export function filterActivityByCard(items, cardIdOrLast4) {
+  if (!cardIdOrLast4 || cardIdOrLast4 === 'all') return items;
+  const target = String(cardIdOrLast4).toLowerCase().trim();
+  return items.filter((t) => {
+    const tId = String(t.cardId || t.id || '').toLowerCase();
+    const tNo = String(t.cardNo || '').toLowerCase();
+    const tLast4 = String(t.cardLast4 || (tNo.length >= 4 ? tNo.slice(-4) : '')).toLowerCase();
+    if (tId && tId === target) return true;
+    if (tNo && tNo === target) return true;
+    if (tLast4 && tLast4 === target) return true;
+    if (target.length <= 4 && tLast4.endsWith(target)) return true;
+    return false;
+  });
 }
 
 export function filterActivityByStatus(items, statusId) {
@@ -248,9 +260,11 @@ export function filterActivityBySearch(items, query) {
 export function resolveActivityFilterFromSearch(searchParams) {
   const type = searchParams?.get?.('type');
   const source = searchParams?.get?.('source');
-  if (source === 'wallet' || type === 'topup') return 'wallet';
-  if (source === 'card') return 'card';
-  if (source === 'rewards' || type === 'reward') return 'rewards';
+  const tab = searchParams?.get?.('tab');
+  const activeScope = tab || source;
+  if (activeScope === 'wallet' || type === 'topup') return 'wallet';
+  if (activeScope === 'card' || activeScope === 'cards') return 'card';
+  if (activeScope === 'rewards' || type === 'reward') return 'rewards';
   return 'all';
 }
 

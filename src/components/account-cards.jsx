@@ -1304,8 +1304,14 @@ export function AccountMyCards({ s }) {
           limit={5}
           viewAllLabel="View All"
           className="portal-mycards-recent portal-dash-panel portal-recent-tx--unified"
-          onItemClick={() => s.go('transactions', { search: { source: 'card' } })}
-          onViewAll={() => s.go('transactions', { search: { source: 'card' } })}
+          onItemClick={() => {
+            const targetCardId = selectedCard?.last4 || selectedCard?.id || selectedCard?.cardNo || s?.currentCard?.last4;
+            s.go('transactions', { search: { source: 'card', cardId: targetCardId, last4: targetCardId } });
+          }}
+          onViewAll={() => {
+            const targetCardId = selectedCard?.last4 || selectedCard?.id || selectedCard?.cardNo || s?.currentCard?.last4;
+            s.go('transactions', { search: { source: 'card', cardId: targetCardId, last4: targetCardId } });
+          }}
           emptyTitle="No card activity yet"
           emptyMsg="Purchases, refunds, and reversals for this card will appear here."
           emptyIcon="creditCard"

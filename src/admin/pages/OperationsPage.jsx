@@ -10,6 +10,7 @@ import {
   updateOperationsIssueStatus,
 } from '../services/adminService.js';
 import { DbBackupsSection } from './DbBackupsPage.jsx';
+import { sanitizeToastMessage } from '../../utils/toast-sanitizer.js';
 
 // ─────────────── Gradient Donut Chart Component (Light Theme) ───────────────
 function GradientDonutChart({ primaryPct = 65, secondaryPct = 35, primaryLabel = 'Node-01', secondaryLabel = 'Node-02' }) {
@@ -250,7 +251,8 @@ function SmartToast({ msg, onClose, duration = 6000 }) {
 
   useEffect(() => {
     if (msg) {
-      setText(msg);
+      const cleanMsg = sanitizeToastMessage(msg);
+      setText(cleanMsg);
       setVisible(true);
       startTimer(duration);
     }
@@ -370,9 +372,9 @@ export function OperationsPage() {
       setDbIssues((prev) =>
         prev.map((i) => (i.issueCode === issueId || String(i.id) === issueId ? { ...i, status: newStatus } : i))
       );
-      showToast(`✅ DB 이슈 상태가 [${newStatus}]로 업데이트되었습니다 (${issueId})`);
+      showToast(`✅ DB issue status updated to [${newStatus}] (${issueId})`);
     } catch (err) {
-      showToast(`❌ 이슈 상태 변경 실패: ${err.message}`);
+      showToast(`❌ Issue status update failed: ${err.message}`);
     }
   };
 
@@ -408,7 +410,7 @@ export function OperationsPage() {
   const handleDownloadCurrentLog = (serverName = 'Service Log') => {
     const text = (serverName.includes('02') ? logTextData.node02Logs : (logTextData.node01Logs || logTextData.node02Logs)) || '';
     if (!text) {
-      showToast('⚠️ 다운로드할 로그가 없습니다.');
+      showToast('⚠️ No logs available for download.');
       return;
     }
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
@@ -420,7 +422,7 @@ export function OperationsPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast(`✅ Service Log 파일이 성공적으로 다운로드되었습니다.`);
+    showToast(`✅ Service Log file downloaded successfully.`);
   };
 
   const handleDownloadArchiveLog = () => {
@@ -440,7 +442,7 @@ export function OperationsPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast(`🗄️ 아카이브 로그 [${filename}] 다운로드가 시작되었습니다.`);
+    showToast(`🗄️ Archive log [${filename}] download started.`);
   };
 
   const haNodes = statusData?.haNodes || [
@@ -498,12 +500,12 @@ export function OperationsPage() {
             transition: 'all 0.15s ease',
           }}
         >
-          🖥️ 서버 클러스터 & 헬스
+          📊 System Status & Health
         </button>
 
         <button
           type="button"
-          onClick={() => handleTabChange('db-backups')}
+          onClick={() => handleTabChange('services')}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -511,8 +513,8 @@ export function OperationsPage() {
             padding: '10px 20px',
             fontSize: '14px',
             fontWeight: '700',
-            color: activeTab === 'db-backups' ? '#007BFF' : '#64748B',
-            borderBottom: activeTab === 'db-backups' ? '3px solid #007BFF' : '3px solid transparent',
+            color: activeTab === 'services' ? '#007BFF' : '#64748B',
+            borderBottom: activeTab === 'services' ? '3px solid #007BFF' : '3px solid transparent',
             background: 'none',
             border: 'none',
             cursor: 'pointer',
@@ -520,7 +522,7 @@ export function OperationsPage() {
             transition: 'all 0.15s ease',
           }}
         >
-          💾 DB 백업 관리
+          ⚙️ Core Services & Infra
         </button>
 
         <button
@@ -578,10 +580,10 @@ export function OperationsPage() {
             {activeTab === 'issues' && 'Issues'}
           </h1>
           <p style={{ fontSize: '13px', color: '#666666', margin: '4px 0 0 0' }}>
-            {activeTab === 'overview' && 'AnyTap 서버 클러스터, CPU/메모리 리소스 및 실시간 헬스 모니터링 대시보드'}
-            {activeTab === 'db-backups' && 'MySQL 데이터베이스 자동/수동 백업 생성, 덤프 다운로드 및 시점 복구(PITR) 관리'}
-            {activeTab === 'logs' && `실시간 서버 텍스트 로그 (ERROR / WARN / INFO 하이라이트 적용 | 최종 동기화: ${logTextData.fetchedAt || lastRefreshed.toLocaleTimeString()})`}
-            {activeTab === 'issues' && '테이블 행(Row)을 클릭하면 해당 에러 발생 시점의 상세 로그(Log Detail Stream)가 하단에 즉시 펼쳐집니다.'}
+            {activeTab === 'overview' && 'AnyTap server cluster, CPU/Memory resources and real-time health monitoring dashboard'}
+            {activeTab === 'db-backups' && 'MySQL database automated/manual backup, dump download and point-in-time recovery (PITR) management'}
+            {activeTab === 'logs' && `Real-time server text logs (ERROR / WARN / INFO highlighted | Last sync: ${logTextData.fetchedAt || lastRefreshed.toLocaleTimeString()})`}
+            {activeTab === 'issues' && 'Clicking a table row expands the detailed log stream at the time of the error below.'}
           </p>
         </div>
 
@@ -590,7 +592,7 @@ export function OperationsPage() {
             <>
               <button
                 type="button"
-                onClick={() => handleDownloadCurrentLog('Server Log')}
+                onClick={handleManualRefreshTextLog}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -598,15 +600,14 @@ export function OperationsPage() {
                   padding: '8px 14px',
                   fontSize: '13px',
                   fontWeight: '600',
-                  backgroundColor: '#007BFF',
-                  color: '#ffffff',
-                  border: 'none',
+                  color: '#007BFF',
+                  backgroundColor: '#EFF6FF',
+                  border: '1px solid #BFDBFE',
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  boxShadow: '0 2px 4px rgba(0,123,255,0.2)',
                 }}
               >
-                ⬇ Server Log 다운로드
+                🔄 Refresh Live Log
               </button>
 
               <button
@@ -626,7 +627,7 @@ export function OperationsPage() {
                   cursor: 'pointer',
                 }}
               >
-                🗄️ 아카이브 로그 다운로드 (.gz)
+                🗄️ Download Archive Logs (.gz)
               </button>
             </>
           )}
@@ -635,7 +636,7 @@ export function OperationsPage() {
             type="button"
             onClick={async () => {
               await loadData();
-              showToast('🔄 Server Log 및 시스템 상태가 새로고침되었습니다.');
+              showToast('🔄 Server Log and System Status refreshed.');
             }}
             style={{
               display: 'inline-flex',
@@ -652,7 +653,7 @@ export function OperationsPage() {
               boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
             }}
           >
-            🔄 새로고침
+            🔄 Refresh
           </button>
         </div>
       </div>
@@ -661,34 +662,34 @@ export function OperationsPage() {
       {activeTab === 'overview' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-            <AdminPanel title="🖥️ HA 게이트웨이 노드 로드 트래픽 분산">
+            <AdminPanel title="🖥️ HA Gateway Node Load Traffic Distribution">
               <GradientDonutChart primaryPct={65} secondaryPct={35} primaryLabel="Server-Node-01" secondaryLabel="Server-Node-02" />
             </AdminPanel>
 
-            <AdminPanel title="⚡ Spring Boot JVM Heap & Non-Heap 리소스">
+            <AdminPanel title="⚡ Spring Boot JVM Heap & Non-Heap Resources">
               <div style={{ padding: '8px 0' }}>
                 <ThickGradientBar
                   percent={jvmStatus.heapUsedPct}
                   fromColor="#007BFF"
                   toColor="#00C6FF"
-                  labelLeft={`JVM Heap 사용량: ${jvmStatus.heapUsedMb} MB / ${jvmStatus.heapMaxMb} MB`}
+                  labelLeft={`JVM Heap Usage: ${jvmStatus.heapUsedMb} MB / ${jvmStatus.heapMaxMb} MB`}
                   labelRight={`${jvmStatus.heapUsedPct}%`}
                 />
                 <ThickGradientBar
                   percent={jvmStatus.nonHeapUsedPct}
                   fromColor="#8B5CF6"
                   toColor="#D946EF"
-                  labelLeft={`Non-Heap 사용량: ${jvmStatus.nonHeapUsedMb} MB / ${jvmStatus.nonHeapMaxMb} MB`}
+                  labelLeft={`Non-Heap Usage: ${jvmStatus.nonHeapUsedMb} MB / ${jvmStatus.nonHeapMaxMb} MB`}
                   labelRight={`${jvmStatus.nonHeapUsedPct}%`}
                 />
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginTop: '12px' }}>
                   <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '10px 12px', borderRadius: '8px' }}>
-                    <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '600', display: 'block' }}>JVM 버전</span>
+                    <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '600', display: 'block' }}>JVM Version</span>
                     <span style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A' }}>{jvmStatus.javaVersion}</span>
                   </div>
                   <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '10px 12px', borderRadius: '8px' }}>
-                    <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '600', display: 'block' }}>업타임 (Uptime)</span>
+                    <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '600', display: 'block' }}>Uptime</span>
                     <span style={{ fontSize: '13px', fontWeight: '700', color: '#10B981' }}>{jvmStatus.uptime}</span>
                   </div>
                 </div>
@@ -696,18 +697,18 @@ export function OperationsPage() {
             </AdminPanel>
           </div>
 
-          <AdminPanel title="🌐 서버 클러스터 노드 현황">
+          <AdminPanel title="🌐 Server Cluster Node Status">
             <div style={{ overflowX: 'auto' }}>
               <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>노드 ID</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>역할</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>IP 주소</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>CPU 사용률</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>RAM 사용량</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>트래픽 점유</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>상태</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Node ID</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Role</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>IP Address</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>CPU Usage</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>RAM Usage</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Traffic Share</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -740,13 +741,13 @@ export function OperationsPage() {
 
       {/* TAB 3: Server Log Stream */}
       {activeTab === 'logs' && (
-        <AdminPanel title="📜 Server Log (실시간 시스템 서버 로그)">
+        <AdminPanel title="📜 Server Log (Real-time System Server Log)">
           {/* Controls & Search */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '240px' }}>
               <input
                 type="text"
-                placeholder="로그 텍스트 내 키워드 / ERROR / Exception 검색..."
+                placeholder="Search keywords / ERROR / Exception in log text..."
                 value={logSearchTerm}
                 onChange={(e) => setLogSearchTerm(e.target.value)}
                 style={{
@@ -763,19 +764,19 @@ export function OperationsPage() {
             <div style={{ display: 'flex', gap: '6px' }}>
               <button
                 type="button"
-                onClick={() => setSelectedServerView('SINGLE')}
+                onClick={() => setSelectedServerView('ALL')}
                 style={{
                   padding: '6px 12px',
                   fontSize: '12px',
                   fontWeight: '600',
                   borderRadius: '6px',
                   border: '1px solid #CBD5E1',
-                  backgroundColor: selectedServerView === 'SINGLE' ? '#007BFF' : '#FFFFFF',
-                  color: selectedServerView === 'SINGLE' ? '#FFFFFF' : '#475569',
+                  backgroundColor: selectedServerView === 'ALL' ? '#007BFF' : '#FFFFFF',
+                  color: selectedServerView === 'ALL' ? '#FFFFFF' : '#475569',
                   cursor: 'pointer',
                 }}
               >
-                🟦 Server Log (단일 서비스)
+                ALL Servers
               </button>
 
               <button
@@ -792,7 +793,7 @@ export function OperationsPage() {
                   cursor: 'pointer',
                 }}
               >
-                ⬛⬜ 서버 2개 분할 뷰
+                ⬛⬜ Dual Server Split View
               </button>
             </div>
           </div>
@@ -862,18 +863,18 @@ export function OperationsPage() {
 
       {/* TAB 4: Server Issue (Click Row to Expand Log Detail Stream) */}
       {activeTab === 'issues' && (
-        <AdminPanel title="🚨 Server Issue (행 클릭 시 상세 에러 로그 하단 펼침)">
+        <AdminPanel title="🚨 Server Issue (Click row to expand detailed error log below)">
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
             <button
               type="button"
               onClick={async () => {
-                if (!window.confirm('Server Issue DB 기록을 모두 비우시겠습니까?')) return;
+                if (!window.confirm('Are you sure you want to clear all Server Issue DB records?')) return;
                 try {
                   await clearOperationsIssues();
                   setDbIssues([]);
-                  showToast('🧹 Server Issue DB 기록이 모두 삭제 초기화되었습니다.');
+                  showToast('🧹 Server Issue DB records cleared.');
                 } catch (err) {
-                  showToast(`❌ DB 비우기 실패: ${err.message}`);
+                  showToast(`❌ Clearing DB failed: ${err.message}`);
                 }
               }}
               style={{
@@ -888,7 +889,7 @@ export function OperationsPage() {
                 boxShadow: '0 1px 3px rgba(239,68,68,0.3)',
               }}
             >
-              🧹 DB 이슈 전체 비우기 (초기화)
+              🧹 Clear All DB Issues
             </button>
           </div>
 
@@ -896,20 +897,20 @@ export function OperationsPage() {
             <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>감지 일시</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>서비스</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>예외 타입</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>심각도</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>메시지 내용</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>상태</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: '12px', color: '#475569' }}>조치</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Detection Time</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Service</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Exception Type</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Severity</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Message Content</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', color: '#475569' }}>Status</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: '12px', color: '#475569' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {dbIssues.length === 0 ? (
                   <tr>
                     <td colSpan={7} style={{ padding: '40px 12px', textAlign: 'center', color: '#64748B', fontSize: '14px' }}>
-                      🎉 감지된 Server Issue가 없습니다. (백엔드에서 Error 또는 Exception 발생 시 실시간으로 자동 기록됩니다.)
+                      🎉 No Server Issues detected. (Real-time logs recorded automatically upon backend Error or Exception.)
                     </td>
                   </tr>
                 ) : (
@@ -1015,20 +1016,20 @@ export function OperationsPage() {
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleUpdateIssueStatus(issueCode, 'RESOLVED');
+                                        handleResolveIssue(issue.issueCode);
                                       }}
                                       style={{
                                         padding: '4px 10px',
-                                        fontSize: '12px',
+                                        fontSize: '11px',
                                         fontWeight: '600',
-                                        backgroundColor: '#10B981',
-                                        color: '#ffffff',
-                                        border: 'none',
+                                        color: '#059669',
+                                        backgroundColor: '#ECFDF5',
+                                        border: '1px solid #A7F3D0',
                                         borderRadius: '4px',
                                         cursor: 'pointer',
                                       }}
                                     >
-                                      ✓ DB 조치완료 (Resolve)
+                                      ✓ Mark Resolved
                                     </button>
                                   )}
 
@@ -1049,7 +1050,7 @@ export function OperationsPage() {
                                       cursor: 'pointer',
                                     }}
                                   >
-                                    ▲ 접기 (Collapse)
+                                    ▲ Collapse
                                   </button>
                                 </div>
                               </div>
