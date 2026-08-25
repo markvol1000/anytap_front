@@ -39,7 +39,7 @@ export function AdminApp() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="login-logs" element={<LoginLogsPage />} />
         <Route path="logs" element={<AdminLogsPage />} />
-        <Route path="*" element={<Navigate to="/admin" replace />} />
+        <Route path="*" element={<Navigate to="" replace />} />
       </Route>
     </Routes>
   );

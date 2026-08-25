@@ -46,8 +46,14 @@ export default function App() {
             </Suspense>
           }
         />
-        <Route path="/admin/hanzb" element={<AnyBotPage />} />
-        <Route path="/admin/hanzb/*" element={<AnyBotPage />} />
+        <Route
+          path="/admin/hanzb/*"
+          element={
+            <Suspense fallback={<div className="admin-shell admin-shell--gate"><p className="admin-loading">Loading admin…</p></div>}>
+              <AdminApp />
+            </Suspense>
+          }
+        />
         <Route
           path="/account/*"
           element={
