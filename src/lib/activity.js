@@ -9,21 +9,7 @@ import { isHttpApi } from './api/config.js';
 // ─── Activity types ───────────────────────────────────────────────────────────
 
 /** Card usage transactions — `at` is ISO 8601 local datetime */
-export const ACTIVITY = [
-  { id: 'tx-1', title: 'Blue Bottle Coffee', at: '2026-06-17T09:24:00', amount: 8.40, incoming: false, failed: false, kind: 'card_spend', status: 'completed', reference: 'AT-TX-001', cardLast4: '4921' },
-  { id: 'tx-2', title: 'Card Top Up', at: '2026-06-17T08:10:00', amount: 200.00, incoming: true, failed: false, kind: 'card_topup', status: 'completed', reference: 'AT-TX-002', cardLast4: '4921' },
-  { id: 'tx-3', title: 'Apple Store', at: '2026-06-16T21:02:00', amount: 129.00, incoming: false, failed: false, kind: 'card_spend', status: 'completed', reference: 'AT-TX-003', cardLast4: '4921' },
-  { id: 'tx-4', title: 'Uber', at: '2026-06-16T18:40:00', amount: 14.20, incoming: false, failed: false, kind: 'card_spend', status: 'completed', reference: 'AT-TX-004', cardLast4: '4921' },
-  { id: 'tx-5', title: 'Wallet Deposit', at: '2026-06-15T11:05:00', amount: 500.00, incoming: true, failed: false, kind: 'wallet_topup', status: 'completed', txId: '7d2e10ff9ac3b821', reference: 'AT-WL-005' },
-  { id: 'tx-6', title: 'Guy Hawkins', at: '2026-06-14T14:30:00', amount: 12.49, incoming: false, failed: true, kind: 'card_spend', status: 'failed', reference: 'AT-TX-010', cardLast4: '4921' },
-  { id: 'tx-7', title: 'Whole Foods Market', at: '2026-06-17T12:15:00', amount: 46.80, incoming: false, failed: false, kind: 'card_spend', status: 'completed', reference: 'AT-TX-006', cardLast4: '8804' },
-  { id: 'tx-8', title: 'Transfer Sent', at: '2026-06-13T16:20:00', amount: 75.00, incoming: false, failed: false, kind: 'wallet_send', status: 'completed', txId: 'f0312bb98e4ad551', reference: 'AT-WL-008' },
-  { id: 'tx-9', title: 'Refund — Apple Store', at: '2026-06-12T11:00:00', amount: 129.00, incoming: true, failed: false, kind: 'refund', status: 'completed', reference: 'AT-TX-009', cardLast4: '4921' },
-  { id: 'tx-10', title: 'Starbucks', at: '2026-06-14T08:05:00', amount: 6.75, incoming: false, failed: false, kind: 'card_spend', status: 'completed', reference: 'AT-TX-011', cardLast4: '2231' },
-  { id: 'tx-11', title: 'Netflix', at: '2026-06-13T22:00:00', amount: 15.99, incoming: false, failed: false, kind: 'reversal', status: 'completed', reference: 'AT-TX-012', cardLast4: '2231' },
-  { id: 'tx-r1', title: 'Referral Reward', at: '2026-06-17T10:00:00', amount: 12.40, incoming: true, failed: false, kind: 'referral_commission', status: 'completed', reference: 'AT-RW-001' },
-  { id: 'tx-wr', title: 'Transfer Received', at: '2026-06-11T09:00:00', amount: 250.00, incoming: true, failed: false, kind: 'wallet_receive', status: 'completed', txId: 'a1b2c3d4e5f67890', reference: 'AT-WL-WR' },
-];
+export const ACTIVITY = [];
 
 /** Scope tabs — All | Wallet | Cards (Transactions & Activity page) */
 export const ACTIVITY_SCOPE_FILTERS = [
@@ -36,6 +22,7 @@ export const ACTIVITY_SCOPE_FILTERS = [
 export const ACTIVITY_FILTERS = ACTIVITY_SCOPE_FILTERS;
 
 export const TX_DATE_RANGES = [
+  { id: 'all', label: 'All Time' },
   { id: 'today', label: 'Today' },
   { id: '7d', label: 'Last 7 Days' },
   { id: '30d', label: 'Last 30 Days' },
@@ -91,9 +78,29 @@ export function getActivityTypeLabel(kind) {
 }
 
 export function getActivityStatus(item) {
-  if (item?.status) return item.status;
-  if (item?.failed) return 'failed';
-  if (item?.pending) return 'pending';
+  if (!item) return 'completed';
+  const raw = String(item.status || '').toLowerCase().trim();
+  if (['failed', 'fail', 'declined', 'rejected', 'error', 'denied'].includes(raw) || item.failed === true) {
+    return 'failed';
+  }
+  if (['pending', 'processing', 'wait_process'].includes(raw) || item.pending === true) {
+    return 'pending';
+  }
+  if (raw === 'refunded') return 'refunded';
+  if (raw === 'cancelled' || raw === 'canceled') return 'cancelled';
+  if (['completed', 'success', 'authorized', 'approved', 'settled', 'succeed', 'ok'].includes(raw)) {
+    return 'completed';
+  }
+  if (raw.includes('fail') || raw.includes('declin') || raw.includes('reject') || raw.includes('error')) {
+    return 'failed';
+  }
+  if (raw.includes('pending') || raw.includes('process') || raw.includes('wait')) {
+    return 'pending';
+  }
+  if (raw.includes('success') || raw.includes('complete') || raw.includes('settle') || raw.includes('authorize') || raw.includes('succeed') || raw.includes('approve')) {
+    return 'completed';
+  }
+  if (raw) return raw;
   return 'completed';
 }
 
@@ -174,15 +181,20 @@ export function filterActivityForRewardsPage(items) {
 
 export function filterActivityByCard(items, cardIdOrLast4) {
   if (!cardIdOrLast4 || cardIdOrLast4 === 'all') return items;
-  const target = String(cardIdOrLast4).toLowerCase().trim();
+  const target = String(cardIdOrLast4).trim();
+  const targetDigits = target.replace(/\D/g, '');
+  const targetLast4 = targetDigits.length >= 4 ? targetDigits.slice(-4) : (target.length <= 4 ? target : '');
+
   return items.filter((t) => {
-    const tId = String(t.cardId || t.id || '').toLowerCase();
-    const tNo = String(t.cardNo || '').toLowerCase();
-    const tLast4 = String(t.cardLast4 || (tNo.length >= 4 ? tNo.slice(-4) : '')).toLowerCase();
-    if (tId && tId === target) return true;
-    if (tNo && tNo === target) return true;
-    if (tLast4 && tLast4 === target) return true;
-    if (target.length <= 4 && tLast4.endsWith(target)) return true;
+    const tCardNo = String(t.cardNo || t.wasabiCardId || '').replace(/\D/g, '');
+    const tLast4 = String(t.cardLast4 || (tCardNo.length >= 4 ? tCardNo.slice(-4) : '')).trim();
+
+    if (tCardNo && targetDigits && tCardNo === targetDigits) return true;
+    if (tLast4 && targetLast4 && tLast4.endsWith(targetLast4)) return true;
+    if (t.cardId && String(t.cardId).toLowerCase() === target.toLowerCase()) return true;
+
+    if (!targetDigits && target.startsWith('card-')) return true;
+
     return false;
   });
 }
@@ -228,6 +240,7 @@ export function getDateRangeBounds(rangeId, customFrom, customTo, now = new Date
 }
 
 export function filterActivityByDateRange(items, rangeId, customFrom, customTo) {
+  if (!rangeId || rangeId === 'all') return items;
   const { from, to } = getDateRangeBounds(rangeId, customFrom, customTo);
   return items.filter((t) => {
     const d = new Date(t.at);
@@ -306,16 +319,17 @@ export function sortActivityChronological(items) {
 
 /** Portal activity — remote API modes never fall back to mock */
 export function resolvePortalActivityItems(activityItems, userCards) {
-  if (isHttpApi) return normalizeActivityItems(activityItems ?? []);
-  if (activityItems?.length) return normalizeActivityItems(activityItems);
-  return normalizeActivityItems(activityForUserCards(ACTIVITY, userCards));
+  if (activityItems && Array.isArray(activityItems) && activityItems.length > 0) {
+    return normalizeActivityItems(activityItems);
+  }
+  return [];
 }
 
-/** Portal activity including wallet top-up history — mock only in local dev */
 export function resolvePortalActivityWithHistory(activityItems) {
-  if (isHttpApi) return normalizeActivityItems(activityItems ?? []);
-  if (activityItems?.length) return normalizeActivityItems(activityItems);
-  return normalizeActivityItems(buildUnifiedActivityItems(ACTIVITY, HISTORY));
+  if (activityItems && Array.isArray(activityItems) && activityItems.length > 0) {
+    return normalizeActivityItems(activityItems);
+  }
+  return [];
 }
 
 /** Keep only transactions for cards the user actually holds */
@@ -511,11 +525,18 @@ export function formatActivityAmount(amount, incoming, kind) {
 }
 
 export function formatActivityStatusLabel(status) {
-  const s = String(status || '').toLowerCase();
+  const s = String(status || '').toLowerCase().trim();
   const map = {
     completed: 'Completed',
+    success: 'Completed',
+    authorized: 'Authorized',
+    approved: 'Approved',
     pending: 'Pending',
+    processing: 'Pending',
     failed: 'Failed',
+    fail: 'Failed',
+    declined: 'Failed',
+    rejected: 'Failed',
     refunded: 'Refunded',
     cancelled: 'Cancelled',
     canceled: 'Cancelled',
@@ -621,13 +642,7 @@ export function applyTransactionFilters(items, {
 
 // ─── Top-up history (legacy mock — merged into unified feed) ────────────────
 
-export const HISTORY = [
-  { date: 'Jun 18 · 09:24', usdt: '200.00', fee: '1.00', usd: '$199.00', st: 3, tx: 'a3f8c92b7e1d04ff' },
-  { date: 'Jun 15 · 14:02', usdt: '500.00', fee: '1.00', usd: '$499.00', st: 3, tx: '7d2e10ff9ac3b821' },
-  { date: 'Jun 18 · 10:05', usdt: '100.00', fee: '1.00', usd: 'Pending', st: 2, tx: 'c91b44a0de77f230' },
-  { date: 'Jun 18 · 10:31', usdt: '50.00', fee: '1.00', usd: 'Pending', st: 1, tx: 'f0312bb98e4ad551' },
-  { date: 'Jun 12 · 18:40', usdt: '300.00', fee: '1.00', usd: 'Failed', st: 0, tx: 'ee55aa10cc239810' },
-];
+export const HISTORY = [];
 
 export const STEP_LABELS = {
   1: 'Deposit detected · confirming',

@@ -7,6 +7,7 @@ import { NotFoundPage } from './pages/NotFoundPage.jsx';
 import { DemoStatesPage, DemoStateEnterPage } from './pages/DemoStatesPage.jsx';
 import { hasMemberSession } from './lib/services/authService.js';
 import { SCREEN_ROUTES } from './constants/routes.ts';
+import { PageLoader } from './components/PageLoader.jsx';
 
 import { AnyBotPage } from './pages/AnyBotPage.jsx';
 
@@ -21,7 +22,7 @@ const AdminApp = lazy(() =>
 function AppLayout() {
   return (
     <PageShell>
-      <Suspense fallback={null}>
+      <Suspense fallback={<PageLoader />}>
         <Outlet />
       </Suspense>
     </PageShell>
@@ -38,10 +39,10 @@ export default function App() {
     <>
       <Seo />
       <Routes>
-                        <Route
+        <Route
           path="/admin/*"
           element={
-            <Suspense fallback={<div className="admin-shell admin-shell--gate"><p className="admin-loading">Loading admin…</p></div>}>
+            <Suspense fallback={<PageLoader />}>
               <AdminApp />
             </Suspense>
           }
@@ -50,7 +51,7 @@ export default function App() {
         <Route
           path="/account/*"
           element={
-            <Suspense fallback={<div className="portal-sk-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}><div className="portal-spin" style={{ width: 32, height: 32 }} /></div>}>
+            <Suspense fallback={<PageLoader />}>
               <AccountApp />
             </Suspense>
           }

@@ -172,6 +172,7 @@ export function ActivityScopeTabBar({
 export function ActivityList({
   items = A.ACTIVITY,
   showScopeFilters = false,
+  loading = false,
   limit,
   onItemClick,
   onViewAll,
@@ -211,7 +212,11 @@ export function ActivityList({
     />
   ) : null;
 
-  const listBody = !(items || []).length ? (
+  const listBody = loading ? (
+    <div className="portal-tx-loading" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px 0' }}>
+      <div className="portal-spin" style={{ width: 28, height: 28, borderTopColor: 'var(--brand-primary, #ff5500)', borderColor: 'rgba(0,0,0,0.1)' }} />
+    </div>
+  ) : !(items || []).length ? (
     <div className="portal-tx-empty">
       {emptyIcon && (
         <span className="portal-tx-empty__icon" aria-hidden="true">
@@ -336,6 +341,7 @@ export function RecentActivitySection({
   cardLast4,
   scope = 'all',
   limit = 10,
+  loading = false,
   showScopeFilters = false,
   onViewAll,
   onItemClick,
@@ -397,10 +403,15 @@ export function RecentActivitySection({
       <div className="portal-activity__head">
         <h2 className="portal-dash-section__title portal-dash-section__title--inline">{title}</h2>
       </div>
-      {showScopeFilters ? (
+      {loading ? (
+        <div className="portal-tx-loading" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px 0' }}>
+          <div className="portal-spin" style={{ width: 28, height: 28, borderTopColor: 'var(--brand-primary, #ff5500)', borderColor: 'rgba(0,0,0,0.1)' }} />
+        </div>
+      ) : showScopeFilters ? (
         <ActivityList
           items={items}
           showScopeFilters
+          loading={loading}
           onItemClick={handleRowClick}
           onViewAll={onViewAll}
           emptyTitle={emptyTitle}

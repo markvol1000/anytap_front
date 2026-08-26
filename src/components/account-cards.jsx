@@ -1298,6 +1298,7 @@ export function AccountMyCards({ s }) {
         <RecentActivitySection
           title="Recent Activity"
           items={A.resolvePortalActivityWithHistory(s.activityItems)}
+          loading={s.txsLoading}
           pageFilter="card"
           card={selectedCard}
           cardLast4={selectedCard?.last4}

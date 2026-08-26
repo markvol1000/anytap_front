@@ -185,6 +185,7 @@ export function useAccountState() {
   const currentCard = userCards[selectedCardIndex] ?? primaryCard;
 
   const [selectedCardTxs, setSelectedCardTxs] = useState(null);
+  const [txsLoading, setTxsLoading] = useState(false);
 
   useEffect(() => {
     if (!isHttpApi || !hasHttpSession()) return undefined;
@@ -195,10 +196,12 @@ export function useAccountState() {
     const l4 = currentCard?.last4 || cNo.replace(/\D/g, '').slice(-4) || cNo.slice(-4) || '';
     if (!cNo) {
       setSelectedCardTxs(null);
+      setTxsLoading(false);
       return undefined;
     }
 
     let cancelled = false;
+    setTxsLoading(true);
     fetchCardTransactions(session.userId, { cardId: cNo, last4: l4 })
       .then((res) => {
         if (!cancelled && res?.items) {
@@ -207,6 +210,9 @@ export function useAccountState() {
       })
       .catch(() => {
         if (!cancelled) setSelectedCardTxs(null);
+      })
+      .finally(() => {
+        if (!cancelled) setTxsLoading(false);
       });
 
     return () => { cancelled = true; };
@@ -493,6 +499,7 @@ export function useAccountState() {
       : (referralContext?.code ?? null),
     // Loading
     homeLoading: showHomeLoading,
+    txsLoading,
     // Card detail
     cardTab, setCardTab,
     showCardDetails, setShowCardDetails,

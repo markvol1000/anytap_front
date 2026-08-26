@@ -533,6 +533,7 @@ const LEGACY_PATH_ALIASES = {
   '/account/card/apply': 'cardApply',
   '/account/card/register': 'cardRegister',
   '/account/history': 'transactions',
+  '/account/activity': 'transactions',
 };
 
 export function pathToScreen(pathname) {

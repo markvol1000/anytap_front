@@ -11,6 +11,7 @@ export const SCREEN_ROUTES: Record<string, string> = {
   topup: '/account/topup',
   history: '/account/history',
   transactions: '/account/transactions',
+  activity: '/account/activity',
   referral: '/account/referral',
   settings: '/account/settings',
   profile: '/account/settings/profile',

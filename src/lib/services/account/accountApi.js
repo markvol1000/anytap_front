@@ -349,9 +349,11 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
 export async function fetchCardTransactions(userId, { pageNum = 1, pageSize = 50, last4 = '', cardId = '' } = {}) {
   if (!userId) return { total: 0, items: [] };
   try {
-    let query = `pageNum=${encodeURIComponent(pageNum)}&pageSize=${encodeURIComponent(pageSize)}`;
-    if (cardId) query += `&cardId=${encodeURIComponent(cardId)}`;
-    const payload = await apiGet(`/cards/${encodeURIComponent(userId)}/transactions?${query}`);
+    const payload = await apiPost(`/cards/${encodeURIComponent(userId)}/transactions`, {
+      cardId,
+      pageNum,
+      pageSize,
+    });
     const items = mapWasabiTransactionsResponse(payload, { last4, cardId });
     const total = Number(payload?.total ?? items.length) || items.length;
     return { total, items };
@@ -379,12 +381,12 @@ export async function fetchLocalTransactions(userId) {
       const isRefundedStatus = !isFailed && !isCancelled && (statusRaw === 'REFUNDED' || type === 'REFUND');
 
       let kind = 'unknown';
-      let title = desc && desc !== '-' ? desc : 'Transaction';
+      let title = 'Transaction';
       let incoming = false;
 
       if (isRefundedStatus) {
         kind = 'refund';
-        title = desc && desc !== '-' ? desc : 'Card Top Up Refund';
+        title = desc && desc !== '-' && !desc.toUpperCase().startsWith('FAIL') ? desc : 'Card Top Up Refund';
         incoming = true;
       } else if (type === 'DEPOSIT') {
         kind = 'wallet_topup';
@@ -404,11 +406,11 @@ export async function fetchLocalTransactions(userId) {
         incoming = false;
       } else if (type === 'CARD_SPEND') {
         kind = 'card_spend';
-        title = desc && desc !== '-' ? desc : 'Card Purchase';
+        title = desc && desc !== '-' && !desc.toUpperCase().startsWith('FAIL') ? desc : 'Card Purchase';
         incoming = false;
       } else {
         kind = 'wallet_topup';
-        title = desc && desc !== '-' ? desc : 'Transaction';
+        title = desc && desc !== '-' && !desc.toUpperCase().startsWith('FAIL') ? desc : 'Transaction';
         incoming = true;
       }
 
@@ -511,12 +513,11 @@ export async function fetchAccountContext() {
 
       const normalizedLocalTxs = localTxs.map((tx) => {
         if (tx.kind === 'card_topup') {
-          // In Card View, Card Top-Up represents incoming money to the Card (+100 USDT)
           return { 
             ...tx, 
-            cardNo: tx.cardNo || targetCardNo, 
-            cardLast4: tx.cardLast4 || targetLast4,
-            cardIncoming: true, // Mark as incoming deposit for Card View
+            cardNo: tx.cardNo || '', 
+            cardLast4: tx.cardLast4 || '',
+            cardIncoming: true,
             cardDisplayAmount: `+${Math.abs(Number(tx.amount || 0)).toFixed(2)} USDT`
           };
         }

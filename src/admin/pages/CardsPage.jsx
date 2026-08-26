@@ -25,7 +25,7 @@ import {
   unfreezeCard,
 } from '../services/api/adminApiService.js';
 
-const isDevEnv = import.meta.env.DEV || import.meta.env.MODE === 'development' || import.meta.env.MODE === 'dev' || (typeof window !== 'undefined' && (['localhost', '127.0.0.1', '13.209.47.166'].includes(window.location.hostname) || window.location.hostname.includes('dev') || window.location.port === '5173'));
+const isDevEnv = (import.meta.env.DEV || import.meta.env.MODE === 'development' || import.meta.env.MODE === 'dev' || (typeof window !== 'undefined' && (['localhost', '127.0.0.1'].includes(window.location.hostname) || window.location.hostname.includes('dev') || window.location.port === '5173'))) && !(typeof window !== 'undefined' && (window.location.hostname.endsWith('anytap.io') && !window.location.hostname.includes('dev')));
 
 const fetchRegisteredCards = (params) => getCardApplications({ ...params, onlyRegistered: true });
 const fetchCardDetail = (id) => getCardById(id);
@@ -106,9 +106,12 @@ export function CardsPage() {
   const [depositPage, setDepositPage] = useState(1);
   const [txSectionPage, setTxSectionPage] = useState(1);
 
-  const [simAmount, setSimAmount] = useState('10.00');
-  const [simMerchant, setSimMerchant] = useState('Starbucks Coffee');
-  const [simDescription, setSimDescription] = useState('Admin Test Transaction');
+  const [showSimModal, setShowSimModal] = useState(false);
+  const [simCurrency, setSimCurrency] = useState('KRW');
+  const [simType, setSimType] = useState('auth');
+  const [simAmount, setSimAmount] = useState('15000');
+  const [simMerchant, setSimMerchant] = useState('스타벅스 강남점');
+  const [simDescription, setSimDescription] = useState('테스트 카드 결제 승인');
   const [simLoading, setSimLoading] = useState(false);
 
   const loadTxs = useCallback(async (p = 1) => {
@@ -124,6 +127,29 @@ export function CardsPage() {
       setTxLoading(false);
     }
   }, [selectedId, detail?.memberId, detail?.wasabiCardId]);
+
+  const handleRunSimulation = useCallback(async (e) => {
+    if (e) e.preventDefault();
+    if (!detail) return;
+    setSimLoading(true);
+    try {
+      const cardId = detail.wasabiCardId || detail.id;
+      await simulateCardTransaction(cardId, {
+        amount: Number(simAmount),
+        currency: simCurrency,
+        type: simType,
+        merchantName: simMerchant,
+        description: simDescription || simMerchant,
+      });
+      window.alert(`[${simCurrency}] ${Number(simAmount).toLocaleString()} ${simCurrency} 결제 승인 시뮬레이션이 성공적으로 실행되었습니다.`);
+      setShowSimModal(false);
+      loadTxs(1);
+    } catch (err) {
+      window.alert(err.message || '결제 시뮬레이션 생성에 실패했습니다.');
+    } finally {
+      setSimLoading(false);
+    }
+  }, [detail, simAmount, simCurrency, simType, simMerchant, simDescription, loadTxs]);
 
   useEffect(() => {
     setTxPage(1);
@@ -535,7 +561,15 @@ export function CardsPage() {
                   {txLoading ? (
                     <div style={{ fontSize: '12px', color: '#64748b', padding: '8px' }}>Loading transaction history...</div>
                   ) : (() => {
-                    const allTxs = [...(txs?.items || []), ...(detail.cardTransactions || [])];
+                    const combinedList = [...(txs?.items || []), ...(detail.cardTransactions || [])];
+                    const seenIds = new Set();
+                    const allTxs = combinedList.filter((t) => {
+                      const idKey = t.id || t.txId;
+                      if (!idKey) return true;
+                      if (seenIds.has(idKey)) return false;
+                      seenIds.add(idKey);
+                      return true;
+                    });
                     const totalTxCount = allTxs.length;
                     const totalTxPages = Math.max(1, Math.ceil(totalTxCount / 10));
                     const pagedTxs = allTxs.slice((txSectionPage - 1) * 10, txSectionPage * 10);
@@ -693,45 +727,14 @@ export function CardsPage() {
                 {/* Dev-Only Simulated Transaction Panel */}
                 {isDevEnv && (
                   <AdminDetailSection title="🧪 Test Transaction Simulator (Dev)">
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input
-                          type="number"
-                          placeholder="Amount (USDT)"
-                          value={simAmount}
-                          onChange={(e) => setSimAmount(e.target.value)}
-                          style={{ width: '100px', padding: '4px 8px', fontSize: '12px', border: '1px solid #cbd5e1', borderRadius: '4px' }}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Merchant Name"
-                          value={simMerchant}
-                          onChange={(e) => setSimMerchant(e.target.value)}
-                          style={{ flex: 1, padding: '4px 8px', fontSize: '12px', border: '1px solid #cbd5e1', borderRadius: '4px' }}
-                        />
-                      </div>
+                    <div style={{ padding: '4px' }}>
                       <button
                         type="button"
-                        className="admin-btn admin-btn--secondary"
-                        disabled={simLoading}
-                        onClick={async () => {
-                          setSimLoading(true);
-                          try {
-                            await simulateCardTransaction(detail.wasabiCardId || detail.id, {
-                              amount: Number(simAmount),
-                              merchantName: simMerchant,
-                              description: simDescription
-                            });
-                            window.alert('Simulation transaction created successfully.');
-                            loadTxs(1);
-                          } catch (err) {
-                            window.alert(err.message);
-                          } finally {
-                            setSimLoading(false);
-                          }
-                        }}
+                        className="admin-btn admin-btn--sm admin-btn--secondary"
+                        style={{ fontSize: '11px', padding: '4px 10px', width: 'fit-content' }}
+                        onClick={() => setShowSimModal(true)}
                       >
-                        {simLoading ? 'Creating...' : '💳 Simulate Test Payment Approval'}
+                        💳 Simulate Test Payment Approval
                       </button>
                     </div>
                   </AdminDetailSection>
@@ -741,6 +744,149 @@ export function CardsPage() {
           </AdminDetailPanel>
         )}
       />
+
+      {/* Test Transaction Simulation Modal Popup */}
+      {showSimModal && detail && (
+        <div className="admin-modal-backdrop" onClick={() => setShowSimModal(false)}>
+          <div className="admin-modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1e293b' }}>
+                💳 카드 결제 승인 시뮬레이터 (Test Payment)
+              </h3>
+              <button
+                type="button"
+                className="admin-modal__close"
+                onClick={() => setShowSimModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleRunSimulation} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* 1. Currency Selection */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
+                  1. 결제 통화 선택 (Currency)
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {[
+                    { code: 'KRW', label: '₩ KRW (원화)', defaultAmt: '15000', defaultMerch: '스타벅스 강남점' },
+                    { code: 'USD', label: '$ USD (달러)', defaultAmt: '10.00', defaultMerch: 'Starbucks Coffee' },
+                    { code: 'USDT', label: '₮ USDT', defaultAmt: '10.00', defaultMerch: 'Tether Merchant' },
+                    { code: 'EUR', label: '€ EUR (유로)', defaultAmt: '10.00', defaultMerch: 'Paris Cafe' },
+                  ].map((cur) => (
+                    <button
+                      key={cur.code}
+                      type="button"
+                      className={`admin-btn ${simCurrency === cur.code ? 'admin-btn--primary' : 'admin-btn--ghost'}`}
+                      style={{
+                        flex: 1,
+                        padding: '6px 4px',
+                        fontSize: '11px',
+                        fontWeight: simCurrency === cur.code ? '700' : '500',
+                        border: simCurrency === cur.code ? '1px solid #2563eb' : '1px solid #cbd5e1',
+                      }}
+                      onClick={() => {
+                        setSimCurrency(cur.code);
+                        setSimAmount(cur.defaultAmt);
+                        setSimMerchant(cur.defaultMerch);
+                      }}
+                    >
+                      {cur.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Amount & Type */}
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
+                    2. 결제 금액 (Amount in {simCurrency})
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    required
+                    className="admin-input"
+                    value={simAmount}
+                    onChange={(e) => setSimAmount(e.target.value)}
+                    placeholder={simCurrency === 'KRW' ? '15000' : '10.00'}
+                    style={{ width: '100%', padding: '8px 10px', fontSize: '13px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                  />
+                </div>
+
+                <div style={{ width: '130px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
+                    결제 유형 (Type)
+                  </label>
+                  <select
+                    value={simType}
+                    onChange={(e) => setSimType(e.target.value)}
+                    style={{ width: '100%', padding: '8px 6px', fontSize: '12px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#ffffff' }}
+                  >
+                    <option value="auth">승인 (Auth)</option>
+                    <option value="refund">환불 (Refund)</option>
+                    <option value="reversal">취소 (Reversal)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 3. Merchant Name */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
+                  3. 가맹점명 (Merchant Name)
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="admin-input"
+                  value={simMerchant}
+                  onChange={(e) => setSimMerchant(e.target.value)}
+                  placeholder="예: 스타벅스 강남점, GS25 등"
+                  style={{ width: '100%', padding: '8px 10px', fontSize: '13px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                />
+              </div>
+
+              {/* 4. Description */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
+                  4. 상세 설명 (Description)
+                </label>
+                <input
+                  type="text"
+                  className="admin-input"
+                  value={simDescription}
+                  onChange={(e) => setSimDescription(e.target.value)}
+                  placeholder="테스트 시뮬레이션 설명"
+                  style={{ width: '100%', padding: '8px 10px', fontSize: '13px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                />
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e2e8f0' }}>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--ghost"
+                  onClick={() => setShowSimModal(false)}
+                  disabled={simLoading}
+                >
+                  취소 (Cancel)
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn--primary"
+                  disabled={simLoading}
+                  style={{ fontWeight: '600', padding: '8px 16px' }}
+                >
+                  {simLoading ? '처리 중...' : '💳 결제 승인 시뮬레이션 실행'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -50,6 +50,7 @@ import { KycRequiredModal } from '../components/account/KycRequiredModal.jsx';
 import { resolvePortalScreenGate } from '../lib/portal-screen-gate.js';
 import { PhysicalCardActivateSheet } from '../components/account/PhysicalCardActivateSheet.jsx';
 
+import { PageLoader } from '../components/PageLoader.jsx';
 import * as A from '../lib/account-data.js';
 import '../styles/account.css';
 
@@ -241,6 +242,7 @@ function AccountPortal() {
       <ReceiveSheet s={s} open={s.receiveOpen} onClose={s.closeReceive} />
       <QuickTopUpSheet s={s} card={s.quickTopUpCard} open={!!s.quickTopUpCard} onClose={s.closeQuickTopUp} />
       <PhysicalCardActivateSheet s={s} open={s.activePhysicalCardOpen} onClose={s.closeActivePhysical} />
+      {s.remoteLoading && <PageLoader />}
     </div>
   );
 }
@@ -285,14 +287,19 @@ export function AccountApp() {
   }, []);
 
   if (normalizedPath === '/account/history') {
-    return <Navigate to="/account/transactions?type=topup" replace />;
+    return <Navigate to={`/account/transactions?type=topup${location.search ? `&${location.search.slice(1)}` : ''}`} replace />;
+  }
+
+  if (normalizedPath === '/account/activity') {
+    return <Navigate to={`/account/transactions${location.search}`} replace />;
   }
 
   if (gate === 'check') {
     return (
-      <div className="portal-sk-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-        <div className="portal-spin" style={{ width: 32, height: 32 }} />
-      </div>
+      <>
+        <AccountPortal />
+        <PageLoader />
+      </>
     );
   }
 

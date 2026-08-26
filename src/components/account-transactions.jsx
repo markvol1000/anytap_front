@@ -6,6 +6,9 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Icon } from './ui.jsx';
 import { ActivityAmount, ActivityRow, ActivityScopeTabBar } from './account-activity.jsx';
 import { AccountReferral } from './account-referral.jsx';
+import { isHttpApi } from '../lib/api/config.js';
+import { getHttpSession, hasHttpSession } from '../lib/api/httpSession.js';
+import { fetchCardTransactions } from '../lib/services/account/accountApi.js';
 import * as A from '../lib/account-data.js';
 
 function TxIcon({ tx }) {
@@ -71,7 +74,7 @@ function TransactionsToolbar({
                 {cards.map((c) => {
                   const last4 = c.last4 || (c.cardNo ? c.cardNo.slice(-4) : '');
                   const label = `${c.variant === 'physical' ? 'Physical' : 'Virtual'} Card${last4 ? ` (*${last4})` : ''}`;
-                  const val = c.last4 || c.id || c.cardNo;
+                  const val = c.wasabiCardId || c.cardNo || c.id || c.last4;
                   return (
                     <option key={c.id || val} value={val}>
                       {label}
@@ -322,13 +325,54 @@ export function TransactionsPage({ items = [], initialScope = 'all', initialCard
     }
   }, [resolvedInitialCardId]);
 
+  // Fetch fresh card transactions from API whenever selected card changes
+  const [liveCardTxs, setLiveCardTxs] = useState(null);
+
+  useEffect(() => {
+    if (!isHttpApi || !hasHttpSession()) return undefined;
+    const session = getHttpSession();
+    if (!session?.userId) return undefined;
+
+    let cancelled = false;
+
+    const targetCard = cards.find(
+      (c) => c.last4 === selectedCardId || c.id === selectedCardId || c.cardNo === selectedCardId || c.wasabiCardId === selectedCardId
+    );
+
+    const cNo = targetCard ? String(targetCard.cardNo || targetCard.wasabiCardId || '') : (selectedCardId !== 'all' ? selectedCardId : '');
+    const l4 = targetCard?.last4 || (cNo.replace(/\D/g, '').length >= 4 ? cNo.replace(/\D/g, '').slice(-4) : '');
+
+    fetchCardTransactions(session.userId, { cardId: cNo, last4: l4 })
+      .then((res) => {
+        if (!cancelled && res?.items) {
+          setLiveCardTxs(res.items);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLiveCardTxs(null);
+      });
+
+    return () => { cancelled = true; };
+  }, [selectedCardId, cards]);
+
+  const activeItems = useMemo(() => {
+    if (liveCardTxs != null) {
+      if (selectedCardId && selectedCardId !== 'all') {
+        return liveCardTxs;
+      }
+      const localTxs = items.filter((item) => item.kind !== 'card_spend' && item.kind !== 'refund');
+      return [...localTxs, ...liveCardTxs];
+    }
+    return items;
+  }, [items, liveCardTxs, selectedCardId]);
+
   // Reset page to 1 when any filter changes
   useEffect(() => {
     setPage(1);
   }, [scope, dateRange, customFrom, customTo, status, searchQuery, selectedCardId]);
 
   const filtered = useMemo(
-    () => A.applyTransactionFilters(items, {
+    () => A.applyTransactionFilters(activeItems, {
       scope,
       dateRange,
       customFrom,
@@ -338,7 +382,7 @@ export function TransactionsPage({ items = [], initialScope = 'all', initialCard
       cardLast4: selectedCardId,
       cardId: selectedCardId,
     }),
-    [items, scope, dateRange, customFrom, customTo, status, searchQuery, selectedCardId],
+    [activeItems, scope, dateRange, customFrom, customTo, status, searchQuery, selectedCardId],
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));

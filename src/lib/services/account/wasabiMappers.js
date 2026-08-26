@@ -83,15 +83,23 @@ function mapWasabiType(type = '') {
 }
 
 function mapWasabiStatus(status = '', type = '') {
-  const s = String(status).toLowerCase();
-  if (['failed', 'fail', 'declined', 'rejected', 'cancelled', 'canceled', 'error', 'denied'].some((k) => s.includes(k))) {
+  if (status == null) status = '';
+  const s = String(status).toLowerCase().trim();
+
+  if (['00', '0', 'success', 'completed', 'settled', 'authorized', 'succeed', 'approved', 'ok'].includes(s)) {
+    return 'completed';
+  }
+  if (['1', '99', 'fail', 'failed', 'declined', 'rejected', 'error', 'denied'].includes(s)) {
     return 'failed';
   }
-  if (['wait_process', 'processing'].some((k) => s.includes(k)) || (s.includes('pending') && !s.includes('authorized'))) {
-    return 'pending';
-  }
-  if (s.includes('success') || s.includes('complete') || s.includes('settled') || s.includes('authorized') || s.includes('succeed')) {
+  if (s.includes('success') || s.includes('complete') || s.includes('settle') || s.includes('authorize') || s.includes('succeed') || s.includes('approve')) {
     return 'completed';
+  }
+  if (s.includes('fail') || s.includes('declin') || s.includes('reject') || s.includes('deni') || s.includes('cancel')) {
+    return 'failed';
+  }
+  if (s.includes('wait') || s.includes('process') || s.includes('pending')) {
+    return 'pending';
   }
   if (String(type).toLowerCase().includes('auth')) return 'completed';
   return 'completed';
@@ -108,8 +116,9 @@ function isIncomingKind(kind) {
 export function mapWasabiTransactionRecord(record, opts = {}) {
   if (!record || typeof record !== 'object') return null;
 
+  const rawStatusVal = record.status ?? record.tradeStatus ?? record.authStatus ?? record.state ?? record.respCode ?? record.result;
   const kind = mapWasabiType(record.type || record.tradeType || record.transactionType);
-  const status = mapWasabiStatus(record.status, record.type);
+  const status = mapWasabiStatus(rawStatusVal, record.type || record.tradeType || record.transactionType);
   const incoming = record.incoming != null ? !!record.incoming : isIncomingKind(kind);
   const id = String(
     record.tradeNo
@@ -131,7 +140,7 @@ export function mapWasabiTransactionRecord(record, opts = {}) {
     failed: status === 'failed',
     kind,
     status,
-    rawStatus: record.status ? String(record.status).toLowerCase() : (kind === 'card_spend' ? 'authorized' : 'completed'),
+    rawStatus: rawStatusVal ? String(rawStatusVal).toLowerCase() : (kind === 'card_spend' ? 'authorized' : 'completed'),
     authorizedAmount: record.authorizedAmount != null ? Math.abs(Number(record.authorizedAmount) || 0) : undefined,
     authorizedCurrency: record.authorizedCurrency || 'USD',
     reference: String(record.tradeNo || record.transactionId || record.orderNo || id),
@@ -140,6 +149,33 @@ export function mapWasabiTransactionRecord(record, opts = {}) {
     cardNetwork: 'Visa',
     cardScheme: 'visa',
   };
+}
+
+function isSameCardNumber(rowCardNo, targetCardId) {
+  if (!rowCardNo || !targetCardId) return true;
+  const r = String(rowCardNo).trim();
+  const t = String(targetCardId).trim();
+  if (r === t || r.toLowerCase() === t.toLowerCase()) return true;
+
+  const rDigits = r.replace(/\D/g, '');
+  const tDigits = t.replace(/\D/g, '');
+
+  if (rDigits && tDigits) {
+    if (rDigits === tDigits) return true;
+    const rLast4 = rDigits.length >= 4 ? rDigits.slice(-4) : rDigits;
+    const tLast4 = tDigits.length >= 4 ? tDigits.slice(-4) : tDigits;
+    if (rLast4 && tLast4 && rLast4 === tLast4) return true;
+  }
+
+  const rLast4 = rDigits.length >= 4 ? rDigits.slice(-4) : r.slice(-4);
+  const tLast4 = tDigits.length >= 4 ? tDigits.slice(-4) : t.slice(-4);
+  if (rLast4 && tLast4 && rLast4 === tLast4 && (r.includes('*') || t.includes('*') || t.length <= 4 || r.length <= 4)) {
+    return true;
+  }
+
+  if (!rDigits || !tDigits) return true;
+
+  return false;
 }
 
 /**
@@ -152,20 +188,10 @@ export function mapWasabiTransactionsResponse(payload, opts = {}) {
     ? rawData
     : (rawData?.records || rawData?.list || rawData?.data?.records || rawData?.data?.list || rawData?.data || []);
 
-  const targetCardId = opts.cardId || opts.wasabiCardId || '';
-
   return records
     .map((row) => {
-      // If row specifies a cardNo and a target cardId was requested, check match
-      if (row?.cardNo && targetCardId) {
-        const rowCard = String(row.cardNo).trim();
-        const targetCard = String(targetCardId).trim();
-        if (rowCard && targetCard && rowCard !== targetCard) {
-          return null; // Skip records belonging to a different card
-        }
-      }
       const item = mapWasabiTransactionRecord(row, opts);
-      if (item && !item.cardLast4 && opts.last4) {
+      if (item && (!item.cardLast4 || item.cardLast4.length === 0) && opts.last4) {
         item.cardLast4 = opts.last4;
       }
       return item;

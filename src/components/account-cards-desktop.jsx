@@ -18,6 +18,9 @@ import {
   MyCardsEmptyState,
 } from './account-cards.jsx';
 import * as A from '../lib/account-data.js';
+import { isHttpApi } from '../lib/api/config.js';
+import { getHttpSession, hasHttpSession } from '../lib/api/httpSession.js';
+import { fetchCardTransactions } from '../lib/services/account/accountApi.js';
 
 const DESK_CARD_MAX_W = 480;
 const DESK_CARD_OVERVIEW_MAX_W = 540;
@@ -277,14 +280,42 @@ function CardsDesktopCarousel({
 }
 
 export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, title = 'Recent Transactions', limit = 5 }) {
-  const filtered = useMemo(
-    () => A.sortActivityChronological(
+  const [liveItems, setLiveItems] = useState(null);
+
+  useEffect(() => {
+    if (!isHttpApi || !hasHttpSession()) return undefined;
+    const session = getHttpSession();
+    if (!session?.userId) return undefined;
+
+    let cancelled = false;
+    const cNo = String(card?.wasabiCardId || card?.cardNo || card?.id || cardLast4 || '');
+    const l4 = String(card?.last4 || cardLast4 || (cNo.replace(/\D/g, '').length >= 4 ? cNo.replace(/\D/g, '').slice(-4) : ''));
+
+    if (!cNo && !l4) return undefined;
+
+    fetchCardTransactions(session.userId, { cardId: cNo, last4: l4 })
+      .then((res) => {
+        if (!cancelled && res?.items) {
+          setLiveItems(res.items);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLiveItems(null);
+      });
+
+    return () => { cancelled = true; };
+  }, [card, cardLast4]);
+
+  const filtered = useMemo(() => {
+    if (liveItems != null) {
+      return A.sortActivityChronological(A.normalizeActivityItems(liveItems)).slice(0, limit);
+    }
+    return A.sortActivityChronological(
       (card || cardLast4)
         ? A.filterActivityForCardPage(A.normalizeActivityItems(items), card || cardLast4)
         : A.normalizeActivityItems(items),
-    ).slice(0, limit),
-    [items, card, cardLast4, limit],
-  );
+    ).slice(0, limit);
+  }, [liveItems, items, card, cardLast4, limit]);
 
   return (
     <section className="portal-mycards-desk-tx" aria-label="Recent transactions">
