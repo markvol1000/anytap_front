@@ -429,7 +429,7 @@ export function AccountMyCardsDesktop({ s }) {
             card={selectedCard}
             cardLast4={selectedCard?.last4}
             onViewAll={() => {
-              const targetCardId = selectedCard?.last4 || selectedCard?.id || selectedCard?.cardNo || s?.currentCard?.last4;
+              const targetCardId = selectedCard?.wasabiCardId || selectedCard?.cardNo || selectedCard?.id || selectedCard?.last4 || s?.currentCard?.last4;
               s.go('transactions', { search: { source: 'card', cardId: targetCardId, last4: targetCardId } });
             }}
           />

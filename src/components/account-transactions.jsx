@@ -379,10 +379,10 @@ export function TransactionsPage({ items = [], initialScope = 'all', initialCard
       customTo,
       status,
       searchQuery,
-      cardLast4: selectedCardId,
-      cardId: selectedCardId,
+      cardLast4: liveCardTxs != null ? 'all' : selectedCardId,
+      cardId: liveCardTxs != null ? 'all' : selectedCardId,
     }),
-    [activeItems, scope, dateRange, customFrom, customTo, status, searchQuery, selectedCardId],
+    [activeItems, scope, dateRange, customFrom, customTo, status, searchQuery, selectedCardId, liveCardTxs],
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
