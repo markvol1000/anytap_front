@@ -831,19 +831,33 @@ export function IssuanceDepositPanel({ s, className = '', isModal = false }) {
 }
 
 export function ReceiveSheet({ s, open, onClose }) {
-  const [systemAddress, setSystemAddress] = useState('');
+  const [fetchedAddress, setFetchedAddress] = useState('');
+
+  const userAddress = s.walletAddress 
+    || s.accountState?.cregisWalletAddress 
+    || s.mockContext?.wallet?.address 
+    || s.accountState?.walletAddress 
+    || fetchedAddress;
 
   useEffect(() => {
-    if (open) {
-      fetchSystemAddress().then((addr) => {
-        setSystemAddress(addr);
-      });
+    if (open && !userAddress) {
+      const userId = s.accountState?.userId || s.user?.id;
+      if (userId) {
+        import('../lib/api/httpClient.js').then(({ apiGet }) => {
+          apiGet(`/cregis/user/address/${encodeURIComponent(userId)}`)
+            .then((res) => {
+              const addr = res?.data?.address || res?.address || '';
+              if (addr) setFetchedAddress(addr);
+            })
+            .catch(() => {});
+        });
+      }
     }
-  }, [open]);
+  }, [open, userAddress, s.accountState?.userId, s.user?.id]);
 
   if (!open) return null;
 
-  const address = systemAddress || W.resolveIssuanceDepositAddress(s.accountState);
+  const address = userAddress;
 
   return (
     <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Receive USDT">
@@ -858,15 +872,15 @@ export function ReceiveSheet({ s, open, onClose }) {
         <p className="portal-wallet-sheet__sub">
           Send USDT (TRC-20) to your wallet address below.
         </p>
-        {s.addrLoading ? (
+        {s.addrLoading && !address ? (
           <div className="portal-sk" style={{ height: 280, borderRadius: 'var(--radius-info)' }} />
         ) : (
           <>
             <div className="portal-qrbox portal-wallet-receive-qr">
-              <div className="portal-qr" dangerouslySetInnerHTML={{ __html: A.buildQR() }} />
+              <div className="portal-qr" dangerouslySetInnerHTML={{ __html: A.buildQR(address) }} />
               <p className="portal-wallet-receive-qr__label">Deposit Address</p>
-              <div className="portal-addr">{address || 'Loading system wallet...'}</div>
-              <button type="button" className="portal-btn-primary portal-wallet-receive-qr__copy" onClick={() => s.copy(address, 'Address copied')}>
+              <div className="portal-addr">{address || 'Loading wallet address...'}</div>
+              <button type="button" className="portal-btn-primary portal-wallet-receive-qr__copy" disabled={!address} onClick={() => address && s.copy(address, 'Address copied')}>
                 Copy Address
               </button>
             </div>

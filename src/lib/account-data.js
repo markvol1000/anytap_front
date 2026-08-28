@@ -551,7 +551,7 @@ export function isUnifiedPortalScreen(screen) {
 
 // ─── QR code builder ─────────────────────────────────────────────────────────
 
-export function buildQR() {
+export function buildQR(text = '') {
   const n = 25;
   const size = 200;
   const c = size / n;
@@ -569,14 +569,23 @@ export function buildQR() {
     }
     return false;
   };
+
+  let seed = 0;
+  const str = String(text || '').trim();
+  for (let k = 0; k < str.length; k++) {
+    seed = ((seed << 5) - seed) + str.charCodeAt(k);
+    seed |= 0;
+  }
+
   let rects = '';
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
       let on;
-      if (inAnyFinder(i, j)) on = finderOn(i, j);
-      else {
-        const v = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453;
-        on = (v - Math.floor(v)) > 0.52;
+      if (inAnyFinder(i, j)) {
+        on = finderOn(i, j);
+      } else {
+        const v = Math.sin(i * 12.9898 + j * 78.233 + seed) * 43758.5453;
+        on = (v - Math.floor(v)) > 0.5;
       }
       if (on) {
         rects += `<rect x="${(j * c).toFixed(2)}" y="${(i * c).toFixed(2)}" width="${(c + 0.4).toFixed(2)}" height="${(c + 0.4).toFixed(2)}"/>`;
