@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { getFeesReport } from '../../services/adminService.js';
+import { getFeesReport } from '../../services/api/adminApiService.js';
 
 export function FeesReportPage() {
   const [loading, setLoading] = useState(true);
