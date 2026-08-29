@@ -1205,22 +1205,8 @@ export function CardInformationPanel({ card, s, className = '' }) {
   );
 }
 
-export function CardMobileWalletActions({ s }) {
-  return (
-    <div className="portal-card-actions portal-mycards-wallet">
-      <div className="portal-card-actions__row">
-        <button type="button" className="portal-btn-dark" onClick={() => s.showToast?.('Feature in preview')}>
-          Apple Pay
-        </button>
-        <button type="button" className="portal-btn-secondary" onClick={() => s.showToast?.('Feature in preview')}>
-          Google Pay
-        </button>
-      </div>
-      <p className="portal-card-actions__hint">
-        Mobile wallet registration is in preview and may require the native app.
-      </p>
-    </div>
-  );
+export function CardMobileWalletActions() {
+  return null;
 }
 
 export function MyCardsEmptyState({ s }) {
