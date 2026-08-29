@@ -4025,8 +4025,8 @@ body.auth-page {
 .auth-toast {
   position: fixed;
   left: 50%;
-  bottom: 24px;
-  z-index: 200;
+  top: 32px;
+  z-index: 999999 !important;
   transform: translateX(-50%);
   max-width: min(420px, calc(100vw - 32px));
   padding: 12px 20px;
@@ -4038,7 +4038,7 @@ body.auth-page {
   line-height: 1.45;
   text-align: center;
   box-shadow: var(--shadow-lg);
-  pointer-events: none;
+  pointer-events: auto;
   animation: authToastIn 240ms var(--ease-standard);
 }
 

@@ -52,6 +52,8 @@ export function AccountToast({ msg, onClear }) {
       onFocus={handleMouseEnter}
       onBlur={handleMouseLeave}
       style={{
+        zIndex: 999999,
+        pointerEvents: 'auto',
         opacity: visible ? 1 : 0,
         transform: visible ? 'translateY(0)' : 'translateY(-10px)',
         transition: 'opacity 0.4s ease, transform 0.4s ease',

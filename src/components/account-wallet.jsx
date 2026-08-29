@@ -1193,7 +1193,8 @@ export function AccountWallet({ s }) {
       s.refresh?.();
     } catch (err) {
       console.error('Failed to charge card', err);
-      s.showToast(err?.message || 'Failed to charge card');
+      const errMsg = err?.message || err?.data?.message || 'Invalid confirmation password. Please check your password.';
+      s.showToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -1212,7 +1213,8 @@ export function AccountWallet({ s }) {
       s.refresh?.();
     } catch (err) {
       console.error('Failed to send USDT', err);
-      s.showToast(err?.message || 'Failed to submit transfer');
+      const errMsg = err?.message || err?.data?.message || 'Invalid confirmation password. Please check your password.';
+      s.showToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
