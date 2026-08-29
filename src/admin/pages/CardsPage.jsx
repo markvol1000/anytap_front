@@ -110,8 +110,8 @@ export function CardsPage() {
   const [simCurrency, setSimCurrency] = useState('KRW');
   const [simType, setSimType] = useState('auth');
   const [simAmount, setSimAmount] = useState('15000');
-  const [simMerchant, setSimMerchant] = useState('스타벅스 강남점');
-  const [simDescription, setSimDescription] = useState('테스트 카드 결제 승인');
+  const [simMerchant, setSimMerchant] = useState('Starbucks Gangnam');
+  const [simDescription, setSimDescription] = useState('Test Card Payment Auth');
   const [simLoading, setSimLoading] = useState(false);
 
   const loadTxs = useCallback(async (p = 1) => {
@@ -141,11 +141,11 @@ export function CardsPage() {
         merchantName: simMerchant,
         description: simDescription || simMerchant,
       });
-      window.alert(`[${simCurrency}] ${Number(simAmount).toLocaleString()} ${simCurrency} 결제 승인 시뮬레이션이 성공적으로 실행되었습니다.`);
+      window.alert(`[${simCurrency}] ${Number(simAmount).toLocaleString()} ${simCurrency} payment simulation successfully executed.`);
       setShowSimModal(false);
       loadTxs(1);
     } catch (err) {
-      window.alert(err.message || '결제 시뮬레이션 생성에 실패했습니다.');
+      window.alert(err.message || 'Failed to create payment simulation.');
     } finally {
       setSimLoading(false);
     }
@@ -751,7 +751,7 @@ export function CardsPage() {
           <div className="admin-modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
             <div className="admin-modal__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1e293b' }}>
-                💳 카드 결제 승인 시뮬레이터 (Test Payment)
+                💳 Card Payment Approval Simulator (Test Payment)
               </h3>
               <button
                 type="button"
@@ -767,14 +767,14 @@ export function CardsPage() {
               {/* 1. Currency Selection */}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
-                  1. 결제 통화 선택 (Currency)
+                  1. Select Payment Currency
                 </label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   {[
-                    { code: 'KRW', label: '₩ KRW (원화)', defaultAmt: '15000', defaultMerch: '스타벅스 강남점' },
-                    { code: 'USD', label: '$ USD (달러)', defaultAmt: '10.00', defaultMerch: 'Starbucks Coffee' },
+                    { code: 'KRW', label: '₩ KRW', defaultAmt: '15000', defaultMerch: 'Starbucks Gangnam' },
+                    { code: 'USD', label: '$ USD', defaultAmt: '10.00', defaultMerch: 'Starbucks Coffee' },
                     { code: 'USDT', label: '₮ USDT', defaultAmt: '10.00', defaultMerch: 'Tether Merchant' },
-                    { code: 'EUR', label: '€ EUR (유로)', defaultAmt: '10.00', defaultMerch: 'Paris Cafe' },
+                    { code: 'EUR', label: '€ EUR', defaultAmt: '10.00', defaultMerch: 'Paris Cafe' },
                   ].map((cur) => (
                     <button
                       key={cur.code}
@@ -803,7 +803,7 @@ export function CardsPage() {
               <div style={{ display: 'flex', gap: '10px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
-                    2. 결제 금액 (Amount in {simCurrency})
+                    2. Payment Amount ({simCurrency})
                   </label>
                   <input
                     type="number"
@@ -819,16 +819,16 @@ export function CardsPage() {
 
                 <div style={{ width: '130px' }}>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
-                    결제 유형 (Type)
+                    Payment Type
                   </label>
                   <select
                     value={simType}
                     onChange={(e) => setSimType(e.target.value)}
                     style={{ width: '100%', padding: '8px 6px', fontSize: '12px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#ffffff' }}
                   >
-                    <option value="auth">승인 (Auth)</option>
-                    <option value="refund">환불 (Refund)</option>
-                    <option value="reversal">취소 (Reversal)</option>
+                    <option value="auth">Auth</option>
+                    <option value="refund">Refund</option>
+                    <option value="reversal">Reversal</option>
                   </select>
                 </div>
               </div>
@@ -836,7 +836,7 @@ export function CardsPage() {
               {/* 3. Merchant Name */}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
-                  3. 가맹점명 (Merchant Name)
+                  3. Merchant Name
                 </label>
                 <input
                   type="text"
@@ -844,7 +844,7 @@ export function CardsPage() {
                   className="admin-input"
                   value={simMerchant}
                   onChange={(e) => setSimMerchant(e.target.value)}
-                  placeholder="예: 스타벅스 강남점, GS25 등"
+                  placeholder="e.g. Starbucks Gangnam, GS25"
                   style={{ width: '100%', padding: '8px 10px', fontSize: '13px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
                 />
               </div>
@@ -852,14 +852,14 @@ export function CardsPage() {
               {/* 4. Description */}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
-                  4. 상세 설명 (Description)
+                  4. Description
                 </label>
                 <input
                   type="text"
                   className="admin-input"
                   value={simDescription}
                   onChange={(e) => setSimDescription(e.target.value)}
-                  placeholder="테스트 시뮬레이션 설명"
+                  placeholder="Test simulation description"
                   style={{ width: '100%', padding: '8px 10px', fontSize: '13px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
                 />
               </div>
@@ -872,7 +872,7 @@ export function CardsPage() {
                   onClick={() => setShowSimModal(false)}
                   disabled={simLoading}
                 >
-                  취소 (Cancel)
+                  Cancel
                 </button>
                 <button
                   type="submit"
@@ -880,7 +880,7 @@ export function CardsPage() {
                   disabled={simLoading}
                   style={{ fontWeight: '600', padding: '8px 16px' }}
                 >
-                  {simLoading ? '처리 중...' : '💳 결제 승인 시뮬레이션 실행'}
+                  {simLoading ? 'Processing...' : '💳 Execute Payment Simulation'}
                 </button>
               </div>
             </form>

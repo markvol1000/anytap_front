@@ -248,6 +248,24 @@ export function CardsReportPage() {
         >
           💳 Card Application Status
         </NavLink>
+        <NavLink
+          to="/admin/reports/fees"
+          style={({ isActive }) => ({
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '10px 20px',
+            fontSize: '14px',
+            fontWeight: '700',
+            color: isActive ? '#007BFF' : '#64748B',
+            borderBottom: isActive ? '3px solid #007BFF' : '3px solid transparent',
+            textDecoration: 'none',
+            marginBottom: '-2px',
+            transition: 'all 0.15s ease',
+          })}
+        >
+          💰 Fee Analysis Report
+        </NavLink>
       </div>
 
       {/* Top Header & Buttons */}

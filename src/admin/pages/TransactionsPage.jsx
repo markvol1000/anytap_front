@@ -220,27 +220,6 @@ export function TransactionsPage() {
                   },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
                   { key: 'at', label: 'Date', render: (r) => formatAdminDate(r.at) },
-                  { 
-                    key: 'actions', 
-                    label: 'Action', 
-                    render: (r) => {
-                      const isRowPending = String(r.status || '').toLowerCase().includes('pending') || String(r.status || '').toLowerCase().includes('processing');
-                      if (!isRowPending) return '—';
-                      return (
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn--sm admin-btn--primary"
-                          disabled={retrying}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedId(r.id);
-                            handleRetry(r.id);
-                          }}>
-                          Retry
-                        </button>
-                      );
-                    }
-                  },
                 ]}
                 rows={list.items || []}
                 selectedId={selectedId}
@@ -285,34 +264,6 @@ export function TransactionsPage() {
             <AdminDetailRow label="Status" value={<AdminStatusBadge status={selected.status} />} />
             <AdminDetailRow label="Date" value={formatAdminDate(selected.at)} />
             <AdminDetailRow label="Reference" value={selected.reference} />
-
-            {retryMsg && (
-              <div style={{
-                marginTop: '12px',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: '600',
-                backgroundColor: retryMsg.type === 'success' ? '#dcfce7' : '#fee2e2',
-                color: retryMsg.type === 'success' ? '#15803d' : '#b91c1c',
-                border: `1px solid ${retryMsg.type === 'success' ? '#86efac' : '#fca5a5'}`
-              }}>
-                {retryMsg.text}
-              </div>
-            )}
-
-            {isSelectedPending && (
-              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  disabled={retrying}
-                  className="admin-btn admin-btn--sm admin-btn--primary"
-                  style={{ padding: '6px 14px', fontSize: '13px', fontWeight: '500' }}
-                  onClick={() => handleRetry(selected.id)}>
-                  {retrying ? 'Retrying...' : 'Retry'}
-                </button>
-              </div>
-            )}
           </AdminDetailPanel>
         ) : null}
       />

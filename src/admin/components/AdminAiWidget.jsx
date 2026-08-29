@@ -3,10 +3,10 @@ import { Icon } from '../../components/ui.jsx';
 import { apiPost } from '../../lib/api/httpClient.js';
 
 const QUICK_PROMPTS = [
-  '서버 상태 알려줘',
-  '운영서버 리포트 오류 확인해 줘',
-  'KYC 및 가입자 현황 알려줘',
-  '충전 및 환불 이력 요약해 줘',
+  'Show server status',
+  'Check server error reports',
+  'Show KYC & User status',
+  'Summarize top-up and refund history',
 ];
 
 export function AdminAiWidget() {
@@ -17,7 +17,7 @@ export function AdminAiWidget() {
     {
       id: 'welcome-1',
       sender: 'ai',
-      text: '안녕하세요! AnyTap 어드민 AI 어시스턴트입니다. 🤖\n\n서버 가동 상태, 최근 오류 분석, KYC 심사 및 거래 현황에 대해 자유롭게 질문해 보세요.',
+      text: 'Hello! I am your AnyTap Admin AI Assistant. 🤖\n\nFeel free to ask about server status, recent error analysis, KYC verification, or transaction status.',
       at: new Date().toISOString(),
     },
   ]);
@@ -51,7 +51,7 @@ export function AdminAiWidget() {
 
     try {
       const res = await apiPost('/admin/ai/chat', { message: query });
-      const answer = res?.answer || res?.data?.answer || '답변을 불러오는 데 실패했습니다.';
+      const answer = res?.answer || res?.data?.answer || 'Failed to fetch AI response.';
 
       const aiMsg = {
         id: `ai-${Date.now()}`,
@@ -65,7 +65,7 @@ export function AdminAiWidget() {
       const errorMsg = {
         id: `ai-err-${Date.now()}`,
         sender: 'ai',
-        text: '⚠️ AI 서비스 연결 중 오류가 발생했습니다. 서버 연결 상태를 확인해 주세요.',
+        text: '⚠️ An error occurred while connecting to AI service. Please check server connection.',
         at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -93,11 +93,11 @@ export function AdminAiWidget() {
             alignItems: 'center',
             gap: '8px',
             padding: '12px 18px',
-            backgroundColor: '#0f172a',
+            borderRadius: '28px',
+            backgroundColor: '#2563eb',
             color: '#ffffff',
             border: 'none',
-            borderRadius: '30px',
-            boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.3), 0 8px 10px -6px rgba(15, 23, 42, 0.2)',
+            boxShadow: '0 10px 25px -5px rgba(37, 99, 235, 0.4), 0 8px 10px -6px rgba(37, 99, 235, 0.2)',
             cursor: 'pointer',
             fontWeight: '600',
             fontSize: '14px',
@@ -107,7 +107,6 @@ export function AdminAiWidget() {
           onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0) scale(1)')}>
           <span style={{ fontSize: '18px' }}>🤖</span>
           <span>Admin AI Assistant</span>
-          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e', marginLeft: '2px' }} />
         </button>
       )}
 
@@ -116,47 +115,45 @@ export function AdminAiWidget() {
         <div
           style={{
             width: '380px',
-            height: '560px',
-            maxHeight: 'calc(100vh - 40px)',
+            height: '540px',
             backgroundColor: '#ffffff',
             borderRadius: '16px',
-            boxShadow: '0 20px 30px -10px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #e2e8f0',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            animation: 'fadeInUp 0.2s ease-out',
           }}>
           {/* Header */}
           <div
             style={{
               padding: '14px 16px',
-              backgroundColor: '#0f172a',
+              backgroundColor: '#2563eb',
               color: '#ffffff',
               display: 'flex',
-              justifyContent: 'space-between',
               alignItems: 'center',
+              justifyContent: 'space-between',
             }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '20px' }}>🤖</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '18px' }}>🤖</span>
               <div>
-                <strong style={{ display: 'block', fontSize: '14px', lineHeight: 1.2 }}>AnyTap Admin AI</strong>
-                <span style={{ fontSize: '11px', color: '#94a3b8' }}>Gemini Operational Assistant</span>
+                <div style={{ fontWeight: '700', fontSize: '14px', lineHeight: '1.2' }}>Admin AI Assistant</div>
+                <div style={{ fontSize: '11px', opacity: 0.85 }}>Powered by Gemini 1.5 Pro</div>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
               style={{
-                background: 'transparent',
+                backgroundColor: 'transparent',
                 border: 'none',
-                color: '#94a3b8',
+                color: '#ffffff',
+                fontSize: '18px',
                 cursor: 'pointer',
-                padding: '4px',
-                borderRadius: '4px',
-                display: 'flex',
-                alignItems: 'center',
+                opacity: 0.8,
+                padding: '2px',
               }}>
-              <Icon name="close" size={18} />
+              ✕
             </button>
           </div>
 
@@ -164,43 +161,36 @@ export function AdminAiWidget() {
           <div
             style={{
               flex: 1,
-              padding: '14px',
+              padding: '16px',
               overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
               backgroundColor: '#f8fafc',
             }}>
-            {messages.map((msg) => (
+            {messages.map((m) => (
               <div
-                key={msg.id}
+                key={m.id}
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                  alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
+                  maxWidth: '85%',
+                  padding: '10px 14px',
+                  borderRadius: m.sender === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
+                  backgroundColor: m.sender === 'user' ? '#2563eb' : '#ffffff',
+                  color: m.sender === 'user' ? '#ffffff' : '#1e293b',
+                  fontSize: '13px',
+                  lineHeight: '1.5',
+                  boxShadow: m.sender === 'user' ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  border: m.sender === 'user' ? 'none' : '1px solid #e2e8f0',
+                  whiteSpace: 'pre-wrap',
                 }}>
-                <div
-                  style={{
-                    maxWidth: '85%',
-                    padding: '10px 14px',
-                    borderRadius: msg.sender === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-                    backgroundColor: msg.sender === 'user' ? '#2563eb' : '#ffffff',
-                    color: msg.sender === 'user' ? '#ffffff' : '#1e293b',
-                    fontSize: '13px',
-                    lineHeight: '1.5',
-                    border: msg.sender === 'user' ? 'none' : '1px solid #e2e8f0',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    boxShadow: msg.sender === 'user' ? 'none' : '0 1px 3px rgba(0,0,0,0.05)',
-                  }}>
-                  {msg.text}
-                </div>
+                {m.text}
               </div>
             ))}
             {loading && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontSize: '12px', padding: '6px' }}>
                 <span style={{ fontSize: '14px', animation: 'spin 1s infinite linear' }}>⏳</span>
-                <span>Gemini AI 분석 중...</span>
+                <span>Gemini AI Analyzing...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -255,7 +245,7 @@ export function AdminAiWidget() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="질문을 입력하세요..."
+              placeholder="Ask a question..."
               disabled={loading}
               style={{
                 flex: 1,
@@ -283,7 +273,7 @@ export function AdminAiWidget() {
                 fontSize: '13px',
                 cursor: !input.trim() || loading ? 'not-allowed' : 'pointer',
               }}>
-              전송
+              Send
             </button>
           </div>
         </div>

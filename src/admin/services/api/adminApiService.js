@@ -1287,4 +1287,146 @@ export async function clearOperationsIssues() {
   return apiPost('/admin/operations/issues/clear');
 }
 
+export async function triggerMockDepositWebhook(payload) {
+  return apiPost('/admin/mock-webhook/deposit', payload);
+}
+
+export async function triggerMockCardSpendWebhook(payload) {
+  return apiPost('/admin/mock-webhook/card-spend', payload);
+}
+
+export async function triggerMockKycWebhook(payload) {
+  return apiPost('/admin/mock-webhook/kyc', payload);
+}
+
+export async function getFeesReport(params = {}) {
+  const query = new URLSearchParams();
+  if (params?.userId) query.append('userId', params.userId);
+  if (params?.feeType) query.append('feeType', params.feeType);
+  if (params?.startDate) query.append('startDate', params.startDate);
+  if (params?.endDate) query.append('endDate', params.endDate);
+  const qStr = query.toString() ? `?${query.toString()}` : '';
+
+  try {
+    const res = await apiGet(`/admin/reports/fees${qStr}`);
+    if (res?.summary && (res?.byUser || res?.byItem)) {
+      return res;
+    }
+    if (res?.data?.summary) {
+      return res.data;
+    }
+  } catch (e) {
+    console.warn('Failed to query backend /admin/reports/fees:', e);
+  }
+
+  const txList = await getTransactions(params).catch(() => ({ items: [] }));
+  const byUserMap = new Map();
+  const byItemList = [];
+
+  let totalFees = 0;
+  let totalChargeA3 = 0;
+  let totalGas = 0;
+  let totalIssuance = 0;
+
+  const items = txList.items || [];
+  items.forEach((t) => {
+    const amt = Number(t.amount || 0);
+    const isSpend = t.kind === 'card_spend' || t.kind?.includes('spend') || t.kind?.includes('payment');
+    const isCharge = t.kind === 'wallet_topup' || t.kind === 'card_charge' || t.kind === 'deposit' || t.kind === 'topup';
+    const isGas = t.kind?.includes('fee') || t.reference?.includes('FEE');
+
+    let feeCode = 'A3';
+    let feeName = 'Card Top-Up Fee (A3 - 2.0%)';
+    let feeRate = 2.0;
+    let feeAmt = Number(t.feeAmount || 0);
+    let feeExplanation = 'A 2.0% platform fee charged on card top-up transactions, deducted prior to merchant settlement.';
+
+    if (isSpend) {
+      feeCode = 'CARD_SPEND';
+      feeName = 'Card Purchase Spending (0.0%)';
+      feeAmt = 0;
+      feeRate = 0;
+      feeExplanation = 'Direct purchase payment using Wasabi prepaid card. No platform fee charged.';
+    } else if (isGas) {
+      feeCode = 'CARD_CHARGE_FIXED';
+      feeName = 'Fixed Network Gas Fee (3.00 USDT)';
+      feeAmt = 3.0;
+      feeRate = 0;
+      feeExplanation = 'Fixed blockchain network execution fee for TRON TRC-20 token transfer broadcasting.';
+    } else if (t.kind === 'wallet_withdraw') {
+      feeCode = 'WITHDRAWAL';
+      feeName = 'External Withdrawal Fee (3.00 USDT)';
+      feeAmt = 3.0;
+      feeRate = 0;
+      feeExplanation = 'Network processing fee charged when transferring funds from user wallet to external TRON addresses.';
+    } else if (isCharge || feeCode === 'A3') {
+      if (feeAmt === 0 && amt > 0) {
+        feeAmt = Number((amt * 0.02).toFixed(2));
+      }
+    }
+
+    totalFees += feeAmt;
+    if (feeCode === 'A3') totalChargeA3 += feeAmt;
+    else if (feeCode === 'CARD_CHARGE_FIXED') totalGas += feeAmt;
+
+    const item = {
+      id: t.id,
+      txId: t.id,
+      userId: t.memberId || 'US10001',
+      userName: t.memberName || 'User',
+      userEmail: t.memberEmail || '—',
+      feeCode,
+      feeName,
+      originalAmount: amt,
+      feeRate,
+      feeAmount: feeAmt,
+      netAmount: Math.max(0, Number((amt - feeAmt).toFixed(2))),
+      currency: t.currency || 'USDT',
+      createdAt: t.at || new Date().toISOString(),
+      status: t.status || 'SUCCESS',
+      description: feeName,
+      feeExplanation,
+    };
+    byItemList.push(item);
+
+    const uId = t.memberId || 'US10001';
+    if (!byUserMap.has(uId)) {
+      byUserMap.set(uId, {
+        userId: uId,
+        userName: t.memberName || 'User',
+        userEmail: t.memberEmail || '—',
+        cregisWalletAddress: t.wallet || '—',
+        unpaidTotalFee: Number(t.unpaidTotalFee || 0),
+        totalFee: 0,
+        cardChargeFee: 0,
+        gasFee: 0,
+        issuanceFee: 0,
+        withdrawalFee: 0,
+        txCount: 0,
+        lastFeeAt: t.at || '—',
+      });
+    }
+    const uRec = byUserMap.get(uId);
+    uRec.totalFee += feeAmt;
+    if (feeCode === 'A3') uRec.cardChargeFee += feeAmt;
+    else if (feeCode === 'CARD_CHARGE_FIXED') uRec.gasFee += feeAmt;
+    uRec.txCount += 1;
+    uRec.lastFeeAt = t.at || uRec.lastFeeAt;
+    uRec.unpaidTotalFee = uRec.unpaidTotalFee > 0 ? uRec.unpaidTotalFee : Number(uRec.totalFee.toFixed(2));
+  });
+
+  return {
+    summary: {
+      totalFeesCollected: totalFees,
+      totalChargeFeesA3: totalChargeA3,
+      totalGasFeesFixed: totalGas,
+      totalDepositIssuanceFees: totalIssuance,
+      activePayingUsers: byUserMap.size,
+      avgFeePerUser: byUserMap.size > 0 ? (totalFees / byUserMap.size).toFixed(2) : 0,
+    },
+    byUser: Array.from(byUserMap.values()),
+    byItem: byItemList,
+  };
+}
+
 export const MAX_CARDS_PER_MEMBER = 999;

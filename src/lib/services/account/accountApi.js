@@ -371,7 +371,9 @@ export async function fetchLocalTransactions(userId) {
   try {
     const data = await apiGet(`/cards/${encodeURIComponent(userId)}/local-transactions`);
     if (!Array.isArray(data)) return [];
-    return data.map((tx) => {
+    return data
+      .filter((tx) => String(tx.txType || tx.kind || '').toUpperCase() !== 'SYSTEM_ADJUSTMENT')
+      .map((tx) => {
       const type = String(tx.txType || '').toUpperCase();
       const statusRaw = String(tx.status || 'SUCCESS').toUpperCase();
       const desc = String(tx.description || '');
@@ -408,6 +410,10 @@ export async function fetchLocalTransactions(userId) {
         kind = 'card_spend';
         title = desc && desc !== '-' && !desc.toUpperCase().startsWith('FAIL') ? desc : 'Card Purchase';
         incoming = false;
+      } else if (type === 'SYSTEM_ADJUSTMENT') {
+        kind = 'reversal';
+        title = desc && desc !== '-' ? desc : 'System Balance Adjustment';
+        incoming = Number(tx.amount || 0) >= 0;
       } else {
         kind = 'wallet_topup';
         title = desc && desc !== '-' && !desc.toUpperCase().startsWith('FAIL') ? desc : 'Transaction';

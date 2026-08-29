@@ -10,6 +10,7 @@ import {
   updateOperationsIssueStatus,
 } from '../services/adminService.js';
 import { DbBackupsSection } from './DbBackupsPage.jsx';
+import { MockWebhookSimulator } from '../components/MockWebhookSimulator.jsx';
 import { sanitizeToastMessage } from '../../utils/toast-sanitizer.js';
 
 // ─────────────── Gradient Donut Chart Component (Light Theme) ───────────────
@@ -661,6 +662,9 @@ export function OperationsPage() {
       {/* TAB 1: Cluster & System Overview */}
       {activeTab === 'overview' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Mock Webhook Simulator for Developer Testing */}
+          <MockWebhookSimulator />
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
             <AdminPanel title="🖥️ HA Gateway Node Load Traffic Distribution">
               <GradientDonutChart primaryPct={65} secondaryPct={35} primaryLabel="Server-Node-01" secondaryLabel="Server-Node-02" />

@@ -149,19 +149,19 @@ export function KycPage() {
                 <AdminDetailSection title="Verification Result & Reason">
                   {detail.status === 'approved' && (
                     <div style={{ padding: '14px 16px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', color: '#166534', fontSize: '13px', lineHeight: '1.5' }}>
-                      <strong style={{ display: 'block', fontSize: '14px', marginBottom: '4px', color: '#15803d' }}>✓ Verification Approved (승인 완료)</strong>
+                      <strong style={{ display: 'block', fontSize: '14px', marginBottom: '4px', color: '#15803d' }}>✓ Verification Approved</strong>
                       <span>User identity verification has been successfully verified and approved.</span>
                     </div>
                   )}
                   {detail.status === 'rejected' && (
                     <div style={{ padding: '14px 16px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#991b1b', fontSize: '13px', lineHeight: '1.5' }}>
-                      <strong style={{ display: 'block', fontSize: '14px', marginBottom: '4px', color: '#dc2626' }}>✕ Verification Rejected (실패/반려 사유)</strong>
+                      <strong style={{ display: 'block', fontSize: '14px', marginBottom: '4px', color: '#dc2626' }}>✕ Verification Rejected</strong>
                       <span style={{ fontWeight: '600' }}>{detail.rejectReason || 'Identity verification document was rejected by admin.'}</span>
                     </div>
                   )}
                   {detail.status === 'pending' && (
                     <div style={{ padding: '14px 16px', backgroundColor: '#fefce8', border: '1px solid #fef08a', borderRadius: '8px', color: '#854d0e', fontSize: '13px', lineHeight: '1.5' }}>
-                      <strong style={{ display: 'block', fontSize: '14px', marginBottom: '4px', color: '#ca8a04' }}>⏳ Pending Review (심사 대기중)</strong>
+                      <strong style={{ display: 'block', fontSize: '14px', marginBottom: '4px', color: '#ca8a04' }}>⏳ Pending Review</strong>
                       <span>Verification request is currently pending admin review.</span>
                     </div>
                   )}
@@ -208,7 +208,7 @@ export function KycPage() {
                               #{attemptNum}
                             </span>
 
-                            {/* 2. Date (날짜) */}
+                            {/* 2. Date */}
                             <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '600', flexShrink: 0 }}>
                               {formatAdminDate(logItem.at)}
                             </span>

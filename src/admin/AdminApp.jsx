@@ -5,6 +5,7 @@ import { MembersPage } from './pages/MembersPage.jsx';
 import { KycPage } from './pages/KycPage.jsx';
 import { CardsPage } from './pages/CardsPage.jsx';
 import { CardsReportPage } from './pages/reports/cards.jsx';
+import { FeesReportPage } from './pages/reports/fees.jsx';
 import { WalletsPage } from './pages/WalletsPage.jsx';
 import { TransactionsPage } from './pages/TransactionsPage.jsx';
 import { ReferralPage } from './pages/ReferralPage.jsx';
@@ -28,6 +29,7 @@ export function AdminApp() {
         <Route path="cards" element={<CardsPage />} />
         <Route path="reports" element={<Navigate to="/admin/reports/cards" replace />} />
         <Route path="reports/cards" element={<CardsReportPage />} />
+        <Route path="reports/fees" element={<FeesReportPage />} />
         <Route path="wallets" element={<WalletsPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="referral" element={<ReferralPage />} />
