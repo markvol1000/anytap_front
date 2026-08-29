@@ -23,6 +23,7 @@ import {
   suspendMember,
   retryCregisWallet,
   triggerFeePayout,
+  updateMember,
 } from '../services/adminService.js';
 
 const fetchMembers = (params) => getMembers(params);
@@ -256,7 +257,49 @@ export function MembersPage() {
                     );
                   } },
                   { key: 'referralStatus', label: 'Referral', render: (r) => <AdminStatusBadge status={r.referralStatus} /> },
-                  { key: 'accountStatus', label: 'Account', render: (r) => <AdminStatusBadge status={r.accountStatus} /> },
+                  { 
+                    key: 'accountStatus', 
+                    label: 'Account Status', 
+                    render: (r) => {
+                      const st = String(r.accountStatus || r.status || 'active').toLowerCase();
+                      return (
+                        <select
+                          value={st}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={async (e) => {
+                            e.stopPropagation();
+                            const nextSt = e.target.value;
+                            try {
+                              await updateMember(r.id, { status: nextSt });
+                              if (detail?.id === r.id) {
+                                const updated = await getMemberById(r.id);
+                                setDetail(updated);
+                              }
+                              list.reload();
+                            } catch (err) {
+                              window.alert(`Failed to update status: ${err.message}`);
+                            }
+                          }}
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            backgroundColor: st === 'active' ? '#ecfdf5' : st === 'suspended' ? '#fef2f2' : st === 'locked' ? '#fff7ed' : '#f1f5f9',
+                            color: st === 'active' ? '#047857' : st === 'suspended' ? '#dc2626' : st === 'locked' ? '#c2410c' : '#475569',
+                            border: st === 'active' ? '1px solid #a7f3d0' : st === 'suspended' ? '1px solid #fca5a5' : st === 'locked' ? '1px solid #ffedd5' : '1px solid #cbd5e1',
+                            outline: 'none',
+                          }}
+                        >
+                          <option value="active">🟢 Active</option>
+                          <option value="suspended">🔴 Suspended</option>
+                          <option value="locked">🟠 Locked</option>
+                          <option value="pending">⚪ Pending</option>
+                        </select>
+                      );
+                    } 
+                  },
                 ]}
                 rows={list.items || []}
                 selectedId={selectedId}
@@ -306,7 +349,40 @@ export function MembersPage() {
                       </span>
                     </div>
                   )} />
-                  <AdminDetailRow label="Account" value={<AdminStatusBadge status={detail.accountStatus} />} />
+                  <AdminDetailRow label="Account Status" value={(
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <select
+                        value={String(detail.accountStatus || detail.status || 'active').toLowerCase()}
+                        onChange={async (e) => {
+                          const nextSt = e.target.value;
+                          try {
+                            const updated = await updateMember(detail.id, { status: nextSt });
+                            setDetail(updated);
+                            list.reload();
+                          } catch (err) {
+                            window.alert(`Failed to update status: ${err.message}`);
+                          }
+                        }}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          backgroundColor: String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'active' ? '#ecfdf5' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'suspended' ? '#fef2f2' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'locked' ? '#fff7ed' : '#f1f5f9',
+                          color: String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'active' ? '#047857' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'suspended' ? '#dc2626' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'locked' ? '#c2410c' : '#475569',
+                          border: '1px solid #cbd5e1',
+                          outline: 'none',
+                        }}
+                      >
+                        <option value="active">🟢 Active</option>
+                        <option value="suspended">🔴 Suspended</option>
+                        <option value="locked">🟠 Locked</option>
+                        <option value="pending">⚪ Pending</option>
+                      </select>
+                      <AdminStatusBadge status={detail.accountStatus || detail.status} />
+                    </div>
+                  )} />
                 </AdminDetailSection>
 
                 <AdminDetailSection title="Cregis Connection Info">
