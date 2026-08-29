@@ -1151,13 +1151,14 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
 }
 
 /** Deposit/Top-up funds to Wasabi Card */
-export async function chargeCard(amount, cardId = null) {
+export async function chargeCard(amount, cardId = null, password = null) {
   const session = getHttpSession();
   if (!session?.userId) throw new Error('Not authenticated');
 
   const payload = {
     amount: Number(amount),
     ...(cardId ? { cardId } : {}),
+    ...(password ? { password } : {}),
   };
 
   const res = await apiPost(`/cards/${encodeURIComponent(session.userId)}/deposit`, payload);

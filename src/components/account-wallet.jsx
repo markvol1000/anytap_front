@@ -1185,7 +1185,7 @@ export function AccountWallet({ s }) {
     if (loading) return;
     setLoading(true);
     try {
-      await chargeCard(topUpVal, selectedCard?.cardId || selectedCard?.id);
+      await chargeCard(topUpVal, selectedCard?.cardId || selectedCard?.id, password);
       s.deductWalletBalance?.(topUpVal + totalChargeFee);
       closeConfirm();
       setTopUpAmount('');

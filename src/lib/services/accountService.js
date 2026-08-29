@@ -35,8 +35,8 @@ export async function submitCardApplication(payload) {
   return { ok: true };
 }
 
-export async function chargeCard(amount, cardId = null) {
-  if (isHttpApi) return api.chargeCard(amount, cardId);
+export async function chargeCard(amount, cardId = null, password = null) {
+  if (isHttpApi) return api.chargeCard(amount, cardId, password);
   return { ok: true };
 }
 
