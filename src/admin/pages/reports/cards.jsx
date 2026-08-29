@@ -216,8 +216,7 @@ export function CardsReportPage() {
     URL.revokeObjectURL(url);
   }, [list.items]);
 
-  // Exclude active cards from card application report list
-  const items = (list.items || []).filter(r => r.cardStatus !== 'active' && r.status !== 'active');
+  const items = list.items || [];
   const activeDeliveredFilter = list.filters.delivered ?? 'all';
 
   return (
