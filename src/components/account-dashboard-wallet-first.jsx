@@ -239,12 +239,11 @@ export function DashboardRecentTransactions({ s, limit = 8, className = '' }) {
   const [copiedTxId, setCopiedTxId] = useState('');
 
   const items = useMemo(() => {
-    if (s.selectedCardTxs != null) {
-      return A.sortActivityChronological(A.normalizeActivityItems(s.selectedCardTxs)).slice(0, limit);
-    }
-    const raw = A.resolvePortalActivityItems(s.activityItems, s.userCards);
+    const baseItems = s.selectedCardTxs != null
+      ? s.selectedCardTxs
+      : A.resolvePortalActivityItems(s.activityItems, s.userCards);
     return A.sortActivityChronological(
-      A.filterActivityForCardPage(A.normalizeActivityItems(raw), s.currentCard),
+      A.filterActivityForCardPage(A.normalizeActivityItems(baseItems), s.currentCard),
     ).slice(0, limit);
   }, [s.selectedCardTxs, s.activityItems, s.userCards, s.currentCard, limit]);
 

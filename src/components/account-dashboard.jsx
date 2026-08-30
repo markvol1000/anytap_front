@@ -539,7 +539,7 @@ function DashboardRecentActivity({ s }) {
     <>
       <RecentActivitySection
         title="Recent Activity"
-        items={s.selectedCardTxs != null ? s.selectedCardTxs : activityItems}
+        items={A.filterActivityForCardPage(s.selectedCardTxs != null ? s.selectedCardTxs : activityItems, s.currentCard)}
         pageFilter="card"
         card={s.currentCard}
         cardLast4={s.currentCard?.last4}

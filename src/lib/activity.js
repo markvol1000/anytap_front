@@ -54,15 +54,18 @@ const REWARD_KINDS = new Set([
 export function isFeeItem(item) {
   if (!item) return false;
   const kind = String(item.kind || '').toLowerCase();
-  const txType = String(item.txType || '').toUpperCase();
+  const txType = String(item.txType || item.type || '').toUpperCase();
   const title = String(item.title || '').toLowerCase();
+  const typeLabel = String(item.typeLabel || '').toLowerCase();
   return (
     kind === 'card_charge_fee'
     || kind === 'wallet_fee'
     || txType === 'CARD_CHARGE_FEE'
     || txType === 'FEE_COLLECTION'
+    || txType === 'FEE'
     || txType.includes('FEE')
     || title.includes('fee')
+    || typeLabel.includes('fee')
   );
 }
 
@@ -134,15 +137,15 @@ export function normalizeActivityItems(items = []) {
 }
 
 export function isWalletActivity(item) {
-  return WALLET_KINDS.has(item?.kind);
+  return WALLET_KINDS.has(item?.kind) && !isFeeItem(item);
 }
 
 export function isCardActivity(item) {
-  return CARD_KINDS.has(item?.kind);
+  return CARD_KINDS.has(item?.kind) && !isFeeItem(item);
 }
 
 export function isRewardActivity(item) {
-  return REWARD_KINDS.has(item?.kind);
+  return REWARD_KINDS.has(item?.kind) && !isFeeItem(item);
 }
 
 export function filterActivity(items, filterId) {
@@ -158,12 +161,12 @@ export function filterActivityByScope(items, scopeId) {
 
 /** Dashboard — mixed wallet + card + reward preview (no duplicates across pages) */
 export function filterActivityForDashboard(items) {
-  return items.filter((t) => isWalletActivity(t) || isCardActivity(t) || isRewardActivity(t));
+  return items.filter((t) => (isWalletActivity(t) || isCardActivity(t) || isRewardActivity(t)) && !isFeeItem(t));
 }
 
 /** Wallet page — balance movements only (no card purchases / merchant payments) */
 export function filterActivityForWalletPage(items) {
-  return items.filter(isWalletActivity);
+  return items.filter((t) => isWalletActivity(t) && !isFeeItem(t));
 }
 
 export function filterActivityForCardPage(items, cardOrLast4) {
@@ -186,7 +189,6 @@ export function filterActivityForCardPage(items, cardOrLast4) {
     if (tCardNo && targetDigits && (tCardNo === targetDigits || tCardNo.endsWith(targetDigits) || targetDigits.endsWith(tCardNo))) return true;
     if (tLast4 && targetLast4 && (tLast4 === targetLast4 || tLast4.endsWith(targetLast4))) return true;
     if (t.cardId && targetCardNo && String(t.cardId).toLowerCase() === targetCardNo.toLowerCase()) return true;
-    if (!t.cardNo && !t.cardLast4 && !t.wasabiCardId) return true;
     return false;
   });
 }
