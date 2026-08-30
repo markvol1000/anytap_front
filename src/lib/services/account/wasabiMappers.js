@@ -213,7 +213,7 @@ export function mapWasabiTransactionsResponse(payload, opts = {}) {
     ? rawData
     : (rawData?.records || rawData?.list || rawData?.data?.records || rawData?.data?.list || rawData?.data || []);
 
-  return records
+  const items = records
     .map((row) => {
       const item = mapWasabiTransactionRecord(row, opts);
       if (item && (!item.cardLast4 || item.cardLast4.length === 0) && opts.last4) {
@@ -222,4 +222,21 @@ export function mapWasabiTransactionsResponse(payload, opts = {}) {
       return item;
     })
     .filter(Boolean);
+
+  // Sort by timestamp descending (latest timestamp first)
+  items.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
+
+  const dedupMap = new Map();
+  for (const item of items) {
+    const rawId = String(item.txId || item.id || item.reference || item.orderNo || '').trim();
+    // Strip prefixes like FEE_, RETRY_, RETRY_DEPOSIT_ to derive exact base txId / referenceId
+    const baseTxId = rawId.replace(/^(FEE_|RETRY_|RETRY_DEPOSIT_)/i, '').trim() || rawId;
+
+    // Because items are pre-sorted latest timestamp first, the first item seen per baseTxId is strictly the latest timestamp row!
+    if (baseTxId && !dedupMap.has(baseTxId)) {
+      dedupMap.set(baseTxId, item);
+    }
+  }
+
+  return Array.from(dedupMap.values());
 }

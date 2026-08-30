@@ -16,9 +16,10 @@ export function ActivityAmount({ amount, incoming, failed, kind, large = false, 
   const displayAmt = useOriginal ? origAmt : (item?.amount ?? amount);
   const displayCurr = useOriginal ? origCurr : (item?.currency || (kind === 'card_spend' || kind === 'refund' || kind === 'reversal' ? 'USD' : 'USDT'));
 
-  const { sign } = A.formatActivityAmountParts(amount, incoming, kind, item);
-  const val = Math.abs(Number(displayAmt) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const variant = failed ? 'fail' : incoming ? 'in' : 'out';
+  const { sign, value } = A.formatActivityAmountParts(amount, incoming, kind, item);
+  const val = value || Math.abs(Number(displayAmt) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const isInc = item?.kind === 'card_topup' || item?.kind === 'refund' || item?.kind === 'reversal' || incoming;
+  const variant = failed ? 'fail' : isInc ? 'in' : 'out';
 
   return (
     <span className={`portal-tx__amt portal-tx__amt--${variant}${large ? ' portal-tx__amt--lg' : ''}`}>

@@ -461,8 +461,8 @@ export function formatActivityWhen(isoOrDate, options = {}) {
     const weekday = d.toLocaleDateString(DISPLAY_LOCALE, { weekday: 'short' });
     return `${weekday} · ${formatActivityTime(d)}`;
   }
-  if (bucket === 'year') return formatMonthDay(d);
-  return formatMonthDayYear(d);
+  if (bucket === 'year') return `${formatMonthDay(d)} · ${formatActivityTime(d)}`;
+  return `${formatMonthDayYear(d)} · ${formatActivityTime(d)}`;
 }
 
 /** Section header for grouped transactions feed */
@@ -519,12 +519,12 @@ export function formatActivityAmountParts(amount, incoming, kind, item = {}) {
   const currency = item?.currency || (kind === 'card_spend' || kind === 'refund' || kind === 'reversal' ? 'USD' : 'USDT');
 
   const val = Math.abs(Number(displayAmount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (item?.cardIncoming === true || (kind === 'card_topup' && item?.cardIncoming)) {
+  if (kind === 'card_topup') {
     return { sign: '+', value: val, currency: 'USDT' };
   }
-  const usdtOut = new Set(['wallet_send', 'wallet_withdraw', 'wallet_fee', 'referral_withdrawal', 'card_topup', 'card_charge_fee']);
+  const usdtOut = new Set(['wallet_send', 'wallet_withdraw', 'wallet_fee', 'referral_withdrawal', 'card_charge_fee']);
   const usdtIn = new Set([
-    'wallet_topup', 'wallet_receive',
+    'wallet_topup', 'wallet_receive', 'card_topup',
     'referral_reward', 'referral_commission', 'referral_pending',
   ]);
 

@@ -220,8 +220,25 @@ export function useAccountState() {
 
   const activeActivityItems = useMemo(() => {
     if (selectedCardTxs != null) {
-      const localTxs = (mockContext.activityItems || []).filter((item) => item.kind !== 'card_spend' && item.kind !== 'refund');
-      return [...localTxs, ...selectedCardTxs];
+      const localTxs = (mockContext.activityItems || []).filter((item) => item.kind !== 'card_spend' && item.kind !== 'refund' && item.kind !== 'card_topup');
+      const combined = [...localTxs, ...selectedCardTxs];
+      const dedupMap = new Map();
+      for (const item of combined) {
+        const rawId = String(item.id || item.txId || item.reference || '');
+        const cleanKey = rawId.replace(/^FEE_/, '').replace(/^RETRY_/, '').replace(/^RETRY_DEPOSIT_/, '').trim() || rawId;
+        const isCompleted = item.status === 'completed' || item.status === 'approved' || item.status === 'success';
+
+        if (!dedupMap.has(cleanKey)) {
+          dedupMap.set(cleanKey, item);
+        } else {
+          const existing = dedupMap.get(cleanKey);
+          const existingIsCompleted = existing.status === 'completed' || existing.status === 'approved' || existing.status === 'success';
+          if (isCompleted && !existingIsCompleted) {
+            dedupMap.set(cleanKey, item);
+          }
+        }
+      }
+      return Array.from(dedupMap.values());
     }
     return mockContext.activityItems;
   }, [mockContext.activityItems, selectedCardTxs]);

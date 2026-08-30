@@ -346,8 +346,8 @@ export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, ti
             </thead>
             <tbody>
               {filtered.map((tx) => {
-                const status = formatTxStatus(tx);
-                const amountVariant = tx.failed ? 'fail' : tx.incoming ? 'in' : 'out';
+                const isInc = tx.kind === 'card_topup' || tx.kind === 'refund' || tx.kind === 'reversal' || tx.incoming;
+                const amountVariant = tx.failed ? 'fail' : isInc ? 'in' : 'out';
                 return (
                   <tr key={tx.id} className={tx.failed ? ' is-failed' : ''}>
                     <td data-label="Date">{A.formatActivityWhen(tx.at, { style: 'standard' })}</td>
