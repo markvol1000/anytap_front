@@ -348,6 +348,11 @@ export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, ti
               {filtered.map((tx) => {
                 const isInc = tx.kind === 'card_topup' || tx.kind === 'refund' || tx.kind === 'reversal' || tx.incoming;
                 const amountVariant = tx.failed ? 'fail' : isInc ? 'in' : 'out';
+                const statusLabel = tx.failed 
+                  ? 'Failed' 
+                  : (tx.status === 'pending' || tx.status === 'processing' 
+                      ? 'Pending' 
+                      : (A.formatActivityStatusLabel(tx.status) || 'Completed'));
                 return (
                   <tr key={tx.id} className={tx.failed ? ' is-failed' : ''}>
                     <td data-label="Date">{A.formatActivityWhen(tx.at, { style: 'standard' })}</td>
@@ -363,8 +368,8 @@ export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, ti
                       />
                     </td>
                     <td data-label="Status">
-                      <span className={`portal-mycards-desk-tx__status portal-mycards-desk-tx__status--${status.toLowerCase()}`}>
-                        {status}
+                      <span className={`portal-mycards-desk-tx__status portal-mycards-desk-tx__status--${statusLabel.toLowerCase()}`}>
+                        {statusLabel}
                       </span>
                     </td>
                   </tr>

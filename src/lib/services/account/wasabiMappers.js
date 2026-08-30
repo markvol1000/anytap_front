@@ -47,11 +47,24 @@ function pickTimestamp(record) {
   return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
 }
 
+function sanitizeUserFacingTitle(text, record) {
+  if (!text || typeof text !== 'string') return '';
+  const lower = text.toLowerCase();
+  if (lower.includes('wasabi') || lower.includes('webhook') || lower.includes('cregis') || lower.includes('wsb') || lower.includes('와사비')) {
+    const typeStr = String(record?.type || record?.tradeType || record?.kind || '').toLowerCase();
+    if (typeStr.includes('withdraw')) return 'Card Withdrawal';
+    if (typeStr.includes('deposit') || typeStr.includes('charge') || typeStr.includes('topup')) return 'Card Top Up';
+    if (typeStr.includes('refund')) return 'Refund';
+    return 'Card Payment';
+  }
+  return text;
+}
+
 function pickTitle(record) {
   const candidate = record?.merchantName
     || record?.merchantData?.name;
   if (candidate && !['SUCCESS', 'FAIL', 'FAILED', 'PENDING', 'CREATE', 'CARD_UPDATE', 'UPDATE_PIN', 'FREEZE', 'UNFREEZE'].includes(String(candidate).toUpperCase().trim())) {
-    return candidate;
+    return sanitizeUserFacingTitle(candidate, record);
   }
   const typeStr = String(record?.type || record?.tradeType || record?.transactionType || '').toLowerCase();
   const subTypeStr = String(record?.subType || '').toLowerCase();
@@ -60,10 +73,11 @@ function pickTitle(record) {
   if (typeStr.includes('freeze') || subTypeStr.includes('freeze')) return 'Freeze';
   if (typeStr.includes('card_update') || typeStr.includes('card update')) return 'Card Update';
   if (typeStr.includes('create')) return 'Create Card';
+  if (typeStr.includes('withdraw')) return 'Card Withdrawal';
   if (typeStr.includes('topup') || typeStr.includes('deposit')) return 'Card Top Up';
   if (typeStr.includes('refund')) return 'Refund';
   if (typeStr.includes('reversal')) return 'Reversal';
-  if (record?.description) return record.description;
+  if (record?.description) return sanitizeUserFacingTitle(record.description, record);
   return 'Card Purchase';
 }
 
