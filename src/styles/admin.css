@@ -1989,6 +1989,502 @@
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Admin Fee Analysis Report (.admin-fees-*) — Responsive Mobile UI
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.admin-fees-report {
+  background-color: #ffffff;
+  min-height: 100vh;
+  padding: 24px;
+  color: #333333;
+}
+
+.admin-fees-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid #E0E0E0;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
+}
+
+.admin-fees-tab-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #64748B;
+  border-bottom: 3px solid transparent;
+  text-decoration: none;
+  margin-bottom: -2px;
+  transition: all 0.15s ease;
+}
+
+.admin-fees-tab-link.is-active {
+  color: #007BFF;
+  border-bottom-color: #007BFF;
+}
+
+.admin-fees-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-fees-header__title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1E293B;
+  margin: 0;
+}
+
+.admin-fees-header__sub {
+  font-size: 13px;
+  color: #64748B;
+  margin: 4px 0 0 0;
+}
+
+.admin-fees-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-fees-kpi-card {
+  padding: 16px;
+  background-color: #F8FAFC;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+}
+
+.admin-fees-kpi-card__label {
+  font-size: 12px;
+  color: #64748B;
+  font-weight: 600;
+}
+
+.admin-fees-kpi-card__val {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0F172A;
+  margin-top: 6px;
+}
+
+.admin-fees-kpi-card__sub {
+  font-size: 11px;
+  color: #64748B;
+  margin-top: 4px;
+}
+
+.admin-fees-formula-banner {
+  background-color: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  font-size: 12px;
+}
+
+.admin-fees-date-bar {
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-fees-date-presets {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-fees-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #F1F5F9;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-fees-controls-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-fees-table-wrap {
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 24px;
+}
+
+.admin-fees-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.admin-fees-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background-color: #F8FAFC;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+  margin-bottom: 24px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.admin-fees-detail-panel {
+  background-color: #F8FAFC;
+  border-radius: 10px;
+  border: 2px solid #3B82F6;
+  padding: 24px;
+  margin-top: 28px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+}
+
+.admin-fees-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #E2E8F0;
+  padding-bottom: 12px;
+}
+
+.admin-fees-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.admin-fees-detail-calc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  font-size: 13px;
+}
+
+/* 📱 Responsive Mobile Adjustments (< 768px) */
+@media (max-width: 768px) {
+  .admin-fees-report {
+    padding: 10px 8px;
+  }
+
+  .admin-fees-table th,
+  .admin-fees-table td {
+    padding: 8px 10px !important;
+  }
+
+  .admin-fees-header__title {
+    font-size: 18px;
+  }
+
+  .admin-fees-header__sub {
+    font-size: 12px;
+  }
+
+  .admin-fees-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .admin-fees-kpi-card {
+    padding: 10px;
+    border-radius: 8px;
+  }
+
+  .admin-fees-kpi-card__label {
+    font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .admin-fees-kpi-card__val {
+    font-size: 15px;
+    margin-top: 2px;
+  }
+
+  .admin-fees-kpi-card__sub {
+    font-size: 10px;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .admin-fees-formula-banner {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+  }
+
+  .admin-fees-controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px;
+    margin-bottom: 14px;
+  }
+
+  .admin-fees-controls-right {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .admin-fees-controls-right input,
+  .admin-fees-controls-right select {
+    width: 100% !important;
+  }
+
+  .admin-fees-table-wrap {
+    margin-bottom: 14px;
+  }
+
+  .admin-fees-pagination {
+    padding: 8px 10px;
+    margin-bottom: 14px;
+  }
+
+  .admin-fees-detail-panel {
+    padding: 12px 10px;
+    margin-top: 16px;
+  }
+
+  .admin-fees-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .admin-fees-detail-calc-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-fees-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* 📱 Mobile 3-Line List Item Cards (< 768px) */
+.admin-fees-mobile-list-container {
+  display: none;
+  margin-bottom: 14px;
+}
+
+.admin-fees-mobile-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background-color: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.admin-fees-mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-fees-mobile-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-fees-mobile-card.is-selected {
+  border-color: #3B82F6;
+  background-color: #EFF6FF;
+}
+
+.admin-fees-mobile-card__line1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1E293B;
+}
+
+.admin-fees-mobile-card__user {
+  font-weight: 700;
+  color: #0F172A;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-fees-mobile-card__id {
+  font-size: 11px;
+  color: #64748B;
+  font-weight: 400;
+}
+
+.admin-fees-mobile-card__total-fee {
+  font-size: 14px;
+  font-weight: 800;
+  color: #059669;
+  white-space: nowrap;
+}
+
+.admin-fees-mobile-card__fee-amount {
+  font-size: 14px;
+  font-weight: 800;
+  color: #059669;
+  white-space: nowrap;
+}
+
+.admin-fees-mobile-card__line2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.admin-fees-mobile-card__subtext {
+  font-size: 12px;
+  color: #64748B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-fees-mobile-card__unpaid-fee {
+  font-size: 12px;
+  font-weight: 700;
+  color: #DC2626;
+  white-space: nowrap;
+}
+
+.admin-fees-mobile-card__line3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #64748B;
+  border-top: 1px dashed #F1F5F9;
+  padding-top: 4px;
+  margin-top: 2px;
+}
+
+.admin-fees-mobile-card__date {
+  font-size: 11px;
+  color: #94A3B8;
+  white-space: nowrap;
+}
+
+.admin-fees-mobile-card__breakdown {
+  font-size: 11px;
+  color: #2563EB;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-fees-mobile-card__item-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-fees-mobile-card__fee-name {
+  font-weight: 700;
+  color: #1E293B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-fees-code-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  background-color: #E2E8F0;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.admin-fees-code-badge--A3 {
+  background-color: #DBEAFE;
+  color: #1E40AF;
+}
+
+.admin-fees-code-badge--CARD_CHARGE_FIXED {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.admin-fees-desktop-table {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .admin-fees-desktop-table {
+    display: none;
+  }
+
+  .admin-fees-mobile-list-container {
+    display: block;
+  }
+}
+
 
 
 
