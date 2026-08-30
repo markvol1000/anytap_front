@@ -1382,7 +1382,7 @@ export async function getFeesReport(params = {}) {
       feeAmount: feeAmt,
       netAmount: Math.max(0, Number((amt - feeAmt).toFixed(2))),
       currency: t.currency || 'USDT',
-      createdAt: t.at || new Date().toISOString(),
+      createdAt: t.createdAt || t.createdDate || t.at || t.txTime || '',
       status: t.status || 'SUCCESS',
       description: feeName,
       feeExplanation,

@@ -288,7 +288,7 @@ export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, ti
     if (!session?.userId) return undefined;
 
     let cancelled = false;
-    const cNo = String(card?.wasabiCardId || card?.cardNo || card?.id || cardLast4 || '');
+    const cNo = String(card?.wasabiCardId || card?.cardId || card?.id || card?.cardNo || cardLast4 || '');
     const l4 = String(card?.last4 || cardLast4 || (cNo.replace(/\D/g, '').length >= 4 ? cNo.replace(/\D/g, '').slice(-4) : ''));
 
     if (!cNo && !l4) return undefined;

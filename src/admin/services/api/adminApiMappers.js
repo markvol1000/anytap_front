@@ -504,7 +504,7 @@ export function mapDailySummaryToDashboard({
       kind: rawKind === 'deposit' ? 'wallet_deposit' : (rawKind === 'card_charge' ? 'card_spend' : rawKind),
       amount: Number(t.amount ?? 0),
       status: st,
-      at: t.createdAt || t.createdDate || t.at || new Date().toISOString(),
+      at: t.createdAt || t.createdDate || t.at || t.txTime || '',
     };
 
     const txTypeStr = String(t.type || t.txType || '').toUpperCase();

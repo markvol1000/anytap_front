@@ -27,8 +27,13 @@ function pickTimestamp(record) {
   const raw = record?.transactionTime
     ?? record?.tradeTime
     ?? record?.createdAt
-    ?? record?.occurredAt;
-  if (raw == null) return new Date().toISOString();
+    ?? record?.occurredAt
+    ?? record?.createdDate
+    ?? record?.txTime
+    ?? record?.at
+    ?? record?.transTime
+    ?? record?.authTime;
+  if (raw == null || raw === '' || raw === 'null') return '';
   if (typeof raw === 'number') {
     const ms = raw < 1e12 ? raw * 1000 : raw;
     return new Date(ms).toISOString();
@@ -39,7 +44,7 @@ function pickTimestamp(record) {
     return new Date(ms).toISOString();
   }
   const parsed = new Date(raw);
-  return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+  return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
 }
 
 function pickTitle(record) {

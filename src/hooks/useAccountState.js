@@ -192,8 +192,8 @@ export function useAccountState() {
     const session = getHttpSession();
     if (!session?.userId) return undefined;
 
-    const cNo = String(currentCard?.cardNo || currentCard?.wasabiCardId || currentCard?.balanceInfo?.cardNo || '');
-    const l4 = currentCard?.last4 || cNo.replace(/\D/g, '').slice(-4) || cNo.slice(-4) || '';
+    const cNo = String(currentCard?.wasabiCardId || currentCard?.cardId || currentCard?.id || currentCard?.cardNo || currentCard?.balanceInfo?.cardNo || '');
+    const l4 = currentCard?.last4 || (cNo.replace(/\D/g, '').length >= 4 ? cNo.replace(/\D/g, '').slice(-4) : '') || '';
     if (!cNo) {
       setSelectedCardTxs(null);
       setTxsLoading(false);

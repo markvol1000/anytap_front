@@ -169,26 +169,24 @@ export function filterActivityForWalletPage(items) {
   return items.filter((t) => isWalletActivity(t) && !isFeeItem(t));
 }
 
-export function filterActivityForCardPage(items, cardOrLast4) {
+export function filterActivityForCardPage(items, cardOrId) {
   const cardItems = items.filter((t) => isCardActivity(t) && t.kind !== 'card_charge_fee');
-  if (!cardOrLast4) return cardItems;
+  if (!cardOrId) return cardItems;
 
-  const targetCardNo = typeof cardOrLast4 === 'object'
-    ? String(cardOrLast4?.cardNo || cardOrLast4?.id || cardOrLast4?.wasabiCardId || '')
-    : String(cardOrLast4 || '');
-  const targetLast4 = typeof cardOrLast4 === 'object'
-    ? String(cardOrLast4?.last4 || '')
-    : (targetCardNo.length <= 4 ? targetCardNo : targetCardNo.slice(-4));
+  const targetCardId = typeof cardOrId === 'object'
+    ? String(cardOrId?.wasabiCardId || cardOrId?.cardId || cardOrId?.id || cardOrId?.cardNo || '').trim()
+    : String(cardOrId || '').trim();
 
-  const targetDigits = targetCardNo.replace(/\D/g, '');
+  if (!targetCardId || targetCardId === 'all') return cardItems;
 
   return cardItems.filter((t) => {
-    const tCardNo = String(t.cardNo || t.wasabiCardId || '').replace(/\D/g, '');
-    const tLast4 = String(t.cardLast4 || (tCardNo.length >= 4 ? tCardNo.slice(-4) : '')).trim();
-
-    if (tCardNo && targetDigits && (tCardNo === targetDigits || tCardNo.endsWith(targetDigits) || targetDigits.endsWith(tCardNo))) return true;
-    if (tLast4 && targetLast4 && (tLast4 === targetLast4 || tLast4.endsWith(targetLast4))) return true;
-    if (t.cardId && targetCardNo && String(t.cardId).toLowerCase() === targetCardNo.toLowerCase()) return true;
+    const itemCardId = String(t.wasabiCardId || t.cardId || t.cardNo || '').trim();
+    if (itemCardId && targetCardId) {
+      if (itemCardId.toLowerCase() === targetCardId.toLowerCase()) return true;
+      const itemDigits = itemCardId.replace(/\D/g, '');
+      const targetDigits = targetCardId.replace(/\D/g, '');
+      if (itemDigits && targetDigits && itemDigits === targetDigits) return true;
+    }
     return false;
   });
 }
