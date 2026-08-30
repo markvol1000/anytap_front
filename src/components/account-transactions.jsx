@@ -266,10 +266,11 @@ function TransactionsGroupedFeed({ items, onSelect }) {
             <div className="portal-tx-group__rule" aria-hidden="true" />
           </header>
           <ul className="portal-tx-group__list">
-            {group.items.map((tx) => {
+            {group.items.map((tx, idx) => {
               const rowWhenStyle = group.bucket === 'prior' ? 'grouped-row' : 'grouped-time';
+              const itemKey = tx.id ? `${tx.id}_${tx.kind || ''}_${tx.at || ''}_${idx}` : `tx_${idx}`;
               return (
-                <li key={tx.id}>
+                <li key={itemKey}>
                   <ActivityRow
                     tx={tx}
                     dateStyle={rowWhenStyle}
@@ -356,14 +357,23 @@ export function TransactionsPage({ items = [], initialScope = 'all', initialCard
   }, [selectedCardId, cards]);
 
   const activeItems = useMemo(() => {
+    let list = items;
     if (liveCardTxs != null) {
       if (selectedCardId && selectedCardId !== 'all') {
-        return liveCardTxs;
+        list = liveCardTxs;
+      } else {
+        const localTxs = items.filter((item) => item.kind !== 'card_spend' && item.kind !== 'refund');
+        list = [...localTxs, ...liveCardTxs];
       }
-      const localTxs = items.filter((item) => item.kind !== 'card_spend' && item.kind !== 'refund');
-      return [...localTxs, ...liveCardTxs];
     }
-    return items;
+    const seen = new Set();
+    return list.filter((item) => {
+      if (!item) return false;
+      const sig = `${item.id || ''}_${item.kind || ''}_${item.at || ''}_${item.amount || ''}_${item.txId || ''}`;
+      if (seen.has(sig)) return false;
+      seen.add(sig);
+      return true;
+    });
   }, [items, liveCardTxs, selectedCardId]);
 
   // Reset page to 1 when any filter changes

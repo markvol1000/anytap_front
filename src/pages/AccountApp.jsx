@@ -34,7 +34,7 @@ function checkIsAdmin(s) {
 import { AccountHome } from '../components/account-dashboard.jsx';
 import { AccountCardApply } from '../components/account-card-apply.jsx';
 import { AccountCardRegister } from '../components/account-card-register.jsx';
-import { AccountWallet, ReceiveSheet, QuickTopUpSheet } from '../components/account-wallet.jsx';
+import { AccountWallet, ReceiveSheet, QuickTopUpSheet, CardTopUpSelectSheet } from '../components/account-wallet.jsx';
 import { AccountReferral } from '../components/account-referral.jsx';
 import { AccountCardView } from './account/AccountCardView.jsx';
 import { AccountCardTransactions } from './account/AccountCardTransactions.jsx';
@@ -240,6 +240,16 @@ function AccountPortal() {
 
       <AccountToast msg={s.toast} />
       <ReceiveSheet s={s} open={s.receiveOpen} onClose={s.closeReceive} />
+      <CardTopUpSelectSheet
+        s={s}
+        cards={(s.userCards ?? []).filter((c) => ['active', 'frozen', 'shipping'].includes(c.status))}
+        open={!!s.cardPickOpen}
+        onClose={s.closeCardPickModal}
+        onSelect={(card) => {
+          s.closeCardPickModal?.();
+          s.openQuickTopUp?.(card);
+        }}
+      />
       <QuickTopUpSheet s={s} card={s.quickTopUpCard} open={!!s.quickTopUpCard} onClose={s.closeQuickTopUp} />
       <PhysicalCardActivateSheet s={s} open={s.activePhysicalCardOpen} onClose={s.closeActivePhysical} />
       {s.remoteLoading && <PageLoader />}

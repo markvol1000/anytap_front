@@ -62,6 +62,20 @@ export function WalletCard({
   };
 
   const handleTopUpCard = () => {
+    const activeCards = (s.userCards ?? []).filter((c) => ['active', 'frozen', 'shipping'].includes(c.status));
+    if (activeCards.length === 0) {
+      s.showToast?.('Please apply for and activate a card first.', 'error');
+      s.go?.('cardApply');
+      return;
+    }
+    if (s.openCardPickModal) {
+      s.openCardPickModal();
+      return;
+    }
+    if (activeCards[0] && s.openQuickTopUp) {
+      s.openQuickTopUp(activeCards[0]);
+      return;
+    }
     if (onQuickAction) onQuickAction('topUp');
     else s.goWallet?.('charge');
   };
@@ -69,6 +83,14 @@ export function WalletCard({
   const handleSendExternal = () => {
     if (onQuickAction) onQuickAction('send');
     else s.goWallet?.('send');
+
+    setTimeout(() => {
+      const destInput = document.querySelector('.portal-wallet-dest__input') || document.querySelector('textarea');
+      if (destInput) {
+        destInput.focus();
+        destInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 80);
   };
 
   return (

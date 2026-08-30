@@ -49,9 +49,10 @@ export function QuickActionGroup({
                 'quick-action-group__btn',
                 active ? 'is-active' : '',
                 accent ? 'quick-action-group__btn--accent' : '',
+                isDisabled ? 'is-disabled' : '',
               ].filter(Boolean).join(' ')}
               onClick={() => onAction?.(id)}
-              disabled={isDisabled}
+              style={isDisabled ? { opacity: 0.6, cursor: 'pointer' } : undefined}
               aria-pressed={active}>
               <span className="quick-action-group__icon" aria-hidden="true">
                 <Icon name={icon} size={21} stroke={1.75} />
@@ -83,7 +84,6 @@ export function DashboardWalletActionGroup({
     <QuickActionGroup
       actions={DASHBOARD_WALLET_ACTIONS}
       onAction={handleAction}
-      disabled={{ topUpCard: !canTopUpCard }}
       className={className}
       aria-label="Wallet actions"
     />
@@ -101,9 +101,14 @@ export function WalletFlowQuickActionGroup({
 }) {
   const handleAction = onAction ?? ((id) => {
     if (id === 'topUp') {
-      const card = s.userCards?.[s.selectedCardIndex ?? 0];
-      if (card) s.openQuickTopUp?.(card);
-      else s.goWallet?.('charge');
+      const activeCards = s.userCards?.filter(c => ['active', 'frozen', 'shipping'].includes(c.status)) || [];
+      const card = activeCards[s.selectedCardIndex] || activeCards[0] || s.userCards?.[0];
+      if (card) {
+        s.openQuickTopUp?.(card);
+      } else {
+        s.showToast?.('No card available to top up. Please apply for a card first.', 'error');
+        s.goWallet?.('charge');
+      }
     } else if (id === 'send') s.goWallet?.('send');
     else if (id === 'receive') s.openReceive?.();
   });
@@ -125,7 +130,7 @@ export const DashboardQuickActionGroup = WalletFlowQuickActionGroup;
 /** Card page — Top Up (+ Card Info, Freeze in detail mode) */
 export function CardQuickActionGroup({ s, card, activeId = null, className = '', mode = 'detail' }) {
   const isFrozen = card?.status === 'frozen';
-  const canUse = card?.status === 'active' && s.cardIsActive;
+  const canUse = card?.status === 'active' || card?.status === 'shipping' || s.cardIsActive;
   const isSummary = mode === 'summary';
 
   const actions = useMemo(() => {
@@ -141,16 +146,16 @@ export function CardQuickActionGroup({ s, card, activeId = null, className = '',
 
   if (!card) return null;
 
-  const disabled = {
-    topUp: !canUse || isFrozen,
-    cardDetails: false,
-    freeze: !canUse && !isFrozen,
-  };
-
   const handleAction = async (id) => {
-    if (id === 'topUp') s.openQuickTopUp?.(card);
-    else if (id === 'cardDetails') s.openCardDetails?.(card);
-    else if (id === 'freeze') {
+    if (id === 'topUp') {
+      if (isFrozen) {
+        s?.showToast?.('Card is frozen. Please unfreeze your card before topping up.', 'error');
+        return;
+      }
+      s.openQuickTopUp?.(card);
+    } else if (id === 'cardDetails') {
+      s.openCardDetails?.(card);
+    } else if (id === 'freeze') {
       try {
         if (isFrozen) {
           await unfreezeCard(card?.cardId || card?.id);
@@ -171,7 +176,6 @@ export function CardQuickActionGroup({ s, card, activeId = null, className = '',
     <QuickActionGroup
       actions={actions}
       activeId={activeId ?? (!isSummary && (s.showCardDetails ? 'cardDetails' : (isFrozen ? 'freeze' : null)))}
-      disabled={disabled}
       onAction={handleAction}
       className={className}
     />

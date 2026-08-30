@@ -187,7 +187,7 @@ export function mapCardRow(row, idx = 0) {
   const uFee = Number(row?.unpaidTotalFee ?? 0) || 0;
 
   const last4 = resolveCardLast4(row, userId, idx);
-  const cardNo = last4 !== '—' ? `4532 •••• •••• ${last4}` : (wasabiCardId && wasabiCardId !== '-' ? wasabiCardId : '—');
+  const cardNo = last4 !== '—' ? `•••• •••• •••• ${last4}` : (wasabiCardId && wasabiCardId !== '-' ? wasabiCardId : '—');
 
   const cardTypeRaw = row?.cardType || row?.card_type || 'physical';
   const cardTypeLabel = row?.cardTypeLabel || (cardTypeRaw === 'physical' ? 'Physical Card' : 'Virtual Card');

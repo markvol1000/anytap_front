@@ -407,10 +407,6 @@ function TransactionSummary({ selectedCard, topUpAmount, gasFee, isUnderMin = fa
       <h3 className="portal-wallet-desk__panel-title">Transaction Summary</h3>
       <dl className="portal-wallet-desk__summary-list">
         <div className="portal-wallet-desk__summary-row">
-          <dt>Selected Card</dt>
-          <dd>{A.maskCardShort(selectedCard.last4)}</dd>
-        </div>
-        <div className="portal-wallet-desk__summary-row">
           <dt>Current Card Balance</dt>
           <dd>{selectedCard.balance?.includes('USDT') || selectedCard.balance?.includes('$') ? selectedCard.balance : `${W.parseCardBalanceUsdt(selectedCard.balance)} USDT`}</dd>
         </div>
@@ -512,6 +508,22 @@ function WalletTopUpSide({
   const isExceeded = topUpVal > 0 && (topUpVal + W.GAS_FEE_CHARGE > walletBal);
   const canSubmit = W.isValidTopUp(topUpAmount) && !isExceeded;
 
+  const handleTopUpClick = () => {
+    if (!topUpAmount || !String(topUpAmount).trim() || topUpVal <= 0) {
+      s.showToast?.('Please enter a top-up amount (Min. 50 USDT).', 'error');
+      return;
+    }
+    if (isUnderMin) {
+      s.showToast?.('Minimum top-up amount is 50 USDT.', 'error');
+      return;
+    }
+    if (isExceeded) {
+      s.showToast?.('Top-up amount exceeds available wallet balance.', 'error');
+      return;
+    }
+    onConfirm?.();
+  };
+
   return (
     <>
       <AmountBlock
@@ -533,9 +545,8 @@ function WalletTopUpSide({
       <button
         type="button"
         className={`portal-btn-primary portal-wallet-charge__cta${canSubmit ? ' is-ready' : ''}`}
-        disabled={!canSubmit}
-        style={isUnderMin ? { backgroundColor: '#94a3b8', cursor: 'not-allowed', borderColor: '#cbd5e1' } : undefined}
-        onClick={onConfirm}>
+        onClick={handleTopUpClick}
+        style={!canSubmit ? { opacity: 0.85, cursor: 'pointer' } : undefined}>
         {W.topUpCtaLabel(topUpAmount)}
       </button>
     </>
@@ -651,7 +662,7 @@ function WalletNotice({ children }) {
   );
 }
 
-function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onConfirm, confirmLabel, danger, loading = false }) {
+function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onConfirm, confirmLabel, danger, loading = false, showToast }) {
   const [isUnderstood, setIsUnderstood] = useState(false);
 
   useEffect(() => {
@@ -662,6 +673,19 @@ function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onC
   const noticeTitle = (headerTitle.includes('Transfer') || headerTitle.includes('Withdrawal'))
     ? 'Before You Send / Withdraw'
     : 'Before You Top Up';
+
+  const handleConfirmClick = () => {
+    if (!password || !password.trim()) {
+      showToast?.('Please enter your AnyTap password.', 'error');
+      return;
+    }
+    if (!isUnderstood) {
+      showToast?.('Please check "I understand" to proceed.', 'error');
+      return;
+    }
+    if (loading) return;
+    onConfirm?.();
+  };
 
   return (
     <div className="portal-sheet" role="dialog" aria-modal="true" aria-label={title}>
@@ -733,8 +757,8 @@ function ConfirmSheet({ title, rows, password, onPassword, notice, onCancel, onC
           <button
             type="button"
             className={`portal-btn-primary portal-wallet-sheet__btn${danger ? ' portal-wallet-sheet__btn--danger' : ''}`}
-            disabled={loading || !password || !password.trim() || !isUnderstood}
-            onClick={onConfirm}>
+            disabled={loading}
+            onClick={handleConfirmClick}>
             {loading ? <><span className="btn-spinner"></span>Processing...</> : confirmLabel}
           </button>
         </div>
@@ -995,8 +1019,16 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
   };
 
   const handleNextOrConfirm = async () => {
+    if (!amount || !String(amount).trim() || topUpVal <= 0) {
+      s.showToast?.('Please enter a top-up amount (Min. 50 USDT).', 'error');
+      return;
+    }
     if (isUnderMin) {
-      s.showToast?.('Minimum card top-up amount must be 50 USDT or higher.');
+      s.showToast?.('Minimum card top-up amount must be 50 USDT or higher.', 'error');
+      return;
+    }
+    if (isExceeded) {
+      s.showToast?.('Top-up amount exceeds available wallet balance.', 'error');
       return;
     }
     if (!showPasswordStep) {
@@ -1004,7 +1036,16 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
       return;
     }
 
-    if (loading || !password || !password.trim() || !isUnderstood) return;
+    if (!password || !password.trim()) {
+      s.showToast?.('Please enter your AnyTap password.', 'error');
+      return;
+    }
+    if (!isUnderstood) {
+      s.showToast?.('Please check "I understand" to proceed.', 'error');
+      return;
+    }
+    if (loading) return;
+
     setLoading(true);
     try {
       await chargeCard(topUpVal, card?.cardId || card?.id, password);
@@ -1014,7 +1055,8 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
       s.refresh?.();
     } catch (err) {
       console.error('Failed to top up card', err);
-      s.showToast(err?.message || 'Failed to top up card');
+      const errMsg = err?.message || err?.data?.message || 'Failed to top up card';
+      s.showToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -1133,7 +1175,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
           <button
             type="button"
             className="portal-btn-primary portal-wallet-sheet__btn"
-            disabled={loading || isUnderMin || !W.isValidTopUp(amount) || isExceeded || (showPasswordStep && (!password.trim() || !isUnderstood))}
+            disabled={loading}
             onClick={handleNextOrConfirm}
             style={{
               height: 'auto',
@@ -1202,7 +1244,7 @@ export function AccountWallet({ s }) {
     }
   }, [activeCards, selectedCardId]);
 
-  const selectedCard = activeCards.find((c) => c.id === selectedCardId) ?? null;
+  const selectedCard = activeCards.find((c) => c.id === selectedCardId) ?? activeCards[0] ?? null;
   const topUpVal = parseFloat(topUpAmount) || 0;
   const cardFeeVal = topUpVal * (W.CARD_CHARGE_FEE_RATE || 0.02);
   const gasFeeVal = W.GAS_FEE_CHARGE || 3.00;
@@ -1283,6 +1325,15 @@ export function AccountWallet({ s }) {
   const canTopUpCard = activeCards.length > 0;
   const onQuickAction = (id) => {
     if (id === 'topUp') {
+      if (s.openCardPickModal) {
+        s.openCardPickModal();
+        return;
+      }
+      const activeCard = activeCards[0] || (s.userCards ?? []).find(c => c.status === 'active') || s.userCards?.[0];
+      if (activeCard && s.openQuickTopUp) {
+        s.openQuickTopUp(activeCard);
+        return;
+      }
       setQuickActive('topUp');
       setTab('charge');
     } else if (id === 'send') {
@@ -1441,7 +1492,6 @@ export function AccountWallet({ s }) {
         <ConfirmSheet
           title="Confirm Card Charge"
           rows={[
-            { label: 'Card', value: A.maskCardShort(selectedCard.last4) },
             { label: 'Charge Amount', value: `${topUpVal.toFixed(2)} USDT`, emphasis: true },
             { label: 'Card Fee (2%)', value: `${cardFeeVal.toFixed(2)} USDT` },
             { label: 'Gas Fee', value: `${gasFeeVal.toFixed(2)} USDT` },
@@ -1454,6 +1504,7 @@ export function AccountWallet({ s }) {
           onConfirm={finishCharge}
           confirmLabel="Confirm"
           loading={loading}
+          showToast={s.showToast}
         />
       )}
 
@@ -1474,6 +1525,7 @@ export function AccountWallet({ s }) {
           confirmLabel="Confirm"
           loading={loading}
           danger
+          showToast={s.showToast}
         />
       )}
 

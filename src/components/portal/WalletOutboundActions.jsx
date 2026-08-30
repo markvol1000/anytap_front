@@ -19,8 +19,6 @@ export function WalletOutboundActions({
             'portal-dash-wf__outbound-btn--accent',
             activeTopUp ? 'is-active' : '',
           ].filter(Boolean).join(' ')}
-          disabled={!canTopUpCard}
-          title={canTopUpCard ? undefined : 'Apply for a card first.'}
           onClick={() => onTopUpCard?.()}
           aria-pressed={activeTopUp}>
           <Icon name="creditCard" size={18} stroke={1.75} />

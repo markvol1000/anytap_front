@@ -98,17 +98,18 @@ function pickLast4(record, fallbackLast4 = '') {
   const cardNo = String(record?.cardNo || record?.balanceInfo?.cardNo || '');
   if (cardNo && !cardNo.startsWith('C_') && !cardNo.startsWith('WD_') && !cardNo.startsWith('HOLDER_')) {
     const digits = cardNo.replace(/\D/g, '');
-    if (digits.length >= 4 && (digits.startsWith('4938') || digits.startsWith('4937') || digits.length >= 10)) {
+    if (digits.length >= 4) {
       return digits.slice(-4);
     }
   }
 
-  if (fallbackLast4 && !fallbackLast4.startsWith('C_') && !fallbackLast4.startsWith('WD_') && fallbackLast4 !== '2160') {
+  if (fallbackLast4 && !fallbackLast4.startsWith('C_') && !fallbackLast4.startsWith('WD_')) {
     const fbDigits = String(fallbackLast4).replace(/\D/g, '');
     if (fbDigits.length >= 4) return fbDigits.slice(-4);
+    return String(fallbackLast4).trim();
   }
 
-  return (fallbackLast4 && fallbackLast4 !== '2160') ? fallbackLast4 : '4019';
+  return '';
 }
 
 function mapWasabiType(type = '') {

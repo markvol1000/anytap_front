@@ -1100,6 +1100,33 @@ button.portal-tx:hover {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.portal-tx-scope-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.portal-tx-scope-badge--card {
+  color: #3b82f6;
+  background-color: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.28);
+}
+.portal-tx-scope-badge--wallet {
+  color: #10b981;
+  background-color: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+.portal-tx-scope-badge--reward {
+  color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+}
 .portal-tx__net { display: inline-flex; align-items: center; flex-shrink: 0; }
 .portal-tx__net--visa {
   font-size: 11px;

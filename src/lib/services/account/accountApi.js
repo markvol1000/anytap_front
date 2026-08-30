@@ -528,7 +528,7 @@ export async function fetchAccountContext() {
           return { 
             ...tx, 
             cardNo: tx.cardNo || '', 
-            cardLast4: tx.cardLast4 || '',
+            cardLast4: tx.cardLast4 || tx.last4 || targetLast4 || '',
             cardIncoming: true,
             cardDisplayAmount: `+${Math.abs(Number(tx.amount || 0)).toFixed(2)} USDT`
           };

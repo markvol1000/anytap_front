@@ -220,7 +220,7 @@ export function useAccountState() {
 
   const activeActivityItems = useMemo(() => {
     if (selectedCardTxs != null) {
-      const localTxs = (mockContext.activityItems || []).filter((item) => item.kind !== 'card_spend' && item.kind !== 'refund' && item.kind !== 'card_topup');
+      const localTxs = (mockContext.activityItems || []).filter((item) => item.kind !== 'card_spend' && item.kind !== 'refund');
       const combined = [...localTxs, ...selectedCardTxs];
       const dedupMap = new Map();
       for (const item of combined) {
@@ -287,6 +287,9 @@ export function useAccountState() {
   }, [screen]);
 
   const closeReceive = useCallback(() => setReceiveOpen(false), []);
+  const [cardPickOpen, setCardPickOpen] = useState(false);
+  const openCardPickModal = useCallback(() => setCardPickOpen(true), []);
+  const closeCardPickModal = useCallback(() => setCardPickOpen(false), []);
   const openQuickTopUp = useCallback((card) => setQuickTopUpCard(card), []);
   const closeQuickTopUp = useCallback(() => setQuickTopUpCard(null), []);
 
@@ -533,6 +536,7 @@ export function useAccountState() {
     addrLoading, walletTab, goWallet,
     receiveOpen, openReceive, closeReceive,
     quickTopUpCard, openQuickTopUp, closeQuickTopUp,
+    cardPickOpen, openCardPickModal, closeCardPickModal,
     openCardDetails,
     activePhysicalCardOpen, activePhysicalTargetCard, openActivePhysical, closeActivePhysical,
   };

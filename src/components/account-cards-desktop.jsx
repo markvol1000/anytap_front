@@ -346,7 +346,8 @@ export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, ti
             </thead>
             <tbody>
               {filtered.map((tx) => {
-                const isInc = tx.kind === 'card_topup' || tx.kind === 'refund' || tx.kind === 'reversal' || tx.incoming;
+                const parts = A.formatActivityAmountParts(tx.amount, tx.incoming, tx.kind, { ...tx, pageFilter });
+                const isInc = parts.sign === '+';
                 const amountVariant = tx.failed ? 'fail' : isInc ? 'in' : 'out';
                 const statusLabel = tx.failed 
                   ? 'Failed' 
@@ -354,7 +355,7 @@ export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, ti
                       ? 'Pending' 
                       : (A.formatActivityStatusLabel(tx.status) || 'Completed'));
                 return (
-                  <tr key={tx.id} className={tx.failed ? ' is-failed' : ''}>
+                  <tr key={tx.id ? `${tx.id}_${tx.kind || ''}_${tx.at || ''}_${idx}` : `tx_${idx}`} className={tx.failed ? ' is-failed' : ''}>
                     <td data-label="Date">{A.formatActivityWhen(tx.at, { style: 'standard' })}</td>
                     <td data-label="Merchant">{tx.title}</td>
                     <td data-label="Type">{formatTxType(tx)}</td>

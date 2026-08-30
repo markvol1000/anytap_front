@@ -18,7 +18,7 @@ export function ActivityAmount({ amount, incoming, failed, kind, large = false, 
 
   const { sign, value } = A.formatActivityAmountParts(amount, incoming, kind, item);
   const val = value || Math.abs(Number(displayAmt) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const isInc = item?.kind === 'card_topup' || item?.kind === 'refund' || item?.kind === 'reversal' || incoming;
+  const isInc = sign === '+' || (item?.kind !== 'card_topup' && (item?.kind === 'refund' || item?.kind === 'reversal' || incoming));
   const variant = failed ? 'fail' : isInc ? 'in' : 'out';
 
   return (
@@ -70,6 +70,7 @@ export function ActivityRow({ tx, onClick, dateStyle = 'standard', variant = 'de
   const isCompact = variant === 'compact';
   const isGrouped = variant === 'grouped';
   const subtitle = A.activitySubtitleLabel(tx);
+  const sourceLabel = A.getActivitySourceLabel(tx);
 
   const rowClass = isCompact
     ? 'portal-dash-wf__tx'
@@ -81,9 +82,14 @@ export function ActivityRow({ tx, onClick, dateStyle = 'standard', variant = 'de
     <>
       <ActivityIcon tx={tx} compact={isCompact} />
       <span className={isCompact ? 'portal-dash-wf__tx-main' : isGrouped ? 'portal-tx-group__body' : 'portal-tx__body'}>
-        <span className={isCompact ? 'portal-dash-wf__tx-merchant' : isGrouped ? 'portal-tx-group__merchant' : 'portal-tx__title'}>
-          {tx.title}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+          <span className={isCompact ? 'portal-dash-wf__tx-merchant' : isGrouped ? 'portal-tx-group__merchant' : 'portal-tx__title'}>
+            {tx.title}
+          </span>
+          <span className={`portal-tx-scope-badge portal-tx-scope-badge--${String(sourceLabel).toLowerCase()}`}>
+            {sourceLabel}
+          </span>
+        </div>
         {isCompact ? (
           <span className="portal-dash-wf__tx-time">{subtitle}</span>
         ) : isGrouped ? (
@@ -432,9 +438,9 @@ export function RecentActivitySection({
       ) : isDashboardCompact ? (
         <>
           <div className="portal-dash-wf__tx-list">
-            {displayItems.length ? displayItems.map((tx) => (
+            {displayItems.length ? displayItems.map((tx, idx) => (
               <ActivityRow
-                key={tx.id}
+                key={tx.id ? `${tx.id}_${tx.kind || ''}_${tx.at || ''}_${idx}` : `tx_${idx}`}
                 tx={tx}
                 dateStyle="compact"
                 variant="compact"
@@ -453,9 +459,9 @@ export function RecentActivitySection({
       ) : (
         <>
           <div className="portal-tx-list">
-            {displayItems.length ? displayItems.map((tx) => (
+            {displayItems.length ? displayItems.map((tx, idx) => (
               <ActivityRow
-                key={tx.id}
+                key={tx.id ? `${tx.id}_${tx.kind || ''}_${tx.at || ''}_${idx}` : `tx_${idx}`}
                 tx={tx}
                 dateStyle={dateStyle}
                 onClick={() => handleRowClick(tx)}

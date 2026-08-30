@@ -42,6 +42,7 @@ const WALLET_KINDS = new Set([
   'wallet_withdraw',
   'wallet_send',
   'wallet_receive',
+  'card_topup',
 ]);
 const CARD_KINDS = new Set(['card_spend', 'card_topup', 'refund', 'reversal']);
 const REWARD_KINDS = new Set([
@@ -137,11 +138,19 @@ export function normalizeActivityItems(items = []) {
 }
 
 export function isWalletActivity(item) {
-  return WALLET_KINDS.has(item?.kind) && !isFeeItem(item);
+  if (!item || isFeeItem(item)) return false;
+  if (item.kind === 'card_topup') {
+    return item.incoming !== true;
+  }
+  return WALLET_KINDS.has(item.kind);
 }
 
 export function isCardActivity(item) {
-  return CARD_KINDS.has(item?.kind) && !isFeeItem(item);
+  if (!item || isFeeItem(item)) return false;
+  if (item.kind === 'card_topup') {
+    return item.incoming === true;
+  }
+  return CARD_KINDS.has(item.kind);
 }
 
 export function isRewardActivity(item) {
@@ -177,15 +186,21 @@ export function filterActivityForCardPage(items, cardOrId) {
     ? String(cardOrId?.wasabiCardId || cardOrId?.cardId || cardOrId?.id || cardOrId?.cardNo || '').trim()
     : String(cardOrId || '').trim();
 
+  const targetLast4 = typeof cardOrId === 'object'
+    ? String(cardOrId?.last4 || cardOrId?.realLast4 || '').trim()
+    : (targetCardId.length === 4 ? targetCardId : targetCardId.slice(-4));
+
   if (!targetCardId || targetCardId === 'all') return cardItems;
 
   return cardItems.filter((t) => {
     const itemCardId = String(t.wasabiCardId || t.cardId || t.cardNo || '').trim();
+    const itemLast4 = String(t.cardLast4 || t.last4 || t.cardRealLast4 || '').trim();
+
+    if (itemLast4 && targetLast4) {
+      return itemLast4.slice(-4) === targetLast4.slice(-4);
+    }
     if (itemCardId && targetCardId) {
-      if (itemCardId.toLowerCase() === targetCardId.toLowerCase()) return true;
-      const itemDigits = itemCardId.replace(/\D/g, '');
-      const targetDigits = targetCardId.replace(/\D/g, '');
-      if (itemDigits && targetDigits && itemDigits === targetDigits) return true;
+      return itemCardId.toLowerCase() === targetCardId.toLowerCase();
     }
     return false;
   });
@@ -298,38 +313,21 @@ export function resolveActivityFilterFromSearch(searchParams) {
   return 'all';
 }
 
-/** Default multi-key sort: 1) updateDate desc, 2) createDate/at desc, 3) name/title asc */
+/** Default sort: timestamp descending (latest first) */
 export function sortActivityChronological(items) {
   return [...items].sort((a, b) => {
-    const getUpdateTs = (row) => {
-      const raw = row.updatedAt || row.updateDate || row.updated || row.at || row.date || row.createdAt || row.createDate || row.created;
+    const getTs = (row) => {
+      const raw = row.createdAt || row.createDate || row.created || row.at || row.date || row.transactionTime || row.txTime || row.updatedAt || row.updateDate;
       if (!raw) return 0;
-      const t = new Date(raw).getTime();
-      return Number.isNaN(t) ? 0 : t;
+      if (typeof raw === 'number') return raw < 1e12 ? raw * 1000 : raw;
+      const parsed = new Date(raw).getTime();
+      return Number.isNaN(parsed) ? 0 : parsed;
     };
-
-    const getCreateTs = (row) => {
-      const raw = row.createdAt || row.createDate || row.created || row.at || row.date;
-      if (!raw) return 0;
-      const t = new Date(raw).getTime();
-      return Number.isNaN(t) ? 0 : t;
-    };
-
-    const getName = (row) => String(row.name || row.title || row.memberName || row.loginId || row.email || row.id || '').toLowerCase();
-
-    // 1) Update Date Descending
-    const uA = getUpdateTs(a);
-    const uB = getUpdateTs(b);
-    if (uA !== uB) return uB - uA;
-
-    // 2) Create Date / Transaction Date Descending
-    const cA = getCreateTs(a);
-    const cB = getCreateTs(b);
-    if (cA !== cB) return cB - cA;
-
-    // 3) Name / Title Ascending
-    const nA = getName(a);
-    const nB = getName(b);
+    const tA = getTs(a);
+    const tB = getTs(b);
+    if (tA !== tB) return tB - tA;
+    const nA = String(a.name || a.title || a.id || '').toLowerCase();
+    const nB = String(b.name || b.title || b.id || '').toLowerCase();
     return nA.localeCompare(nB);
   });
 }
@@ -457,11 +455,7 @@ export function formatActivityWhen(isoOrDate, options = {}) {
   // standard
   if (bucket === 'today') return `Today · ${formatActivityTime(d)}`;
   if (bucket === 'yesterday') return `Yesterday · ${formatActivityTime(d)}`;
-  if (bucket === 'week') {
-    const weekday = d.toLocaleDateString(DISPLAY_LOCALE, { weekday: 'short' });
-    return `${weekday} · ${formatActivityTime(d)}`;
-  }
-  if (bucket === 'year') return `${formatMonthDay(d)} · ${formatActivityTime(d)}`;
+  if (bucket === 'year' || bucket === 'week') return `${formatMonthDay(d)} · ${formatActivityTime(d)}`;
   return `${formatMonthDayYear(d)} · ${formatActivityTime(d)}`;
 }
 
@@ -519,19 +513,30 @@ export function formatActivityAmountParts(amount, incoming, kind, item = {}) {
   const currency = item?.currency || (kind === 'card_spend' || kind === 'refund' || kind === 'reversal' ? 'USD' : 'USDT');
 
   const val = Math.abs(Number(displayAmount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (kind === 'card_topup') {
+  
+  const isIncoming = item?.incoming !== undefined 
+    ? Boolean(item.incoming) 
+    : (incoming !== undefined ? Boolean(incoming) : true);
+
+  if (kind === 'card_topup' || item?.kind === 'card_topup') {
+    // Wallet view: money leaving wallet (- USDT, red)
+    // Card view: money arriving at card (+ USDT, green)
+    if (item?.pageFilter === 'wallet' || item?.pageSource === 'wallet' || !isIncoming) {
+      return { sign: '-', value: val, currency: 'USDT' };
+    }
     return { sign: '+', value: val, currency: 'USDT' };
   }
+
   const usdtOut = new Set(['wallet_send', 'wallet_withdraw', 'wallet_fee', 'referral_withdrawal', 'card_charge_fee']);
   const usdtIn = new Set([
-    'wallet_topup', 'wallet_receive', 'card_topup',
+    'wallet_topup', 'wallet_receive',
     'referral_reward', 'referral_commission', 'referral_pending',
   ]);
 
   if (usdtOut.has(kind)) return { sign: '-', value: val, currency: 'USDT' };
   if (usdtIn.has(kind)) return { sign: '+', value: val, currency: 'USDT' };
   if (kind === 'refund' || kind === 'reversal') return { sign: '+', value: val, currency: currency };
-  return incoming
+  return isIncoming
     ? { sign: '+', value: val, currency: currency }
     : { sign: '-', value: val, currency: currency };
 }
@@ -577,9 +582,21 @@ export function getActivityIconVariant(item) {
 
 export function activitySubtitleLabel(item) {
   if (isRewardActivity(item)) return 'Reward';
+
+  const rawCard = item?.cardLast4 || item?.last4 || item?.cardRealLast4 || item?.cardNo || item?.wasabiCardId || item?.targetCardLast4;
+  const l4Digits = rawCard ? String(rawCard).replace(/\D/g, '') : '';
+  const last4 = l4Digits.length >= 4 ? l4Digits.slice(-4) : (rawCard && !rawCard.startsWith('C_') && !rawCard.startsWith('WD_') ? rawCard : null);
+
+  if (last4 && last4.length === 4 && /^\d{4}$/.test(last4)) {
+    return maskCardEnding({ last4 });
+  }
+
+  if (item?.kind === 'card_topup' || item?.kind === 'card_charge' || item?.type === 'CARD_CHARGE') {
+    return 'Visa Card';
+  }
+
   if (isWalletActivity(item)) return 'Wallet';
-  const l4 = (item?.cardLast4 && item.cardLast4 !== '2160' && !item.cardLast4.startsWith('C_')) ? item.cardLast4 : (item?.cardRealLast4 || '4019');
-  return maskCardEnding({ last4: l4 });
+  return 'Card';
 }
 
 export function getActivitySourceLabel(item) {

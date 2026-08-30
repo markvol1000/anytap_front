@@ -505,7 +505,8 @@ export function DashboardWalletFirst({ s, view: viewProp }) {
 
   const handleTopUpCard = useCallback(() => {
     if (!canTopUpCard) {
-      s.showToast?.('Apply for a card first.');
+      s.showToast?.('Please apply for and activate a card first.', 'error');
+      s.go?.('cardApply');
       return;
     }
     if (activeCards.length === 1) {
