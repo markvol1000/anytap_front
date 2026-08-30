@@ -345,7 +345,7 @@ export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, ti
               </tr>
             </thead>
             <tbody>
-              {filtered.map((tx) => {
+              {filtered.map((tx, idx) => {
                 const parts = A.formatActivityAmountParts(tx.amount, tx.incoming, tx.kind, { ...tx, pageFilter });
                 const isInc = parts.sign === '+';
                 const amountVariant = tx.failed ? 'fail' : isInc ? 'in' : 'out';
