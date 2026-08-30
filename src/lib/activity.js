@@ -599,10 +599,14 @@ export function activitySubtitleLabel(item) {
   return 'Card';
 }
 
-export function getActivitySourceLabel(item) {
-  if (isRewardActivity(item)) return 'Reward';
-  if (isWalletActivity(item)) return 'Wallet';
-  return 'Card';
+export function getActivitySourceLabel(item, opts = {}) {
+  if (isRewardActivity(item)) return opts.full ? 'Reward' : 'R';
+  if (isWalletActivity(item)) return opts.full ? 'Wallet' : 'W';
+  return opts.full ? 'Card' : 'C';
+}
+
+export function getActivitySourceFullLabel(item) {
+  return getActivitySourceLabel(item, { full: true });
 }
 
 export function getActivityDescription(item) {
@@ -667,7 +671,9 @@ export function applyTransactionFilters(items, {
 } = {}) {
   let list = normalizeActivityItems(items);
   list = filterActivityByScope(list, scope);
-  list = filterActivityByCard(list, cardLast4);
+  if (scope === 'card' && cardLast4 && cardLast4 !== 'all') {
+    list = filterActivityByCard(list, cardLast4);
+  }
   list = filterActivityByDateRange(list, dateRange, customFrom, customTo);
   list = filterActivityByStatus(list, status);
   list = filterActivityBySearch(list, searchQuery);

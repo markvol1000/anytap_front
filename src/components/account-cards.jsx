@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from './ui.jsx';
 import { RecentActivitySection } from './account-activity.jsx';
+import { DashboardRecentTransactions } from './account-dashboard-wallet-first.jsx';
 import * as A from '../lib/account-data.js';
 import { resolveWalletAddress } from '../lib/api/display-data.js';
 import { AccountMyCardsDesktop } from './account-cards-desktop.jsx';
@@ -1281,27 +1282,12 @@ export function AccountMyCards({ s }) {
           </div>
         )}
 
-        <RecentActivitySection
-          title="Recent Activity"
-          items={s.selectedCardTxs != null ? s.selectedCardTxs : A.resolvePortalActivityWithHistory(s.activityItems)}
-          loading={s.txsLoading}
+        <DashboardRecentTransactions
+          s={s}
           pageFilter="card"
           card={selectedCard}
-          cardLast4={selectedCard?.last4}
+          title="Recent Activity"
           limit={5}
-          viewAllLabel="View All"
-          className="portal-mycards-recent portal-dash-panel portal-recent-tx--unified"
-          onItemClick={() => {
-            const targetCardId = selectedCard?.last4 || selectedCard?.id || selectedCard?.cardNo || s?.currentCard?.last4;
-            s.go('transactions', { search: { source: 'card', cardId: targetCardId, last4: targetCardId } });
-          }}
-          onViewAll={() => {
-            const targetCardId = selectedCard?.last4 || selectedCard?.id || selectedCard?.cardNo || s?.currentCard?.last4;
-            s.go('transactions', { search: { source: 'card', cardId: targetCardId, last4: targetCardId } });
-          }}
-          emptyTitle="No card activity yet"
-          emptyMsg="Purchases, refunds, and reversals for this card will appear here."
-          emptyIcon="creditCard"
         />
       </div>
 

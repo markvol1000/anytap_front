@@ -11,6 +11,7 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import { Icon } from './ui.jsx';
 import { WalletCard } from './portal/WalletCard.jsx';
 import { RecentActivitySection } from './account-activity.jsx';
+import { DashboardRecentTransactions } from './account-dashboard-wallet-first.jsx';
 import { TransactionDetailsDrawer } from './account-transactions.jsx';
 import { CardsDesktopTransactions } from './account-cards-desktop.jsx';
 import { DebitCardFace } from './account-cards.jsx';
@@ -18,6 +19,7 @@ import * as A from '../lib/account-data.js';
 import * as W from '../utils/wallet-data.js';
 import { resolveWalletBalance, resolveWalletAddress } from '../lib/api/display-data.js';
 import { chargeCard, fetchSystemAddress, withdrawToExternal } from '../lib/services/accountService.js';
+import { usePortalDesktop } from '../hooks/usePortalDesktop.js';
 
 function WalletMyCardsList({ cards, selectedId, onSelect, onManageCards }) {
   if (!cards.length) {
@@ -110,6 +112,8 @@ function WalletLeftColumn({
   canTopUpCard,
   children,
 }) {
+  const isDesktop = usePortalDesktop();
+
   return (
     <div className="portal-wallet-left">
       <WalletCard
@@ -122,6 +126,24 @@ function WalletLeftColumn({
       >
         {children}
       </WalletCard>
+      {isDesktop ? (
+        <CardsDesktopTransactions
+          items={s.activityItems}
+          pageFilter="wallet"
+          title="Recent Activity"
+          limit={5}
+          onViewAll={() => s.go?.('transactions', { search: { source: 'wallet' } })}
+          className="portal-wallet-left__tx"
+        />
+      ) : (
+        <DashboardRecentTransactions
+          s={s}
+          pageFilter="wallet"
+          title="Recent Activity"
+          limit={5}
+          className="portal-wallet-left__tx"
+        />
+      )}
     </div>
   );
 }

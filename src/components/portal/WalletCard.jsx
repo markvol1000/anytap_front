@@ -10,32 +10,7 @@ import * as A from '../../lib/account-data.js';
 import * as W from '../../utils/wallet-data.js';
 import { resolveWalletBalance, resolveWalletAddress } from '../../lib/api/display-data.js';
 
-import { CardsDesktopTransactions } from '../account-cards-desktop.jsx';
 
-function WalletCardTransactions({ s, limit = 5, className = '' }) {
-  const items = useMemo(() => {
-    const raw = A.resolvePortalActivityWithHistory(s.activityItems);
-    return A.sortActivityChronological(
-      A.filterActivityForWalletPage(A.normalizeActivityItems(raw)),
-    );
-  }, [s.activityItems]);
-
-  const handleViewAll = useCallback(() => {
-    s.go?.('transactions', { search: { source: 'wallet' } });
-  }, [s]);
-
-  return (
-    <div className={`portal-wallet-card__tx${className ? ` ${className}` : ''}`}>
-      <CardsDesktopTransactions
-        items={s.activityItems}
-        pageFilter="wallet"
-        onViewAll={handleViewAll}
-        title="Recent Transactions"
-        limit={limit}
-      />
-    </div>
-  );
-}
 
 export function WalletCard({
   mode = 'summary',
@@ -153,14 +128,6 @@ export function WalletCard({
       </section>
 
       {children}
-
-      {isDetail ? (
-        <WalletCardTransactions
-          s={s}
-          limit={10}
-          className="portal-wallet-card__tx--detail"
-        />
-      ) : null}
     </div>
   );
 }

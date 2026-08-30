@@ -81,30 +81,28 @@ export function ActivityRow({ tx, onClick, dateStyle = 'standard', variant = 'de
   const inner = (
     <>
       <ActivityIcon tx={tx} compact={isCompact} />
-      <span className={isCompact ? 'portal-dash-wf__tx-main' : isGrouped ? 'portal-tx-group__body' : 'portal-tx__body'}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-          <span className={isCompact ? 'portal-dash-wf__tx-merchant' : isGrouped ? 'portal-tx-group__merchant' : 'portal-tx__title'}>
+      <div className="portal-tx__content" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        {/* Line 1: Full-width Merchant Name across the top */}
+        <div className="portal-tx__line1" style={{ display: 'flex', alignItems: 'center', width: '100%', minWidth: 0 }}>
+          <span className="portal-tx__title" style={{ fontSize: '14px', fontWeight: '600', color: 'var(--portal-ink, #1a1a1a)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
             {tx.title}
           </span>
-          <span className={`portal-tx-scope-badge portal-tx-scope-badge--${String(sourceLabel).toLowerCase()}`}>
-            {sourceLabel}
-          </span>
         </div>
-        {isCompact ? (
-          <span className="portal-dash-wf__tx-time">{subtitle}</span>
-        ) : isGrouped ? (
-          <span className="portal-tx-group__type">{subtitle}</span>
-        ) : (
-          <span className="portal-tx__card">
-            <span className="portal-tx__card-label">{subtitle}</span>
+
+        {/* Line 2: Subtitle (Card/Wallet) + Amount */}
+        <div className="portal-tx__line2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', minWidth: 0 }}>
+          <span className="portal-tx__sub" style={{ fontSize: '12px', color: 'var(--portal-muted, #7a7570)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {subtitle}
           </span>
-        )}
-      </span>
-      <span className={isCompact ? 'portal-tx__side portal-dash-wf__tx-side' : isGrouped ? 'portal-tx-group__side' : 'portal-tx__side'}>
-        <ActivityAmount amount={tx.amount} incoming={tx.incoming} failed={tx.failed} kind={tx.kind} item={tx} />
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span className="portal-tx__when">{when}</span>
+          <ActivityAmount amount={tx.amount} incoming={tx.incoming} failed={tx.failed} kind={tx.kind} item={tx} />
+        </div>
+
+        {/* Line 3: Date & Time + Status & Scope Badges */}
+        <div className="portal-tx__line3" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', minWidth: 0 }}>
+          <span className="portal-tx__when" style={{ fontSize: '11px', color: 'var(--portal-subtle, #a09790)' }}>
+            {when}
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             {status === 'failed' ? (
               <span style={{ fontSize: '10px', color: '#b91c1c', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#fee2e2', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.02em' }}>
                 FAILED
@@ -122,9 +120,12 @@ export function ActivityRow({ tx, onClick, dateStyle = 'standard', variant = 'de
                 COMPLETED
               </span>
             )}
+            <span className={`portal-tx-scope-badge portal-tx-scope-badge--${String(sourceLabel).toLowerCase()}`}>
+              {sourceLabel}
+            </span>
           </div>
         </div>
-      </span>
+      </div>
     </>
   );
 

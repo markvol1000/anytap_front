@@ -235,7 +235,7 @@ export function TxDetailSheet({ tx, onClose }) {
               </span>
             </DetailRow>
           )}
-          <DetailRow label="Wallet / Card">{A.getActivitySourceLabel(tx)}</DetailRow>
+          <DetailRow label="Wallet / Card">{A.getActivitySourceFullLabel(tx)}</DetailRow>
           {maskedCard && (
             <DetailRow label="Card Number">{maskedCard}</DetailRow>
           )}
@@ -359,12 +359,8 @@ export function TransactionsPage({ items = [], initialScope = 'all', initialCard
   const activeItems = useMemo(() => {
     let list = items;
     if (liveCardTxs != null) {
-      if (selectedCardId && selectedCardId !== 'all') {
-        list = liveCardTxs;
-      } else {
-        const localTxs = items.filter((item) => item.kind !== 'card_spend' && item.kind !== 'refund');
-        list = [...localTxs, ...liveCardTxs];
-      }
+      const localTxs = items.filter((item) => item.kind !== 'card_spend' && item.kind !== 'refund' && item.kind !== 'reversal');
+      list = [...localTxs, ...liveCardTxs];
     }
     const seen = new Set();
     return list.filter((item) => {
@@ -374,7 +370,7 @@ export function TransactionsPage({ items = [], initialScope = 'all', initialCard
       seen.add(sig);
       return true;
     });
-  }, [items, liveCardTxs, selectedCardId]);
+  }, [items, liveCardTxs]);
 
   // Reset page to 1 when any filter changes
   useEffect(() => {
@@ -389,10 +385,10 @@ export function TransactionsPage({ items = [], initialScope = 'all', initialCard
       customTo,
       status,
       searchQuery,
-      cardLast4: liveCardTxs != null ? 'all' : selectedCardId,
-      cardId: liveCardTxs != null ? 'all' : selectedCardId,
+      cardLast4: scope === 'card' ? selectedCardId : 'all',
+      cardId: scope === 'card' ? selectedCardId : 'all',
     }),
-    [activeItems, scope, dateRange, customFrom, customTo, status, searchQuery, selectedCardId, liveCardTxs],
+    [activeItems, scope, dateRange, customFrom, customTo, status, searchQuery, selectedCardId],
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));

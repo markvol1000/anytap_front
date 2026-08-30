@@ -10,7 +10,7 @@ import {
   DashboardIssueFirstCard,
 } from './account-cards.jsx';
 import { CardsDesktopCarousel, DESK_CARD_OVERVIEW_MAX_W } from './account-cards-desktop.jsx';
-import { DashboardActivityRow } from './account-activity.jsx';
+import { ActivityRow, DashboardActivityRow } from './account-activity.jsx';
 import { TransactionDetailsDrawer } from './account-transactions.jsx';
 import { CardTopUpSelectSheet, IssuanceDepositPanel } from './account-wallet.jsx';
 import { WalletOutboundActions } from './portal/WalletOutboundActions.jsx';
@@ -234,18 +234,28 @@ function DashboardWalletPanel({ s, onTopUpCard, onSendExternal, canTopUpCard }) 
   );
 }
 
-export function DashboardRecentTransactions({ s, limit = 8, className = '' }) {
+export function DashboardRecentTransactions({ s, pageFilter = 'card', card = null, title = 'Recent Activity', limit = 8, className = '' }) {
   const [selectedTx, setSelectedTx] = useState(null);
   const [copiedTxId, setCopiedTxId] = useState('');
 
+  const targetCard = card || s.currentCard;
+
   const items = useMemo(() => {
-    const baseItems = s.selectedCardTxs != null
+    const baseItems = (pageFilter === 'card' && s.selectedCardTxs != null)
       ? s.selectedCardTxs
       : A.resolvePortalActivityItems(s.activityItems, s.userCards);
-    return A.sortActivityChronological(
-      A.filterActivityForCardPage(A.normalizeActivityItems(baseItems), s.currentCard),
-    ).slice(0, limit);
-  }, [s.selectedCardTxs, s.activityItems, s.userCards, s.currentCard, limit]);
+    let list = A.normalizeActivityItems(baseItems);
+
+    if (pageFilter === 'wallet') {
+      list = A.filterActivityForWalletPage(list);
+    } else if (pageFilter === 'all') {
+      list = A.filterActivityByScope(list, 'all');
+    } else {
+      list = A.filterActivityForCardPage(list, targetCard);
+    }
+
+    return A.sortActivityChronological(list).slice(0, limit);
+  }, [s.selectedCardTxs, s.activityItems, s.userCards, s.currentCard, targetCard, pageFilter, limit]);
 
   const handleCopyTxId = useCallback((txId) => {
     try { navigator.clipboard?.writeText(txId); } catch { /* noop */ }
@@ -264,7 +274,7 @@ export function DashboardRecentTransactions({ s, limit = 8, className = '' }) {
         ].filter(Boolean).join(' ')}
         aria-label="Recent activity">
         <div className="portal-dash-wf__tx-panel-head">
-          <h2 className="portal-dash-wf__tx-panel-title">Recent Activity</h2>
+          <h2 className="portal-dash-wf__tx-panel-title">{title}</h2>
         </div>
         <div className="portal-dash-wf__tx-list">
           {items.length ? items.map((tx, idx) => (
@@ -277,8 +287,12 @@ export function DashboardRecentTransactions({ s, limit = 8, className = '' }) {
           type="button"
           className="portal-dash-wf__tx-view-all"
           onClick={() => {
-            const targetCardId = s?.currentCard?.wasabiCardId || s?.currentCard?.cardNo || s?.currentCard?.last4 || s?.currentCard?.id;
-            s.go('transactions', { search: { source: 'card', cardId: targetCardId, last4: s?.currentCard?.last4 } });
+            if (pageFilter === 'wallet') {
+              s.go('transactions', { search: { source: 'wallet' } });
+            } else {
+              const targetCardId = targetCard?.wasabiCardId || targetCard?.cardNo || targetCard?.last4 || targetCard?.id;
+              s.go('transactions', { search: { source: 'card', cardId: targetCardId, last4: targetCard?.last4 } });
+            }
           }}>
           View All
         </button>

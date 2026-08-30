@@ -8,6 +8,8 @@ import { CardDesktopManagementPanel } from './CardManagementPanels.jsx';
 import { CardPanel } from './portal/CardPanel.jsx';
 import { CardQuickActionGroup } from './QuickActionGroup.jsx';
 import { ActivityAmount } from './account-activity.jsx';
+import { TransactionDetailsDrawer } from './account-transactions.jsx';
+import { DashboardRecentTransactions } from './account-dashboard-wallet-first.jsx';
 import {
   buildDashboardCarouselSlots,
   CardInformationPanel,
@@ -281,6 +283,14 @@ function CardsDesktopCarousel({
 
 export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, title = 'Recent Transactions', limit = 5, pageFilter = 'card' }) {
   const [liveItems, setLiveItems] = useState(null);
+  const [selectedTx, setSelectedTx] = useState(null);
+  const [copiedTxId, setCopiedTxId] = useState('');
+
+  const handleCopyTxId = useCallback((txId) => {
+    try { navigator.clipboard?.writeText(txId); } catch { /* noop */ }
+    setCopiedTxId(txId);
+    window.setTimeout(() => setCopiedTxId(''), 2000);
+  }, []);
 
   useEffect(() => {
     if (pageFilter !== 'card' || !isHttpApi || !hasHttpSession()) return undefined;
@@ -320,67 +330,85 @@ export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, ti
   }, [liveItems, items, card, cardLast4, limit, pageFilter]);
 
   return (
-    <section className="portal-mycards-desk-tx" aria-label="Recent transactions">
-      <div className="portal-mycards-desk-tx__head">
-        <h2 className="portal-mycards-section__title">{title}</h2>
-        {onViewAll && filtered.length > 0 ? (
-          <button type="button" className="portal-mycards-desk-tx__view-all" onClick={onViewAll}>
-            See all transactions →
-          </button>
-        ) : null}
-      </div>
-
-      {!filtered.length ? (
-        <p className="portal-mycards-desk-tx__empty">No transactions yet.</p>
-      ) : (
-        <div className="portal-mycards-desk-tx__table-wrap">
-          <table className="portal-mycards-desk-tx__table">
-            <thead>
-              <tr>
-                <th scope="col">Date</th>
-                <th scope="col">Merchant</th>
-                <th scope="col">Type</th>
-                <th scope="col">Amount</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((tx, idx) => {
-                const parts = A.formatActivityAmountParts(tx.amount, tx.incoming, tx.kind, { ...tx, pageFilter });
-                const isInc = parts.sign === '+';
-                const amountVariant = tx.failed ? 'fail' : isInc ? 'in' : 'out';
-                const statusLabel = tx.failed 
-                  ? 'Failed' 
-                  : (tx.status === 'pending' || tx.status === 'processing' 
-                      ? 'Pending' 
-                      : (A.formatActivityStatusLabel(tx.status) || 'Completed'));
-                return (
-                  <tr key={tx.id ? `${tx.id}_${tx.kind || ''}_${tx.at || ''}_${idx}` : `tx_${idx}`} className={tx.failed ? ' is-failed' : ''}>
-                    <td data-label="Date">{A.formatActivityWhen(tx.at, { style: 'standard' })}</td>
-                    <td data-label="Merchant">{tx.title}</td>
-                    <td data-label="Type">{formatTxType(tx)}</td>
-                    <td data-label="Amount" className={`portal-mycards-desk-tx__amt is-${amountVariant}`}>
-                      <ActivityAmount
-                        amount={tx.amount}
-                        incoming={tx.incoming}
-                        failed={tx.failed}
-                        kind={tx.kind}
-                        item={tx}
-                      />
-                    </td>
-                    <td data-label="Status">
-                      <span className={`portal-mycards-desk-tx__status portal-mycards-desk-tx__status--${statusLabel.toLowerCase()}`}>
-                        {statusLabel}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+    <>
+      <section className="portal-mycards-desk-tx" aria-label="Recent transactions">
+        <div className="portal-mycards-desk-tx__head">
+          <h2 className="portal-mycards-section__title">{title}</h2>
+          {onViewAll && filtered.length > 0 ? (
+            <button type="button" className="portal-mycards-desk-tx__view-all" onClick={onViewAll}>
+              See all transactions →
+            </button>
+          ) : null}
         </div>
-      )}
-    </section>
+
+        {!filtered.length ? (
+          <p className="portal-mycards-desk-tx__empty">No transactions yet.</p>
+        ) : (
+          <div className="portal-mycards-desk-tx__table-wrap">
+            <table className="portal-mycards-desk-tx__table">
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Merchant</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((tx, idx) => {
+                  const parts = A.formatActivityAmountParts(tx.amount, tx.incoming, tx.kind, { ...tx, pageFilter });
+                  const isInc = parts.sign === '+';
+                  const amountVariant = tx.failed ? 'fail' : isInc ? 'in' : 'out';
+                  const statusLabel = tx.failed 
+                    ? 'Failed' 
+                    : (tx.status === 'pending' || tx.status === 'processing' 
+                        ? 'Pending' 
+                        : (A.formatActivityStatusLabel(tx.status) || 'Completed'));
+                  return (
+                    <tr
+                      key={tx.id ? `${tx.id}_${tx.kind || ''}_${tx.at || ''}_${idx}` : `tx_${idx}`}
+                      className={tx.failed ? ' is-failed' : ''}
+                      onClick={() => setSelectedTx(tx)}
+                      style={{ cursor: 'pointer' }}>
+                      <td data-label="Date">{A.formatActivityWhen(tx.at, { style: 'standard' })}</td>
+                      <td data-label="Merchant">{tx.title}</td>
+                      <td data-label="Type">{formatTxType(tx)}</td>
+                      <td data-label="Amount" className={`portal-mycards-desk-tx__amt is-${amountVariant}`}>
+                        <ActivityAmount
+                          amount={tx.amount}
+                          incoming={tx.incoming}
+                          failed={tx.failed}
+                          kind={tx.kind}
+                          item={tx}
+                        />
+                      </td>
+                      <td data-label="Status">
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                          <span className={`portal-mycards-desk-tx__status portal-mycards-desk-tx__status--${statusLabel.toLowerCase()}`}>
+                            {statusLabel}
+                          </span>
+                          <span className={`portal-tx-scope-badge portal-tx-scope-badge--${String(A.getActivitySourceLabel(tx)).toLowerCase()}`}>
+                            {A.getActivitySourceLabel(tx)}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <TransactionDetailsDrawer
+        tx={selectedTx}
+        onClose={() => setSelectedTx(null)}
+        onCopyTxId={handleCopyTxId}
+        copyState={copiedTxId}
+      />
+    </>
   );
 }
 
@@ -433,9 +461,12 @@ export function AccountMyCardsDesktop({ s }) {
         <div className="portal-mycards-desk__col portal-mycards-desk__col--cards">
           <CardPanel mode="detail" s={s} desktopCardMaxWidth={DESK_CARD_OVERVIEW_MAX_W} />
           <CardsDesktopTransactions
-            items={A.resolvePortalActivityWithHistory(s.activityItems)}
+            items={s.activityItems}
             card={selectedCard}
             cardLast4={selectedCard?.last4}
+            pageFilter="card"
+            title="Recent Transactions"
+            limit={5}
             onViewAll={() => {
               const targetCardId = selectedCard?.wasabiCardId || selectedCard?.cardNo || selectedCard?.id || selectedCard?.last4 || s?.currentCard?.last4;
               s.go('transactions', { search: { source: 'card', cardId: targetCardId, last4: targetCardId } });
