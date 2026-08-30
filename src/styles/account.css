@@ -12679,15 +12679,23 @@ a.portal-mob-back { text-decoration: none; }
 }
 
 .portal-wallet-quick-amt {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .portal-wallet-quick-amt__btn {
-  padding: 8px 18px;
+  padding: 7px 4px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   border: 1.5px solid var(--portal-border);
   border-radius: var(--radius-btn);
   background: transparent;

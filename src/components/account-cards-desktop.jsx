@@ -279,11 +279,11 @@ function CardsDesktopCarousel({
   );
 }
 
-export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, title = 'Recent Transactions', limit = 5 }) {
+export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, title = 'Recent Transactions', limit = 5, pageFilter = 'card' }) {
   const [liveItems, setLiveItems] = useState(null);
 
   useEffect(() => {
-    if (!isHttpApi || !hasHttpSession()) return undefined;
+    if (pageFilter !== 'card' || !isHttpApi || !hasHttpSession()) return undefined;
     const session = getHttpSession();
     if (!session?.userId) return undefined;
 
@@ -304,18 +304,20 @@ export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, ti
       });
 
     return () => { cancelled = true; };
-  }, [card, cardLast4]);
+  }, [card, cardLast4, pageFilter]);
 
   const filtered = useMemo(() => {
-    if (liveItems != null) {
-      return A.sortActivityChronological(A.normalizeActivityItems(liveItems)).slice(0, limit);
+    const baseItems = liveItems != null ? liveItems : A.resolvePortalActivityWithHistory(items);
+    let list = A.normalizeActivityItems(baseItems);
+    if (pageFilter === 'wallet') {
+      list = A.filterActivityForWalletPage(list);
+    } else if (pageFilter === 'dashboard') {
+      list = A.filterActivityForDashboard(list);
+    } else {
+      list = A.filterActivityForCardPage(list, card || cardLast4);
     }
-    return A.sortActivityChronological(
-      (card || cardLast4)
-        ? A.filterActivityForCardPage(A.normalizeActivityItems(items), card || cardLast4)
-        : A.normalizeActivityItems(items),
-    ).slice(0, limit);
-  }, [liveItems, items, card, cardLast4, limit]);
+    return A.sortActivityChronological(list).slice(0, limit);
+  }, [liveItems, items, card, cardLast4, limit, pageFilter]);
 
   return (
     <section className="portal-mycards-desk-tx" aria-label="Recent transactions">

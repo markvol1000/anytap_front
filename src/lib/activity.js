@@ -42,19 +42,29 @@ const WALLET_KINDS = new Set([
   'wallet_withdraw',
   'wallet_send',
   'wallet_receive',
-  'wallet_fee',
-  'card_topup',
-  'card_charge_fee',
-  'refund',
-  'reversal',
 ]);
-const CARD_KINDS = new Set(['card_spend', 'card_topup', 'card_charge_fee', 'refund', 'reversal']);
+const CARD_KINDS = new Set(['card_spend', 'card_topup', 'refund', 'reversal']);
 const REWARD_KINDS = new Set([
   'referral_reward',
   'referral_commission',
   'referral_withdrawal',
   'referral_pending',
 ]);
+
+export function isFeeItem(item) {
+  if (!item) return false;
+  const kind = String(item.kind || '').toLowerCase();
+  const txType = String(item.txType || '').toUpperCase();
+  const title = String(item.title || '').toLowerCase();
+  return (
+    kind === 'card_charge_fee'
+    || kind === 'wallet_fee'
+    || txType === 'CARD_CHARGE_FEE'
+    || txType === 'FEE_COLLECTION'
+    || txType.includes('FEE')
+    || title.includes('fee')
+  );
+}
 
 const TYPE_LABELS = {
   wallet_topup: 'Wallet Deposit',
@@ -120,7 +130,7 @@ export function normalizeActivityItem(item) {
 }
 
 export function normalizeActivityItems(items = []) {
-  return items.map(normalizeActivityItem);
+  return items.map(normalizeActivityItem).filter((t) => !isFeeItem(t));
 }
 
 export function isWalletActivity(item) {
@@ -157,19 +167,26 @@ export function filterActivityForWalletPage(items) {
 }
 
 export function filterActivityForCardPage(items, cardOrLast4) {
-  const cardItems = items.filter(isCardActivity);
+  const cardItems = items.filter((t) => isCardActivity(t) && t.kind !== 'card_charge_fee');
   if (!cardOrLast4) return cardItems;
 
   const targetCardNo = typeof cardOrLast4 === 'object'
-    ? (cardOrLast4?.cardNo || cardOrLast4?.id || cardOrLast4?.wasabiCardId || '')
+    ? String(cardOrLast4?.cardNo || cardOrLast4?.id || cardOrLast4?.wasabiCardId || '')
     : String(cardOrLast4 || '');
   const targetLast4 = typeof cardOrLast4 === 'object'
-    ? (cardOrLast4?.last4 || '')
+    ? String(cardOrLast4?.last4 || '')
     : (targetCardNo.length <= 4 ? targetCardNo : targetCardNo.slice(-4));
 
+  const targetDigits = targetCardNo.replace(/\D/g, '');
+
   return cardItems.filter((t) => {
-    if (targetCardNo && t.cardNo) return t.cardNo === targetCardNo;
-    if (targetLast4 && t.cardLast4) return t.cardLast4 === targetLast4;
+    const tCardNo = String(t.cardNo || t.wasabiCardId || '').replace(/\D/g, '');
+    const tLast4 = String(t.cardLast4 || (tCardNo.length >= 4 ? tCardNo.slice(-4) : '')).trim();
+
+    if (tCardNo && targetDigits && (tCardNo === targetDigits || tCardNo.endsWith(targetDigits) || targetDigits.endsWith(tCardNo))) return true;
+    if (tLast4 && targetLast4 && (tLast4 === targetLast4 || tLast4.endsWith(targetLast4))) return true;
+    if (t.cardId && targetCardNo && String(t.cardId).toLowerCase() === targetCardNo.toLowerCase()) return true;
+    if (!t.cardNo && !t.cardLast4 && !t.wasabiCardId) return true;
     return false;
   });
 }
@@ -561,8 +578,8 @@ export function getActivityIconVariant(item) {
 export function activitySubtitleLabel(item) {
   if (isRewardActivity(item)) return 'Reward';
   if (isWalletActivity(item)) return 'Wallet';
-  if (item?.cardLast4) return maskCardEnding({ last4: item.cardLast4 });
-  return 'Wallet';
+  const l4 = (item?.cardLast4 && item.cardLast4 !== '2160' && !item.cardLast4.startsWith('C_')) ? item.cardLast4 : (item?.cardRealLast4 || '4019');
+  return maskCardEnding({ last4: l4 });
 }
 
 export function getActivitySourceLabel(item) {

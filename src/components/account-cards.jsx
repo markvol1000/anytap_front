@@ -1283,7 +1283,7 @@ export function AccountMyCards({ s }) {
 
         <RecentActivitySection
           title="Recent Activity"
-          items={A.resolvePortalActivityWithHistory(s.activityItems)}
+          items={s.selectedCardTxs != null ? s.selectedCardTxs : A.resolvePortalActivityWithHistory(s.activityItems)}
           loading={s.txsLoading}
           pageFilter="card"
           card={selectedCard}

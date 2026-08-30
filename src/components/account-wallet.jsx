@@ -11,6 +11,8 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import { Icon } from './ui.jsx';
 import { WalletCard } from './portal/WalletCard.jsx';
 import { RecentActivitySection } from './account-activity.jsx';
+import { TransactionDetailsDrawer } from './account-transactions.jsx';
+import { CardsDesktopTransactions } from './account-cards-desktop.jsx';
 import { DebitCardFace } from './account-cards.jsx';
 import * as A from '../lib/account-data.js';
 import * as W from '../utils/wallet-data.js';
@@ -372,9 +374,15 @@ function AmountBlock({
       </p>
 
       {onQuickAdd && (
-        <div className="portal-wallet-quick-amt" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '12px' }}>
+        <div className="portal-wallet-quick-amt" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px', marginTop: '12px', width: '100%', boxSizing: 'border-box' }}>
           {quickAmounts.map((n) => (
-            <button key={n} type="button" className="portal-wallet-quick-amt__btn" onClick={() => onQuickAdd(n)}>
+            <button
+              key={n}
+              type="button"
+              className="portal-wallet-quick-amt__btn"
+              onClick={() => onQuickAdd(n)}
+              style={{ padding: '7px 2px', minWidth: 0, width: '100%', boxSizing: 'border-box', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+            >
               +{n}
             </button>
           ))}
@@ -1102,22 +1110,49 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
           </div>
         )}
 
-        <div className="portal-wallet-sheet__actions" style={{ marginTop: '16px' }}>
+        <div className="portal-wallet-sheet__actions" style={{ marginTop: '16px', alignItems: 'stretch' }}>
           <button
             type="button"
             className="portal-btn-secondary portal-wallet-sheet__btn"
             onClick={showPasswordStep ? () => setShowPasswordStep(false) : onClose}
             disabled={loading}
+            style={{
+              height: 'auto',
+              minHeight: '48px',
+              padding: '6px 12px',
+              fontSize: '13px',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textTransform: 'uppercase',
+            }}
           >
-            {showPasswordStep ? 'Back' : 'Cancel'}
+            {showPasswordStep ? 'BACK' : 'CANCEL'}
           </button>
           <button
             type="button"
             className="portal-btn-primary portal-wallet-sheet__btn"
             disabled={loading || isUnderMin || !W.isValidTopUp(amount) || isExceeded || (showPasswordStep && (!password.trim() || !isUnderstood))}
             onClick={handleNextOrConfirm}
+            style={{
+              height: 'auto',
+              minHeight: '48px',
+              padding: '6px 12px',
+              fontSize: '13px',
+              fontWeight: 700,
+              lineHeight: '1.25',
+              whiteSpace: 'normal',
+              textAlign: 'center',
+              display: 'inline-flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              wordBreak: 'keep-all',
+              textTransform: 'uppercase',
+            }}
           >
-            {loading ? <><span className="btn-spinner"></span>Processing...</> : showPasswordStep ? 'Confirm & Top Up' : 'Next (Password Confirm)'}
+            {loading ? <><span className="btn-spinner"></span>PROCESSING...</> : showPasswordStep ? 'CONFIRM & TOP UP' : <>CONFIRM<br />(ANYTAP PASSWORD)</>}
           </button>
         </div>
       </div>
@@ -1140,6 +1175,14 @@ export function AccountWallet({ s }) {
   const [scanOpen, setScanOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedTx, setSelectedTx] = useState(null);
+  const [copiedTxId, setCopiedTxId] = useState('');
+
+  const handleCopyTxId = (txId) => {
+    try { navigator.clipboard?.writeText(txId); } catch {}
+    setCopiedTxId(txId);
+    setTimeout(() => setCopiedTxId(''), 2000);
+  };
 
   useEffect(() => {
     if (s.walletTab) {
@@ -1434,7 +1477,12 @@ export function AccountWallet({ s }) {
         />
       )}
 
-
+      <TransactionDetailsDrawer
+        tx={selectedTx}
+        onClose={() => setSelectedTx(null)}
+        onCopyTxId={handleCopyTxId}
+        copiedTxId={copiedTxId}
+      />
     </div>
   );
 }

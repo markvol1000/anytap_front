@@ -510,7 +510,7 @@ export function useAccountState() {
     // Card display
     isV, cardVariant, cardVariantInfo, cardMaskedOnCard, cardTabBadge,
     // Card list
-    userCards, cardLimit, primaryCard, currentCard,
+    userCards, cardLimit, primaryCard, currentCard, selectedCardTxs,
     selectedCardIndex, setSelectedCardIndex,
     // Wallet
     addrLoading, walletTab, goWallet,

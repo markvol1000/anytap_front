@@ -239,11 +239,14 @@ export function DashboardRecentTransactions({ s, limit = 8, className = '' }) {
   const [copiedTxId, setCopiedTxId] = useState('');
 
   const items = useMemo(() => {
+    if (s.selectedCardTxs != null) {
+      return A.sortActivityChronological(A.normalizeActivityItems(s.selectedCardTxs)).slice(0, limit);
+    }
     const raw = A.resolvePortalActivityItems(s.activityItems, s.userCards);
     return A.sortActivityChronological(
-      A.filterActivityForDashboard(A.normalizeActivityItems(raw)),
+      A.filterActivityForCardPage(A.normalizeActivityItems(raw), s.currentCard),
     ).slice(0, limit);
-  }, [s.activityItems, s.userCards, limit]);
+  }, [s.selectedCardTxs, s.activityItems, s.userCards, s.currentCard, limit]);
 
   const handleCopyTxId = useCallback((txId) => {
     try { navigator.clipboard?.writeText(txId); } catch { /* noop */ }
@@ -271,7 +274,13 @@ export function DashboardRecentTransactions({ s, limit = 8, className = '' }) {
             <p className="portal-dash-wf__tx-empty">No transactions yet.</p>
           )}
         </div>
-        <button type="button" className="portal-dash-wf__tx-view-all" onClick={() => s.go('transactions')}>
+        <button
+          type="button"
+          className="portal-dash-wf__tx-view-all"
+          onClick={() => {
+            const targetCardId = s?.currentCard?.wasabiCardId || s?.currentCard?.cardNo || s?.currentCard?.last4 || s?.currentCard?.id;
+            s.go('transactions', { search: { source: 'card', cardId: targetCardId, last4: s?.currentCard?.last4 } });
+          }}>
           View All
         </button>
       </aside>

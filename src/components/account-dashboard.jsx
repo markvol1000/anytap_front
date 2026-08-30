@@ -539,11 +539,16 @@ function DashboardRecentActivity({ s }) {
     <>
       <RecentActivitySection
         title="Recent Activity"
-        items={activityItems}
-        pageFilter="dashboard"
+        items={s.selectedCardTxs != null ? s.selectedCardTxs : activityItems}
+        pageFilter="card"
+        card={s.currentCard}
+        cardLast4={s.currentCard?.last4}
         limit={8}
         onItemClick={setSelectedTx}
-        onViewAll={() => s.go('transactions')}
+        onViewAll={() => {
+          const targetCardId = s?.currentCard?.wasabiCardId || s?.currentCard?.cardNo || s?.currentCard?.last4 || s?.currentCard?.id;
+          s.go('transactions', { search: { source: 'card', cardId: targetCardId, last4: s?.currentCard?.last4 } });
+        }}
         emptyTitle={empty.title}
         emptyMsg={empty.msg}
         emptyIcon={empty.icon}

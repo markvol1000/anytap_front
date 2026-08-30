@@ -27,7 +27,8 @@ function WalletCardTransactions({ s, limit = 5, className = '' }) {
   return (
     <div className={`portal-wallet-card__tx${className ? ` ${className}` : ''}`}>
       <CardsDesktopTransactions
-        items={items}
+        items={s.activityItems}
+        pageFilter="wallet"
         onViewAll={handleViewAll}
         title="Recent Transactions"
         limit={limit}

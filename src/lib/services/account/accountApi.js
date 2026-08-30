@@ -372,7 +372,10 @@ export async function fetchLocalTransactions(userId) {
     const data = await apiGet(`/cards/${encodeURIComponent(userId)}/local-transactions`);
     if (!Array.isArray(data)) return [];
     return data
-      .filter((tx) => String(tx.txType || tx.kind || '').toUpperCase() !== 'SYSTEM_ADJUSTMENT')
+      .filter((tx) => {
+        const type = String(tx.txType || tx.kind || '').toUpperCase();
+        return type !== 'SYSTEM_ADJUSTMENT' && type !== 'CARD_CHARGE_FEE' && type !== 'FEE_COLLECTION' && type !== 'WALLET_FEE' && !type.includes('FEE');
+      })
       .map((tx) => {
       const type = String(tx.txType || '').toUpperCase();
       const statusRaw = String(tx.status || 'SUCCESS').toUpperCase();
@@ -446,7 +449,10 @@ export async function fetchLocalTransactions(userId) {
         kind: kind,
         status: status,
         txId: tx.txId,
-        cardNo: tx.cardNo || tx.wasabiCardId || '',
+        cardNo: tx.cardNo || tx.cardId || tx.wasabiCardId || '',
+        cardLast4: tx.cardLast4 || ((tx.cardNo || tx.cardId || tx.wasabiCardId || '').replace(/\D/g, '').slice(-4)) || '',
+        cardId: tx.cardId || tx.cardNo || tx.wasabiCardId || '',
+        wasabiCardId: tx.wasabiCardId || tx.cardId || tx.cardNo || '',
         reference: tx.txId ? tx.txId.slice(0, 10).toUpperCase() : '',
         currency: tx.currency || tx.coinType || (type === 'CARD_SPEND' ? 'KRW' : 'USDT'),
         description: tx.description || '',
