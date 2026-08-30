@@ -17,6 +17,7 @@ export function MockWebhookSimulator() {
   const [depAmount, setDepAmount] = useState('100.00');
 
   const [spendUserId, setSpendUserId] = useState('US019885');
+  const [spendCardNo, setSpendCardNo] = useState('');
   const [spendAmount, setSpendAmount] = useState('15.00');
   const [spendMerchant, setSpendMerchant] = useState('Starbucks Coffee');
   const [spendStatus, setSpendStatus] = useState('SUCCESS');
@@ -50,6 +51,7 @@ export function MockWebhookSimulator() {
     try {
       const res = await triggerMockCardSpendWebhook({
         userId: spendUserId,
+        cardNo: spendCardNo,
         amount: parseFloat(spendAmount),
         merchantName: spendMerchant,
         status: spendStatus,
@@ -213,6 +215,19 @@ export function MockWebhookSimulator() {
               onChange={(e) => setSpendUserId(e.target.value)}
               placeholder="e.g. US019885"
               required
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '4px' }}>
+              Card Last4 or Wasabi Card ID
+            </label>
+            <input
+              type="text"
+              value={spendCardNo || ''}
+              onChange={(e) => setSpendCardNo(e.target.value)}
+              placeholder="e.g. 5048 or WD..."
               style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
             />
           </div>
