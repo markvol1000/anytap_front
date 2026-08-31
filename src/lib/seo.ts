@@ -153,6 +153,7 @@ const NOINDEX_PREFIXES = [
   '/sign-up',
   '/forgot-password',
   '/account',
+  '/member',
   '/admin',
   '/demo',
   '/kyc',
