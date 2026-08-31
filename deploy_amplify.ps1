@@ -35,7 +35,7 @@ if ([string]::IsNullOrEmpty($branchExists) -or $branchExists -eq "None") {
     Write-Host "   Branch '$branchName' already exists." -ForegroundColor Green
 }
 
-# 3. Update Redirect & Proxy Rules (Vercel mappings)
+# 3. Update Redirect & Proxy Rules (Amplify custom rules)
 Write-Host "3. Setting up Custom Rewrite/Redirect Rules (ALB API Proxy & SPA Routing)..."
 $customRules = '[{"source":"/api/v1/<*>","target":"https://api.anytap.io/api/v1/<*>","status":"200"},{"source":"</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|json|webmanifest|mp4|mov)$)([^.]+$)/>","target":"/index.html","status":"200"}]'
 & $awsCli amplify update-app --app-id $appId --custom-rules $customRules --region $region | Out-Null

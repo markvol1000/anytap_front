@@ -17,10 +17,15 @@ npm run dev
 npm run build
 ```
 
-## Deploy (Vercel)
+## Deploy (AWS Amplify)
 
-1. Import `ymy-anytap/homepage` on [Vercel](https://vercel.com)
-2. Set **Root Directory** to `www`
-3. Framework preset: **Vite** (build: `npm run build`, output: `dist`)
+이 프론트는 **AWS Amplify**로 배포한다. Vercel을 쓰지 않는다.
 
-`vercel.json` includes SPA rewrites for client-side routing.
+```powershell
+.\deploy_amplify.ps1
+```
+
+- 앱: `anytap-front-1` (`ap-northeast-2`)
+- 빌드: `npm run build` → `dist`
+- SPA rewrite·API 프록시: Amplify custom rules (`/api/v1` → `https://api.anytap.io`)
+- 응답 헤더: `customHttp.yml`
