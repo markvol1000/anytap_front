@@ -10,6 +10,8 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+/* picture wrapper must not create a box — img keeps existing layout */
+picture.opt-img { display: contents; }
 body {
   background: var(--bg-canvas);
   color: var(--fg-default);
@@ -1959,6 +1961,10 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
   inset: 0;
   background-color: var(--bg-canvas);
   background-image: url('/assets/why_card_bg.png');
+  background-image: image-set(
+    url('/assets/why_card_bg.webp') type('image/webp'),
+    url('/assets/why_card_bg.png') type('image/png')
+  );
   background-size: cover;
   background-position: center right;
   background-repeat: no-repeat;
@@ -1989,6 +1995,10 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
   }
   .subhero--why-card .subhero__bg {
     background-image: url('/assets/why_card_bg_m.png');
+    background-image: image-set(
+      url('/assets/why_card_bg_m.webp') type('image/webp'),
+      url('/assets/why_card_bg_m.png') type('image/png')
+    );
     background-size: cover;
     background-position: center 72%;
     background-repeat: no-repeat;

@@ -3,12 +3,12 @@ import lifeNewYork from '/assets/life-newyork.jpg';
 import lifeVietnam from '/assets/life-vietnam.jpg';
 import lifeJapan from '/assets/life-japan.jpg';
 import { useScrollProgress } from '../hooks/useScrollProgress.js';
-import { Icon, Logo } from './ui.jsx';
+import { Icon, Logo, OptimizedImg } from './ui.jsx';
 
 const lifestyleSlides = [
-  { id: 'life-1', src: lifeNewYork, alt: 'New York — paying with Anytap on 42nd Street' },
-  { id: 'life-2', src: lifeVietnam, alt: 'Thailand — family traveling with Anytap Visa card' },
-  { id: 'life-3', src: lifeJapan, alt: 'Japan — paying with Anytap at a convenience store' },
+  { id: 'life-1', src: lifeNewYork, webp: '/assets/life-newyork.webp', alt: 'New York — paying with Anytap on 42nd Street', width: 1665, height: 944 },
+  { id: 'life-2', src: lifeVietnam, webp: '/assets/life-vietnam.webp', alt: 'Thailand — family traveling with Anytap Visa card', width: 1536, height: 1024 },
+  { id: 'life-3', src: lifeJapan, webp: '/assets/life-japan.webp', alt: 'Japan — paying with Anytap at a convenience store', width: 1448, height: 1086 },
 ];
 
 function LifestyleScatter() {
@@ -20,6 +20,9 @@ function LifestyleScatter() {
     {
       id: 'life-1',
       src: lifeNewYork,
+      webp: lifestyleSlides[0].webp,
+      width: lifestyleSlides[0].width,
+      height: lifestyleSlides[0].height,
       alt: lifestyleSlides[0].alt,
       tag: 'At a coffee shop',
       tagSoft: 'var(--brand-primary-pale)',
@@ -33,6 +36,9 @@ function LifestyleScatter() {
     {
       id: 'life-2',
       src: lifeVietnam,
+      webp: lifestyleSlides[1].webp,
+      width: lifestyleSlides[1].width,
+      height: lifestyleSlides[1].height,
       alt: lifestyleSlides[1].alt,
       w: '440px',
       ar: '4 / 3',
@@ -43,6 +49,9 @@ function LifestyleScatter() {
     {
       id: 'life-3',
       src: lifeJapan,
+      webp: lifestyleSlides[2].webp,
+      width: lifestyleSlides[2].width,
+      height: lifestyleSlides[2].height,
       alt: lifestyleSlides[2].alt,
       w: '480px',
       ar: '3 / 2',
@@ -75,7 +84,15 @@ function LifestyleScatter() {
               '--os': String(it.o.s),
             }}
           >
-            <img className="lifescatter__img" src={it.src} alt={it.alt} loading="lazy" />
+            <OptimizedImg
+              className="lifescatter__img"
+              webp={it.webp}
+              src={it.src}
+              alt={it.alt}
+              width={it.width}
+              height={it.height}
+              loading="lazy"
+            />
           </figure>
         ))}
       </div>

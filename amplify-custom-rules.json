@@ -1,0 +1,22 @@
+[
+  {
+    "source": "https://www.anytap.io",
+    "status": "301",
+    "target": "https://anytap.io"
+  },
+  {
+    "source": "https://www.anytap.io/<*>",
+    "status": "301",
+    "target": "https://anytap.io/<*>"
+  },
+  {
+    "source": "/api/v1/<*>",
+    "status": "200",
+    "target": "https://api.anytap.io/api/v1/<*>"
+  },
+  {
+    "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|jpeg|js|png|txt|svg|woff|woff2|json|webmanifest|mp4|mov|xml|webp|map|avif)$)([^.]+$)/>",
+    "status": "200",
+    "target": "/index.html"
+  }
+]
