@@ -2306,6 +2306,72 @@
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Admin Card Application Status (.admin-cards-*) — Responsive Mobile UI
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.admin-cards-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-cards-filter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0 20px 0;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-cards-desktop-table {
+  display: block;
+}
+
+.admin-cards-mobile-list-container {
+  display: none;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .admin-cards-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .admin-cards-header > div:first-child h1 {
+    font-size: 18px !important;
+  }
+
+  .admin-cards-header > div:first-child p {
+    font-size: 12px !important;
+  }
+
+  .admin-cards-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .admin-cards-filter-bar > div {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .admin-cards-desktop-table {
+    display: none;
+  }
+
+  .admin-cards-mobile-list-container {
+    display: block;
+  }
+}
+
 /* 📱 Mobile 3-Line List Item Cards (< 768px) */
 .admin-fees-mobile-list-container {
   display: none;
@@ -2412,6 +2478,18 @@
 }
 
 .admin-fees-mobile-card__line3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #64748B;
+  border-top: 1px dashed #F1F5F9;
+  padding-top: 4px;
+  margin-top: 2px;
+}
+
+.admin-fees-mobile-card__line4 {
   display: flex;
   align-items: center;
   justify-content: space-between;

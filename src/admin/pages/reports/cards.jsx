@@ -220,62 +220,32 @@ export function CardsReportPage() {
   const activeDeliveredFilter = list.filters.delivered ?? 'all';
 
   return (
-    <div className="admin-page" style={{ backgroundColor: '#ffffff', minHeight: '100vh', padding: '24px', color: '#333333' }}>
+    <div className="admin-page admin-fees-report">
       {/* Reports Navigation Sub-Tabs */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        borderBottom: '2px solid #E0E0E0',
-        marginBottom: '24px',
-      }}>
+      <div className="admin-fees-tabs">
         <NavLink
           to="/admin/reports/cards"
-          style={({ isActive }) => ({
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '10px 20px',
-            fontSize: '14px',
-            fontWeight: '700',
-            color: isActive ? '#007BFF' : '#64748B',
-            borderBottom: isActive ? '3px solid #007BFF' : '3px solid transparent',
-            textDecoration: 'none',
-            marginBottom: '-2px',
-            transition: 'all 0.15s ease',
-          })}
+          className={({ isActive }) => `admin-fees-tab-link${isActive ? ' is-active' : ''}`}
         >
           💳 Card Application Status
         </NavLink>
         <NavLink
           to="/admin/reports/fees"
-          style={({ isActive }) => ({
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '10px 20px',
-            fontSize: '14px',
-            fontWeight: '700',
-            color: isActive ? '#007BFF' : '#64748B',
-            borderBottom: isActive ? '3px solid #007BFF' : '3px solid transparent',
-            textDecoration: 'none',
-            marginBottom: '-2px',
-            transition: 'all 0.15s ease',
-          })}
+          className={({ isActive }) => `admin-fees-tab-link${isActive ? ' is-active' : ''}`}
         >
           💰 Fee Analysis Report
         </NavLink>
       </div>
 
       {/* Top Header & Buttons */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+      <div className="admin-cards-header">
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#333333', margin: 0 }}>Card Application Status</h1>
-          <p style={{ fontSize: '13px', color: '#666666', margin: '4px 0 0 0' }}>
+          <h1 className="admin-cards-header__title">Card Application Status</h1>
+          <p className="admin-cards-header__sub">
             Admin Dashboard for Card Applications and Shipping Details Management
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="admin-cards-header__actions">
           <button
             type="button"
             className="btn-primary"
@@ -322,7 +292,7 @@ export function CardsReportPage() {
       </div>
 
       {/* Filter Control Bar */}
-      <div className="filters" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0 20px 0' }}>
+      <div className="admin-cards-filter-bar">
           <div style={{ display: 'inline-flex', borderRadius: '6px', border: '1px solid #E0E0E0', overflow: 'hidden' }}>
             <button
               type="button"
@@ -373,8 +343,8 @@ export function CardsReportPage() {
             </button>
           </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '12px', color: '#666666', fontWeight: '500' }}>📅 2024.01. ~ 1.7. :</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '12px', color: '#666666', fontWeight: '500' }}>📅 Date Range:</span>
           <input
             type="date"
             value={startDate}
@@ -406,220 +376,339 @@ export function CardsReportPage() {
       <AdminSplitLayout
         left={(
           <AdminPanel>
-            {/* Applicants Main Table Section */}
+            {/* Applicants Section */}
             <div className="applicants-table" style={{ marginBottom: '24px' }}>
               <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333333', margin: '0 0 12px 0' }}>
                 Applicants
               </h2>
 
               <AdminTableWrap loading={list.loading} error={list.error} hasData={items.length > 0}>
-                <AdminDataTable
-                  columns={[
-                    { 
-                      key: 'created', 
-                      label: 'Application Date', 
-                      render: (r) => (
-                        <span style={{ fontSize: '12px', color: '#333333', whiteSpace: 'nowrap' }}>
-                          {formatAdminDate(r.submittedAt || r.createdAt || r.created)}
-                        </span>
-                      ) 
-                    },
-                    {
-                      key: 'memberEmail',
-                      label: 'ID (Email)',
-                      render: (r, idx) => {
-                        const emailStr = r.memberEmail || r.email || r.loginId || 'any@naver.com';
-                        const isSelected = selectedId === r.id || (idx === 0 && !selectedId);
-                        return (
-                          <div style={{ position: 'relative', display: 'inline-block' }}>
-                            <span
-                              className={isSelected ? 'state-active' : ''}
-                              onClick={(e) => {
+                {/* Desktop Table View (>= 768px) */}
+                <div className="admin-cards-desktop-table">
+                  <AdminDataTable
+                    columns={[
+                      { 
+                        key: 'created', 
+                        label: 'Application Date', 
+                        render: (r) => (
+                          <span style={{ fontSize: '12px', color: '#333333', whiteSpace: 'nowrap' }}>
+                            {formatAdminDate(r.submittedAt || r.createdAt || r.created)}
+                          </span>
+                        ) 
+                      },
+                      {
+                        key: 'memberEmail',
+                        label: 'ID (Email)',
+                        render: (r, idx) => {
+                          const emailStr = r.memberEmail || r.email || r.loginId || 'any@naver.com';
+                          const isSelected = selectedId === r.id || (idx === 0 && !selectedId);
+                          return (
+                            <div style={{ position: 'relative', display: 'inline-block' }}>
+                              <span
+                                className={isSelected ? 'state-active' : ''}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedId(r.id);
+                                  setShowTooltip(false);
+                                }}
+                                style={{
+                                  fontWeight: '600',
+                                  color: '#007BFF',
+                                  fontSize: '12px',
+                                  cursor: 'pointer',
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  border: isSelected ? '2px solid #007BFF' : '1px solid transparent',
+                                  backgroundColor: isSelected ? '#eff6ff' : 'transparent',
+                                  transition: 'all 0.15s ease',
+                                  display: 'inline-block'
+                                }}
+                              >
+                                {emailStr}
+                              </span>
+
+                              {/* Exact Tooltip Overlay on First Row */}
+                              {idx === 0 && showTooltip && (
+                                <div className="tooltip" style={{
+                                  position: 'absolute',
+                                  top: '100%',
+                                  left: '50%',
+                                  transform: 'translateX(-50%) translateY(8px)',
+                                  zIndex: 100,
+                                  backgroundColor: '#ffffff',
+                                  color: '#333333',
+                                  fontSize: '11px',
+                                  fontWeight: '600',
+                                  padding: '8px 12px',
+                                  borderRadius: '6px',
+                                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                                  border: '1px solid #E0E0E0',
+                                  whiteSpace: 'nowrap',
+                                }}>
+                                  <div style={{
+                                    position: 'absolute',
+                                    top: '-5px',
+                                    left: '50%',
+                                    transform: 'translateX(-50%) rotate(45deg)',
+                                    width: '8px',
+                                    height: '8px',
+                                    backgroundColor: '#ffffff',
+                                    borderLeft: '1px solid #E0E0E0',
+                                    borderTop: '1px solid #E0E0E0',
+                                  }} />
+                                  Click an ID to load the detailed shipping information in the table below.
+                                </div>
+                              )}
+                            </div>
+                          );
+                        },
+                      },
+                      { 
+                        key: 'memberName', 
+                        label: 'Name', 
+                        render: (r) => <span style={{ fontWeight: '600', fontSize: '12px', color: '#333333' }}>{r.memberName || 'John Doe'}</span> 
+                      },
+                      { 
+                        key: 'cardType', 
+                        label: 'Card Type', 
+                        render: (r) => (
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            backgroundColor: r.cardType === 'physical' ? '#eff6ff' : '#f3f4f6',
+                            color: r.cardType === 'physical' ? '#007BFF' : '#4b5563',
+                            border: '1px solid #E0E0E0'
+                          }}>
+                            {r.cardTypeLabel || (r.cardType === 'physical' ? 'Physical Card' : 'Virtual Card')}
+                          </span>
+                        ) 
+                      },
+                      { 
+                        key: 'txIdInput', 
+                        label: 'TXID (User Input)', 
+                        render: (r, idx) => (
+                          <span style={{
+                            backgroundColor: idx === 0 ? '#FFEB3B' : '#fffde7',
+                            padding: '3px 8px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontFamily: 'monospace',
+                            fontWeight: '600',
+                            color: '#333333',
+                            border: '1px solid #fbc02d',
+                            display: 'inline-block'
+                          }}>
+                            <CopyableTxId txId={r.txIdInput || 'anccbddjjkdk09094dk'} bgColor={idx === 0 ? '#FFEB3B' : '#fffde7'} />
+                          </span>
+                        )
+                      },
+                      { 
+                        key: 'depositAmount', 
+                        label: 'Deposit Amount', 
+                        render: (r, idx) => (
+                          <span style={{
+                            fontWeight: '700',
+                            color: '#1b5e20',
+                            backgroundColor: idx === 0 ? '#CCFF90' : '#f1f8e9',
+                            padding: '4px 10px',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            whiteSpace: 'nowrap',
+                            border: '1px solid #aed581',
+                            display: 'inline-block'
+                          }}>
+                            {Number(r.depositAmount ?? 100).toFixed(2)}USDT
+                          </span>
+                        ) 
+                      },
+                      { 
+                        key: 'wasabiCardId', 
+                        label: 'Card Number', 
+                        render: (r) => {
+                          let cardStr = r.wasabiCardId && r.wasabiCardId !== '—' ? r.wasabiCardId : '';
+                          if (!cardStr && r.last4) cardStr = `•••• ${r.last4}`;
+                          return (
+                            <span style={{ fontFamily: 'monospace', fontSize: '11px', fontWeight: '600', color: '#333333' }}>
+                              {cardStr || '—'}
+                            </span>
+                          );
+                        } 
+                      },
+                      { 
+                        key: 'delivered', 
+                        label: 'Shipping', 
+                        render: (r) => {
+                          const isCompleted = r.delivered || r.cardStatus === 'active' || r.status === 'active';
+                          return (
+                            <button
+                              type="button"
+                              onClick={async (e) => {
                                 e.stopPropagation();
-                                setSelectedId(r.id);
-                                setShowTooltip(false);
+                                const targetId = r.deliveryId || r.id;
+                                if (targetId) {
+                                  try {
+                                    await toggleCardDeliveryStatus(targetId, !r.delivered);
+                                    list.reload();
+                                  } catch (err) {
+                                    window.alert('Shipping status update failed: ' + err.message);
+                                  }
+                                }
                               }}
                               style={{
-                                fontWeight: '600',
-                                color: '#007BFF',
-                                fontSize: '12px',
-                                cursor: 'pointer',
-                                padding: '4px 8px',
+                                padding: '4px 10px',
+                                fontSize: '11px',
                                 borderRadius: '4px',
-                                border: isSelected ? '2px solid #007BFF' : '1px solid transparent',
-                                backgroundColor: isSelected ? '#eff6ff' : 'transparent',
-                                transition: 'all 0.15s ease',
-                                display: 'inline-block'
+                                border: isCompleted ? '1px solid #86efac' : '1px solid #E0E0E0',
+                                backgroundColor: isCompleted ? '#e8f5e9' : '#ffffff',
+                                color: isCompleted ? '#2e7d32' : '#64748b',
+                                cursor: 'pointer',
+                                fontWeight: '600'
                               }}
                             >
-                              {emailStr}
-                            </span>
+                              {isCompleted ? 'Delivered' : 'Not Delivered'}
+                            </button>
+                          );
+                        } 
+                      }
+                    ]}
+                    rows={items}
+                    selectedId={selectedId}
+                    onSelectRow={(row) => {
+                      setSelectedId(row.id);
+                      setShowTooltip(false);
+                    }}
+                    onDoubleClickRow={(row) => {
+                      setSelectedId(row.id);
+                      setShowTooltip(false);
+                    }}
+                    pagination={{
+                      page: list.page,
+                      pageSize: list.pageSize,
+                      total: list.total,
+                      totalPages: list.totalPages,
+                      onPageChange: list.setPage,
+                      onPageSizeChange: list.setPageSize,
+                    }}
+                  />
+                </div>
 
-                            {/* Exact Tooltip Overlay on First Row */}
-                            {idx === 0 && showTooltip && (
-                              <div className="tooltip" style={{
-                                position: 'absolute',
-                                top: '100%',
-                                left: '50%',
-                                transform: 'translateX(-50%) translateY(8px)',
-                                zIndex: 100,
-                                backgroundColor: '#ffffff',
-                                color: '#333333',
-                                fontSize: '11px',
-                                fontWeight: '600',
-                                padding: '8px 12px',
-                                borderRadius: '6px',
-                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-                                border: '1px solid #E0E0E0',
-                                whiteSpace: 'nowrap',
-                              }}>
-                                <div style={{
-                                  position: 'absolute',
-                                  top: '-5px',
-                                  left: '50%',
-                                  transform: 'translateX(-50%) rotate(45deg)',
-                                  width: '8px',
-                                  height: '8px',
-                                  backgroundColor: '#ffffff',
-                                  borderLeft: '1px solid #E0E0E0',
-                                  borderTop: '1px solid #E0E0E0',
-                                }} />
-                                Click an ID to load the detailed shipping information in the table below.
-                              </div>
-                            )}
-                          </div>
-                        );
-                      },
-                    },
-                    { 
-                      key: 'memberName', 
-                      label: 'Name', 
-                      render: (r) => <span style={{ fontWeight: '600', fontSize: '12px', color: '#333333' }}>{r.memberName || 'John Doe'}</span> 
-                    },
-                    { 
-                      key: 'cardType', 
-                      label: 'Card Type', 
-                      render: (r) => (
-                        <span style={{
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          backgroundColor: r.cardType === 'physical' ? '#eff6ff' : '#f3f4f6',
-                          color: r.cardType === 'physical' ? '#007BFF' : '#4b5563',
-                          border: '1px solid #E0E0E0'
-                        }}>
-                          {r.cardTypeLabel || (r.cardType === 'physical' ? 'Physical Card' : 'Virtual Card')}
-                        </span>
-                      ) 
-                    },
-                    { 
-                      key: 'txIdInput', 
-                      label: 'TXID (User Input)', 
-                      render: (r, idx) => (
-                        <span style={{
-                          backgroundColor: idx === 0 ? '#FFEB3B' : '#fffde7',
-                          padding: '3px 8px',
-                          borderRadius: '4px',
-                          fontSize: '11px',
-                          fontFamily: 'monospace',
-                          fontWeight: '600',
-                          color: '#333333',
-                          border: '1px solid #fbc02d',
-                          display: 'inline-block'
-                        }}>
-                          <CopyableTxId txId={r.txIdInput || 'anccbddjjkdk09094dk'} bgColor={idx === 0 ? '#FFEB3B' : '#fffde7'} />
-                        </span>
-                      )
-                    },
-                    { 
-                      key: 'depositAmount', 
-                      label: 'Deposit Amount', 
-                      render: (r, idx) => (
-                        <span style={{
-                          fontWeight: '700',
-                          color: '#1b5e20',
-                          backgroundColor: idx === 0 ? '#CCFF90' : '#f1f8e9',
-                          padding: '4px 10px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          whiteSpace: 'nowrap',
-                          border: '1px solid #aed581',
-                          display: 'inline-block'
-                        }}>
-                          {Number(r.depositAmount ?? 100).toFixed(2)}USDT
-                        </span>
-                      ) 
-                    },
-                    { 
-                      key: 'wasabiCardId', 
-                      label: 'Card Number', 
-                      render: (r) => {
+                {/* Mobile 4-Line Card View (< 768px) */}
+                <div className="admin-cards-mobile-list-container">
+                  <div className="admin-fees-mobile-list-head">
+                    <span>👤 Applicant Member & Email</span>
+                    <span>💳 Card & Deposit</span>
+                  </div>
+
+                  {items.length === 0 ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                      No card applications found.
+                    </div>
+                  ) : (
+                    <div className="admin-fees-mobile-list">
+                      {items.map((r, idx) => {
+                        const isSelected = selectedId === r.id || (idx === 0 && !selectedId);
+                        const emailStr = r.memberEmail || r.email || r.loginId || 'any@naver.com';
+                        const isCompleted = r.delivered || r.cardStatus === 'active' || r.status === 'active';
                         let cardStr = r.wasabiCardId && r.wasabiCardId !== '—' ? r.wasabiCardId : '';
                         if (!cardStr && r.last4) cardStr = `•••• ${r.last4}`;
+
+                        const ship = r.shippingInfo || {};
+                        const recipientName = ship.recipientName || r.recipientName || r.memberName || '—';
+                        const phone = ship.phoneNumber || r.phoneNumber || '—';
+
                         return (
-                          <span style={{ fontFamily: 'monospace', fontSize: '11px', fontWeight: '600', color: '#333333' }}>
-                            {cardStr || '—'}
-                          </span>
-                        );
-                      } 
-                    },
-                    { 
-                      key: 'delivered', 
-                      label: 'Shipping', 
-                      render: (r) => {
-                        const isCompleted = r.delivered || r.cardStatus === 'active' || r.status === 'active';
-                        return (
-                          <button
-                            type="button"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              const targetId = r.deliveryId || r.id;
-                              if (targetId) {
-                                try {
-                                  await toggleCardDeliveryStatus(targetId, !r.delivered);
-                                  list.reload();
-                                } catch (err) {
-                                  window.alert('Shipping status update failed: ' + err.message);
-                                }
-                              }
-                            }}
-                            style={{
-                              padding: '4px 10px',
-                              fontSize: '11px',
-                              borderRadius: '4px',
-                              border: isCompleted ? '1px solid #86efac' : '1px solid #E0E0E0',
-                              backgroundColor: isCompleted ? '#e8f5e9' : '#ffffff',
-                              color: isCompleted ? '#2e7d32' : '#64748b',
-                              cursor: 'pointer',
-                              fontWeight: '600'
+                          <div
+                            key={r.id || idx}
+                            className={`admin-fees-mobile-card${isSelected ? ' is-selected' : ''}`}
+                            onClick={() => {
+                              setSelectedId(r.id);
+                              setShowTooltip(false);
                             }}
                           >
-                            {isCompleted ? 'Delivered' : 'Not Delivered'}
-                          </button>
+                            {/* Line 1: Member Name & Email (Left) | Deposit Amount (Right) */}
+                            <div className="admin-fees-mobile-card__line1">
+                              <span className="admin-fees-mobile-card__user">
+                                {r.memberName || 'John Doe'}{' '}
+                                <span className="admin-fees-mobile-card__id">({emailStr})</span>
+                              </span>
+                              <span className="admin-fees-mobile-card__total-fee">
+                                ${Number(r.depositAmount ?? 100).toFixed(2)} USDT
+                              </span>
+                            </div>
+
+                            {/* Line 2: Card Type & Number (Left) | Member ID (Right) */}
+                            <div className="admin-fees-mobile-card__line2">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '10px',
+                                  fontWeight: '700',
+                                  backgroundColor: r.cardType === 'physical' ? '#eff6ff' : '#f3f4f6',
+                                  color: r.cardType === 'physical' ? '#007BFF' : '#4b5563',
+                                  border: '1px solid #E0E0E0'
+                                }}>
+                                  {r.cardTypeLabel || (r.cardType === 'physical' ? 'Physical' : 'Virtual')}
+                                </span>
+                                <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#333333', fontWeight: '600' }}>
+                                  {cardStr || '—'}
+                                </span>
+                              </div>
+                              <span className="admin-fees-mobile-card__subtext">
+                                ID: {r.memberId || r.userId || '—'}
+                              </span>
+                            </div>
+
+                            {/* Line 3: Shipping Recipient & Phone (Left) | Shipping Status Toggle (Right) */}
+                            <div className="admin-fees-mobile-card__line3">
+                              <span className="admin-fees-mobile-card__subtext">
+                                📦 {recipientName} ({phone})
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const targetId = r.deliveryId || r.id;
+                                  if (targetId) {
+                                    try {
+                                      await toggleCardDeliveryStatus(targetId, !r.delivered);
+                                      list.reload();
+                                    } catch (err) {
+                                      window.alert('Shipping status update failed: ' + err.message);
+                                    }
+                                  }
+                                }}
+                                style={{
+                                  padding: '3px 8px',
+                                  fontSize: '11px',
+                                  borderRadius: '4px',
+                                  border: isCompleted ? '1px solid #86efac' : '1px solid #E0E0E0',
+                                  backgroundColor: isCompleted ? '#e8f5e9' : '#ffffff',
+                                  color: isCompleted ? '#2e7d32' : '#64748b',
+                                  cursor: 'pointer',
+                                  fontWeight: '600'
+                                }}
+                              >
+                                {isCompleted ? '✓ Delivered' : 'Not Delivered'}
+                              </button>
+                            </div>
+
+                            {/* Line 4: Application Date (Left) | TXID Badge (Right) */}
+                            <div className="admin-fees-mobile-card__line4">
+                              <span className="admin-fees-mobile-card__date">
+                                📅 {formatAdminDate(r.submittedAt || r.createdAt || r.created)}
+                              </span>
+                              <CopyableTxId txId={r.txIdInput || 'anccbddjjkdk09094dk'} bgColor={idx === 0 ? '#FFEB3B' : '#fffde7'} />
+                            </div>
+                          </div>
                         );
-                      } 
-                    }
-                  ]}
-                  rows={items}
-                  selectedId={selectedId}
-                  onSelectRow={(row) => {
-                    setSelectedId(row.id);
-                    setShowTooltip(false);
-                  }}
-                  onDoubleClickRow={(row) => {
-                    setSelectedId(row.id);
-                    setShowTooltip(false);
-                  }}
-                  pagination={{
-                    page: list.page,
-                    pageSize: list.pageSize,
-                    total: list.total,
-                    totalPages: list.totalPages,
-                    onPageChange: list.setPage,
-                    onPageSizeChange: list.setPageSize,
-                  }}
-                />
+                      })}
+                    </div>
+                  )}
+                </div>
               </AdminTableWrap>
             </div>
 
