@@ -3,12 +3,14 @@ import { useLocation } from 'react-router-dom';
 import {
   absoluteUrl,
   defaultOgImage,
+  homeSchemaGraph,
   OG_IMAGE_ALT,
   OG_IMAGE_HEIGHT,
   OG_IMAGE_WIDTH,
+  organizationJsonLd,
   resolveSeo,
 } from '../lib/seo.ts';
-import { SOCIAL_LINKS, SITE_ORIGIN, TWITTER_HANDLE } from '../lib/site.ts';
+import { TWITTER_HANDLE } from '../lib/site.ts';
 
 function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
   const selector = `meta[${attr}="${key}"]`;
@@ -75,13 +77,12 @@ export function Seo() {
     upsertMeta('name', 'twitter:image', image);
     upsertMeta('name', 'twitter:image:alt', OG_IMAGE_ALT);
 
-    upsertJsonLd('org-jsonld', {
-      '@context': 'https://schema.org',
-      '@type': 'Organization',
-      name: 'Anytap',
-      url: SITE_ORIGIN,
-      sameAs: SOCIAL_LINKS.map((s) => s.href),
-    });
+    upsertJsonLd(
+      'org-jsonld',
+      seo.path === '/'
+        ? homeSchemaGraph()
+        : { '@context': 'https://schema.org', ...organizationJsonLd() },
+    );
   }, [pathname]);
 
   return null;

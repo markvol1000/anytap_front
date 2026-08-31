@@ -1,4 +1,4 @@
-import { SITE_ORIGIN } from './site.ts';
+import { SITE_ORIGIN, SOCIAL_LINKS, SUPPORT_EMAIL } from './site.ts';
 
 export interface PageSeo {
   title: string;
@@ -223,6 +223,42 @@ export function absoluteUrl(path: string): string {
 
 export function defaultOgImage(): string {
   return DEFAULT_OG;
+}
+
+export function organizationJsonLd() {
+  return {
+    '@type': 'Organization' as const,
+    name: 'Anytap',
+    url: `${SITE_ORIGIN}/`,
+    logo: `${SITE_ORIGIN}/assets/anytap-logo.png`,
+    description: 'Crypto debit card enabling USDT spending anywhere Visa is accepted.',
+    contactPoint: {
+      '@type': 'ContactPoint' as const,
+      email: SUPPORT_EMAIL,
+      contactType: 'customer support',
+      availableLanguage: 'English',
+    },
+    sameAs: SOCIAL_LINKS.map((s) => s.href),
+  };
+}
+
+export function financialProductJsonLd() {
+  return {
+    '@type': 'FinancialProduct' as const,
+    name: 'Anytap Crypto Debit Card',
+    description:
+      'Physical and virtual Visa debit card. Top up with USDT or USDC and spend anywhere Visa is accepted.',
+    url: `${SITE_ORIGIN}/`,
+    provider: { '@type': 'Organization' as const, name: 'Anytap' },
+  };
+}
+
+/** Home page JSON-LD: Organization + FinancialProduct in one @graph. */
+export function homeSchemaGraph() {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [organizationJsonLd(), financialProductJsonLd()],
+  };
 }
 
 /** Public URLs for sitemap.xml (indexable marketing pages only). */
