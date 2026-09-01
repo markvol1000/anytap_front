@@ -31,6 +31,18 @@ function upsertLink(rel: string, href: string) {
   el.setAttribute('href', href);
 }
 
+function upsertHreflang(hreflang: string, href: string) {
+  const selector = `link[rel="alternate"][hreflang="${hreflang}"]`;
+  let el = document.head.querySelector(selector) as HTMLLinkElement | null;
+  if (!el) {
+    el = document.createElement('link');
+    el.setAttribute('rel', 'alternate');
+    el.setAttribute('hreflang', hreflang);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('href', href);
+}
+
 function upsertJsonLd(id: string, data: unknown) {
   let el = document.head.querySelector(`script#${id}`) as HTMLScriptElement | null;
   if (!el) {
@@ -57,6 +69,8 @@ export function Seo() {
     upsertMeta('name', 'robots', seo.noindex ? 'noindex, nofollow' : 'index, follow');
 
     upsertLink('canonical', url);
+    upsertHreflang('en', url);
+    upsertHreflang('x-default', url);
 
     upsertMeta('property', 'og:type', 'website');
     upsertMeta('property', 'og:site_name', 'Anytap');
