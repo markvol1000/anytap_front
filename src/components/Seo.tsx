@@ -10,6 +10,7 @@ import {
   SEO_KEYWORDS,
   SEO_KNOWS_ABOUT,
 } from '../lib/seo.ts';
+import { faqPageJsonLd } from '../lib/home-faq.ts';
 import { SOCIAL_LINKS, SITE_ORIGIN, TWITTER_HANDLE } from '../lib/site.ts';
 
 function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
@@ -54,6 +55,10 @@ function upsertJsonLd(id: string, data: unknown) {
     document.head.appendChild(el);
   }
   el.textContent = JSON.stringify(data);
+}
+
+function removeEl(selector: string) {
+  document.head.querySelector(selector)?.remove();
 }
 
 /** Updates document title + meta tags on every route change. */
@@ -105,6 +110,12 @@ export function Seo() {
       sameAs: SOCIAL_LINKS.map((s) => s.href),
       knowsAbout: [...SEO_KNOWS_ABOUT],
     });
+
+    if (seo.path === '/') {
+      upsertJsonLd('faq-jsonld', faqPageJsonLd());
+    } else {
+      removeEl('script#faq-jsonld');
+    }
   }, [pathname]);
 
   return null;
