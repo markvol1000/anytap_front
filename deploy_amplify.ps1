@@ -35,8 +35,9 @@ if ([string]::IsNullOrEmpty($branchExists) -or $branchExists -eq "None") {
     Write-Host "   Branch '$branchName' already exists." -ForegroundColor Green
 }
 
-# 3. Update Redirect & Proxy Rules (www 301, API proxy, SPA + sitemap/webp)
-Write-Host "3. Setting up Custom Rewrite/Redirect Rules (www 301, ALB API Proxy & SPA Routing)..."
+# 3. Update Redirect & Proxy Rules (sitemap.xml, API proxy, SPA)
+# www→apex 301은 anytap.io DNS가 Amplify를 가리킨 뒤에만 넣는다.
+# 지금은 apex가 고닷디 포워딩이라 /sitemap.xml 이 404다.
 $rulesPath = Join-Path $PSScriptRoot "amplify-custom-rules.json"
 if (-not (Test-Path $rulesPath)) { $rulesPath = Join-Path (Get-Location) "amplify-custom-rules.json" }
 & $awsCli amplify update-app --app-id $appId --custom-rules ("file://" + $rulesPath) --region $region | Out-Null

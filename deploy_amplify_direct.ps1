@@ -10,7 +10,8 @@ Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host " Starting Direct Amplify Deploy (No S3 Bucket)" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 
-# 0. Apply Amplify redirects (www 301, API proxy, SPA + sitemap/webp)
+# 0. Apply Amplify redirects (sitemap.xml, API proxy, SPA)
+# www→apex 301은 apex DNS가 Amplify일 때만 켠다 (지금은 고닷디 포워딩).
 Write-Host "0. Updating Amplify custom rules from amplify-custom-rules.json..."
 $rulesPath = Join-Path $PSScriptRoot "amplify-custom-rules.json"
 if (-not (Test-Path $rulesPath)) { $rulesPath = Join-Path (Get-Location) "amplify-custom-rules.json" }
