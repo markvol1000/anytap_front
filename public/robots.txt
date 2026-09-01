@@ -13,3 +13,4 @@ Disallow: /demo/
 Disallow: /kyc
 
 Sitemap: https://www.anytap.io/sitemap.xml
+Sitemap: https://www.anytap.io/sitemap.txt
