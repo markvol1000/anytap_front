@@ -1,7 +1,7 @@
 # Anytap Homepage — Claude Code 가이드
 
 Anytap 공식 마케팅 사이트 + 회원 포털(대시보드) SPA.  
-**작업 루트:** 이 디렉터리(`www/`). Vercel Root Directory도 `www`.
+**작업 루트:** 이 디렉터리. 배포는 AWS Amplify (`anytap-front-1`).
 
 ---
 
@@ -47,7 +47,7 @@ Anytap 공식 마케팅 사이트 + 회원 포털(대시보드) SPA.
 | 입출금 | mock | **Cregis API** |
 | 폰트 | Red Hat Display/Text + Pretendard CJK | 유지 |
 | 아이콘 | `@phosphor-icons/react` | 유지 |
-| 배포 | Vercel SPA (`vercel.json` rewrite) | 유지 |
+| 배포 | AWS Amplify (`customHttp.yml` + custom rules) | 유지 |
 | PWA | 미적용 | **manifest + Service Worker 추가 예정** |
 
 ```bash
@@ -311,9 +311,11 @@ kycStatus: approved + active | frozen → card_active
 
 ## 배포
 
-- GitHub: `ymy-anytap/homepage`
-- Vercel Root: `www`, Build: `npm run build`, Output: `dist`
-- `vercel.json` SPA rewrite 적용
+- GitHub: `markvol1000/anytap_front`
+- 배포: AWS Amplify (`anytap-front-1`, `ap-northeast-2`)
+- Build: `npm run build`, Output: `dist`
+- SPA rewrite·API 프록시: Amplify custom rules (`deploy_amplify.ps1`)
+- 응답 헤더: `customHttp.yml`
 
 ---
 

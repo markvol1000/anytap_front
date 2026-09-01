@@ -3,12 +3,21 @@ import { useLocation } from 'react-router-dom';
 import {
   absoluteUrl,
   defaultOgImage,
+  homeSchemaGraph,
   OG_IMAGE_ALT,
   OG_IMAGE_HEIGHT,
   OG_IMAGE_WIDTH,
+  organizationJsonLd,
   resolveSeo,
+  SEO_KEYWORDS,
+  SEO_KNOWS_ABOUT,
 } from '../lib/seo.ts';
+<<<<<<< HEAD
+import { TWITTER_HANDLE } from '../lib/site.ts';
+=======
+import { faqPageJsonLd } from '../lib/home-faq.ts';
 import { SOCIAL_LINKS, SITE_ORIGIN, TWITTER_HANDLE } from '../lib/site.ts';
+>>>>>>> origin/cursor/seo-04-faq-schema-4904
 
 function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
   const selector = `meta[${attr}="${key}"]`;
@@ -31,6 +40,18 @@ function upsertLink(rel: string, href: string) {
   el.setAttribute('href', href);
 }
 
+function upsertHreflang(hreflang: string, href: string) {
+  const selector = `link[rel="alternate"][hreflang="${hreflang}"]`;
+  let el = document.head.querySelector(selector) as HTMLLinkElement | null;
+  if (!el) {
+    el = document.createElement('link');
+    el.setAttribute('rel', 'alternate');
+    el.setAttribute('hreflang', hreflang);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('href', href);
+}
+
 function upsertJsonLd(id: string, data: unknown) {
   let el = document.head.querySelector(`script#${id}`) as HTMLScriptElement | null;
   if (!el) {
@@ -40,6 +61,10 @@ function upsertJsonLd(id: string, data: unknown) {
     document.head.appendChild(el);
   }
   el.textContent = JSON.stringify(data);
+}
+
+function removeEl(selector: string) {
+  document.head.querySelector(selector)?.remove();
 }
 
 /** Updates document title + meta tags on every route change. */
@@ -54,9 +79,17 @@ export function Seo() {
     document.title = seo.title;
 
     upsertMeta('name', 'description', seo.description);
+    upsertMeta('name', 'keywords', SEO_KEYWORDS);
     upsertMeta('name', 'robots', seo.noindex ? 'noindex, nofollow' : 'index, follow');
+    upsertMeta(
+      'name',
+      'naver-site-verification',
+      '2a5e4bf4f2722aaa22f035db9d83d2008d4d582d',
+    );
 
     upsertLink('canonical', url);
+    upsertHreflang('en', url);
+    upsertHreflang('x-default', url);
 
     upsertMeta('property', 'og:type', 'website');
     upsertMeta('property', 'og:site_name', 'Anytap');
@@ -75,13 +108,18 @@ export function Seo() {
     upsertMeta('name', 'twitter:image', image);
     upsertMeta('name', 'twitter:image:alt', OG_IMAGE_ALT);
 
-    upsertJsonLd('org-jsonld', {
-      '@context': 'https://schema.org',
-      '@type': 'Organization',
-      name: 'Anytap',
-      url: SITE_ORIGIN,
-      sameAs: SOCIAL_LINKS.map((s) => s.href),
-    });
+    upsertJsonLd(
+      'org-jsonld',
+      seo.path === '/'
+        ? homeSchemaGraph()
+        : { '@context': 'https://schema.org', ...organizationJsonLd() },
+    );
+
+    if (seo.path === '/') {
+      upsertJsonLd('faq-jsonld', faqPageJsonLd());
+    } else {
+      removeEl('script#faq-jsonld');
+    }
   }, [pathname]);
 
   return null;

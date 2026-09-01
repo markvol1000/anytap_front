@@ -229,6 +229,35 @@ function HeroCard({ variant = 'light', alt }) {
   );
 }
 
+/** WebP with original fallback. `display: contents` keeps img layout identical. */
+function OptimizedImg({
+  webp,
+  src,
+  alt,
+  className,
+  width,
+  height,
+  loading = 'lazy',
+  fetchpriority,
+}) {
+  return (
+    <picture className="opt-img">
+      {webp ? <source type="image/webp" srcSet={webp} /> : null}
+      <img
+        src={src}
+        alt={alt}
+        className={className}
+        width={width}
+        height={height}
+        loading={loading}
+        decoding="async"
+        fetchpriority={fetchpriority}
+        draggable={false}
+      />
+    </picture>
+  );
+}
+
 // ─────────────── Card mockup ───────────────
 function PaymentCard({ variant = "primary", brand = "Anytap", number = "5421  88·· ····  3104", name = "JOHN DOE", network = "VISA" }) {
   const isDark = variant === "dark" || variant === "secondary";
@@ -572,4 +601,4 @@ function MiniPhone() {
   );
 }
 
-export { Logo, Icon, CoinChip, FiatChip, HeroCard, PaymentCard, MiniPhone, QRCode, CryptoPayArt, BinCompareArt, AccountCreatePhone, CheckoutApiArt, MerchantProcessArt, PayBrand, NetMark, COINS, FIATS };
+export { Logo, Icon, CoinChip, FiatChip, HeroCard, OptimizedImg, PaymentCard, MiniPhone, QRCode, CryptoPayArt, BinCompareArt, AccountCreatePhone, CheckoutApiArt, MerchantProcessArt, PayBrand, NetMark, COINS, FIATS };

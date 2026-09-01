@@ -3,8 +3,12 @@ Allow: /
 
 Disallow: /account
 Disallow: /account/
+Disallow: /member
+Disallow: /member/
 Disallow: /admin
 Disallow: /admin/
+Disallow: /api
+Disallow: /api/
 Disallow: /login
 Disallow: /sign-up
 Disallow: /forgot-password
@@ -12,4 +16,5 @@ Disallow: /demo
 Disallow: /demo/
 Disallow: /kyc
 
-Sitemap: https://anytap.io/sitemap.xml
+Sitemap: https://www.anytap.io/sitemap.xml
+Sitemap: https://www.anytap.io/sitemap.txt

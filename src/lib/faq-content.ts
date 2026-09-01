@@ -135,7 +135,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         id: "Q26",
         question: "How much does physical card issuance cost?",
-        answer: "Physical card issuance costs $100 USDT. After applying for the card, deposit the issuance fee to Anytap's designated wallet; once the deposit is confirmed, the card will be shipped.",
+        answer: "The virtual card issuance fee is 20 USDT. The physical card issuance fee is shown in the application flow before you pay. After applying for a physical card, deposit the issuance fee to Anytap's designated wallet; once the deposit is confirmed, the card will be shipped.",
       },
       {
         id: "Q27",
@@ -170,7 +170,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         id: "Q34",
         question: "What if I lose or damage my physical card?",
-        answer: "If your card is lost or damaged, the existing card cannot be reused. You must submit a new issuance application.\n\u2022  Step 1: Immediately lock the card in the Card Management tab of the dashboard\n\u2022  Step 2: Apply for new card issuance (issuance fee of $100 USDT charged again)\nIf theft is suspected, after locking the card, be sure to email support@anytap.io to report the theft. Include your full legal name, registered email, and the circumstances of the loss in the report.",
+        answer: "If your card is lost or damaged, the existing card cannot be reused. You must submit a new issuance application.\n\u2022  Step 1: Immediately lock the card in the Card Management tab of the dashboard\n\u2022  Step 2: Apply for new card issuance (the current issuance fee is charged again)\nIf theft is suspected, after locking the card, be sure to email support@anytap.io to report the theft. Include your full legal name, registered email, and the circumstances of the loss in the report.",
       },
     ],
   },
@@ -195,7 +195,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         id: "Q38",
         question: "Is there a minimum top-up amount?",
-        answer: "The minimum top-up amount is 50 USDT.",
+        answer: "The minimum top-up amount is 30 USDT on the TRC-20 network.",
       },
       {
         id: "Q39",
@@ -205,7 +205,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         id: "Q40",
         question: "What is the top-up fee?",
-        answer: "The top-up fee is 3% of the deposit amount. The fee is deducted immediately from the deposit, and the net amount is reflected in the card balance.\nExample: Depositing 100 USDT incurs a 3 USDT fee \u2192 97 USDT is credited to the wallet balance.",
+        answer: "Anytap does not publish a separate percentage top-up fee. The minimum top-up is 30 USDT via TRC-20. TRC-20 network fees are typically low. Check the dashboard top-up screen for the amount that will be credited.",
       },
       {
         id: "Q41",
@@ -255,7 +255,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         id: "Q51",
         question: "Can I withdraw cash from an ATM?",
-        answer: "Only the physical card (Visa) can be used for ATM withdrawals.\n[Confirmation needed: which domestic ATMs support cash withdrawal for overseas-issued Visa cards.]\n\nATM limits: per withdrawal $1,500 \u00b7 daily $1,500 \u00b7 daily count 30 \u00b7 monthly $15,000.",
+        answer: "Yes. ATM withdrawals are available with the physical Visa card. The withdrawal fee is 2% (minimum $1). Daily withdrawal limit: $1,500 (up to 30 transactions). Monthly limit: $15,000. Singapore does not support ATM withdrawal.",
       },
       {
         id: "Q52",
@@ -275,7 +275,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         id: "Q55",
         question: "What currency are payments processed in?",
-        answer: "Card balances are managed in USD. Payments made in a currency other than USD use a real-time exchange rate, and a foreign transaction fee applies.\n\nFee schedule:\n\u2022 Physical card issuance: $100 USDT\n\u2022 Top-up fee: 3%\n\u2022 Foreign transaction fee: 3%\n\u2022 Small-transaction fee: 0.3 USDT (under 30 USDT)\n\u2022 Decline fee: $0.50\n\u2022 Refund fee: 2%\n\u2022 Dispute processing fee: $30\n\u2022 Cancellation fee: $1.00\n\u2022 ATM operator fee: may apply\n\u2022 Annual fee: None",
+        answer: "Card balances are managed in USD. Payments made in a currency other than USD use a real-time exchange rate, and a foreign transaction fee applies.\n\nFee schedule:\n\u2022 Virtual card issuance: 20 USDT\n\u2022 Physical card issuance: shown in the application flow\n\u2022 Top-up: minimum 30 USDT on TRC-20 (no published percentage fee)\n\u2022 Cross-border / foreign transaction fee: 1% + $0.30 per transaction\n\u2022 ATM withdrawal: 2% (minimum $1); not available in Singapore\n\u2022 Small-transaction fee: 0.3 USDT (under 30 USDT)\n\u2022 Decline fee: $0.50\n\u2022 Refund fee: 2%\n\u2022 Dispute processing fee: $30\n\u2022 Cancellation fee: $1.00\n\u2022 Annual fee: None",
       },
       {
         id: "Q56",
@@ -305,7 +305,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         id: "Q61",
         question: "Is there a fee for payments made overseas?",
-        answer: "A 3% foreign transaction fee applies to payments made in a currency other than USD. The payment amount is converted at the real-time exchange rate before being deducted from the USD balance.",
+        answer: "A cross-border transaction fee of 1% plus $0.30 applies per transaction when spending in currencies other than USD. The payment amount is converted at the real-time exchange rate before being deducted from the USD balance.",
       },
       {
         id: "Q62",
@@ -330,7 +330,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         id: "Q65",
         question: "What is the ATM withdrawal fee?",
-        answer: "Anytap does not charge a separate ATM withdrawal fee. However, local ATM usage fees may apply depending on the ATM operator. Check the fee notice displayed on the ATM screen before withdrawing.",
+        answer: "ATM withdrawals with the physical Visa card incur a 2% fee (minimum $1). Local ATM operator fees may also apply. ATM withdrawal is not available in Singapore.",
       },
       {
         id: "Q66",
@@ -340,7 +340,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         id: "Q67",
         question: "When are fees deducted?",
-        answer: "The top-up fee is deducted immediately from the deposit amount, and the net amount is reflected in the card balance. Foreign transaction fees and other fees are automatically deducted from the card balance at the time the relevant transaction occurs.",
+        answer: "Network fees on TRC-20, if any, are paid on-chain at the time of transfer. Cross-border and other card fees are deducted from the card balance when the related transaction occurs.",
       },
       {
         id: "Q68",
@@ -350,7 +350,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         id: "Q69",
         question: "How much do I need to send to load a card amount that already accounts for the top-up fee?",
-        answer: "The top-up fee is deducted at 3% of the deposit amount. The formula to reverse-calculate the amount to send for a desired card balance is as follows.\nFormula: Amount to send = Desired top-up amount \u00f7 0.97. These figures are based on a 3% top-up fee; for exact calculations, check the top-up screen on the dashboard in real time.",
+        answer: "There is no published percentage top-up fee. Send at least 30 USDT on TRC-20, then check the dashboard top-up screen for the amount that will be credited.",
       },
     ],
   },

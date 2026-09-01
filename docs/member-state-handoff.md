@@ -311,7 +311,7 @@
 
 회원 UI는 `memberState` 6단계(①~⑥)로 분기한다. **별도 URL이 아니라 같은 `/account` 대시보드**가 상태마다 히어로·CTA만 바뀐다.
 
-- Preview: `https://homepage-omega-amber.vercel.app`
+- Preview: `http://localhost:5173`
 - 로그인: 이메일 + password `test1234` (프론트가 내부 `loginId`로 변환)
 - 피그마: 아래 **구현 경로**마다 프레임 1장(또는 Dashboard ①~⑥ variant)을 붙이면 됨
 
@@ -402,4 +402,4 @@
 | Referral | `/demo/state/page-referral` | `/account/referral` | `referralCode`, stats |
 | Settings | `/demo/state/page-settings` | `/account/settings` | profile / security prefs |
 
-Preview 예: `https://homepage-omega-amber.vercel.app/demo/states`
+Preview 예: `http://localhost:5173/demo/states`

@@ -1,4 +1,4 @@
-import { SITE_ORIGIN } from './site.ts';
+import { SITE_ORIGIN, SOCIAL_LINKS, SUPPORT_EMAIL } from './site.ts';
 
 export interface PageSeo {
   title: string;
@@ -12,25 +12,41 @@ export interface PageSeo {
 /** SNS share preview (Open Graph / Twitter) — 1200×630 */
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
-export const OG_IMAGE_ALT = 'Anytap — Spend crypto anywhere with Visa';
+export const OG_IMAGE_ALT = 'Anytap crypto card — spend anywhere with Visa';
 
 const DEFAULT_OG = `${SITE_ORIGIN}/assets/og-share.jpg`;
 const BRAND = 'Anytap';
 
+/**
+ * Generic product terms for search (English + Korean).
+ * Do not include competitor brand names in site HTML or meta tags.
+ */
+export const SEO_KEYWORDS =
+  'crypto card, 크립토카드, crypto debit card, USDT Visa card, Anytap';
+
+export const SEO_KNOWS_ABOUT = [
+  'crypto card',
+  '크립토카드',
+  'crypto debit card',
+  'USDT Visa',
+] as const;
+
+export const DEFAULT_TITLE = `${BRAND} — Crypto card | 크립토카드`;
+
 const DEFAULT_DESC =
-  'Spend USDT and USDC anywhere Visa is accepted. Anytap crypto debit card with 60+ global BINs, Apple Pay, Google Pay, and Samsung Pay.';
+  'Anytap crypto card (크립토카드) — spend USDT and USDC anywhere Visa is accepted. 60+ global BINs, Apple Pay, Google Pay, and Samsung Pay.';
 
 /** Marketing + legal routes that should be indexed. */
 export const SEO_PAGES: PageSeo[] = [
   {
     path: '/',
-    title: `${BRAND} — Spend crypto anywhere`,
+    title: DEFAULT_TITLE,
     description: DEFAULT_DESC,
   },
   {
     path: '/about',
     title: `About ${BRAND}`,
-    description: `Learn about ${BRAND} — the crypto debit card built for reliable worldwide spending with Visa.`,
+    description: `Learn about ${BRAND} — the crypto card (크립토카드) built for reliable worldwide spending with Visa.`,
   },
   {
     path: '/contact',
@@ -41,7 +57,7 @@ export const SEO_PAGES: PageSeo[] = [
     path: '/faq',
     title: `FAQ | ${BRAND}`,
     description:
-      'Frequently asked questions about Anytap cards, KYC, top-ups, fees, security, and the referral program.',
+      'Frequently asked questions about the Anytap crypto card (크립토카드), KYC, top-ups, fees, security, and the referral program.',
   },
   {
     path: '/card-how-to-use',
@@ -59,7 +75,7 @@ export const SEO_PAGES: PageSeo[] = [
     path: '/card-benefits',
     title: `${BRAND} Card benefits`,
     description:
-      'Why Anytap Card: 60+ BIN redundancy, Apple Pay / Google Pay / Samsung Pay, and instant USDT top-up.',
+      'Why Anytap crypto card: 60+ BIN redundancy, Apple Pay / Google Pay / Samsung Pay, and instant USDT top-up.',
   },
   {
     path: '/card-application',
@@ -104,7 +120,8 @@ export const SEO_PAGES: PageSeo[] = [
   {
     path: '/innovation-market',
     title: `Crypto card market outlook | ${BRAND}`,
-    description: 'Market outlook for stablecoins and crypto debit cards with Anytap.',
+    description:
+      'Market outlook for stablecoins and crypto cards (크립토카드) with Anytap.',
   },
   {
     path: '/referral-why',
@@ -153,6 +170,7 @@ const NOINDEX_PREFIXES = [
   '/sign-up',
   '/forgot-password',
   '/account',
+  '/member',
   '/admin',
   '/demo',
   '/kyc',
@@ -223,6 +241,42 @@ export function absoluteUrl(path: string): string {
 
 export function defaultOgImage(): string {
   return DEFAULT_OG;
+}
+
+export function organizationJsonLd() {
+  return {
+    '@type': 'Organization' as const,
+    name: 'Anytap',
+    url: `${SITE_ORIGIN}/`,
+    logo: `${SITE_ORIGIN}/assets/anytap-logo.png`,
+    description: 'Crypto debit card enabling USDT spending anywhere Visa is accepted.',
+    contactPoint: {
+      '@type': 'ContactPoint' as const,
+      email: SUPPORT_EMAIL,
+      contactType: 'customer support',
+      availableLanguage: 'English',
+    },
+    sameAs: SOCIAL_LINKS.map((s) => s.href),
+  };
+}
+
+export function financialProductJsonLd() {
+  return {
+    '@type': 'FinancialProduct' as const,
+    name: 'Anytap Crypto Debit Card',
+    description:
+      'Physical and virtual Visa debit card. Top up with USDT or USDC and spend anywhere Visa is accepted.',
+    url: `${SITE_ORIGIN}/`,
+    provider: { '@type': 'Organization' as const, name: 'Anytap' },
+  };
+}
+
+/** Home page JSON-LD: Organization + FinancialProduct in one @graph. */
+export function homeSchemaGraph() {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [organizationJsonLd(), financialProductJsonLd()],
+  };
 }
 
 /** Public URLs for sitemap.xml (indexable marketing pages only). */

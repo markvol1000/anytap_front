@@ -1,5 +1,5 @@
 import { isValidElement, useEffect, useRef } from 'react';
-import { Icon } from './ui.jsx';
+import { Icon, OptimizedImg } from './ui.jsx';
 import { Link } from 'react-router-dom';
 import { onlineBrands, franchiseBrands } from '../utils/brands.js';
 import { resolveStepIcon } from '../utils/step-icon.js';
@@ -36,11 +36,14 @@ function SubHeroVideoBg({ src }) {
 function SubHeroReferralNetworkBg() {
   return (
     <div className="subhero__bg" aria-hidden="true">
-      <img
+      <OptimizedImg
+        webp="/assets/network.webp"
         src="/assets/network.png"
         alt=""
         className="subhero__bg-img subhero__bg-img--referral"
-        decoding="async"
+        width={1254}
+        height={1254}
+        loading="eager"
       />
     </div>
   );

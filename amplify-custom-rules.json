@@ -1,0 +1,27 @@
+[
+  {
+    "source": "/sitemap.xml",
+    "status": "200",
+    "target": "/sitemap.xml"
+  },
+  {
+    "source": "/sitemap.txt",
+    "status": "200",
+    "target": "/sitemap.txt"
+  },
+  {
+    "source": "/robots.txt",
+    "status": "200",
+    "target": "/robots.txt"
+  },
+  {
+    "source": "/api/v1/<*>",
+    "status": "200",
+    "target": "https://api.anytap.io/api/v1/<*>"
+  },
+  {
+    "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|jpeg|js|png|txt|svg|woff|woff2|json|webmanifest|mp4|mov|xml|webp|map|avif)$)([^.]+$)/>",
+    "status": "200",
+    "target": "/index.html"
+  }
+]
