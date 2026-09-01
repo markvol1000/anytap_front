@@ -1,13 +1,13 @@
 [
   {
-    "source": "https://www.anytap.io",
-    "status": "301",
-    "target": "https://anytap.io"
+    "source": "/sitemap.xml",
+    "status": "200",
+    "target": "/sitemap.xml"
   },
   {
-    "source": "https://www.anytap.io/<*>",
-    "status": "301",
-    "target": "https://anytap.io/<*>"
+    "source": "/robots.txt",
+    "status": "200",
+    "target": "/robots.txt"
   },
   {
     "source": "/api/v1/<*>",
