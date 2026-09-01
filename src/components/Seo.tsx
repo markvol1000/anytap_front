@@ -7,6 +7,8 @@ import {
   OG_IMAGE_HEIGHT,
   OG_IMAGE_WIDTH,
   resolveSeo,
+  SEO_KEYWORDS,
+  SEO_KNOWS_ABOUT,
 } from '../lib/seo.ts';
 import { SOCIAL_LINKS, SITE_ORIGIN, TWITTER_HANDLE } from '../lib/site.ts';
 
@@ -66,6 +68,7 @@ export function Seo() {
     document.title = seo.title;
 
     upsertMeta('name', 'description', seo.description);
+    upsertMeta('name', 'keywords', SEO_KEYWORDS);
     upsertMeta('name', 'robots', seo.noindex ? 'noindex, nofollow' : 'index, follow');
 
     upsertLink('canonical', url);
@@ -95,6 +98,7 @@ export function Seo() {
       name: 'Anytap',
       url: SITE_ORIGIN,
       sameAs: SOCIAL_LINKS.map((s) => s.href),
+      knowsAbout: [...SEO_KNOWS_ABOUT],
     });
   }, [pathname]);
 
