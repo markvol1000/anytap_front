@@ -47,16 +47,35 @@
     <script id="org-jsonld" type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "Anytap",
-        "url": "https://anytap.io",
-        "sameAs": [
-          "https://www.facebook.com/profile.php?id=61592647613275",
-          "https://www.tiktok.com/@anytap_global",
-          "https://x.com/anytapglobal",
-          "https://www.youtube.com/channel/UCi47HjYb-r4k0lJPGFuNBTg"
-        ],
-        "knowsAbout": ["crypto card", "크립토카드", "crypto debit card", "USDT Visa"]
+        "@graph": [
+          {
+            "@type": "Organization",
+            "name": "Anytap",
+            "url": "https://anytap.io/",
+            "logo": "https://anytap.io/assets/anytap-logo.png",
+            "description": "Crypto debit card enabling USDT spending anywhere Visa is accepted.",
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "email": "support@anytap.io",
+              "contactType": "customer support",
+              "availableLanguage": "English"
+            },
+            "sameAs": [
+              "https://www.facebook.com/profile.php?id=61592647613275",
+              "https://www.tiktok.com/@anytap_global",
+              "https://x.com/anytapglobal",
+              "https://www.youtube.com/channel/UCi47HjYb-r4k0lJPGFuNBTg"
+            ],
+            "knowsAbout": ["crypto card", "크립토카드", "crypto debit card", "USDT Visa"]
+          },
+          {
+            "@type": "FinancialProduct",
+            "name": "Anytap Crypto Debit Card",
+            "description": "Physical and virtual Visa debit card. Top up with USDT or USDC and spend anywhere Visa is accepted.",
+            "url": "https://anytap.io/",
+            "provider": { "@type": "Organization", "name": "Anytap" }
+          }
+        ]
       }
     </script>
 
