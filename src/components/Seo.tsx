@@ -55,6 +55,11 @@ export function Seo() {
 
     upsertMeta('name', 'description', seo.description);
     upsertMeta('name', 'robots', seo.noindex ? 'noindex, nofollow' : 'index, follow');
+    upsertMeta(
+      'name',
+      'naver-site-verification',
+      '2a5e4bf4f2722aaa22f035db9d83d2008d4d582d',
+    );
 
     upsertLink('canonical', url);
 
