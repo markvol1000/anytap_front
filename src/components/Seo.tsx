@@ -12,12 +12,8 @@ import {
   SEO_KEYWORDS,
   SEO_KNOWS_ABOUT,
 } from '../lib/seo.ts';
-<<<<<<< HEAD
-import { TWITTER_HANDLE } from '../lib/site.ts';
-=======
 import { faqPageJsonLd } from '../lib/home-faq.ts';
-import { SOCIAL_LINKS, SITE_ORIGIN, TWITTER_HANDLE } from '../lib/site.ts';
->>>>>>> origin/cursor/seo-04-faq-schema-4904
+import { TWITTER_HANDLE } from '../lib/site.ts';
 
 function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
   const selector = `meta[${attr}="${key}"]`;
