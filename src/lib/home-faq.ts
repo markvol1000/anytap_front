@@ -4,44 +4,72 @@ export interface HomeFaqItem {
 }
 
 /**
- * Homepage FAQ copy.
- * Source of truth pending final review from the team Telegram FAQ document —
- * entries below mirror portal support FAQ + card marketing Q&A until that doc is pasted in.
+ * Homepage FAQ — 보강판 2-7-B 확정 10문항.
+ * Visible copy and FAQPage JSON-LD must stay in sync.
  */
 export const HOME_FAQ: HomeFaqItem[] = [
   {
     question: 'What is Anytap?',
     answer:
-      'Anytap is a crypto debit card that lets you spend USDT and USDC anywhere Visa is accepted — online, in-store, and via Apple Pay, Google Pay, or Samsung Pay.',
+      'Anytap is a cryptocurrency debit card service. Load USDT onto your card and use it at Visa merchants worldwide for online payments, offline purchases, and ATM withdrawals. No bank account required.',
   },
   {
-    question: 'How long does a USDT top-up take?',
+    question: 'What cryptocurrency is supported for top-up?',
     answer:
-      'Most deposits credit your card within 1–5 minutes after on-chain confirmation. TRC-20 (TRON) is recommended for the fastest and cheapest settlement.',
+      'USDT via the TRC-20 network is supported, with a minimum top-up of 30 USDT. TRC-20 offers low network fees and fast processing.',
   },
   {
-    question: 'Which network should I use for deposits?',
-    answer:
-      'Only TRC-20 (TRON) for USDT. Deposits sent on any other network may be permanently lost. Always copy your Anytap deposit address carefully.',
+    question: 'What is the virtual card issuance fee?',
+    answer: 'The virtual card issuance fee is 20 USDT.',
   },
   {
-    question: 'What is the difference between virtual and physical cards?',
+    question: 'How long does a top-up take to appear?',
     answer:
-      'The Physical Card uses the Visa network for offline payments and ATM withdrawals. The virtual card is scheduled to launch after November.',
+      'TRC-20 transactions are typically reflected within 1 to 2 minutes after on-chain confirmation. Delays may occur during network congestion.',
   },
   {
-    question: 'Who can apply for an Anytap card?',
+    question: 'Can I withdraw cash from ATMs?',
     answer:
-      'Anyone 18 or older with a valid passport or driver’s license can apply. No traditional bank account is required — just complete KYC and apply for a physical Visa card.',
+      'Yes. ATM withdrawals are available with the physical Visa card. The withdrawal fee is 2% (minimum $1). Daily withdrawal limit: $1,500 (up to 30 transactions). Monthly limit: $15,000. Singapore does not support ATM withdrawal.',
   },
   {
-    question: 'Why was my deposit not credited?',
+    question: 'Is a bank account required to apply?',
     answer:
-      'Some exchanges restrict withdrawals to non-whitelisted wallets. Confirm your exchange allows transfers to your Anytap deposit address, and that you used TRC-20.',
+      'No. You can apply for and use an Anytap card with just an email address and cryptocurrency. No bank account is required.',
   },
   {
-    question: 'Is Apple Pay / Google Pay / Samsung Pay supported?',
+    question: 'What is the cross-border transaction fee?',
     answer:
-      'Google Pay is supported on the physical Visa card. Apple Pay support is under review. Samsung Pay is planned starting November 2026.',
+      'A cross-border transaction fee of 1% plus $0.30 applies per transaction when spending in currencies other than USD.',
+  },
+  {
+    question: 'Can I send USDT from a Korean domestic exchange?',
+    answer:
+      'Direct transfers from Korean domestic exchanges may be restricted under Travel Rule regulations depending on the exchange and amount. Please check the exchange policy before transferring.',
+  },
+  {
+    question: 'How does the referral program work?',
+    answer:
+      'The Anytap referral program pays a portion of card issuance and top-up fees to referrers when referred members issue cards and top up. Silver and Premium tiers are available, with higher rewards at Premium. Commissions are settled monthly in USDT, with a minimum payout of $1.',
+  },
+  {
+    question: 'Which countries are restricted?',
+    answer:
+      'Card issuance is unavailable in a defined list of restricted countries due to compliance requirements. Details are available in the Terms of Service.',
   },
 ];
+
+export function faqPageJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: HOME_FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  };
+}
