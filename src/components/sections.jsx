@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useHeroCardArc } from '../hooks/useHeroCardArc.js';
 import { useCountUp } from '../hooks/useCountUp.js';
+import mainPayImg from '/assets/main_pay_img.png';
 import { Icon, HeroCard, OptimizedImg, PayBrand } from './ui.jsx';
 
 // ─────────────── Hero ───────────────
@@ -141,8 +142,7 @@ function MobilePay() {
         <div className="mobilepay__halo"></div>
         <div className="mobilepay__stack">
           <OptimizedImg
-            webp="/assets/main_pay_img.webp"
-            src="/assets/main_pay_img.png"
+            src={mainPayImg}
             alt="Anytap app on phone — wallet and recent activity"
             className="mobilepay__phone"
             width={1700}
