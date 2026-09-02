@@ -9,7 +9,7 @@ import {
   AdminDetailSection,
   AdminSplitLayout,
 } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge, formatAdminDate, shortenAddress } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAdminDate, formatAmountWithCurrency, shortenAddress } from '../components/AdminStatusBadge.jsx';
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
@@ -608,7 +608,7 @@ export function CardsPage() {
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                                 <span style={{ fontWeight: '700', color: '#047857' }}>
-                                  ${Number(t.amount || t.transAmount || 0).toFixed(2)}
+                                  {formatAmountWithCurrency(t.originalAmount ?? t.amount ?? t.transAmount ?? 0, t.originalCurrency || t.currency || t.authorizedCurrency || 'USD')}
                                 </span>
                                 <span style={{
                                   fontSize: '9px',

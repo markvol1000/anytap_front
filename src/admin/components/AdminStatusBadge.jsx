@@ -63,6 +63,9 @@ export function formatAmountWithCurrency(amount, currency = 'USDT') {
 
   const code = String(currency || 'USDT').toUpperCase().trim();
 
+  if (code === 'IDR' || code === 'RP') {
+    return `${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} IDR`;
+  }
   if (code === 'KRW' || code === '₩') {
     return `${num.toLocaleString('ko-KR', { maximumFractionDigits: 0 })} KRW`;
   }
