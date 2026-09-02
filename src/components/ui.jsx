@@ -229,9 +229,9 @@ function HeroCard({ variant = 'light', alt }) {
   );
 }
 
-/** Raster image. WebP <source> is unused: Amplify's SPA rewrite currently
- *  serves index.html for *.webp, so browsers that pick WebP show a broken
- *  image and never fall back to the JPEG/PNG `src`. */
+/** Raster image. WebP <source> is intentionally unused: Amplify's SPA rewrite
+ *  currently serves index.html for *.webp, so browsers that pick WebP show a
+ *  broken image and never fall back to the JPEG/PNG `src`. */
 function OptimizedImg({
   src,
   alt,
