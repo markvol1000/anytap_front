@@ -4,9 +4,9 @@
  */
 
 function pickAmount(record) {
-  const raw = record?.authorizedAmount
+  const raw = record?.amount
+    ?? record?.authorizedAmount
     ?? record?.settleAmount
-    ?? record?.amount
     ?? record?.receivedAmount
     ?? 0;
   return Math.abs(Number(raw) || 0);
@@ -20,7 +20,7 @@ function pickCurrency(record) {
   if (explicitCurr && String(explicitCurr).trim()) {
     return String(explicitCurr).trim().toUpperCase();
   }
-  return (record?.kind === 'card_spend' || record?.kind === 'refund' || record?.kind === 'reversal' ? 'USD' : 'USDT');
+  return 'USD';
 }
 
 function pickTimestamp(record) {

@@ -13,8 +13,8 @@ export function ActivityAmount({ amount, incoming, failed, kind, large = false, 
   const origCurr = item?.originalCurrency;
   const useOriginal = origAmt && origCurr;
 
-  const displayAmt = useOriginal ? origAmt : (item?.amount ?? amount);
-  const displayCurr = useOriginal ? origCurr : (item?.currency || (kind === 'card_spend' || kind === 'refund' || kind === 'reversal' ? 'USD' : 'USDT'));
+  const displayAmt = item?.originalAmount ?? item?.amount ?? amount;
+  const displayCurr = item?.originalCurrency || item?.currency || item?.authorizedCurrency || (kind === 'card_spend' || kind === 'refund' || kind === 'reversal' ? 'USD' : 'USDT');
 
   const { sign, value } = A.formatActivityAmountParts(amount, incoming, kind, item);
   const val = value || Math.abs(Number(displayAmt) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

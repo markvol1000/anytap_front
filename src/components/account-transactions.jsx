@@ -216,11 +216,6 @@ export function TxDetailSheet({ tx, onClose }) {
           )}
           <DetailRow label="Transaction Type">{tx.typeLabel}</DetailRow>
           <DetailRow label="Amount">{A.formatActivityAmount(tx.amount, tx.incoming, tx.kind, tx)}</DetailRow>
-          {tx.originalAmount && tx.originalCurrency && (
-            <DetailRow label="Original Billing Amount">
-              {A.formatActivityAmountParts(tx.amount, tx.incoming, tx.kind, tx).sign}{tx.originalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {tx.originalCurrency}
-            </DetailRow>
-          )}
           <DetailRow label="Date & Time">{A.formatActivityDateTime(tx.at)}</DetailRow>
           <DetailRow label="Status">
             <span className={`portal-tx-detail__status-badge portal-tx-detail__status-badge--${status}`}>
@@ -360,7 +355,7 @@ export function TransactionsPage({ items = [], initialScope = 'all', initialCard
     let list = items;
     if (liveCardTxs != null) {
       const localTxs = items.filter((item) => item.kind !== 'card_spend' && item.kind !== 'refund' && item.kind !== 'reversal');
-      list = [...localTxs, ...liveCardTxs];
+      list = [...liveCardTxs, ...localTxs];
     }
     const seen = new Set();
     return list.filter((item) => {

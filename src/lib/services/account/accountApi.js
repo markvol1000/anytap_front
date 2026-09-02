@@ -454,7 +454,9 @@ export async function fetchLocalTransactions(userId) {
         cardId: tx.cardId || tx.cardNo || tx.wasabiCardId || '',
         wasabiCardId: tx.wasabiCardId || tx.cardId || tx.cardNo || '',
         reference: tx.txId ? tx.txId.slice(0, 10).toUpperCase() : '',
-        currency: tx.currency || tx.coinType || (type === 'CARD_SPEND' ? 'KRW' : 'USDT'),
+        currency: tx.currency || tx.originalCurrency || tx.coinType || (type === 'CARD_SPEND' || type === 'CARD_CHARGE' ? 'USD' : 'USDT'),
+        originalCurrency: tx.originalCurrency || tx.currency || (type === 'CARD_SPEND' || type === 'CARD_CHARGE' ? 'USD' : 'USDT'),
+        originalAmount: tx.originalAmount ?? tx.amount ?? 0,
         description: tx.description || '',
       };
     });
@@ -535,7 +537,8 @@ export async function fetchAccountContext() {
         }
         return tx;
       });
-      const combined = [...normalizedLocalTxs, ...cardTxs];
+      // Wasabi API card transactions are primary source of truth — place them first!
+      const combined = [...cardTxs, ...normalizedLocalTxs];
       const dedupMap = new Map();
       for (const item of combined) {
         const rawId = String(item.id || item.txId || item.reference || '');
@@ -546,8 +549,12 @@ export async function fetchAccountContext() {
           dedupMap.set(cleanKey, item);
         } else {
           const existing = dedupMap.get(cleanKey);
-          const existingIsCompleted = existing.status === 'completed' || existing.status === 'approved' || existing.status === 'success';
-          if (isCompleted && !existingIsCompleted) {
+          // Always prefer Wasabi API record if existing is from local DB
+          const existingIsWasabi = existing?.wasabiCardId || existing?.cardNetwork || existing?.originalCurrency;
+          const currentIsWasabi = item?.wasabiCardId || item?.cardNetwork || item?.originalCurrency;
+          if (currentIsWasabi && !existingIsWasabi) {
+            dedupMap.set(cleanKey, item);
+          } else if (isCompleted && existing?.status !== 'completed' && existing?.status !== 'approved' && existing?.status !== 'success') {
             dedupMap.set(cleanKey, item);
           }
         }
