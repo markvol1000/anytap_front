@@ -229,9 +229,10 @@ function HeroCard({ variant = 'light', alt }) {
   );
 }
 
-/** WebP with original fallback. `display: contents` keeps img layout identical. */
+/** Raster image. WebP <source> is intentionally unused: Amplify's SPA rewrite
+ *  currently serves index.html for *.webp, so browsers that pick WebP show a
+ *  broken image and never fall back to the JPEG/PNG `src`. */
 function OptimizedImg({
-  webp,
   src,
   alt,
   className,
@@ -242,7 +243,6 @@ function OptimizedImg({
 }) {
   return (
     <picture className="opt-img">
-      {webp ? <source type="image/webp" srcSet={webp} /> : null}
       <img
         src={src}
         alt={alt}
