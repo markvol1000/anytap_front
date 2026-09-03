@@ -4,7 +4,7 @@
 // TODO: Replace mock card data with Wasabi API card detail endpoint
 // TODO: Replace mock email OTP with real email verification (Supabase Auth / custom OTP)
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as A from '../../lib/account-data.js';
 import { sendCardSecureCode, revealCardDetails } from '../../lib/services/accountService.js';
 
@@ -13,6 +13,12 @@ export function AccountCardDetailsPanel({ s }) {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [revealedDetails, setRevealedDetails] = useState(null);
   const card = s.currentCard;
+
+  useEffect(() => {
+    setVerifyCode('');
+    setVerifyLoading(false);
+    setRevealedDetails(null);
+  }, [card?.id]);
 
   // Compute card fields based on revealed details or fallback
   const fullNumber = revealedDetails?.cardNo 

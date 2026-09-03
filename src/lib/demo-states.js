@@ -333,7 +333,7 @@ export const DEMO_MEMBER_STATES = [
     label: 'Wallet Top Up · 개인 지갑',
     email: 'active-card@anytap.io',
     loginId: 'active001',
-    note: '⑥ 개인 Cregis 지갑 충전 (발급비 주소와 다름)',
+    note: '⑥ 개인 USDT 지갑 충전 (발급비 주소와 다름)',
     path: '/account/topup',
     apiNeeds: [
       'cregisWalletAddress',

@@ -19,7 +19,8 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
 
   if (!open) return null;
 
-  const card = s.activePhysicalTargetCard ?? s.currentCard;
+  const unactivatedCard = s.userCards?.find((c) => c?.status === 'issued' || c?.linkStatus === 'issued');
+  const card = s.activePhysicalTargetCard ?? unactivatedCard ?? s.currentCard;
   const cardNoDisplay = card?.last4 ? `Card ending in ${card.last4}` : 'Physical Card';
   const isAlreadyActive = card?.status === 'active';
   const hasSecureCode = card?.hasSecureCode !== false;
@@ -70,7 +71,7 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
 
     setLoading(true);
     try {
-      const cardNoRaw = card?.cardNo ?? card?.id ?? '';
+      const cardNoRaw = card?.wasabiCardId ?? card?.cardNo ?? card?.id ?? '';
       const result = await activatePhysicalCard(cardNoRaw, pin.trim(), ''); // activeCode is resolved by backend
       if (result.ok) {
         s.showToast?.('Physical card activated successfully!');

@@ -41,6 +41,24 @@ function formatTxStatus(tx) {
 }
 
 export function CardsDesktopInfoPanel({ card, s }) {
+  if (!card) {
+    return (
+      <div style={{ padding: '24px', background: 'var(--portal-paper)', borderRadius: 'var(--radius-card)', border: '1px solid var(--portal-border)' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '12px' }}>Apply New Card</h3>
+        <p style={{ fontSize: '14px', color: 'var(--portal-muted)', lineHeight: '1.5', marginBottom: '20px' }}>
+          Expand your spending options. Issue a new Virtual or Physical Visa card instantly.
+        </p>
+        <button
+          type="button" 
+          className="portal-btn-primary"
+          style={{ width: '100%', height: '48px', borderRadius: '12px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}
+          onClick={() => s.go?.('cardApply')}
+        >
+          + Apply New Card
+        </button>
+      </div>
+    );
+  }
   if (card && card.status === 'issued') {
     return (
       <div style={{ padding: '24px', background: 'var(--portal-paper)', borderRadius: 'var(--radius-card)', border: '1px solid var(--portal-border)' }}>
@@ -51,8 +69,7 @@ export function CardsDesktopInfoPanel({ card, s }) {
         <button
           type="button" 
           className="portal-btn-primary"
-          disabled="disabled"
-          style={{ width: '100%', height: '48px', borderRadius: '12px', fontSize: '15px', fontWeight: '600' }}
+          style={{ width: '100%', height: '48px', borderRadius: '12px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}
           onClick={() => s.openActivePhysical(card)}
         >
           Activate Card
@@ -439,13 +456,15 @@ export function AccountMyCardsDesktop({ s }) {
       const idx = userCards.findIndex((c) => c.id === card.id);
       if (idx >= 0) setSelectedCardIndex(idx);
     }
-  }, [carouselSlots, setSelectedCardIndex, userCards]);
+    s.resetCardDetails?.();
+  }, [carouselSlots, setSelectedCardIndex, userCards, s]);
 
   if (!userCards.length) {
     return <MyCardsEmptyState s={s} />;
   }
 
-  const selectedCard = carouselSlots[deskSlide] ?? userCards[selectedCardIndex] ?? userCards[0];
+  const isAddSlot = deskSlide >= 0 && deskSlide < carouselSlots.length && carouselSlots[deskSlide] === null;
+  const selectedCard = isAddSlot ? null : (carouselSlots[deskSlide] ?? userCards[selectedCardIndex] ?? userCards[0]);
   const showPager = carouselSlots.length > 1;
 
   return (
@@ -475,9 +494,7 @@ export function AccountMyCardsDesktop({ s }) {
         </div>
 
         <div className="portal-mycards-desk__col portal-mycards-desk__col--info">
-          {selectedCard && (
-            <CardsDesktopInfoPanel key={selectedCard.id} card={selectedCard} s={s} />
-          )}
+          <CardsDesktopInfoPanel key={selectedCard?.id ?? deskSlide} card={selectedCard} s={s} />
         </div>
       </div>
     </div>

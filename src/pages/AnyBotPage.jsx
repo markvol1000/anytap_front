@@ -47,7 +47,7 @@ export function AnyBotPage() {
 | :--- | :--- | :--- | :--- |
 | **API Server** | Normal (Healthy) | 12ms | Spring Boot ALB |
 | **Database** | Normal (Active) | 4ms | MariaDB RDS |
-| **Payment Gateway** | Active | 45ms | Wasabi & Cregis |
+| **Payment Gateway** | Active | 45ms | Global Payment Rails |
 | **Gemini AI** | Connected | 85ms | Gemini 3.6 Flash |
 
 궁금하신 내용이나 시스템 질문을 편하게 입력해 주세요!`,

@@ -189,32 +189,29 @@ export function AccountCardRegister({ s }) {
     let pollInterval = setInterval(async () => {
       try {
         await s.reloadAccount?.();
-        const primaryCard = s.userCards?.[0] || null;
-        if (primaryCard?.id || primaryCard?.wasabiCardId) {
-          setRegisteredWasabiCardId(primaryCard.id || primaryCard.wasabiCardId);
-        }
-        const cardStatus = s.accountState?.cardStatus;
-        if (primaryCard || cardStatus === 'issued' || cardStatus === 'active') {
+        // Strictly match by Wasabi Card ID as the unique key
+        const matchedCard = registeredWasabiCardId
+          ? s.userCards?.find((c) => String(c?.wasabiCardId || c?.cardNo || c?.id || '') === registeredWasabiCardId)
+          : null;
+
+        // Webhook is confirmed ONLY when Wasabi activation_code webhook has arrived and saved secureCode in DB!
+        const hasSecureCode = matchedCard?.hasSecureCode === true;
+        const isReady = matchedCard && (hasSecureCode || matchedCard?.status === 'active');
+
+        if (isReady) {
           setWebhookReceived(true);
-          s.showToast?.('Activation signal received from network! You can now set your PIN.');
+          s.showToast?.('Network signal received! You can now activate your card.');
           clearInterval(pollInterval);
         }
       } catch (err) {
         console.error('Error polling activation signal:', err);
       }
-    }, 2500);
-
-    // Auto fallback trigger after 2.5s to guarantee seamless flow
-    const fallbackTimer = setTimeout(() => {
-      setWebhookReceived(true);
-      clearInterval(pollInterval);
-    }, 2500);
+    }, 2000);
 
     return () => {
       clearInterval(pollInterval);
-      clearTimeout(fallbackTimer);
     };
-  }, [isRegistered, webhookReceived, s]);
+  }, [isRegistered, webhookReceived, registeredWasabiCardId, s]);
 
   // Step 1 Handler: Register / Bind Card
   const handleRegisterOnly = async () => {
@@ -417,7 +414,12 @@ export function AccountCardRegister({ s }) {
             {isRegistered && !webhookReceived && (
               <span style={{ fontSize: '12px', color: '#D69E2E', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '500' }}>
                 <span className="portal-spin" style={{ width: '12px', height: '12px' }} />
-                <span>Waiting for webhook signal...</span>
+                <span>Waiting for network callback...</span>
+              </span>
+            )}
+            {isRegistered && webhookReceived && (
+              <span style={{ fontSize: '12px', color: '#38A169', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '500' }}>
+                <span>✓ Network confirmed</span>
               </span>
             )}
           </div>
@@ -467,6 +469,11 @@ export function AccountCardRegister({ s }) {
             <span style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
               <span className="portal-spin" style={{ width: '16px', height: '16px' }} aria-label="Activating" />
               <span>Activating...</span>
+            </span>
+          ) : isRegistered && !webhookReceived ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+              <span className="portal-spin" style={{ width: '16px', height: '16px' }} />
+              <span>Waiting for Network Signal...</span>
             </span>
           ) : 'Activate Card'}
         </button>

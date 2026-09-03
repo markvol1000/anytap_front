@@ -342,23 +342,25 @@ export function useAccountState() {
       setShowCvv(false);
       setVerifyCodeSent(false);
     }
+    const targetPendingCard = userCards.find((c) => c?.status === 'issued' || c?.status === 'pending_activation') || currentCard;
     if (def.nextScreen) go(def.nextScreen);
     else if (def.cta === 'Start KYC') go('kyc');
     else if (def.cta === 'Contact Support') go('support');
-    else if (def.cta === 'Activate Card') openActivePhysical(currentCard);
+    else if (def.cta === 'Activate Card') openActivePhysical(targetPendingCard);
     else if (def.cta === 'Track Delivery') showToast('Tracking link coming soon');
-  }, [copy, go, showToast, walletAddress, openActivePhysical, currentCard]);
+  }, [copy, go, showToast, walletAddress, openActivePhysical, currentCard, userCards]);
 
   const handleSecondaryCta = useCallback((def) => {
+    const targetPendingCard = userCards.find((c) => c?.status === 'issued' || c?.status === 'pending_activation') || currentCard;
     if (def.secondaryAction === 'copyAddress') {
       if (!walletAddress) {
         showToast('No wallet address yet');
         return;
       }
       copy(walletAddress, 'Address copied');
-    } else if (def.secondaryAction === 'activate') openActivePhysical(currentCard);
+    } else if (def.secondaryAction === 'activate') openActivePhysical(targetPendingCard);
     else if (def.secondaryAction === 'viewCard') go('card');
-  }, [copy, go, showToast, walletAddress, openActivePhysical, currentCard]);
+  }, [copy, go, showToast, walletAddress, openActivePhysical, currentCard, userCards]);
 
   // ── Referral ──────────────────────────────────────────────────────────────
   const applyReferralPartner = useCallback(async () => {

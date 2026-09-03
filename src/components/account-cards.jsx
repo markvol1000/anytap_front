@@ -1020,6 +1020,7 @@ export function CardInformationPanel({ card, s, className = '' }) {
   const isVerified = Boolean(s?.isCardDetailVerified);
 
   useEffect(() => {
+    s?.resetCardDetails?.();
     setVerifyCode('');
     setVerifyLoading(false);
   }, [card?.id, revealOpen]);
@@ -1266,7 +1267,7 @@ export function AccountMyCards({ s }) {
                 <button
                   type="button"
                   className="portal-btn-primary"
-                  style={{ width: '100%', height: '48px', borderRadius: '12px', fontSize: '15px', fontWeight: '600' }}
+                  style={{ width: '100%', height: '48px', borderRadius: '12px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}
                   onClick={() => s.openActivePhysical(selectedCard)}
                 >
                   Activate Card

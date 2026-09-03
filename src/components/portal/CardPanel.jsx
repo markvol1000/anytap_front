@@ -48,7 +48,8 @@ export function CardPanel({
       const idx = userCards.findIndex((c) => c.id === card.id);
       if (idx >= 0) setSelectedCardIndex(idx);
     }
-  }, [setSelectedCardIndex, sliderSlots, userCards]);
+    s.resetCardDetails?.();
+  }, [setSelectedCardIndex, sliderSlots, userCards, s]);
 
   const showPager = sliderSlots.length > 1;
   const showMaxHint = cardCount >= A.MAX_CARDS_PER_USER;

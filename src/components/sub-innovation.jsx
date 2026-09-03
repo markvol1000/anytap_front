@@ -8,13 +8,13 @@ import { Icon } from './ui.jsx';
 function PartnerTrust() {
   const partners = [
     {
-      name: "Wasabi",
+      name: "Global Card Rails",
       role: "Card-issuing infrastructure",
       body: "Global BIN sponsorship and card-issuing rails behind Anytap's 60+ BIN redundancy — the backbone that keeps cards live.",
       tags: ["Visa principal program", "PCI DSS Level 1"],
     },
     {
-      name: "Cregis",
+      name: "Enterprise Custody",
       role: "Wallet & custody infrastructure",
       body: "Enterprise-grade wallet orchestration and on-chain settlement, so customer balances stay non-custodial and auditable.",
       tags: ["MPC wallet security", "On-chain settlement"],
