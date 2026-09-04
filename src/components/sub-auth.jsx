@@ -112,6 +112,32 @@ function applyAuthError(result, { showToast, setFieldHint, setErrorFields }) {
   }
 }
 
+function applySignupError(result, { showToast, setHints, setErrors }) {
+  const code = typeof result === 'string' ? result : result?.code;
+  const customMsg = typeof result === 'object' ? result?.message : null;
+  const err = AUTH_ERRORS[code] || SIGNUP_ERRORS[code];
+
+  const toastMsg = customMsg || err?.toast || err?.hint || 'Sign up failed. Please check your information and try again.';
+  showToast(toastMsg);
+
+  if (err) {
+    const hintMsg = customMsg || err.hint || '';
+    setHints((prev) => ({
+      ...prev,
+      email: err.fields?.includes('email') ? hintMsg : prev.email,
+      password: err.fields?.includes('password') ? hintMsg : prev.password,
+    }));
+    setErrors((prev) => ({
+      ...prev,
+      email: err.fields?.includes('email') || prev.email,
+      password: err.fields?.includes('password') || prev.password,
+    }));
+  } else {
+    setHints((prev) => ({ ...prev, email: customMsg || 'Sign up failed. Please try again.' }));
+    setErrors((prev) => ({ ...prev, email: true }));
+  }
+}
+
 // ─────────────── Login ───────────────
 function LoginPage() {
   const navigate = useNavigate();
@@ -394,7 +420,7 @@ function SignUpPage() {
         referral: finalReferral,
       });
       if (!sent.ok) {
-        applySignupError(sent.code, { showToast, setHints, setErrors });
+        applySignupError(sent, { showToast, setHints, setErrors });
         return;
       }
       const payload = saveSignupPending({

@@ -32,7 +32,7 @@ export function loginIdOk(loginId) {
 }
 
 function mapLoginError(err) {
-  const message = err?.message || '';
+  const message = err?.message || err?.data?.message || err?.data?.msg || '';
   const msg = message.toLowerCase();
   if (msg.includes('locked')) {
     return { ok: false, code: 'LOCKED', message: 'Account locked due to 10 failed login attempts. Please reset your password.' };
@@ -40,14 +40,14 @@ function mapLoginError(err) {
   if (msg.includes('suspended')) {
     return { ok: false, code: 'SUSPENDED', message: 'Account is suspended. Please contact support.' };
   }
-  if (err?.status === 401 || msg.includes('invalid') || msg.includes('password')) {
-    return { ok: false, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' };
+  if (msg.includes('email') && (msg.includes('exist') || msg.includes('duplicate') || msg.includes('already'))) {
+    return { ok: false, code: 'EMAIL_EXISTS', message: 'This email is already registered.' };
   }
-  if (msg.includes('email') && msg.includes('duplicate')) {
-    return { ok: false, code: 'EMAIL_EXISTS', message: 'Email already exists.' };
-  }
-  if (msg.includes('login') && msg.includes('duplicate')) {
+  if (msg.includes('login') && (msg.includes('exist') || msg.includes('duplicate') || msg.includes('already'))) {
     return { ok: false, code: 'EMAIL_EXISTS', message: 'Login ID already exists.' };
+  }
+  if (err?.status === 401 || msg.includes('invalid credential') || msg.includes('incorrect password')) {
+    return { ok: false, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' };
   }
   return { ok: false, code: 'SERVER_ERROR', message: message || 'Server error. Please try again.' };
 }
