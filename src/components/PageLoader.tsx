@@ -7,7 +7,7 @@ type PageLoaderProps = {
 };
 
 /** Keep a loading screen visible long enough to paint (avoids a white flash). */
-export function holdAtLeast(startedAt: number, minMs = 500): Promise<void> {
+export function holdAtLeast(startedAt: number, minMs = 800): Promise<void> {
   const left = minMs - (Date.now() - startedAt);
   if (left <= 0) return Promise.resolve();
   return new Promise((resolve) => {
@@ -21,7 +21,7 @@ type HoldPageLoaderProps = {
 };
 
 /** Shows PageLoader for at least minMs after this tree mounts (lazy route entry). */
-export function HoldPageLoader({ children, minMs = 500 }: HoldPageLoaderProps) {
+export function HoldPageLoader({ children, minMs = 800 }: HoldPageLoaderProps) {
   const [held, setHeld] = useState(true);
 
   useEffect(() => {
@@ -37,18 +37,27 @@ export function HoldPageLoader({ children, minMs = 500 }: HoldPageLoaderProps) {
   );
 }
 
-export function PageLoader({ fullScreen = true, label = 'Loading…' }: PageLoaderProps) {
+export function PageLoader({ fullScreen = true, label = 'Loading' }: PageLoaderProps) {
   return (
     <div
       className={fullScreen ? 'page-loader' : 'page-loader page-loader--inline'}
       role="status"
       aria-live="polite"
       aria-busy="true"
+      aria-label={label}
     >
       <div className="page-loader__inner">
-        <img src={logoUrl} alt="Anytap" className="page-loader__logo" />
-        <span className="page-loader__spinner" aria-hidden="true" />
-        <p className="page-loader__label">{label}</p>
+        <img src={logoUrl} alt="" className="page-loader__logo" />
+        <div className="page-loader__clock" aria-hidden="true">
+          <span className="page-loader__clock-tick page-loader__clock-tick--12" />
+          <span className="page-loader__clock-tick page-loader__clock-tick--3" />
+          <span className="page-loader__clock-tick page-loader__clock-tick--6" />
+          <span className="page-loader__clock-tick page-loader__clock-tick--9" />
+          <span className="page-loader__clock-hand page-loader__clock-hand--hour" />
+          <span className="page-loader__clock-hand page-loader__clock-hand--minute" />
+          <span className="page-loader__clock-hand page-loader__clock-hand--second" />
+          <span className="page-loader__clock-center" />
+        </div>
       </div>
     </div>
   );
