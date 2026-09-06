@@ -1,4 +1,5 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from '../../components/ui.jsx';
 
 const OPS_NAV = [
@@ -39,7 +40,7 @@ function initials(name) {
     .toUpperCase();
 }
 
-function NavItems({ items }) {
+function NavItems({ items, onItemClick }) {
   const location = useLocation();
   const currentPath = location.pathname;
 
@@ -48,6 +49,7 @@ function NavItems({ items }) {
       key={item.to}
       to={item.to}
       end={item.end}
+      onClick={onItemClick}
       className={({ isActive }) => {
         const isPrefixActive = !item.end && item.to !== '/admin' && currentPath.startsWith(item.to);
         const isDashActive = item.end && (currentPath === '/admin' || currentPath === '/admin/' || currentPath === '/admin/dashboard');
@@ -60,35 +62,175 @@ function NavItems({ items }) {
 }
 
 export function AdminSidebar({ admin }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+  const currentPath = location.pathname;
+
+  // Identify current page title for mobile topbar
+  const allNav = [...OPS_NAV, ...SYSTEM_NAV];
+  const currentPage = allNav.find((it) =>
+    it.end
+      ? currentPath === it.to || currentPath === `${it.to}/` || currentPath === '/admin/dashboard'
+      : currentPath.startsWith(it.to)
+  );
+  const pageTitle = currentPage ? currentPage.label : 'Ops Console';
+
+  // Automatically close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && mobileOpen) {
+        setMobileOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mobileOpen]);
+
   return (
-    <aside className="admin-sidebar">
-      <div className="admin-sidebar__brand">
-        <div className="admin-sidebar__logo">
-          <Icon name="shieldCheck" size={24} />
+    <>
+      {/* ── Desktop Sidebar (Hidden on mobile < 768px via CSS) ── */}
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar__brand">
+          <div className="admin-sidebar__logo">
+            <Icon name="shieldCheck" size={24} />
+          </div>
+          <div className="admin-sidebar__brand-text">
+            <strong className="admin-sidebar__title">AnyTap Admin</strong>
+            <span className="admin-sidebar__subtitle">Ops Console</span>
+          </div>
         </div>
-        <div className="admin-sidebar__brand-text">
-          <strong className="admin-sidebar__title">AnyTap Admin</strong>
-          <span className="admin-sidebar__subtitle">Ops Console</span>
+
+        <nav className="admin-sidebar__nav">
+          <div className="admin-sidebar__section-label">OPERATIONS</div>
+          <NavItems items={OPS_NAV} />
+
+          <div className="admin-sidebar__section-label" style={{ marginTop: '20px' }}>SYSTEM</div>
+          <NavItems items={SYSTEM_NAV} />
+        </nav>
+
+        <div className="admin-sidebar__foot">
+          <div className="admin-sidebar__profile">
+            <div className="admin-sidebar__avatar">
+              {initials(admin?.name || admin?.email || 'Admin')}
+            </div>
+            <div className="admin-sidebar__profile-body">
+              <div className="admin-sidebar__user">{admin?.name || admin?.email?.split('@')[0] || 'Admin'}</div>
+              <div className="admin-sidebar__role">{formatRole(admin?.role)}</div>
+            </div>
+          </div>
         </div>
+      </aside>
+
+      {/* ── Mobile Sticky Topbar (Visible only on mobile < 768px via CSS) ── */}
+      <header className="admin-mobile-header">
+        <div className="admin-mobile-header__brand">
+          <div className="admin-sidebar__logo" style={{ color: '#fff' }}>
+            <Icon name="shieldCheck" size={22} />
+          </div>
+          <div className="admin-mobile-header__titles">
+            <strong className="admin-mobile-header__title">AnyTap Admin</strong>
+            <span className="admin-mobile-header__subtitle">{pageTitle}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="admin-mobile-header__burger"
+          onClick={() => setMobileOpen((prev) => !prev)}
+          aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={mobileOpen}
+        >
+          <Icon name={mobileOpen ? 'close' : 'menu'} size={22} />
+        </button>
+      </header>
+
+      {/* ── Mobile Slide-Over Drawer with Blurred Backdrop ── */}
+      <div
+        className={`admin-mobile-drawer${mobileOpen ? ' is-open' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Admin Navigation Menu"
+        aria-hidden={!mobileOpen}
+      >
+        {/* Backdrop with Blur */}
+        <div
+          className="admin-mobile-drawer__backdrop"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close menu backdrop"
+        />
+
+        {/* Drawer Panel */}
+        <aside className="admin-mobile-drawer__panel">
+          <div className="admin-mobile-drawer__head">
+            <div className="admin-sidebar__brand" style={{ padding: 0 }}>
+              <div className="admin-sidebar__logo">
+                <Icon name="shieldCheck" size={22} />
+              </div>
+              <div className="admin-sidebar__brand-text">
+                <strong className="admin-sidebar__title">AnyTap Admin</strong>
+                <span className="admin-sidebar__subtitle">Ops Console</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="admin-mobile-drawer__close"
+              onClick={() => setMobileOpen(false)}
+              aria-label="Close navigation menu"
+            >
+              <Icon name="close" size={20} />
+            </button>
+          </div>
+
+          <nav className="admin-mobile-drawer__nav">
+            <div className="admin-sidebar__section-label">OPERATIONS</div>
+            <NavItems items={OPS_NAV} onItemClick={() => setMobileOpen(false)} />
+
+            <div className="admin-sidebar__section-label" style={{ marginTop: '20px' }}>SYSTEM</div>
+            <NavItems items={SYSTEM_NAV} onItemClick={() => setMobileOpen(false)} />
+
+            <div className="admin-mobile-drawer__divider" />
+
+            <Link
+              to="/"
+              className="admin-sidebar__link admin-mobile-drawer__homelink"
+              onClick={() => setMobileOpen(false)}
+            >
+              <Icon name="home" size={17} stroke={1.75} />
+              <span>Go to Homepage</span>
+            </Link>
+          </nav>
+
+          <div className="admin-sidebar__foot" style={{ marginTop: 'auto', paddingTop: '16px' }}>
+            <div className="admin-sidebar__profile">
+              <div className="admin-sidebar__avatar">
+                {initials(admin?.name || admin?.email || 'Admin')}
+              </div>
+              <div className="admin-sidebar__profile-body">
+                <div className="admin-sidebar__user">{admin?.name || admin?.email?.split('@')[0] || 'Admin'}</div>
+                <div className="admin-sidebar__role">{formatRole(admin?.role)}</div>
+              </div>
+            </div>
+          </div>
+        </aside>
       </div>
-
-      <nav className="admin-sidebar__nav">
-        <div className="admin-sidebar__section-label">OPERATIONS</div>
-        <NavItems items={OPS_NAV} />
-
-        <div className="admin-sidebar__section-label" style={{ marginTop: '20px' }}>SYSTEM</div>
-        <NavItems items={SYSTEM_NAV} />
-      </nav>
-
-      <div className="admin-sidebar__user">
-        <div className="admin-sidebar__avatar">
-          {initials(admin?.name || admin?.email || 'Admin')}
-        </div>
-        <div className="admin-sidebar__user-info">
-          <strong className="admin-sidebar__user-name">{admin?.name || admin?.email?.split('@')[0] || 'Admin'}</strong>
-          <span className="admin-sidebar__user-role">{formatRole(admin?.role)}</span>
-        </div>
-      </div>
-    </aside>
+    </>
   );
 }

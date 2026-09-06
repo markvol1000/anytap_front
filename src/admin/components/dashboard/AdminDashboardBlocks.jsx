@@ -239,7 +239,7 @@ export function AdminRequestDistributionChart({ kycCount = 0, cardCount = 0, wit
           </svg>
         </div>
 
-        <div className="admin-chart-legend-grid" style={{ flex: 1 }}>
+        <div className="admin-donut-legend">
           <Link to="/admin/kyc" className="admin-chart-legend-item">
             <span className="admin-chart-legend-item__dot" style={{ background: '#2563eb', width: '14px', height: '14px' }} />
             <div className="admin-chart-legend-item__info">
@@ -280,11 +280,17 @@ export function AdminTxVolumeChart({
   const withdrawVal = Number(withdrawalTxCount || 0);
   const assetsVal = Number(walletAssets || 0);
 
+  const formatCurrency = (val) => {
+    const num = Number(val || 0);
+    const absStr = Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return num < 0 ? `-$${absStr}` : `$${absStr}`;
+  };
+
   const rawItems = [
     {
       label: 'Wallet Top Up',
-      numericVal: topUpVal,
-      amount: `$${topUpVal.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
+      numericVal: Math.abs(topUpVal),
+      amount: formatCurrency(topUpVal),
       count: walletTxCount,
       color: '#2563eb',
       gradient: 'linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)',
@@ -292,8 +298,8 @@ export function AdminTxVolumeChart({
     },
     {
       label: 'Card Payments',
-      numericVal: payVal,
-      amount: `$${payVal.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
+      numericVal: Math.abs(payVal),
+      amount: formatCurrency(payVal),
       count: cardTxCount,
       color: '#10b981',
       gradient: 'linear-gradient(180deg, #10b981 0%, #047857 100%)',
@@ -310,8 +316,8 @@ export function AdminTxVolumeChart({
     },
     {
       label: 'Wallet Assets',
-      numericVal: assetsVal,
-      amount: `$${assetsVal.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
+      numericVal: Math.abs(assetsVal),
+      amount: formatCurrency(assetsVal),
       count: walletTxCount,
       color: '#8b5cf6',
       gradient: 'linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%)',
@@ -349,7 +355,7 @@ export function AdminTxVolumeChart({
           </Link>
         ))}
       </div>
-      <div className="admin-chart-legend-grid">
+      <div className="admin-chart-legend-grid admin-chart-legend-grid--2x2">
         {items.map((item) => (
           <Link key={item.label} to={item.route} className="admin-chart-legend-item">
             <span className="admin-chart-legend-item__dot" style={{ background: item.color, width: '14px', height: '14px' }} />
@@ -395,6 +401,9 @@ export function AdminChartDateFilter({
       <div className="admin-chart-filter-bar__dates">
         <input
           type="date"
+          id="admin-chart-start-date"
+          name="startDate"
+          aria-label="Filter Start Date"
           className="admin-input admin-input--date"
           value={startDate}
           onChange={(e) => onStartDateChange(e.target.value)}
@@ -402,6 +411,9 @@ export function AdminChartDateFilter({
         <span className="admin-chart-filter-bar__sep">~</span>
         <input
           type="date"
+          id="admin-chart-end-date"
+          name="endDate"
+          aria-label="Filter End Date"
           className="admin-input admin-input--date"
           value={endDate}
           onChange={(e) => onEndDateChange(e.target.value)}

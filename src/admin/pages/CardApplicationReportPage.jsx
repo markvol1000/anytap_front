@@ -228,8 +228,30 @@ export function CardApplicationReportPage() {
           <p style={{ fontSize: '13px', color: '#666666', margin: '4px 0 0 0' }}>
             Admin Dashboard for Card Applications and Shipping Details Management
           </p>
-        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={list.reload}
+            disabled={list.loading}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              fontSize: '13px',
+              fontWeight: '600',
+              backgroundColor: '#ffffff',
+              color: '#333333',
+              border: '1px solid #E0E0E0',
+              borderRadius: '6px',
+              cursor: list.loading ? 'not-allowed' : 'pointer',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            }}
+            title="Reload latest card applications">
+            <span>🔄</span>
+            <span>{list.loading ? 'Refreshing…' : 'Refresh'}</span>
+          </button>
           <button
             type="button"
             className="btn-primary"

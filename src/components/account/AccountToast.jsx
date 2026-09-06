@@ -55,7 +55,7 @@ export function AccountToast({ msg, onClear }) {
         zIndex: 999999,
         pointerEvents: 'auto',
         opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(-10px)',
+        transform: visible ? 'translate(-50%, 0)' : 'translate(-50%, -10px)',
         transition: 'opacity 0.4s ease, transform 0.4s ease',
         cursor: 'pointer',
       }}

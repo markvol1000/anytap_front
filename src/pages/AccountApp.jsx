@@ -10,6 +10,7 @@ import { Icon } from '../components/ui.jsx';
 import { useAccountState } from '../hooks/useAccountState.js';
 import { usePortalDesktop } from '../hooks/usePortalDesktop.js';
 import { AccountToast } from '../components/account/AccountToast.jsx';
+import { CardTransferModal } from '../components/CardTransferModal.jsx';
 import { PortalPageHeader } from '../components/account/PortalPageHeader.jsx';
 import { PortalDesktopPageHead } from '../components/account/PortalDesktopPageHead.jsx';
 import { CardOnboardingActions } from '../components/account-cards.jsx';
@@ -180,6 +181,7 @@ function AccountPortal() {
             onProfile={() => {
               s.go('settings');
             }}
+            onLogout={s.logout}
             memberNavItems={memberNavItems}
             memberNavActive={s.navActive}
             onMemberNav={s.onMemberNav}
@@ -251,6 +253,7 @@ function AccountPortal() {
         }}
       />
       <QuickTopUpSheet s={s} card={s.quickTopUpCard} open={!!s.quickTopUpCard} onClose={s.closeQuickTopUp} />
+      <CardTransferModal s={s} sourceCard={s.cardTransferCard} open={!!s.cardTransferCard} onClose={s.closeCardTransfer} />
       <PhysicalCardActivateSheet s={s} open={s.activePhysicalCardOpen} onClose={s.closeActivePhysical} />
       {s.remoteLoading && <PageLoader />}
     </div>

@@ -1,5 +1,6 @@
 import { useCallback, useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AdminKpiCard, AdminKpiGrid } from '../components/AdminKpiCard.jsx';
 import { AdminDataTable, AdminMiniTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
 import {
@@ -33,6 +34,7 @@ export function ReferralPage() {
   const confirm = useAdminConfirm();
   const [activeTab, setActiveTab] = useState('partners'); // 'partners' | 'ledger'
   const [selectedId, setSelectedId] = useState(null);
+  const [copiedCode, setCopiedCode] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Active Users List for Referral Partner Registration
@@ -291,6 +293,12 @@ export function ReferralPage() {
       <AdminPageHeader
         title="Referral Management & Member Network"
         description="Track total referred deposits, view partner owner details, set date range filters, and manage referral payouts."
+        onRefresh={() => {
+          partnerList.reload();
+          memberList?.reload?.();
+          ledgerList?.reload?.();
+        }}
+        refreshing={partnerList.loading || memberList.loading || ledgerList.loading}
         actions={(
           <button
             type="button"
@@ -302,81 +310,99 @@ export function ReferralPage() {
       />
 
       {/* ── TOP KPI SUMMARY CARDS ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px', marginBottom: '16px' }}>
-        <div className="admin-card" style={{ padding: '16px 20px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)' }}>
-          <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', fontWeight: '600' }}>💰 Total Referred Deposits</div>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#0284c7' }}>{formatUsdt(totalReferredDeposit)}</div>
-        </div>
-        <div className="admin-card" style={{ padding: '16px 20px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)' }}>
-          <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', fontWeight: '600' }}>🎁 Total Commission</div>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#059669' }}>{formatUsdt(totalCommissionPaid)}</div>
-        </div>
-        <div className="admin-card" style={{ padding: '16px 20px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)' }}>
-          <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', fontWeight: '600' }}>🏷️ Referral Code / Partner Count</div>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#7c3aed' }}>{partnerList.total || partnerList.items.length}</div>
-        </div>
-        <div className="admin-card" style={{ padding: '16px 20px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)' }}>
-          <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', fontWeight: '600' }}>👥 Total Referred Members</div>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#ea580c' }}>{totalReferredMembersCount}</div>
-        </div>
-      </div>
+      <AdminKpiGrid>
+        <AdminKpiCard
+          label="Total Referred Deposits"
+          value={formatUsdt(totalReferredDeposit)}
+          icon="wallet"
+          tone="blue"
+        />
+        <AdminKpiCard
+          label="Total Commission"
+          value={formatUsdt(totalCommissionPaid)}
+          icon="checkCircle"
+          tone="green"
+        />
+        <AdminKpiCard
+          label="Referral Partners"
+          value={partnerList.total || partnerList.items.length}
+          icon="document"
+          tone="orange"
+        />
+        <AdminKpiCard
+          label="Referred Members"
+          value={totalReferredMembersCount}
+          icon="members"
+          tone="blue"
+        />
+      </AdminKpiGrid>
 
       {/* ── DATE RANGE & FILTER CONTROL BAR WITH SEARCH BUTTON ── */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', background: '#ffffff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)', marginBottom: '16px' }}>
-        <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>📅 Date & Search Filter:</span>
-        
-        {/* Preset Quick Buttons */}
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button type="button" className={`admin-btn ${datePreset === 'all' ? 'admin-btn--primary' : 'admin-btn--secondary'}`} style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '600' }} onClick={() => handleDatePreset('all')}>All</button>
-          <button type="button" className={`admin-btn ${datePreset === 'today' ? 'admin-btn--primary' : 'admin-btn--secondary'}`} style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '600' }} onClick={() => handleDatePreset('today')}>Today</button>
-          <button type="button" className={`admin-btn ${datePreset === '7d' ? 'admin-btn--primary' : 'admin-btn--secondary'}`} style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '600' }} onClick={() => handleDatePreset('7d')}>Last 7 Days</button>
-          <button type="button" className={`admin-btn ${datePreset === '30d' ? 'admin-btn--primary' : 'admin-btn--secondary'}`} style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '600' }} onClick={() => handleDatePreset('30d')}>Last 30 Days</button>
+      <div className="admin-chart-filter-bar" style={{ marginTop: '16px', marginBottom: '16px' }}>
+        <div className="admin-chart-filter-bar__presets">
+          {[
+            { id: 'all', label: 'All' },
+            { id: 'today', label: 'Today' },
+            { id: '7d', label: 'Last 7 Days' },
+            { id: '30d', label: 'Last 30 Days' },
+          ].map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`admin-chart-filter-btn${datePreset === p.id ? ' is-active' : ''}`}
+              onClick={() => handleDatePreset(p.id)}
+            >
+              {p.label}
+            </button>
+          ))}
         </div>
 
-        {/* Date Inputs */}
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+        <div className="admin-chart-filter-bar__dates" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <input
             type="date"
+            id="admin-referral-start-date"
+            name="startDate"
+            aria-label="Filter Start Date"
+            className="admin-input admin-input--date"
             value={startDate}
             onChange={(e) => { setStartDate(e.target.value); setDatePreset('custom'); }}
-            style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', padding: '5px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '500' }}
           />
-          <span style={{ color: '#64748b', fontWeight: 'bold' }}>~</span>
+          <span className="admin-chart-filter-bar__sep">~</span>
           <input
             type="date"
+            id="admin-referral-end-date"
+            name="endDate"
+            aria-label="Filter End Date"
+            className="admin-input admin-input--date"
             value={endDate}
             onChange={(e) => { setEndDate(e.target.value); setDatePreset('custom'); }}
-            style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', padding: '5px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '500' }}
           />
-        </div>
-
-        {/* Search Query Input */}
-        <div style={{ flex: '1', minWidth: '200px' }}>
           <input
-            type="text"
-            placeholder="Search Referral Code, User ID, Email..."
+            type="search"
+            id="admin-referral-quick-search"
+            name="searchQuery"
+            aria-label="Search Referral Codes and Members"
+            placeholder="Search code, user ID, email..."
             value={partnerList.search}
             onChange={(e) => {
               partnerList.setSearch(e.target.value);
               memberList.setSearch(e.target.value);
             }}
-            style={{ width: '100%', background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', padding: '5px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '500' }}
+            className="admin-input admin-input--search"
+            style={{ width: '220px' }}
           />
+          <button
+            type="button"
+            className="admin-btn admin-btn--primary admin-btn--sm admin-chart-search-btn"
+            onClick={handleApplyFilter}
+          >
+            Search
+          </button>
         </div>
-
-        {/* Search Button */}
-        <button
-          type="button"
-          className="admin-btn admin-btn--primary"
-          style={{ padding: '6px 16px', fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap' }}
-          onClick={handleApplyFilter}
-        >
-          🔍 Search Filter
-        </button>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
         <button
           type="button"
           className={`admin-btn ${activeTab === 'partners' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
@@ -404,18 +430,55 @@ export function ReferralPage() {
               <AdminTableWrap loading={partnerList.loading} error={partnerList.error} hasData={partnerList.items.length > 0}>
                 <AdminDataTable
                   columns={[
-                    { key: 'referralCode', label: 'Referral Code', render: (r) => <strong style={{ color: '#38bdf8' }}>{r.referralCode}</strong> },
+                    {
+                      key: 'referralCode',
+                      label: 'Referral Code',
+                      render: (r) => {
+                        const code = r.referralCode || '—';
+                        const isCopied = copiedCode === code;
+                        return (
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <strong style={{ color: '#0284c7', fontSize: '13px', fontFamily: 'monospace' }}>{code}</strong>
+                            {code !== '—' && (
+                              <button
+                                type="button"
+                                title={`Copy ${code}`}
+                                style={{
+                                  background: isCopied ? '#ecfdf5' : '#f0f9ff',
+                                  border: isCopied ? '1px solid #a7f3d0' : '1px solid #bae6fd',
+                                  color: isCopied ? '#059669' : '#0284c7',
+                                  borderRadius: '4px',
+                                  padding: '2px 6px',
+                                  fontSize: '11px',
+                                  cursor: 'pointer',
+                                  lineHeight: 1.2,
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  try { navigator.clipboard?.writeText(code); } catch {}
+                                  setCopiedCode(code);
+                                  setTimeout(() => setCopiedCode(null), 2000);
+                                }}
+                              >
+                                {isCopied ? '✓ Copied' : '📋'}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      },
+                    },
                     {
                       key: 'userId',
                       label: 'User ID (user_id)',
                       render: (r) => {
                         const uid = r.userId || '—';
-                        if (!uid || uid === '—') return <span style={{ color: '#64748b' }}>—</span>;
+                        if (!uid || uid === '—') return <span style={{ color: '#94a3b8' }}>—</span>;
                         return (
                           <Link
                             to={`/admin/members?id=${uid}`}
-                            style={{ color: '#38bdf8', fontWeight: '700', textDecoration: 'underline' }}
+                            style={{ color: '#0284c7', fontWeight: '700', textDecoration: 'underline' }}
                             onClick={(e) => e.stopPropagation()}
+                            title={`Open member ${uid}`}
                           >
                             {uid} ➔
                           </Link>
@@ -426,14 +489,14 @@ export function ReferralPage() {
                       key: 'userEmail',
                       label: 'User Email',
                       render: (r) => (
-                        <span style={{ fontSize: '12px', color: '#0f172a', fontWeight: '500' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--ink, #0f172a)', fontWeight: '500' }}>
                           {r.userEmail || '—'}
                         </span>
                       ),
                     },
                     { key: 'memberName', label: 'Owner / Partner Name' },
                     { key: 'joinDate', label: 'Joined', render: (r) => formatAdminDate(r.joinDate || r.createdAt || r.created_at) },
-                    { key: 'totalDeposit', label: 'Total Deposit', render: (r) => <strong style={{ color: '#38bdf8' }}>{formatUsdt(r.totalDeposit)}</strong> },
+                    { key: 'totalDeposit', label: 'Total Deposit', render: (r) => <strong style={{ color: '#0284c7' }}>{formatUsdt(r.totalDeposit)}</strong> },
                     { key: 'available', label: 'Reward Balance', render: (r) => formatUsdt(r.available) },
                     { key: 'members', label: 'Referred Count' },
                     { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
@@ -469,16 +532,53 @@ export function ReferralPage() {
               </AdminTableWrap>
             </AdminPanel>
           )}
-          right={(
-            <AdminDetailPanel title={detail ? `Code: ${detail.referralCode} (${detail.memberName})` : 'Select a Referral Code'}>
+          right={(selectedId && detail) ? (
+            <AdminDetailPanel
+              title={detail ? `Referral Code — ${detail.referralCode} (${detail.memberName || 'Partner'})` : null}
+              onClose={() => setSelectedId(null)}
+            >
               {detailLoading && !detail ? <p className="admin-loading admin-loading--inline">Loading detail…</p> : null}
               {!detailLoading && detail ? (
                 <>
                   <AdminDetailSection title="Referral Code Detail">
-                    <AdminDetailRow label="Referral Code" value={<strong style={{ fontSize: '15px', color: '#2563eb' }}>{detail.referralCode}</strong>} />
-                    <AdminDetailRow label="Owner / Member" value={detail.memberName} />
+                    <AdminDetailRow
+                      label="Referral Code"
+                      value={(
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                          <strong style={{ fontSize: '15px', color: '#0284c7', fontFamily: 'monospace' }}>{detail.referralCode}</strong>
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn--ghost admin-btn--sm"
+                            style={{ padding: '2px 6px', fontSize: '11px' }}
+                            onClick={() => {
+                              try { navigator.clipboard?.writeText(detail.referralCode); } catch {}
+                              setCopiedCode(detail.referralCode);
+                              setTimeout(() => setCopiedCode(null), 2000);
+                            }}
+                          >
+                            {copiedCode === detail.referralCode ? '✓ Copied' : '📋 Copy'}
+                          </button>
+                        </div>
+                      )}
+                    />
+                    <AdminDetailRow
+                      label="Owner / Member"
+                      value={(
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>{detail.memberName || '—'}</span>
+                          {detail.userId && detail.userId !== '—' && (
+                            <Link
+                              to={`/admin/members?id=${detail.userId}`}
+                              style={{ color: '#0284c7', fontSize: '12px', fontWeight: '700', textDecoration: 'underline' }}
+                            >
+                              ({detail.userId}) ➔
+                            </Link>
+                          )}
+                        </div>
+                      )}
+                    />
                     <AdminDetailRow label="Reward Balance" value={formatUsdt(detail.rewardBalance)} />
-                    <AdminDetailRow label="Total Member Deposit" value={<strong style={{ color: '#38bdf8' }}>{formatUsdt(detail.totalDeposit)}</strong>} />
+                    <AdminDetailRow label="Total Member Deposit" value={<strong style={{ color: '#0284c7' }}>{formatUsdt(detail.totalDeposit)}</strong>} />
                     <AdminDetailRow label="Available Amount" value={formatUsdt(detail.available)} />
                     <AdminDetailRow label="Pending Amount" value={formatUsdt(detail.pending)} />
                     <AdminDetailRow label="Referred Users" value={<span style={{ fontWeight: '700', color: '#10b981' }}>{detail.members} Users</span>} />
@@ -495,7 +595,7 @@ export function ReferralPage() {
                   </AdminActionStack>
 
                   {/* ── LOWER SECTION: Referred Users List for THIS Referral Code ── */}
-                  <AdminDetailSection title={`👥 Users using '${detail.referralCode}' as Referrer`}>
+                  <AdminDetailSection title={`👥 Users using '${detail.referralCode}' as Referrer`} className="admin-detail-full-width">
                     <AdminFilterBar
                       search={memberList.search}
                       onSearchChange={memberList.setSearch}
@@ -512,7 +612,7 @@ export function ReferralPage() {
                               return (
                                 <Link
                                   to={`/admin/members?id=${memId}`}
-                                  style={{ color: '#2563eb', fontWeight: '700', textDecoration: 'underline' }}
+                                  style={{ color: '#0284c7', fontWeight: '700', textDecoration: 'underline' }}
                                   title={`Open member ${memId} detail`}
                                   onClick={(e) => e.stopPropagation()}
                                 >
@@ -539,7 +639,7 @@ export function ReferralPage() {
                           },
                           { key: 'email', label: 'Email' },
                           { key: 'joinDate', label: 'Joined', render: (r) => formatAdminDate(r.joinDate || r.createdAt || r.created_at) },
-                          { key: 'totalDeposit', label: 'Total Deposit', render: (r) => <strong style={{ color: '#38bdf8' }}>{formatUsdt(r.totalDeposit)}</strong> },
+                          { key: 'totalDeposit', label: 'Total Deposit', render: (r) => <strong style={{ color: '#0284c7' }}>{formatUsdt(r.totalDeposit)}</strong> },
                           { key: 'earnedCommission', label: 'Earned Commission', render: (r) => <strong style={{ color: '#10b981' }}>{formatUsdt(r.earnedCommission)}</strong> },
                           { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
                         ]}
@@ -559,11 +659,9 @@ export function ReferralPage() {
                     </AdminTableWrap>
                   </AdminDetailSection>
                 </>
-              ) : (
-                <p className="admin-muted">Click any referral code on the left table to view details and referred users.</p>
-              )}
+              ) : null}
             </AdminDetailPanel>
-          )}
+          ) : null}
         />
       )}
 
@@ -581,7 +679,7 @@ export function ReferralPage() {
                 { key: 'userId', label: 'Member ID' },
                 { key: 'memberName', label: 'Login ID / Name' },
                 { key: 'email', label: 'Email' },
-                { key: 'referralCode', label: 'Referral Code', render: (r) => <strong style={{ color: '#38bdf8' }}>{r.referralCode || '—'}</strong> },
+                { key: 'referralCode', label: 'Referral Code', render: (r) => <strong style={{ color: '#0284c7' }}>{r.referralCode || '—'}</strong> },
                 { key: 'amount', label: 'Commission Amount', render: (r) => <strong style={{ color: '#10b981' }}>{formatUsdt(r.amount)}</strong> },
                 { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
                 { key: 'createdAt', label: 'Payout Date', render: (r) => formatAdminDate(r.createdAt || r.payoutDate) },

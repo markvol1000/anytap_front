@@ -61,98 +61,116 @@ function TransactionsToolbar({
   return (
     <div className="portal-tx-panel__toolbar">
       <div className="portal-tx-page__toolbar">
-        {cards && cards.length > 0 && (scope === 'card' || scope === 'all') && (
-          <div className="portal-tx-page__toolbar-card">
-            <label className="portal-tx-page__field portal-tx-page__field--card-select">
-              <span className="portal-tx-page__field-label">Card</span>
+        <div className="portal-tx-page__toolbar-row portal-tx-page__toolbar-row--filters">
+          {cards && cards.length > 0 && scope === 'card' && (
+            <div className="portal-tx-page__toolbar-card">
+              <label className="portal-tx-page__field portal-tx-page__field--card-select">
+                <span className="portal-tx-page__field-label">Card</span>
+                <select
+                  className="portal-tx-page__select"
+                  value={selectedCardId}
+                  onChange={(e) => onCardChange?.(e.target.value)}
+                  aria-label="Select card">
+                  <option value="all">All Cards</option>
+                  {cards.map((c) => {
+                    const last4 = c.last4 || (c.cardNo ? c.cardNo.slice(-4) : '');
+                    const label = `${c.variant === 'physical' ? 'Physical' : 'Virtual'} Card${last4 ? ` (*${last4})` : ''}`;
+                    const val = c.wasabiCardId || c.cardNo || c.id || c.last4;
+                    return (
+                      <option key={c.id || val} value={val}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+            </div>
+          )}
+
+          <div className="portal-tx-page__toolbar-date">
+            <label className="portal-tx-page__field portal-tx-page__field--date-range">
+              <span className="portal-tx-page__field-label">Date</span>
               <select
                 className="portal-tx-page__select"
-                value={selectedCardId}
-                onChange={(e) => onCardChange?.(e.target.value)}
-                aria-label="Select card">
-                <option value="all">All Cards</option>
-                {cards.map((c) => {
-                  const last4 = c.last4 || (c.cardNo ? c.cardNo.slice(-4) : '');
-                  const label = `${c.variant === 'physical' ? 'Physical' : 'Virtual'} Card${last4 ? ` (*${last4})` : ''}`;
-                  const val = c.wasabiCardId || c.cardNo || c.id || c.last4;
-                  return (
-                    <option key={c.id || val} value={val}>
-                      {label}
-                    </option>
-                  );
-                })}
+                value={dateRange}
+                onChange={(e) => onDateRangeChange(e.target.value)}
+                aria-label="Date range">
+                {A.TX_DATE_RANGES.map((r) => (
+                  <option key={r.id} value={r.id}>{r.label}</option>
+                ))}
               </select>
             </label>
+            {dateRange === 'custom' && (
+              <>
+                <label className="portal-tx-page__field portal-tx-page__field--date">
+                  <span className="portal-tx-page__field-label">From</span>
+                  <input
+                    type="date"
+                    className="portal-tx-page__input"
+                    value={customFrom}
+                    onChange={(e) => onCustomFromChange(e.target.value)}
+                    aria-label="Custom range from"
+                  />
+                </label>
+                <label className="portal-tx-page__field portal-tx-page__field--date">
+                  <span className="portal-tx-page__field-label">To</span>
+                  <input
+                    type="date"
+                    className="portal-tx-page__input"
+                    value={customTo}
+                    onChange={(e) => onCustomToChange(e.target.value)}
+                    aria-label="Custom range to"
+                  />
+                </label>
+              </>
+            )}
           </div>
-        )}
 
-        <div className="portal-tx-page__toolbar-date">
-          <label className="portal-tx-page__field portal-tx-page__field--date-range">
-            <span className="portal-tx-page__field-label">Date</span>
-            <select
-              className="portal-tx-page__select"
-              value={dateRange}
-              onChange={(e) => onDateRangeChange(e.target.value)}
-              aria-label="Date range">
-              {A.TX_DATE_RANGES.map((r) => (
-                <option key={r.id} value={r.id}>{r.label}</option>
-              ))}
-            </select>
+          <div
+            className="portal-tx-filters portal-tx-filters--status portal-tx-filters--compact"
+            role="tablist"
+            aria-label="Transaction status">
+            {A.TX_STATUS_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                role="tab"
+                aria-selected={status === f.id}
+                className={`portal-tx-filters__chip${status === f.id ? ' is-active' : ''}`}
+                onClick={() => onStatusChange(f.id)}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="portal-tx-page__toolbar-row portal-tx-page__toolbar-row--search">
+          <label className="portal-tx-page__field portal-tx-page__field--search">
+            <span className="portal-tx-page__field-label visually-hidden">Search</span>
+            <div className="portal-tx-search-wrap">
+              <span className="portal-tx-search-icon" aria-hidden="true">
+                <Icon name="search" size={15} stroke={2} />
+              </span>
+              <input
+                type="search"
+                className="portal-tx-page__input portal-tx-page__input--search"
+                value={searchQuery}
+                onChange={(e) => onSearchQueryChange(e.target.value)}
+                placeholder="Search merchant, reference, transaction ID, or card number..."
+                aria-label="Search merchant, reference, transaction ID, or card number"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="portal-tx-search-clear"
+                  onClick={() => onSearchQueryChange('')}
+                  aria-label="Clear search">
+                  <Icon name="close" size={13} stroke={2} />
+                </button>
+              )}
+            </div>
           </label>
-          {dateRange === 'custom' && (
-            <>
-              <label className="portal-tx-page__field portal-tx-page__field--date">
-                <span className="portal-tx-page__field-label">From</span>
-                <input
-                  type="date"
-                  className="portal-tx-page__input"
-                  value={customFrom}
-                  onChange={(e) => onCustomFromChange(e.target.value)}
-                  aria-label="Custom range from"
-                />
-              </label>
-              <label className="portal-tx-page__field portal-tx-page__field--date">
-                <span className="portal-tx-page__field-label">To</span>
-                <input
-                  type="date"
-                  className="portal-tx-page__input"
-                  value={customTo}
-                  onChange={(e) => onCustomToChange(e.target.value)}
-                  aria-label="Custom range to"
-                />
-              </label>
-            </>
-          )}
         </div>
-
-        <div
-          className="portal-tx-filters portal-tx-filters--status portal-tx-filters--compact"
-          role="tablist"
-          aria-label="Transaction status">
-          {A.TX_STATUS_FILTERS.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              role="tab"
-              aria-selected={status === f.id}
-              className={`portal-tx-filters__chip${status === f.id ? ' is-active' : ''}`}
-              onClick={() => onStatusChange(f.id)}>
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        <label className="portal-tx-page__field portal-tx-page__field--search">
-          <span className="portal-tx-page__field-label visually-hidden">Search</span>
-          <input
-            type="search"
-            className="portal-tx-page__input portal-tx-page__input--search"
-            value={searchQuery}
-            onChange={(e) => onSearchQueryChange(e.target.value)}
-            placeholder="Search merchant, reference, transaction ID, or card number..."
-            aria-label="Search merchant, reference, transaction ID, or card number"
-          />
-        </label>
       </div>
     </div>
   );
@@ -186,11 +204,11 @@ export function TxDetailSheet({ tx, onClose }) {
   return (
     <div className="portal-sheet portal-tx-detail" role="dialog" aria-modal="true" aria-label="Transaction details">
       <button type="button" className="portal-sheet__backdrop" onClick={onClose} aria-label="Close" />
-      <div className="portal-sheet__panel portal-tx-detail__panel">
+      <div className="portal-sheet__panel portal-wallet-sheet portal-tx-detail__panel">
         <div className="portal-sheet__head">
           <h3 className="portal-sheet__title">Transaction Details</h3>
           <button type="button" className="portal-sheet__close" onClick={onClose} aria-label="Close">
-            <Icon name="close" size={20} stroke={2} />
+            <Icon name="close" size={18} />
           </button>
         </div>
 
@@ -331,12 +349,17 @@ export function TransactionsPage({ items = [], initialScope = 'all', initialCard
 
     let cancelled = false;
 
-    const targetCard = cards.find(
-      (c) => c.last4 === selectedCardId || c.id === selectedCardId || c.cardNo === selectedCardId || c.wasabiCardId === selectedCardId
-    );
-
-    const cNo = targetCard ? String(targetCard.cardNo || targetCard.wasabiCardId || '') : (selectedCardId !== 'all' ? selectedCardId : '');
-    const l4 = targetCard?.last4 || (cNo.replace(/\D/g, '').length >= 4 ? cNo.replace(/\D/g, '').slice(-4) : '');
+    // When scope is 'card' and a specific card is selected, fetch for that card.
+    // When scope is 'all', fetch for all cards (empty cardId & last4).
+    let cNo = '';
+    let l4 = '';
+    if (scope === 'card' && selectedCardId !== 'all') {
+      const targetCard = cards.find(
+        (c) => c.last4 === selectedCardId || c.id === selectedCardId || c.cardNo === selectedCardId || c.wasabiCardId === selectedCardId
+      );
+      cNo = targetCard ? String(targetCard.cardNo || targetCard.wasabiCardId || '') : selectedCardId;
+      l4 = targetCard?.last4 || (cNo.replace(/\D/g, '').length >= 4 ? cNo.replace(/\D/g, '').slice(-4) : '');
+    }
 
     fetchCardTransactions(session.userId, { cardId: cNo, last4: l4 })
       .then((res) => {
@@ -349,7 +372,7 @@ export function TransactionsPage({ items = [], initialScope = 'all', initialCard
       });
 
     return () => { cancelled = true; };
-  }, [selectedCardId, cards]);
+  }, [scope, selectedCardId, cards]);
 
   const activeItems = useMemo(() => {
     let list = items;

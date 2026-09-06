@@ -19,6 +19,7 @@ import {
   getMemberById,
   getMemberCards,
   getMembers,
+  getTransactions,
   saveMemberMemo,
   suspendMember,
   retryCregisWallet,
@@ -28,6 +29,85 @@ import {
 
 const fetchMembers = (params) => getMembers(params);
 const fetchMemberDetail = (id) => getMemberById(id);
+
+function CurrencyBadgeMini({ currency }) {
+  const code = String(currency || 'USDT').toUpperCase().trim();
+  if (code === 'USDT') {
+    return (
+      <img
+        src="https://cryptologos.cc/logos/tether-usdt-logo.png?v=032"
+        alt="USDT"
+        style={{ width: '15px', height: '15px', borderRadius: '50%', flexShrink: 0 }}
+      />
+    );
+  }
+  if (code === 'KRW' || code === '₩') {
+    return (
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '15px',
+        height: '15px',
+        borderRadius: '50%',
+        backgroundColor: '#2563eb',
+        color: '#fff',
+        fontSize: '9px',
+        fontWeight: 'bold',
+        flexShrink: 0
+      }}>₩</span>
+    );
+  }
+  if (code === 'USD' || code === '$') {
+    return (
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '15px',
+        height: '15px',
+        borderRadius: '50%',
+        backgroundColor: '#16a34a',
+        color: '#fff',
+        fontSize: '9px',
+        fontWeight: 'bold',
+        flexShrink: 0
+      }}>$</span>
+    );
+  }
+  if (code === 'EUR' || code === '€') {
+    return (
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '15px',
+        height: '15px',
+        borderRadius: '50%',
+        backgroundColor: '#4f46e5',
+        color: '#fff',
+        fontSize: '9px',
+        fontWeight: 'bold',
+        flexShrink: 0
+      }}>€</span>
+    );
+  }
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '0 4px',
+      borderRadius: '4px',
+      backgroundColor: '#f1f5f9',
+      color: '#334155',
+      fontSize: '9px',
+      fontWeight: '700',
+      border: '1px solid #cbd5e1',
+      flexShrink: 0
+    }}>{code}</span>
+  );
+}
 
 export function MembersPage() {
   const navigate = useNavigate();
@@ -39,7 +119,10 @@ export function MembersPage() {
   const [memoDraft, setMemoDraft] = useState('');
   const [memberCards, setMemberCards] = useState([]);
   const [memberCardsLoading, setMemberCardsLoading] = useState(false);
+  const [memberTx, setMemberTx] = useState([]);
+  const [memberTxLoading, setMemberTxLoading] = useState(false);
   const [retryLoading, setRetryLoading] = useState(false);
+  const [copiedTxId, setCopiedTxId] = useState(null);
   const list = useAdminList(fetchMembers);
   const { detail, loading: detailLoading, setDetail } = useAdminDetail(fetchMemberDetail, selectedId);
 
@@ -56,10 +139,27 @@ export function MembersPage() {
         .then((cards) => setMemberCards(cards || []))
         .catch(() => setMemberCards([]))
         .finally(() => setMemberCardsLoading(false));
+
+      setMemberTxLoading(true);
+      getTransactions({ search: detail.id || detail.email, pageSize: 50, limit: 50 })
+        .then((res) => {
+          const list = Array.isArray(res) ? res : (res?.items || []);
+          const dId = String(detail.id || '').toLowerCase();
+          const dEmail = String(detail.email || '').toLowerCase();
+          const matched = list.filter((t) => {
+            const mId = String(t.memberId || t.userId || '').toLowerCase();
+            const mEmail = String(t.memberEmail || t.email || '').toLowerCase();
+            return (dId && mId === dId) || (dEmail && mEmail === dEmail);
+          });
+          setMemberTx(matched.length > 0 ? matched : list);
+        })
+        .catch(() => setMemberTx([]))
+        .finally(() => setMemberTxLoading(false));
     } else {
       setMemberCards([]);
+      setMemberTx([]);
     }
-  }, [detail?.id]);
+  }, [detail?.id, detail?.email]);
 
   const selectRow = (row) => {
     setSelectedId(row.id);
@@ -167,7 +267,12 @@ export function MembersPage() {
 
   return (
     <div className="admin-page">
-      <AdminPageHeader title="Members" description="Search, review, and manage member accounts." />
+      <AdminPageHeader
+        title="Members"
+        description="Search, review, and manage member accounts."
+        onRefresh={list.reload}
+        refreshing={list.loading}
+      />
 
       <AdminSplitLayout
         left={(
@@ -193,16 +298,33 @@ export function MembersPage() {
             <AdminTableWrap loading={list.loading} error={list.error} hasData={(list.items || []).length > 0}>
               <AdminDataTable
                 columns={[
-                  { key: 'id', label: 'Member ID' },
-                  { key: 'name', label: 'Name' },
-                  { key: 'email', label: 'Email' },
+                  { key: 'id', label: 'Member ID', render: (r) => (
+                    <span style={{ fontFamily: 'monospace', fontWeight: '700', fontSize: '12px' }}>{r.id}</span>
+                  ) },
+                  { 
+                    key: 'name', 
+                    label: 'Member',
+                    render: (r) => {
+                      const hasDistinctName = r.name && r.name !== r.email && r.name !== r.id && r.name !== '—';
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '130px' }}>
+                          <span style={{ fontWeight: '700', color: 'var(--ink, #0f172a)' }}>
+                            {hasDistinctName ? r.name : (r.email || r.id)}
+                          </span>
+                          {hasDistinctName && r.email ? (
+                            <span style={{ fontSize: '11px', color: 'var(--fg-muted, #64748b)' }}>{r.email}</span>
+                          ) : null}
+                        </div>
+                      );
+                    }
+                  },
                   {
                     key: 'walletAddress',
-                    label: 'Wallet Address',
+                    label: 'USDT Deposit Address',
                     render: (r) => {
                       const addr = r.cregisWalletAddress || r.walletAddress || r.depositAddress || '';
-                      if (!addr || addr === '-') {
-                        return <span style={{ color: '#64748b', fontSize: '11px' }}>—</span>;
+                      if (!addr || addr === '-' || addr === '—') {
+                        return <span style={{ color: '#94a3b8', fontSize: '11px' }}>Not allocated</span>;
                       }
                       return (
                         <span
@@ -210,13 +332,16 @@ export function MembersPage() {
                           style={{
                             fontFamily: 'monospace',
                             fontSize: '11px',
-                            color: '#38bdf8',
-                            background: 'rgba(56, 189, 248, 0.08)',
-                            border: '1px solid rgba(56, 189, 248, 0.2)',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
+                            color: '#0284c7',
+                            background: '#f0f9ff',
+                            border: '1px solid #bae6fd',
+                            padding: '3px 7px',
+                            borderRadius: '5px',
                             whiteSpace: 'nowrap',
                             cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -233,37 +358,61 @@ export function MembersPage() {
                   { key: 'joinDate', label: 'Join Date', render: (r) => formatAdminDate(r.joinDate) },
                   { key: 'kycStatus', label: 'KYC', render: (r) => <AdminStatusBadge status={r.kycStatus} /> },
                   { key: 'cardStatus', label: 'Card', render: (r) => <AdminStatusBadge status={r.cardStatus} /> },
-                  { key: 'walletBalance', label: 'Wallet (Actual) / Unpaid Fee', render: (r) => {
-                    const avail = (Number(r.walletBalance) || 0).toFixed(2);
-                    const actual = (Number(r.cregisActualBalance ?? r.walletBalance) || 0).toFixed(2);
-                    const unpaid = (Number(r.unpaidTotalFee) || 0).toFixed(2);
-                    return (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', whiteSpace: 'nowrap' }}>
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '15px',
-                          height: '15px',
-                          borderRadius: '50%',
-                          backgroundColor: '#26a17b',
-                          color: '#fff',
-                          fontSize: '9px',
-                          fontWeight: 'bold',
-                          lineHeight: 1
-                        }}>₮</span>
-                        <span>{avail}({actual}) / {unpaid}</span>
-                      </div>
-                    );
-                  } },
-                  { key: 'referralStatus', label: 'Referral', render: (r) => <AdminStatusBadge status={r.referralStatus} /> },
+                  { 
+                    key: 'walletBalance', 
+                    label: 'Wallet Balance', 
+                    render: (r) => {
+                      const avail = (Number(r.walletBalance) || 0).toFixed(2);
+                      const actual = (Number(r.cregisActualBalance ?? r.actualBalance ?? r.walletBalance) || 0).toFixed(2);
+                      const unpaid = (Number(r.unpaidTotalFee) || 0).toFixed(2);
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '700' }}>
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '15px',
+                              height: '15px',
+                              borderRadius: '50%',
+                              backgroundColor: '#26a17b',
+                              color: '#fff',
+                              fontSize: '9px',
+                              fontWeight: 'bold',
+                              lineHeight: 1
+                            }}>₮</span>
+                            <span style={{ color: '#047857' }}>{avail} USDT</span>
+                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
+                              ({actual})
+                            </span>
+                          </div>
+                          {Number(unpaid) > 0 ? (
+                            <span style={{ fontSize: '10px', color: '#ea580c', fontWeight: '600' }}>
+                              Fee due: {unpaid}
+                            </span>
+                          ) : null}
+                        </div>
+                      );
+                    } 
+                  },
                   { 
                     key: 'accountStatus', 
                     label: 'Account Status', 
                     render: (r) => {
                       const st = String(r.accountStatus || r.status || 'active').toLowerCase();
+                      const statusColorMap = {
+                        active: { bg: '#ecfdf5', color: '#047857', border: '#a7f3d0' },
+                        suspended: { bg: '#fef2f2', color: '#dc2626', border: '#fca5a5' },
+                        locked: { bg: '#fff7ed', color: '#c2410c', border: '#ffedd5' },
+                        pending: { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
+                        rejected: { bg: '#fef2f2', color: '#991b1b', border: '#fecaca' },
+                      };
+                      const theme = statusColorMap[st] || statusColorMap.active;
                       return (
                         <select
+                          id={`member-status-${r.id}`}
+                          name={`memberStatus-${r.id}`}
+                          aria-label={`Update account status for ${r.name || r.id}`}
                           value={st}
                           onClick={(e) => e.stopPropagation()}
                           onChange={async (e) => {
@@ -281,14 +430,14 @@ export function MembersPage() {
                             }
                           }}
                           style={{
-                            padding: '3px 8px',
+                            padding: '4px 8px',
                             borderRadius: '6px',
                             fontSize: '11px',
                             fontWeight: '700',
                             cursor: 'pointer',
-                            backgroundColor: st === 'active' ? '#ecfdf5' : st === 'suspended' ? '#fef2f2' : st === 'locked' ? '#fff7ed' : '#f1f5f9',
-                            color: st === 'active' ? '#047857' : st === 'suspended' ? '#dc2626' : st === 'locked' ? '#c2410c' : '#475569',
-                            border: st === 'active' ? '1px solid #a7f3d0' : st === 'suspended' ? '1px solid #fca5a5' : st === 'locked' ? '1px solid #ffedd5' : '1px solid #cbd5e1',
+                            backgroundColor: theme.bg,
+                            color: theme.color,
+                            border: `1px solid ${theme.border}`,
                             outline: 'none',
                           }}
                         >
@@ -296,6 +445,7 @@ export function MembersPage() {
                           <option value="suspended">🔴 Suspended</option>
                           <option value="locked">🟠 Locked</option>
                           <option value="pending">⚪ Pending</option>
+                          {st === 'rejected' ? <option value="rejected">❌ Rejected</option> : null}
                         </select>
                       );
                     } 
@@ -315,16 +465,23 @@ export function MembersPage() {
             </AdminTableWrap>
           </AdminPanel>
         )}
-        right={(
-          <AdminDetailPanel title={detail ? detail.name : null}>
+        right={(selectedId && detail) ? (
+          <AdminDetailPanel 
+            title={detail ? (detail.name || detail.email || detail.id) : null}
+            onClose={() => setSelectedId(null)}
+          >
             {detailLoading && !detail ? <p className="admin-loading admin-loading--inline">Loading…</p> : null}
             {!detailLoading && detail ? (
               <>
                 <AdminDetailSection title="Member info">
                   <AdminDetailRow label="Member ID" value={detail.id} />
                   <AdminDetailRow label="Email" value={detail.email} />
-                  <AdminDetailRow label="Phone" value={detail.phone} />
-                  <AdminDetailRow label="Country" value={detail.country} />
+                  {detail.phone && detail.phone !== '—' && detail.phone !== '-' ? (
+                    <AdminDetailRow label="Phone" value={detail.phone} />
+                  ) : null}
+                  {detail.country && detail.country !== '—' && detail.country !== '-' ? (
+                    <AdminDetailRow label="Country" value={detail.country} />
+                  ) : null}
                   <AdminDetailRow label="Join date" value={formatAdminDate(detail.joinDate)} />
                   <AdminDetailRow label="KYC" value={<AdminStatusBadge status={detail.kycStatus} />} />
                   <AdminDetailRow label="Card" value={<AdminStatusBadge status={detail.cardStatus} />} />
@@ -343,45 +500,55 @@ export function MembersPage() {
                         fontWeight: 'bold',
                         lineHeight: 1
                       }}>₮</span>
-                      <span style={{ fontWeight: '600' }}>{formatUsdt(detail.walletBalance ?? 0)}</span>
-                      <span style={{ color: 'var(--admin-text-muted, #888)' }}>
-                        ({formatUsdt(detail.cregisActualBalance ?? detail.walletBalance ?? 0)}) / {formatUsdt(detail.unpaidTotalFee ?? 0)} Unpaid Fee
+                      <span style={{ fontWeight: '700', color: '#047857' }}>
+                        {formatUsdt(detail.walletBalance ?? 0)}
                       </span>
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        ({Number(detail.cregisActualBalance ?? detail.actualBalance ?? detail.walletBalance ?? 0).toFixed(2)})
+                      </span>
+                      {Number(detail.unpaidTotalFee) > 0 ? (
+                        <span style={{ color: '#ea580c', fontWeight: '600', fontSize: '12px' }}>
+                          (Fee due: {formatUsdt(detail.unpaidTotalFee)})
+                        </span>
+                      ) : null}
                     </div>
                   )} />
                   <AdminDetailRow label="Account Status" value={(
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <select
-                        value={String(detail.accountStatus || detail.status || 'active').toLowerCase()}
-                        onChange={async (e) => {
-                          const nextSt = e.target.value;
-                          try {
-                            const updated = await updateMember(detail.id, { status: nextSt });
-                            setDetail(updated);
-                            list.reload();
-                          } catch (err) {
-                            window.alert(`Failed to update status: ${err.message}`);
-                          }
-                        }}
-                        style={{
-                          padding: '4px 10px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          backgroundColor: String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'active' ? '#ecfdf5' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'suspended' ? '#fef2f2' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'locked' ? '#fff7ed' : '#f1f5f9',
-                          color: String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'active' ? '#047857' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'suspended' ? '#dc2626' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'locked' ? '#c2410c' : '#475569',
-                          border: '1px solid #cbd5e1',
-                          outline: 'none',
-                        }}
-                      >
-                        <option value="active">🟢 Active</option>
-                        <option value="suspended">🔴 Suspended</option>
-                        <option value="locked">🟠 Locked</option>
-                        <option value="pending">⚪ Pending</option>
-                      </select>
-                      <AdminStatusBadge status={detail.accountStatus || detail.status} />
-                    </div>
+                    <select
+                      id="detail-member-status"
+                      name="accountStatus"
+                      aria-label="Update member status"
+                      value={String(detail.accountStatus || detail.status || 'active').toLowerCase()}
+                      onChange={async (e) => {
+                        const nextSt = e.target.value;
+                        try {
+                          const updated = await updateMember(detail.id, { status: nextSt });
+                          setDetail(updated);
+                          list.reload();
+                        } catch (err) {
+                          window.alert(`Failed to update status: ${err.message}`);
+                        }
+                      }}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        backgroundColor: String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'active' ? '#ecfdf5' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'suspended' ? '#fef2f2' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'locked' ? '#fff7ed' : '#f1f5f9',
+                        color: String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'active' ? '#047857' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'suspended' ? '#dc2626' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'locked' ? '#c2410c' : '#475569',
+                        border: '1px solid #cbd5e1',
+                        outline: 'none',
+                      }}
+                    >
+                      <option value="active">🟢 Active</option>
+                      <option value="suspended">🔴 Suspended</option>
+                      <option value="locked">🟠 Locked</option>
+                      <option value="pending">⚪ Pending</option>
+                      {String(detail.accountStatus || detail.status || '').toLowerCase() === 'rejected' ? (
+                        <option value="rejected">❌ Rejected</option>
+                      ) : null}
+                    </select>
                   )} />
                 </AdminDetailSection>
 
@@ -411,6 +578,7 @@ export function MembersPage() {
                   )} />
                 </AdminDetailSection>
 
+
                 <AdminDetailSection title="Wasabi Connection Info">
                   <AdminDetailRow label="Holder ID" value={detail.wasabiHolderId || '—'} />
                   <AdminDetailRow 
@@ -420,7 +588,7 @@ export function MembersPage() {
                   <AdminDetailRow label="Card Status" value={<AdminStatusBadge status={detail.cardStatus} />} />
                 </AdminDetailSection>
 
-                <AdminDetailSection title="Issued Cards List">
+                <AdminDetailSection title="Issued Cards List" className="admin-detail-full-width">
                   {memberCardsLoading ? (
                     <p className="admin-loading admin-loading--inline">Loading cards…</p>
                   ) : memberCards && memberCards.length > 0 ? (
@@ -492,8 +660,236 @@ export function MembersPage() {
                   )}
                 </AdminDetailSection>
 
-                <AdminDetailSection title="Admin memo">
+                {/* Failure & Rejection History Section */}
+                {((detail.failureHistory && detail.failureHistory.length > 0) || detail.failureReason || detail.rejectReason) ? (
+                  <AdminDetailSection title="⚠️ Failure & Rejection History" className="admin-detail-full-width">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                      {detail.failureReason && (!detail.failureHistory || detail.failureHistory.length === 0) ? (
+                        <div style={{
+                          padding: '10px 14px',
+                          borderRadius: '6px',
+                          backgroundColor: '#fef2f2',
+                          border: '1px solid #fecaca',
+                          color: '#991b1b',
+                          fontSize: '12px',
+                          lineHeight: 1.5,
+                        }}>
+                          <div style={{ fontWeight: '700', marginBottom: '4px' }}>Latest Rejection / Failure Reason:</div>
+                          <div style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{detail.failureReason}</div>
+                        </div>
+                      ) : null}
+
+                      {detail.failureHistory && detail.failureHistory.length > 0 ? (
+                        <AdminMiniTable
+                          columns={[
+                            {
+                              key: 'timestamp',
+                              label: 'Date & Time',
+                              render: (r) => (
+                                <span style={{ fontSize: '11px', color: '#475569', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                                  {formatAdminDate(r.timestamp || r.date || r.createdAt)}
+                                </span>
+                              ),
+                            },
+                            {
+                              key: 'status',
+                              label: 'Status Code',
+                              render: (r) => (
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  backgroundColor: '#fee2e2',
+                                  color: '#b91c1c',
+                                  fontSize: '11px',
+                                  fontWeight: '700',
+                                  fontFamily: 'monospace'
+                                }}>
+                                  {r.status || r.code || 'FAILED'}
+                                </span>
+                              ),
+                            },
+                            {
+                              key: 'reason',
+                              label: 'Failure Reason / Error Detail',
+                              render: (r) => (
+                                <div style={{
+                                  color: '#7f1d1d',
+                                  fontSize: '12px',
+                                  fontFamily: 'monospace',
+                                  wordBreak: 'break-word',
+                                  whiteSpace: 'pre-wrap'
+                                }}>
+                                  {r.reason || r.message || r.error || '—'}
+                                </div>
+                              ),
+                            },
+                          ]}
+                          rows={detail.failureHistory}
+                        />
+                      ) : null}
+                    </div>
+                  </AdminDetailSection>
+                ) : null}
+
+                {/* Member Recent Transactions Section */}
+                <AdminDetailSection title="Activity & Transaction History (입 / 출금 내역)" className="admin-detail-full-width">
+                  {memberTxLoading ? (
+                    <p className="admin-loading admin-loading--inline">Loading transactions…</p>
+                  ) : memberTx && memberTx.length > 0 ? (
+                    <AdminMiniTable
+                      columns={[
+                        {
+                          key: 'id',
+                          label: 'Tx ID',
+                          render: (r) => {
+                            const rawId = String(r.id ?? '');
+                            const isCopied = copiedTxId === rawId;
+                            return (
+                              <button
+                                type="button"
+                                title={`Click to copy: ${rawId}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    navigator.clipboard?.writeText(rawId);
+                                    setCopiedTxId(rawId);
+                                    setTimeout(() => setCopiedTxId((curr) => (curr === rawId ? null : curr)), 1500);
+                                  } catch {}
+                                }}
+                                style={{
+                                  fontFamily: 'monospace',
+                                  fontSize: '11px',
+                                  color: '#0284c7',
+                                  background: '#f0f9ff',
+                                  border: '1px solid #bae6fd',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  whiteSpace: 'nowrap',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <span>{rawId.length > 12 ? `${rawId.slice(0, 6)}...${rawId.slice(-4)}` : rawId}</span>
+                                <span style={{ fontSize: '10px' }}>{isCopied ? '✓' : '📋'}</span>
+                              </button>
+                            );
+                          },
+                        },
+                        {
+                          key: 'kind',
+                          label: 'Type',
+                          render: (r) => {
+                            const k = String(r.kind || '').toLowerCase();
+                            const isInflow = k === 'wallet_topup' || k === 'deposit' || k === 'refund';
+                            const isSpend = k === 'card_spend' || k === 'payment';
+                            
+                            let label = 'Deposit';
+                            let bg = '#f0fdf4';
+                            let text = '#16a34a';
+                            let border = '#bbf7d0';
+
+                            if (k === 'wallet_withdraw' || k === 'withdraw') {
+                              label = 'Withdrawal';
+                              bg = '#fff7ed';
+                              text = '#ea580c';
+                              border = '#fed7aa';
+                            } else if (isSpend) {
+                              label = 'Card Spend';
+                              bg = '#fdf2f8';
+                              text = '#db2777';
+                              border = '#fbcfe8';
+                            } else if (k === 'refund') {
+                              label = 'Refund';
+                              bg = '#eff6ff';
+                              text = '#2563eb';
+                              border = '#bfdbfe';
+                            }
+
+                            return (
+                              <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                padding: '2px 7px',
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                backgroundColor: bg,
+                                color: text,
+                                border: `1px solid ${border}`
+                              }}>
+                                {isInflow ? '📥 ' : '📤 '}{label}
+                              </span>
+                            );
+                          },
+                        },
+                        {
+                          key: 'amount',
+                          label: 'Amount (+ / -)',
+                          render: (r) => {
+                            const k = String(r.kind || '').toLowerCase();
+                            const isInflow = k === 'wallet_topup' || k === 'deposit' || k === 'refund';
+                            const sign = isInflow ? '+' : '-';
+                            const color = isInflow ? '#16a34a' : '#dc2626';
+                            const bg = isInflow ? '#f0fdf4' : '#fef2f2';
+                            const border = isInflow ? '#bbf7d0' : '#fecaca';
+                            const num = Math.abs(Number(r.amount) || 0).toLocaleString('en-US', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            });
+
+                            return (
+                              <div style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '2px 8px',
+                                borderRadius: '5px',
+                                backgroundColor: bg,
+                                border: `1px solid ${border}`,
+                                fontWeight: '800',
+                                fontSize: '12px',
+                                color: color,
+                                fontFamily: 'monospace',
+                              }}>
+                                <CurrencyBadgeMini currency={r.currency || 'USDT'} />
+                                <span>{sign}{num} {r.currency || 'USDT'}</span>
+                              </div>
+                            );
+                          },
+                        },
+                        {
+                          key: 'status',
+                          label: 'Status',
+                          render: (r) => <AdminStatusBadge status={r.status || 'success'} />,
+                        },
+                        {
+                          key: 'at',
+                          label: 'Date & Time',
+                          render: (r) => (
+                            <span style={{ fontSize: '11px', color: '#64748b' }}>
+                              {formatAdminDate(r.at)}
+                            </span>
+                          ),
+                        },
+                      ]}
+                      rows={memberTx}
+                    />
+                  ) : (
+                    <p className="admin-muted" style={{ paddingLeft: '8px', fontSize: '13px' }}>
+                      No recent transactions found for this member.
+                    </p>
+                  )}
+                </AdminDetailSection>
+
+                <AdminDetailSection title="Admin memo" className="admin-detail-full-width">
                   <textarea
+                    id="admin-member-memo"
+                    name="adminMemo"
+                    aria-label="Admin internal notes"
                     className="admin-textarea"
                     rows={4}
                     value={memoDraft}
@@ -505,7 +901,7 @@ export function MembersPage() {
                   </button>
                 </AdminDetailSection>
 
-                <AdminActionStack>
+                <AdminActionStack className="admin-detail-full-width">
                   {hasNoWallet ? (
                     <button 
                       type="button" 
@@ -538,7 +934,7 @@ export function MembersPage() {
               </>
             ) : null}
           </AdminDetailPanel>
-        )}
+        ) : null}
       />
     </div>
   );

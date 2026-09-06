@@ -40,6 +40,7 @@ export function useAccountState() {
   const [walletTab, setWalletTab] = useState('charge');
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [quickTopUpCard, setQuickTopUpCard] = useState(null);
+  const [cardTransferCard, setCardTransferCard] = useState(null);
   const [activePhysicalCardOpen, setActivePhysicalCardOpen] = useState(false);
   const [activePhysicalTargetCard, setActivePhysicalTargetCard] = useState(null);
 
@@ -59,6 +60,9 @@ export function useAccountState() {
   const [remoteContext, setRemoteContext] = useState(null);
   const [remoteReferral, setRemoteReferral] = useState(null);
   const [remoteLoading, setRemoteLoading] = useState(() => isHttpApi && hasHttpSession());
+
+  const [cardDeductions, setCardDeductions] = useState({});
+  const [cardTxTick, setCardTxTick] = useState(0);
 
   useEffect(() => {
     setTempDeduct(0);
@@ -172,7 +176,52 @@ export function useAccountState() {
     ? (remoteReferral || A.getEmptyReferralContext())
     : A.getReferralContext(referralStateKey);
   const accountState = mockContext.accountState;
-  const userCards = mockContext.userCards;
+  const baseCardBalancesRef = useRef({});
+
+  const userCards = useMemo(() => {
+    const rawCards = mockContext.userCards || [];
+    if (!cardDeductions || Object.keys(cardDeductions).length === 0) {
+      // Record baseline balances
+      rawCards.forEach((c) => {
+        const k = c.id || c.wasabiCardId || c.cardNo || c.last4;
+        const bal = typeof c.balanceUsdt === 'number' ? c.balanceUsdt : (parseFloat(String(c.balance || '').replace(/[^\d.]/g, '')) || 0);
+        if (k) baseCardBalancesRef.current[k] = bal;
+      });
+      return rawCards;
+    }
+
+    return rawCards.map((card) => {
+      const cardKey = card.id || card.wasabiCardId || card.cardNo || card.last4;
+      const deduction = cardDeductions[cardKey] || (card.last4 && cardDeductions[card.last4]) || 0;
+
+      let currentBal = 0;
+      if (typeof card.balanceUsdt === 'number') {
+        currentBal = card.balanceUsdt;
+      } else if (card.balance) {
+        currentBal = parseFloat(String(card.balance).replace(/[^\d.]/g, '')) || 0;
+      }
+
+      if (!deduction) {
+        if (cardKey) baseCardBalancesRef.current[cardKey] = currentBal;
+        return card;
+      }
+
+      // Check if server already reflects the deduction
+      const baseBal = baseCardBalancesRef.current[cardKey];
+      if (typeof baseBal === 'number' && baseBal - currentBal >= deduction - 0.01) {
+        // Server balance has already updated; deduction fulfilled
+        return card;
+      }
+
+      const newBal = Math.max(0, currentBal - deduction);
+      return {
+        ...card,
+        balanceUsdt: newBal,
+        balance: `$${newBal.toFixed(2)} USD`,
+      };
+    });
+  }, [mockContext.userCards, cardDeductions]);
+
   const hasActiveCard = userCards.some((c) => c && c.status === 'active');
   const rawWalletAddress = resolveWalletAddress(mockContext.wallet?.address);
   const walletAddress = hasActiveCard ? rawWalletAddress : '';
@@ -216,7 +265,7 @@ export function useAccountState() {
       });
 
     return () => { cancelled = true; };
-  }, [currentCard?.cardNo, currentCard?.wasabiCardId, currentCard?.id]);
+  }, [currentCard?.cardNo, currentCard?.wasabiCardId, currentCard?.id, cardTxTick]);
 
   const activeActivityItems = useMemo(() => {
     if (selectedCardTxs != null) {
@@ -292,6 +341,8 @@ export function useAccountState() {
   const closeCardPickModal = useCallback(() => setCardPickOpen(false), []);
   const openQuickTopUp = useCallback((card) => setQuickTopUpCard(card), []);
   const closeQuickTopUp = useCallback(() => setQuickTopUpCard(null), []);
+  const openCardTransfer = useCallback((card) => setCardTransferCard(card), []);
+  const closeCardTransfer = useCallback(() => setCardTransferCard(null), []);
 
   const openCardDetails = useCallback((card) => {
     if (card) {
@@ -503,6 +554,14 @@ export function useAccountState() {
     accountState, mockContext, kycStatusDef, cardStatusDef,
     referralContext, applyReferralPartner, requestReferralWithdrawal,
     reloadAccount, refresh: reloadAccount, deductWalletBalance: (amount) => setTempDeduct((v) => v + amount),
+    deductCardBalance: (cardIdOrLast4, amount) => {
+      if (!cardIdOrLast4 || !amount) return;
+      setCardDeductions((prev) => ({
+        ...prev,
+        [cardIdOrLast4]: (prev[cardIdOrLast4] || 0) + Number(amount)
+      }));
+    },
+    triggerCardTxRefresh: () => setCardTxTick((t) => t + 1),
     submitKycApplication: submitKycApplicationApi, submitCardApplication: submitCardApplicationApi,
     // Derived flags
     kycApproved, cardHasNumber, cardIsActive, preIssue, cardApplicationPending, cardDimmed,
@@ -538,6 +597,7 @@ export function useAccountState() {
     addrLoading, walletTab, goWallet,
     receiveOpen, openReceive, closeReceive,
     quickTopUpCard, openQuickTopUp, closeQuickTopUp,
+    cardTransferCard, openCardTransfer, closeCardTransfer,
     cardPickOpen, openCardPickModal, closeCardPickModal,
     openCardDetails,
     activePhysicalCardOpen, activePhysicalTargetCard, openActivePhysical, closeActivePhysical,

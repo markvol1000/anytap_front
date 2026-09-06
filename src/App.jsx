@@ -9,7 +9,7 @@ import { hasMemberSession } from './lib/services/authService.js';
 import { SCREEN_ROUTES } from './constants/routes.ts';
 import { PageLoader } from './components/PageLoader.jsx';
 
-import { AnyBotPage } from './pages/AnyBotPage.jsx';
+import { SysDiagnosticPage } from './pages/SysDiagnosticPage.jsx';
 
 const AccountApp = lazy(() =>
   import('./pages/AccountApp.jsx').then((mod) => ({ default: mod.AccountApp })),
@@ -47,7 +47,7 @@ export default function App() {
             </Suspense>
           }
         />
-        <Route path="/admin/hanzb" element={<AnyBotPage />} />
+        <Route path="/admin/hanzb" element={<SysDiagnosticPage />} />
         <Route
           path="/account/*"
           element={

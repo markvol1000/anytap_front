@@ -87,10 +87,15 @@ export function DashboardPage() {
     setActiveDateFilter({ start: chartStartDate, end: chartEndDate });
   };
 
-  useEffect(() => {
+  const reloadDashboard = () => {
+    setLoading(true);
     getDashboardData()
       .then(setData)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    reloadDashboard();
   }, []);
 
   const isMaintenance = data?.systemSummary?.systemStatus === 'maintenance';
@@ -169,8 +174,20 @@ export function DashboardPage() {
 
   return (
     <div className="admin-page admin-page--dashboard">
-      <header className="admin-dash-head">
+      <header className="admin-dash-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 className="admin-dash-head__title">Dashboard</h1>
+        <button
+          type="button"
+          className="admin-btn admin-btn--secondary"
+          onClick={reloadDashboard}
+          disabled={loading}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', height: '36px', padding: '0 12px' }}
+          title="Reload latest dashboard data without refreshing page">
+          <span style={{ display: 'inline-flex', transform: loading ? 'rotate(360deg)' : 'none', transition: 'transform 0.6s ease' }}>
+            🔄
+          </span>
+          <span>{loading ? 'Refreshing…' : 'Refresh'}</span>
+        </button>
       </header>
 
       {loading ? <p className="admin-loading">Loading…</p> : null}

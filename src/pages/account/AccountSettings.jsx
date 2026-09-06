@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { Icon } from '../../components/ui.jsx';
+import { DeleteAccountModal } from '../../components/account/DeleteAccountModal.jsx';
 import * as A from '../../lib/account-data.js';
 
 const QUICK_ACCESS = [
@@ -181,7 +182,7 @@ function ProfileSummaryDesk({ name, email, kyc, referral, memberSince, userId, o
 }
 
 export function AccountSettings({ s }) {
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const name = String(s.accountState?.name || '').trim() || 'User';
   const email = String(s.accountState?.email || '').trim() || 'Not set';
@@ -207,11 +208,6 @@ export function AccountSettings({ s }) {
 
   const handleEditProfile = useCallback(() => {
     s.showToast?.('Edit profile coming soon');
-  }, [s.showToast]);
-
-  const confirmDeleteAccount = useCallback(() => {
-    s.showToast('Account deletion request submitted');
-    setDeleteConfirm(false);
   }, [s.showToast]);
 
   return (
@@ -251,23 +247,8 @@ export function AccountSettings({ s }) {
         <section className="portal-my__section portal-my__section--account" aria-labelledby="portal-my-account">
           <h2 id="portal-my-account" className="portal-my__section-title">Account</h2>
           <div className="portal-my__list portal-my__list--account">
-            <SettingsRowMob label="FAQ" icon="helpCircle" onClick={() => s.go('faq')} />
             <SettingsRowMob label="Log Out" icon="logOut" onClick={s.logout} />
-            {deleteConfirm ? (
-              <div style={{ padding: '10px 0' }}>
-                <p style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 10 }}>
-                  Delete your account? This cannot be undone.
-                </p>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" className="portal-btn-secondary" style={{ flex: 1 }}
-                    onClick={() => setDeleteConfirm(false)}>Cancel</button>
-                  <button type="button" className="portal-my__row portal-my__row--danger" style={{ flex: 1, justifyContent: 'center' }}
-                    onClick={confirmDeleteAccount}>Confirm Delete</button>
-                </div>
-              </div>
-            ) : (
-              <SettingsRowMob label="Delete Account" icon="trash" onClick={() => setDeleteConfirm(true)} danger />
-            )}
+            <SettingsRowMob label="Delete Account" icon="trash" onClick={() => setDeleteModalOpen(true)} danger />
           </div>
         </section>
       </div>
@@ -316,27 +297,18 @@ export function AccountSettings({ s }) {
           <section className="portal-my-desk__panel portal-my-desk__account" aria-labelledby="portal-my-desk-account">
             <h2 id="portal-my-desk-account" className="portal-my-desk__panel-title">Account</h2>
             <div className="portal-my-desk__list">
-              <SettingsRowDesk label="FAQ" icon="helpCircle" onClick={() => s.go('faq')} />
               <SettingsRowDesk label="Log Out" icon="logOut" onClick={s.logout} />
-              {deleteConfirm ? (
-                <div style={{ padding: '10px 0' }}>
-                  <p style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 10 }}>
-                    Delete your account? This cannot be undone.
-                  </p>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button type="button" className="portal-btn-secondary" style={{ flex: 1 }}
-                      onClick={() => setDeleteConfirm(false)}>Cancel</button>
-                    <button type="button" className="portal-my-desk__list-row portal-my-desk__list-row--danger" style={{ flex: 1, justifyContent: 'center' }}
-                      onClick={confirmDeleteAccount}>Confirm Delete</button>
-                  </div>
-                </div>
-              ) : (
-                <SettingsRowDesk label="Delete Account" icon="trash" onClick={() => setDeleteConfirm(true)} danger />
-              )}
+              <SettingsRowDesk label="Delete Account" icon="trash" onClick={() => setDeleteModalOpen(true)} danger />
             </div>
           </section>
         </div>
       </div>
+
+      <DeleteAccountModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        s={s}
+      />
     </div>
   );
 }

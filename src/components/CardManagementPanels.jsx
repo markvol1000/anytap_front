@@ -44,17 +44,17 @@ export function CardSecurityControls({ card, s, className = '' }) {
           contactless: frozen ? false : prev.contactless || true,
         };
       }
-      if (prev.freeze) return prev;
       return { ...prev, [id]: value };
     });
 
     if (id === 'freeze') {
       try {
+        const cardId = card?.id || card?.wasabiCardId || card?.cardId;
         if (value) {
-          await freezeCard(card?.cardId || card?.id);
+          await freezeCard(cardId);
           s?.showToast?.('Card frozen successfully');
         } else {
-          await unfreezeCard(card?.cardId || card?.id);
+          await unfreezeCard(cardId);
           s?.showToast?.('Card unfrozen successfully');
         }
         await s?.reloadAccount?.();
@@ -156,58 +156,46 @@ export function CardSpendingLimits({ card, className = '' }) {
     <section
       className={`portal-card-mgmt__limits${className ? ` ${className}` : ''}`}
       aria-label="Spending limits">
-      <h2 className="portal-card-mgmt__section-title" style={{ marginBottom: '10px' }}>Spending Limits</h2>
-      <div className="portal-card-mgmt__panel portal-card-mgmt__panel--limits" style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '14px 16px' }}>
-        {/* Card Spending Limits */}
-        <div className="portal-mycards-desk-info__limit">
-          <div className="portal-mycards-desk-info__limit-head" style={{ marginBottom: '8px', borderBottom: '1px solid var(--portal-border)', paddingBottom: '4px' }}>
-            <span className="portal-mycards-desk-info__limit-name" style={{ fontWeight: '700', fontSize: '13px' }}>Card Spending</span>
+      <h2 className="portal-card-mgmt__section-title">Spending Limits</h2>
+      <div className="portal-card-mgmt__panel" style={{ padding: '18px 20px' }}>
+        <div className="portal-card-limit-group">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-default, rgba(26,26,26,0.06))', marginBottom: '12px' }}>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--portal-ink, #1a1a1a)' }}>Card Spending</span>
+            <span style={{ fontSize: '11px', fontWeight: '500', color: 'var(--fg-muted, #6b6057)', background: 'var(--bg-subtle, rgba(0,0,0,0.04))', padding: '2px 8px', borderRadius: '4px' }}>Standard tier</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 10px', fontSize: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px 14px' }}>
             <div>
-              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Single Tx</span>
-              <strong style={{ fontSize: '12.5px' }}>$20,000</strong>
+              <span style={{ color: 'var(--fg-muted, #6b6057)', fontSize: '11px', fontWeight: '500', display: 'block', marginBottom: '2px' }}>Single Tx</span>
+              <strong style={{ fontSize: '14px', fontWeight: '700', color: 'var(--portal-ink, #1a1a1a)', fontFamily: 'var(--font-mono, ui-monospace, monospace)' }}>$20,000.00</strong>
             </div>
             <div>
-              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Daily Tx Count</span>
-              <strong style={{ fontSize: '12.5px' }}>100</strong>
+              <span style={{ color: 'var(--fg-muted, #6b6057)', fontSize: '11px', fontWeight: '500', display: 'block', marginBottom: '2px' }}>Daily Limit</span>
+              <strong style={{ fontSize: '14px', fontWeight: '700', color: 'var(--portal-ink, #1a1a1a)', fontFamily: 'var(--font-mono, ui-monospace, monospace)' }}>$250,000.00</strong>
             </div>
             <div>
-              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Daily Limit</span>
-              <strong style={{ fontSize: '12.5px' }}>$250,000</strong>
+              <span style={{ color: 'var(--fg-muted, #6b6057)', fontSize: '11px', fontWeight: '500', display: 'block', marginBottom: '2px' }}>Monthly Limit</span>
+              <strong style={{ fontSize: '14px', fontWeight: '700', color: 'var(--portal-ink, #1a1a1a)', fontFamily: 'var(--font-mono, ui-monospace, monospace)' }}>$1,000,000.00</strong>
             </div>
             <div>
-              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Monthly Limit</span>
-              <strong style={{ fontSize: '12.5px' }}>$1,000,000</strong>
+              <span style={{ color: 'var(--fg-muted, #6b6057)', fontSize: '11px', fontWeight: '500', display: 'block', marginBottom: '2px' }}>Daily Tx Count</span>
+              <strong style={{ fontSize: '14px', fontWeight: '700', color: 'var(--portal-ink, #1a1a1a)' }}>100 tx/day</strong>
             </div>
           </div>
         </div>
 
-        {/* ATM Withdrawal Limits */}
-        <div className="portal-mycards-desk-info__limit">
-          <div className="portal-mycards-desk-info__limit-head" style={{ marginBottom: '8px', borderBottom: '1px solid var(--portal-border)', paddingBottom: '4px' }}>
-            <span className="portal-mycards-desk-info__limit-name" style={{ fontWeight: '700', fontSize: '13px' }}>ATM Withdrawal</span>
+        <div className="portal-card-limit-group" style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid var(--border-default, rgba(26,26,26,0.06))' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-default, rgba(26,26,26,0.06))', marginBottom: '12px' }}>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--portal-ink, #1a1a1a)' }}>ATM Withdrawal</span>
+            <span style={{ fontSize: '11px', fontWeight: '500', color: 'var(--fg-muted, #6b6057)', background: 'var(--bg-subtle, rgba(0,0,0,0.04))', padding: '2px 8px', borderRadius: '4px' }}>2% fee (min $1)</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 10px', fontSize: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px 14px' }}>
             <div>
-              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Single Tx</span>
-              <strong style={{ fontSize: '12.5px' }}>$1,500</strong>
+              <span style={{ color: 'var(--fg-muted, #6b6057)', fontSize: '11px', fontWeight: '500', display: 'block', marginBottom: '2px' }}>Single / Daily</span>
+              <strong style={{ fontSize: '14px', fontWeight: '700', color: 'var(--portal-ink, #1a1a1a)', fontFamily: 'var(--font-mono, ui-monospace, monospace)' }}>$1,500.00</strong>
             </div>
             <div>
-              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Daily Limit</span>
-              <strong style={{ fontSize: '12.5px' }}>$1,500</strong>
-            </div>
-            <div>
-              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Daily Tx Count</span>
-              <strong style={{ fontSize: '12.5px' }}>30</strong>
-            </div>
-            <div>
-              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Fee</span>
-              <strong style={{ fontSize: '12.5px' }}>2% (min $1)</strong>
-            </div>
-            <div>
-              <span style={{ color: 'var(--portal-muted)', display: 'block', fontSize: '10.5px', lineHeight: '1.3' }}>Monthly Limit</span>
-              <strong style={{ fontSize: '12.5px' }}>$15,000</strong>
+              <span style={{ color: 'var(--fg-muted, #6b6057)', fontSize: '11px', fontWeight: '500', display: 'block', marginBottom: '2px' }}>Monthly Limit</span>
+              <strong style={{ fontSize: '14px', fontWeight: '700', color: 'var(--portal-ink, #1a1a1a)', fontFamily: 'var(--font-mono, ui-monospace, monospace)' }}>$15,000.00</strong>
             </div>
           </div>
         </div>

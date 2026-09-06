@@ -276,6 +276,12 @@ export function FeesReportPage() {
           💳 Card Application Status
         </NavLink>
         <NavLink
+          to="/admin/reports/transfers"
+          className={({ isActive }) => `admin-fees-tab-link${isActive ? ' is-active' : ''}`}
+        >
+          🔁 Card Transfer Ledger
+        </NavLink>
+        <NavLink
           to="/admin/reports/fees"
           className={({ isActive }) => `admin-fees-tab-link${isActive ? ' is-active' : ''}`}
         >

@@ -7,7 +7,7 @@ import { Icon } from './ui.jsx';
 import { CardDesktopManagementPanel } from './CardManagementPanels.jsx';
 import { CardPanel } from './portal/CardPanel.jsx';
 import { CardQuickActionGroup } from './QuickActionGroup.jsx';
-import { ActivityAmount } from './account-activity.jsx';
+import { ActivityAmount, DashboardActivityRow } from './account-activity.jsx';
 import { TransactionDetailsDrawer } from './account-transactions.jsx';
 import { DashboardRecentTransactions } from './account-dashboard-wallet-first.jsx';
 import {
@@ -361,60 +361,16 @@ export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, ti
         {!filtered.length ? (
           <p className="portal-mycards-desk-tx__empty">No transactions yet.</p>
         ) : (
-          <div className="portal-mycards-desk-tx__table-wrap">
-            <table className="portal-mycards-desk-tx__table">
-              <thead>
-                <tr>
-                  <th scope="col">Date</th>
-                  <th scope="col">Merchant</th>
-                  <th scope="col">Type</th>
-                  <th scope="col">Amount</th>
-                  <th scope="col">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((tx, idx) => {
-                  const parts = A.formatActivityAmountParts(tx.amount, tx.incoming, tx.kind, { ...tx, pageFilter });
-                  const isInc = parts.sign === '+';
-                  const amountVariant = tx.failed ? 'fail' : isInc ? 'in' : 'out';
-                  const statusLabel = tx.failed 
-                    ? 'Failed' 
-                    : (tx.status === 'pending' || tx.status === 'processing' 
-                        ? 'Pending' 
-                        : (A.formatActivityStatusLabel(tx.status) || 'Completed'));
-                  return (
-                    <tr
-                      key={tx.id ? `${tx.id}_${tx.kind || ''}_${tx.at || ''}_${idx}` : `tx_${idx}`}
-                      className={tx.failed ? ' is-failed' : ''}
-                      onClick={() => setSelectedTx(tx)}
-                      style={{ cursor: 'pointer' }}>
-                      <td data-label="Date">{A.formatActivityWhen(tx.at, { style: 'standard' })}</td>
-                      <td data-label="Merchant">{tx.title}</td>
-                      <td data-label="Type">{formatTxType(tx)}</td>
-                      <td data-label="Amount" className={`portal-mycards-desk-tx__amt is-${amountVariant}`}>
-                        <ActivityAmount
-                          amount={tx.amount}
-                          incoming={tx.incoming}
-                          failed={tx.failed}
-                          kind={tx.kind}
-                          item={tx}
-                        />
-                      </td>
-                      <td data-label="Status">
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                          <span className={`portal-mycards-desk-tx__status portal-mycards-desk-tx__status--${statusLabel.toLowerCase()}`}>
-                            {statusLabel}
-                          </span>
-                          <span className={`portal-tx-scope-badge portal-tx-scope-badge--${String(A.getActivitySourceLabel(tx)).toLowerCase()}`}>
-                            {A.getActivitySourceLabel(tx)}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="portal-mycards-desk-tx__list-panel">
+            <div className="portal-dash-wf__tx-list">
+              {filtered.map((tx, idx) => (
+                <DashboardActivityRow
+                  key={tx.id ? `${tx.id}_${tx.kind || ''}_${tx.at || ''}_${idx}` : `tx_${idx}`}
+                  tx={tx}
+                  onClick={() => setSelectedTx(tx)}
+                />
+              ))}
+            </div>
           </div>
         )}
       </section>

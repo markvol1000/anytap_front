@@ -283,7 +283,7 @@ function WalletArrowDivider({ className = '', hint }) {
   );
 }
 
-function CardThumb({ variant }) {
+export function CardThumb({ variant }) {
   const kind = variant === 'physical' ? 'physical' : 'virtual';
   return (
     <span

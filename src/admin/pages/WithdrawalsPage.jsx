@@ -60,7 +60,12 @@ export function WithdrawalsPage() {
 
   return (
     <div className="admin-page">
-      <AdminPageHeader title="Withdrawals" description="Review and process member withdrawal requests." />
+      <AdminPageHeader
+        title="Withdrawals"
+        description="Review and process member withdrawal requests."
+        onRefresh={list.reload}
+        refreshing={list.loading}
+      />
 
       <AdminSplitLayout
         left={(

@@ -1,23 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
-import { Icon } from '../../components/ui.jsx';
 import { apiPost } from '../../lib/api/httpClient.js';
 
 const QUICK_PROMPTS = [
-  'Show server status',
-  'Check server error reports',
-  'Show KYC & User status',
-  'Summarize top-up and refund history',
+  '서버 상태 확인',
+  '실시간 서버 에러 로그 점검',
+  'KYC 및 회원 가입 현황',
+  '디스크 및 메모리 사용량',
 ];
 
-export function AdminAiWidget() {
+export function SysDiagnosticWidget() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([
     {
       id: 'welcome-1',
-      sender: 'ai',
-      text: 'Hello! I am your AnyTap Admin AI Assistant. 🤖\n\nFeel free to ask about server status, recent error analysis, KYC verification, or transaction status.',
+      sender: 'system',
+      text: 'AnyTap 시스템 운영 진단 콘솔이 활성화되었습니다.\n\n서버 상태, 실시간 에러 로그, KYC 심사 현황, 디스크/메모리 리소스 등을 실시간으로 진단 조회하실 수 있습니다.',
       at: new Date().toISOString(),
     },
   ]);
@@ -51,21 +50,21 @@ export function AdminAiWidget() {
 
     try {
       const res = await apiPost('/admin/ai/chat', { message: query });
-      const answer = res?.answer || res?.data?.answer || 'Failed to fetch AI response.';
+      const answer = res?.answer || res?.data?.answer || '시스템 진단 리포트를 가져오지 못했습니다.';
 
-      const aiMsg = {
-        id: `ai-${Date.now()}`,
-        sender: 'ai',
+      const sysMsg = {
+        id: `sys-${Date.now()}`,
+        sender: 'system',
         text: answer,
         at: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, aiMsg]);
+      setMessages((prev) => [...prev, sysMsg]);
     } catch (err) {
-      console.error('Failed to get AI response:', err);
+      console.error('Failed to get diagnostic report:', err);
       const errorMsg = {
-        id: `ai-err-${Date.now()}`,
-        sender: 'ai',
-        text: '⚠️ An error occurred while connecting to AI service. Please check server connection.',
+        id: `sys-err-${Date.now()}`,
+        sender: 'system',
+        text: '⚠️ 진단 서비스 연결 중 오류가 발생했습니다. 백엔드 서버 상태를 확인해 주세요.',
         at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -94,10 +93,10 @@ export function AdminAiWidget() {
             gap: '8px',
             padding: '12px 18px',
             borderRadius: '28px',
-            backgroundColor: '#2563eb',
-            color: '#ffffff',
-            border: 'none',
-            boxShadow: '0 10px 25px -5px rgba(37, 99, 235, 0.4), 0 8px 10px -6px rgba(37, 99, 235, 0.2)',
+            backgroundColor: '#0f172a',
+            color: '#38bdf8',
+            border: '1px solid #334155',
+            boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.5), 0 8px 10px -6px rgba(15, 23, 42, 0.3)',
             cursor: 'pointer',
             fontWeight: '600',
             fontSize: '14px',
@@ -105,8 +104,8 @@ export function AdminAiWidget() {
           }}
           onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px) scale(1.03)')}
           onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0) scale(1)')}>
-          <span style={{ fontSize: '18px' }}>🤖</span>
-          <span>Admin AI Assistant</span>
+          <span style={{ fontSize: '16px' }}>⚡</span>
+          <span>시스템 관제 진단</span>
         </button>
       )}
 
@@ -118,7 +117,7 @@ export function AdminAiWidget() {
             height: '540px',
             backgroundColor: '#ffffff',
             borderRadius: '16px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
             border: '1px solid #e2e8f0',
             display: 'flex',
             flexDirection: 'column',
@@ -128,17 +127,17 @@ export function AdminAiWidget() {
           <div
             style={{
               padding: '14px 16px',
-              backgroundColor: '#2563eb',
+              backgroundColor: '#0f172a',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px' }}>🤖</span>
+              <span style={{ fontSize: '16px' }}>⚡</span>
               <div>
-                <div style={{ fontWeight: '700', fontSize: '14px', lineHeight: '1.2' }}>Admin AI Assistant</div>
-                <div style={{ fontSize: '11px', opacity: 0.85 }}>Powered by Gemini 1.5 Pro</div>
+                <div style={{ fontWeight: '700', fontSize: '14px', lineHeight: '1.2', color: '#f8fafc' }}>System Operations Terminal</div>
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>Real-time Diagnostic Daemon</div>
               </div>
             </div>
             <button
@@ -147,10 +146,9 @@ export function AdminAiWidget() {
               style={{
                 backgroundColor: 'transparent',
                 border: 'none',
-                color: '#ffffff',
+                color: '#94a3b8',
                 fontSize: '18px',
                 cursor: 'pointer',
-                opacity: 0.8,
                 padding: '2px',
               }}>
               ✕
@@ -176,8 +174,8 @@ export function AdminAiWidget() {
                   maxWidth: '85%',
                   padding: '10px 14px',
                   borderRadius: m.sender === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-                  backgroundColor: m.sender === 'user' ? '#2563eb' : '#ffffff',
-                  color: m.sender === 'user' ? '#ffffff' : '#1e293b',
+                  backgroundColor: m.sender === 'user' ? '#0f172a' : '#ffffff',
+                  color: m.sender === 'user' ? '#f8fafc' : '#1e293b',
                   fontSize: '13px',
                   lineHeight: '1.5',
                   boxShadow: m.sender === 'user' ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.05)',
@@ -189,8 +187,8 @@ export function AdminAiWidget() {
             ))}
             {loading && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontSize: '12px', padding: '6px' }}>
-                <span style={{ fontSize: '14px', animation: 'spin 1s infinite linear' }}>⏳</span>
-                <span>Gemini AI Analyzing...</span>
+                <span style={{ fontSize: '14px' }}>⏳</span>
+                <span>시스템 진단 분석 중...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -245,7 +243,7 @@ export function AdminAiWidget() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask a question..."
+              placeholder="진단 또는 조회할 항목을 입력하세요..."
               disabled={loading}
               style={{
                 flex: 1,
@@ -265,7 +263,7 @@ export function AdminAiWidget() {
               onClick={() => handleSend()}
               style={{
                 padding: '8px 14px',
-                backgroundColor: !input.trim() || loading ? '#cbd5e1' : '#2563eb',
+                backgroundColor: !input.trim() || loading ? '#cbd5e1' : '#0f172a',
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '8px',
@@ -273,7 +271,7 @@ export function AdminAiWidget() {
                 fontSize: '13px',
                 cursor: !input.trim() || loading ? 'not-allowed' : 'pointer',
               }}>
-              Send
+              진단
             </button>
           </div>
         </div>
@@ -281,3 +279,5 @@ export function AdminAiWidget() {
     </div>
   );
 }
+
+

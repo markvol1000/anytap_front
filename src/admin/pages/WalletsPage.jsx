@@ -153,21 +153,16 @@ export function WalletsPage() {
 
   return (
     <div className="admin-page">
-      <AdminPageHeader title="Wallets" description="Monitor balances, deposits, and top-ups." />
+      <AdminPageHeader
+        title="Wallets"
+        description="Monitor balances, deposits, and top-ups."
+        onRefresh={list.reload}
+        refreshing={list.loading}
+      />
 
       <AdminSplitLayout
         left={(
           <AdminPanel>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
-              <button
-                type="button"
-                className="admin-btn admin-btn--ghost admin-btn--sm"
-                onClick={() => list.reload()}
-                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-              >
-                🔄 Refresh List
-              </button>
-            </div>
             <AdminFilterBar
               search={list.search}
               onSearchChange={list.setSearch}

@@ -84,6 +84,18 @@ function CopyableTxId({ txId, color = '#b45309' }) {
   );
 }
 
+const SIM_CURRENCIES = [
+  { code: 'KRW', label: '₩ KRW', name: '한국 원', symbol: '₩', defaultAmt: '15000', defaultMerch: 'Starbucks Gangnam' },
+  { code: 'USD', label: '$ USD', name: '미국 달러', symbol: '$', defaultAmt: '10.00', defaultMerch: 'Starbucks Coffee' },
+  { code: 'EUR', label: '€ EUR', name: '유로', symbol: '€', defaultAmt: '10.00', defaultMerch: 'Paris Bistro' },
+  { code: 'SGD', label: 'S$ SGD', name: '싱가포르', symbol: 'S$', defaultAmt: '15.00', defaultMerch: 'Marina Bay Merchant' },
+  { code: 'HKD', label: 'HK$ HKD', name: '홍콩 달러', symbol: 'HK$', defaultAmt: '80.00', defaultMerch: 'Central Cafe HK' },
+  { code: 'CNY', label: '¥ CNY', name: '중국 위안', symbol: '¥', defaultAmt: '70.00', defaultMerch: 'Shanghai Mart' },
+  { code: 'PHP', label: '₱ PHP', name: '필리핀 페소', symbol: '₱', defaultAmt: '500.00', defaultMerch: 'Manila Store' },
+  { code: 'IDR', label: 'Rp IDR', name: '인도네시아', symbol: 'Rp', defaultAmt: '150000', defaultMerch: 'Jakarta Cafe' },
+  { code: 'USDT', label: '₮ USDT', name: '테더', symbol: '₮', defaultAmt: '10.00', defaultMerch: 'Online Crypto Store' },
+];
+
 export function CardsPage() {
   const confirm = useAdminConfirm();
   const [searchParams] = useSearchParams();
@@ -205,6 +217,11 @@ export function CardsPage() {
       <AdminPageHeader
         title="Cards"
         description="Management for issued card lifecycle including freeze/unfreeze, activation, PIN setting, and transaction history."
+        onRefresh={() => {
+          list.reload();
+          if (selectedId) loadTxs(txPage);
+        }}
+        refreshing={list.loading}
       />
 
       {/* Cards KPI Summary */}
@@ -357,12 +374,19 @@ export function CardsPage() {
                   },
                   { 
                     key: 'cregisActualBalance', 
-                    label: 'Wallet Balance', 
-                    render: (r) => (
-                      <span style={{ fontWeight: '700', color: '#047857', fontSize: '12px', whiteSpace: 'nowrap' }}>
-                        {Number(r.cregisActualBalance ?? r.walletBalance ?? 0).toFixed(2)} USDT
-                      </span>
-                    ) 
+                    label: 'Wallet Balance (가용/실잔액)', 
+                    render: (r) => {
+                      const avail = Number(r.walletBalance ?? r.balance ?? 0).toFixed(2);
+                      const actual = Number(r.cregisActualBalance ?? r.actualBalance ?? r.walletBalance ?? 0).toFixed(2);
+                      return (
+                        <div style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: '800', color: '#047857' }}>{avail} USDT</span>
+                          <span style={{ fontSize: '11px', color: '#64748b', marginLeft: '4px' }}>
+                            ({actual})
+                          </span>
+                        </div>
+                      );
+                    } 
                   },
                   { 
                     key: 'created', 
@@ -430,7 +454,10 @@ export function CardsPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{ color: '#2563eb', fontWeight: '600' }}>🔗 Wallet Balance:</span>
                       <span style={{ fontWeight: '800', color: '#1d4ed8' }}>
-                        {Number(detail.cregisActualBalance ?? detail.walletBalance ?? 0).toFixed(2)} USDT
+                        {Number(detail.walletBalance ?? detail.balance ?? 0).toFixed(2)} USDT
+                      </span>
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        ({Number(detail.cregisActualBalance ?? detail.actualBalance ?? detail.walletBalance ?? 0).toFixed(2)})
                       </span>
                     </div>
                   </div>
@@ -442,10 +469,43 @@ export function CardsPage() {
                   </div>
                 </AdminDetailSection>
 
-                {/* Card Deposit / Recharge History Section */}
-                <AdminDetailSection title="Deposit History">
+                {/* Card Deposit / Top-Up & Transfer In/Out History Section */}
+                <AdminDetailSection title="Card Balance & Transfer History (충전 및 이체 내역)">
                   {(() => {
-                    const allDeposits = [...(detail.cardDeposits || []), ...(detail.recentDeposits || [])];
+                    // Also capture any deposit/topup/transfer transactions from txs or cardTransactions
+                    const txItems = [...(txs?.items || []), ...(detail.cardTransactions || [])];
+                    const cardTransfersFromTx = txItems.filter((t) => {
+                      const rawType = String(t.type || t.txType || t.kind || '').toUpperCase();
+                      const rawDesc = String(t.description || t.merchantName || t.merchant || '').toLowerCase();
+                      return rawType.includes('WITHDRAW') || rawType.includes('TRANSFER') || rawType.includes('CHARGE')
+                        || rawType.includes('DEPOSIT') || rawType.includes('TOPUP') || rawType.includes('TOP_UP')
+                        || rawDesc.includes('withdrawal') || rawDesc.includes('transfer') || rawDesc.includes('top up') || rawDesc.includes('deposit');
+                    });
+
+                    const rawList = [
+                      ...(detail.cardDeposits || []),
+                      ...(detail.transfers || []),
+                      ...(detail.recentDeposits || []),
+                      ...(detail.recentTopUps || []),
+                      ...cardTransfersFromTx,
+                    ];
+
+                    const seenKeys = new Set();
+                    const allDeposits = rawList.filter((d) => {
+                      const k = d.id || d.referenceId || d.txHash || d.wasabiTxId || d.merchantOrderNo;
+                      if (!k) return true;
+                      if (seenKeys.has(k)) return false;
+                      seenKeys.add(k);
+                      return true;
+                    });
+
+                    // Sort descending by date
+                    allDeposits.sort((a, b) => {
+                      const tA = new Date(a.createdAt || a.chainTime || a.date || a.completedAt || 0).getTime();
+                      const tB = new Date(b.createdAt || b.chainTime || b.date || b.completedAt || 0).getTime();
+                      return tB - tA;
+                    });
+
                     const totalDepositCount = allDeposits.length;
                     const totalDepositPages = Math.max(1, Math.ceil(totalDepositCount / 10));
                     const pagedDeposits = allDeposits.slice((depositPage - 1) * 10, depositPage * 10);
@@ -453,56 +513,100 @@ export function CardsPage() {
                     if (totalDepositCount === 0) {
                       return (
                         <div style={{ fontSize: '12px', color: '#94a3b8', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
-                          No card deposit history found.
+                          No deposit or transfer history found.
                         </div>
                       );
                     }
 
                     return (
                       <>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                          {pagedDeposits.map((dep, idx) => (
-                            <div key={dep.referenceId || dep.txHash || idx} style={{
-                              padding: '6px 10px',
-                              backgroundColor: '#f8fafc',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '6px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              fontSize: '11px',
-                              gap: '8px',
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                                <span style={{ fontWeight: '600', color: '#1e293b' }}>⚡ Card Top-Up</span>
-                                <span style={{ fontSize: '10px', color: '#64748b', fontFamily: 'monospace' }}>
-                                  ({dep.wasabiTxId ? shortenAddress(dep.wasabiTxId, 4, 4) : (dep.referenceId ? shortenAddress(dep.referenceId, 4, 4) : 'Direct')})
-                                </span>
-                                <span style={{ color: '#cbd5e1' }}>•</span>
-                                <span style={{ fontSize: '10px', color: '#64748b' }}>
-                                  {formatAdminDate(dep.createdAt || dep.chainTime || dep.date)}
-                                </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {pagedDeposits.map((dep, idx) => {
+                            const rawType = String(dep.type || dep.kind || dep.txType || '').toLowerCase();
+                            const isOutflow = rawType.includes('out') || rawType.includes('send') || rawType.includes('withdraw');
+                            const isTransfer = rawType.includes('transfer') || dep.merchantOrderNo?.startsWith('TRANSFER') || dep.destinationEmail || dep.sourceCardNo;
+                            
+                            let label = '⚡ Card Top-Up';
+                            if (isTransfer) {
+                              label = isOutflow ? '📤 Transfer Out' : '📥 Transfer In';
+                            } else if (isOutflow) {
+                              label = '📤 Withdrawal';
+                            } else if (rawType.includes('deposit') || rawType.includes('wallet')) {
+                              label = '📥 Deposit';
+                            }
+
+                            const sign = isOutflow ? '-' : '+';
+                            const numColor = isOutflow ? '#dc2626' : '#16a34a';
+                            const numBg = isOutflow ? '#fef2f2' : '#f0fdf4';
+                            const numBorder = isOutflow ? '#fecaca' : '#bbf7d0';
+
+                            const txIdent = dep.wasabiTxId || dep.referenceId || dep.txHash || dep.merchantOrderNo || dep.id;
+                            const amountVal = Math.abs(Number(dep.depositAmount || dep.grossAmount || dep.amount || dep.netAmount || 0));
+                            const curr = dep.currency || 'USD';
+
+                            return (
+                              <div key={txIdent || idx} style={{
+                                padding: '8px 10px',
+                                backgroundColor: '#f8fafc',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '6px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                fontSize: '11px',
+                                gap: '8px',
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                  <span style={{ fontWeight: '700', color: '#1e293b' }}>
+                                    {label}
+                                  </span>
+                                  {txIdent && (
+                                    <CopyableTxId txId={txIdent} color="#64748b" />
+                                  )}
+                                  <span style={{ color: '#cbd5e1' }}>•</span>
+                                  <span style={{ fontSize: '10px', color: '#64748b' }}>
+                                    {formatAdminDate(dep.createdAt || dep.chainTime || dep.date || dep.completedAt)}
+                                  </span>
+                                  {dep.destinationEmail && (
+                                    <span style={{ fontSize: '10px', color: '#64748b' }}>
+                                      (To: {dep.destinationEmail})
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                                  <span style={{
+                                    fontWeight: '800',
+                                    color: numColor,
+                                    backgroundColor: numBg,
+                                    border: `1px solid ${numBorder}`,
+                                    padding: '2px 8px',
+                                    borderRadius: '5px',
+                                    fontSize: '11px',
+                                    fontFamily: 'monospace',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '2px',
+                                  }}>
+                                    <span>{sign}</span>
+                                    <span>{formatAmountWithCurrency(amountVal, curr)}</span>
+                                  </span>
+                                  <span style={{
+                                    fontSize: '9px',
+                                    padding: '1px 5px',
+                                    borderRadius: '3px',
+                                    backgroundColor: (dep.status === 'CONFIRMED' || dep.status === 'SUCCESS' || dep.status === 'COMPLETED' || dep.wasabiTxId) ? '#dcfce7' : '#fef3c7',
+                                    color: (dep.status === 'CONFIRMED' || dep.status === 'SUCCESS' || dep.status === 'COMPLETED' || dep.wasabiTxId) ? '#166534' : '#92400e',
+                                    fontWeight: '600'
+                                  }}>
+                                    {(dep.status === 'CONFIRMED' || dep.status === 'SUCCESS' || dep.status === 'COMPLETED' || dep.wasabiTxId) ? '✓ Completed' : '⏳ Pending'}
+                                  </span>
+                                </div>
                               </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                                <span style={{ fontWeight: '700', color: '#059669' }}>
-                                  +{Number(dep.depositAmount || dep.amount || 0).toFixed(2)} USDT
-                                </span>
-                                <span style={{
-                                  fontSize: '9px',
-                                  padding: '1px 5px',
-                                  borderRadius: '3px',
-                                  backgroundColor: (dep.status === 'CONFIRMED' || dep.wasabiTxId) ? '#dcfce7' : '#fef3c7',
-                                  color: (dep.status === 'CONFIRMED' || dep.wasabiTxId) ? '#166534' : '#92400e',
-                                  fontWeight: '600'
-                                }}>
-                                  {(dep.status === 'CONFIRMED' || dep.wasabiTxId) ? '✓ Completed' : '⏳ Pending'}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
 
-                        {/* Deposit Pagination Controls */}
+                        {/* Deposit & Transfer Pagination Controls */}
                         {totalDepositPages > 1 && (
                           <div style={{
                             display: 'flex',
@@ -561,18 +665,55 @@ export function CardsPage() {
                   {txLoading ? (
                     <div style={{ fontSize: '12px', color: '#64748b', padding: '8px' }}>Loading transaction history...</div>
                   ) : (() => {
-                    const combinedList = [...(txs?.items || []), ...(detail.cardTransactions || [])];
-                    const seenIds = new Set();
-                    const allTxs = combinedList.filter((t) => {
-                      const idKey = t.id || t.txId;
-                      if (!idKey) return true;
-                      if (seenIds.has(idKey)) return false;
-                      seenIds.add(idKey);
-                      return true;
+                    // 1. Combine lists and deduplicate intelligently
+                    const rawCombined = [...(txs?.items || []), ...(detail.cardTransactions || [])];
+                    const seenKeys = new Set();
+                    const filteredTxs = [];
+
+                    for (const t of rawCombined) {
+                      const rawType = String(t.type || t.txType || t.kind || '').toUpperCase();
+                      const rawDesc = String(t.description || t.merchantName || t.merchant || '').toLowerCase();
+                      if (rawType.includes('WITHDRAW') || rawType.includes('TRANSFER') || rawType.includes('CHARGE')
+                          || rawDesc.includes('withdrawal') || rawDesc.includes('transfer') || rawDesc.includes('top up')) {
+                        continue;
+                      }
+
+                      // Resolve Tx ID from any available identifier
+                      const resolvedTxId = t.txId || t.id || t.transId || t.referenceNo || t.orderNo || t.authCode || '';
+                      // Resolve date from all possible date fields
+                      const resolvedDate = t.at || t.txTime || t.createdDate || t.createdAt || t.transactionDate || t.authDate || t.date || '';
+                      const resolvedAmt = Math.abs(Number(t.originalAmount ?? t.amount ?? t.transAmount ?? 0));
+                      const resolvedCurr = t.originalCurrency || t.currency || t.authorizedCurrency || 'USD';
+                      const resolvedMerch = t.merchantName || t.merchant || t.description || 'Merchant Transaction';
+
+                      // Deduplication key: If txId exists, use it; otherwise deduplicate by date + amount + merchant
+                      const dedupeKey = resolvedTxId 
+                        ? `ID_${resolvedTxId}` 
+                        : `M_${resolvedMerch}_${resolvedAmt}_${resolvedCurr}_${resolvedDate ? resolvedDate.slice(0, 16) : ''}`;
+
+                      if (seenKeys.has(dedupeKey)) continue;
+                      seenKeys.add(dedupeKey);
+
+                      filteredTxs.push({
+                        ...t,
+                        resolvedTxId,
+                        resolvedDate,
+                        resolvedAmt,
+                        resolvedCurr,
+                        resolvedMerch,
+                      });
+                    }
+
+                    // Sort descending by date (records with dates first, then others)
+                    filteredTxs.sort((a, b) => {
+                      const tA = a.resolvedDate ? new Date(a.resolvedDate).getTime() : 0;
+                      const tB = b.resolvedDate ? new Date(b.resolvedDate).getTime() : 0;
+                      return tB - tA;
                     });
-                    const totalTxCount = allTxs.length;
+
+                    const totalTxCount = filteredTxs.length;
                     const totalTxPages = Math.max(1, Math.ceil(totalTxCount / 10));
-                    const pagedTxs = allTxs.slice((txSectionPage - 1) * 10, txSectionPage * 10);
+                    const pagedTxs = filteredTxs.slice((txSectionPage - 1) * 10, txSectionPage * 10);
 
                     if (totalTxCount === 0) {
                       return (
@@ -584,45 +725,88 @@ export function CardsPage() {
 
                     return (
                       <>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                          {pagedTxs.map((t, idx) => (
-                            <div key={t.id || t.txId || idx} style={{
-                              padding: '6px 10px',
-                              backgroundColor: '#f8fafc',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '6px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              fontSize: '11px',
-                              gap: '8px',
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                                <span style={{ fontWeight: '600', color: '#1e293b', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                                  {t.merchantName || t.merchant || t.description || 'Merchant Transaction'}
-                                </span>
-                                <span style={{ color: '#cbd5e1' }}>•</span>
-                                <span style={{ fontSize: '10px', color: '#64748b' }}>
-                                  {formatAdminDate(t.at || t.createdDate || t.txTime)}
-                                </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {pagedTxs.map((t, idx) => {
+                            const rawType = String(t.type || t.txType || t.kind || '').toLowerCase();
+                            const isRefund = rawType.includes('refund') || rawType.includes('reversal') || rawType.includes('deposit') || rawType.includes('topup');
+                            const sign = isRefund ? '+' : '-';
+                            const numColor = isRefund ? '#16a34a' : '#dc2626';
+                            const numBg = isRefund ? '#f0fdf4' : '#fef2f2';
+                            const numBorder = isRefund ? '#bbf7d0' : '#fecaca';
+
+                            const rawStatus = String(t.status || 'SUCCESS').toUpperCase();
+                            const isAuth = rawStatus.includes('AUTH');
+                            const isFailed = rawStatus.includes('FAIL') || rawStatus.includes('REJECT') || rawStatus.includes('DECLIN');
+
+                            let statusLabel = '✓ Completed';
+                            let statusBg = '#dcfce7';
+                            let statusColor = '#166534';
+
+                            if (isAuth) {
+                              statusLabel = '⏳ Authorized';
+                              statusBg = '#e0f2fe';
+                              statusColor = '#0369a1';
+                            } else if (isFailed) {
+                              statusLabel = '✕ Failed';
+                              statusBg = '#fee2e2';
+                              statusColor = '#b91c1c';
+                            }
+
+                            return (
+                              <div key={t.resolvedTxId || idx} style={{
+                                padding: '8px 10px',
+                                backgroundColor: '#f8fafc',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '6px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                fontSize: '11px',
+                                gap: '8px',
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                  <span style={{ fontWeight: '600', color: '#1e293b', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                    {t.resolvedMerch}
+                                  </span>
+                                  {t.resolvedTxId && (
+                                    <CopyableTxId txId={t.resolvedTxId} color="#64748b" />
+                                  )}
+                                  <span style={{ color: '#cbd5e1' }}>•</span>
+                                  <span style={{ fontSize: '10px', color: t.resolvedDate ? '#64748b' : '#94a3b8' }}>
+                                    {t.resolvedDate ? formatAdminDate(t.resolvedDate) : '—'}
+                                  </span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                                  <span style={{
+                                    fontWeight: '800',
+                                    color: numColor,
+                                    backgroundColor: numBg,
+                                    border: `1px solid ${numBorder}`,
+                                    padding: '2px 8px',
+                                    borderRadius: '5px',
+                                    fontSize: '11px',
+                                    fontFamily: 'monospace',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '2px',
+                                  }}>
+                                    <span>{sign}</span>
+                                    <span>{formatAmountWithCurrency(t.resolvedAmt, t.resolvedCurr)}</span>
+                                  </span>
+                                  <span style={{
+                                    fontSize: '9px',
+                                    padding: '1px 6px',
+                                    borderRadius: '3px',
+                                    backgroundColor: statusBg,
+                                    color: statusColor,
+                                    fontWeight: '700'
+                                  }}>
+                                    {statusLabel}
+                                  </span>
+                                </div>
                               </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                                <span style={{ fontWeight: '700', color: '#047857' }}>
-                                  {formatAmountWithCurrency(t.originalAmount ?? t.amount ?? t.transAmount ?? 0, t.originalCurrency || t.currency || t.authorizedCurrency || 'USD')}
-                                </span>
-                                <span style={{
-                                  fontSize: '9px',
-                                  padding: '1px 5px',
-                                  borderRadius: '3px',
-                                  backgroundColor: (t.status === 'SUCCESS' || t.status === 'APPROVED' || !t.status) ? '#e0f2fe' : '#fee2e2',
-                                  color: (t.status === 'SUCCESS' || t.status === 'APPROVED' || !t.status) ? '#0369a1' : '#b91c1c',
-                                  fontWeight: '600'
-                                }}>
-                                  {t.status || 'SUCCESS'}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
 
                         {/* Transaction Pagination Controls */}
@@ -766,36 +950,48 @@ export function CardsPage() {
             <form onSubmit={handleRunSimulation} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {/* 1. Currency Selection */}
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
-                  1. Select Payment Currency
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '8px' }}>
+                  1. Select Payment Currency (결제 통화 선택)
                 </label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {[
-                    { code: 'KRW', label: '₩ KRW', defaultAmt: '15000', defaultMerch: 'Starbucks Gangnam' },
-                    { code: 'USD', label: '$ USD', defaultAmt: '10.00', defaultMerch: 'Starbucks Coffee' },
-                    { code: 'USDT', label: '₮ USDT', defaultAmt: '10.00', defaultMerch: 'Tether Merchant' },
-                    { code: 'EUR', label: '€ EUR', defaultAmt: '10.00', defaultMerch: 'Paris Cafe' },
-                  ].map((cur) => (
-                    <button
-                      key={cur.code}
-                      type="button"
-                      className={`admin-btn ${simCurrency === cur.code ? 'admin-btn--primary' : 'admin-btn--ghost'}`}
-                      style={{
-                        flex: 1,
-                        padding: '6px 4px',
-                        fontSize: '11px',
-                        fontWeight: simCurrency === cur.code ? '700' : '500',
-                        border: simCurrency === cur.code ? '1px solid #2563eb' : '1px solid #cbd5e1',
-                      }}
-                      onClick={() => {
-                        setSimCurrency(cur.code);
-                        setSimAmount(cur.defaultAmt);
-                        setSimMerchant(cur.defaultMerch);
-                      }}
-                    >
-                      {cur.label}
-                    </button>
-                  ))}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '8px'
+                }}>
+                  {SIM_CURRENCIES.map((cur) => {
+                    const isSelected = simCurrency === cur.code;
+                    return (
+                      <button
+                        key={cur.code}
+                        type="button"
+                        onClick={() => {
+                          setSimCurrency(cur.code);
+                          setSimAmount(cur.defaultAmt);
+                          setSimMerchant(cur.defaultMerch);
+                        }}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '8px 6px',
+                          borderRadius: '8px',
+                          border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                          backgroundColor: isSelected ? '#eff6ff' : '#f8fafc',
+                          color: isSelected ? '#1d4ed8' : '#334155',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontWeight: '800', fontSize: '13px' }}>{cur.label}</span>
+                        </div>
+                        <span style={{ fontSize: '10px', color: isSelected ? '#2563eb' : '#64748b', marginTop: '2px' }}>
+                          {cur.name}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

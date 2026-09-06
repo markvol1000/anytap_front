@@ -530,6 +530,7 @@ const PATH_TO_SCREEN = Object.fromEntries(
 );
 
 const LEGACY_PATH_ALIASES = {
+  '/account/wallet': 'topup',
   '/account/card/apply': 'cardApply',
   '/account/card/register': 'cardRegister',
   '/account/history': 'transactions',

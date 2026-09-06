@@ -27,6 +27,10 @@ const STATUS_MAP = {
   blocked: { label: 'Blocked', tone: 'danger' },
   freeze: { label: 'Frozen', tone: 'info' },
   not_issued: { label: 'Not Issued', tone: 'neutral' },
+  success: { label: 'Success', tone: 'success' },
+  completed: { label: 'Completed', tone: 'success' },
+  failed: { label: 'Failed', tone: 'danger' },
+  error: { label: 'Error', tone: 'danger' },
 };
 
 export function AdminStatusBadge({ status, label }) {
@@ -64,7 +68,7 @@ export function formatAmountWithCurrency(amount, currency = 'USDT') {
   const code = String(currency || 'USDT').toUpperCase().trim();
 
   if (code === 'IDR' || code === 'RP') {
-    return `${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} IDR`;
+    return `${num.toLocaleString('id-ID', { maximumFractionDigits: 0 })} IDR`;
   }
   if (code === 'KRW' || code === '₩') {
     return `${num.toLocaleString('ko-KR', { maximumFractionDigits: 0 })} KRW`;
@@ -77,6 +81,18 @@ export function formatAmountWithCurrency(amount, currency = 'USDT') {
   }
   if (code === 'EUR' || code === '€') {
     return `${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR`;
+  }
+  if (code === 'SGD' || code === 'S$') {
+    return `${num.toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} SGD`;
+  }
+  if (code === 'HKD' || code === 'HK$') {
+    return `${num.toLocaleString('en-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} HKD`;
+  }
+  if (code === 'CNY' || code === 'RMB') {
+    return `${num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} CNY`;
+  }
+  if (code === 'PHP' || code === '₱') {
+    return `${num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PHP`;
   }
 
   return `${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${code}`;

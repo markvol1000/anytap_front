@@ -73,6 +73,8 @@ function pickTitle(record) {
   if (typeStr.includes('freeze') || subTypeStr.includes('freeze')) return 'Freeze';
   if (typeStr.includes('card_update') || typeStr.includes('card update')) return 'Card Update';
   if (typeStr.includes('create')) return 'Create Card';
+  if (typeStr.includes('card_transfer_in') || typeStr.includes('transfer in')) return 'Card Deposit / Transfer In';
+  if (typeStr.includes('card_transfer_out') || typeStr.includes('transfer out')) return 'Card Withdrawal / Transfer Out';
   if (typeStr.includes('withdraw')) return 'Card Withdrawal';
   if (typeStr.includes('topup') || typeStr.includes('deposit')) return 'Card Top Up';
   if (typeStr.includes('refund')) return 'Refund';
@@ -116,6 +118,8 @@ function mapWasabiType(type = '') {
   const t = String(type).toLowerCase();
   if (t.includes('refund')) return 'refund';
   if (t.includes('reversal') || t.includes('reverse')) return 'reversal';
+  if (t.includes('transfer_in') || t.includes('transfer in')) return 'card_topup';
+  if (t.includes('transfer_out') || t.includes('transfer out')) return 'card_spend';
   if (t.includes('deposit') || t.includes('topup') || t.includes('top_up') || t.includes('charge')) {
     return 'card_topup';
   }
@@ -229,6 +233,19 @@ export function mapWasabiTransactionsResponse(payload, opts = {}) {
     : (rawData?.records || rawData?.list || rawData?.data?.records || rawData?.data?.list || rawData?.data || []);
 
   const items = records
+    .filter((row) => {
+      if (!row || typeof row !== 'object') return false;
+      const rawTxId = String(row.tradeNo || row.transactionId || row.id || row.orderNo || '').trim();
+      const subType = String(row.subType || '').toUpperCase();
+      const originOrderNo = String(row.originOrderNo || '').trim();
+      const desc = String(row.description || row.merchantName || row.remark || '').toLowerCase();
+
+      // Skip internal transfer sub-orders and legacy webhook duplicates
+      if (rawTxId.startsWith('CARD_WID_') || rawTxId.startsWith('CARD_DEP_')) return false;
+      if (subType === 'TRANSFER' || originOrderNo.startsWith('CT') || desc.includes('immigrat')) return false;
+      if (rawTxId.startsWith('CW') && (desc.includes('withdraw') || subType === 'TRANSFER')) return false;
+      return true;
+    })
     .map((row) => {
       const item = mapWasabiTransactionRecord(row, opts);
       if (item && (!item.cardLast4 || item.cardLast4.length === 0) && opts.last4) {

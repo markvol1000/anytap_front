@@ -126,5 +126,6 @@ export function useAdminList(fetcher, initialFilters = {}, options = {}) {
     setFilter,
     toggleSort,
     reload,
+    refresh: reload,
   };
 }

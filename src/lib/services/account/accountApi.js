@@ -231,8 +231,12 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
     userCards = list.map((cardInfo, idx) => {
       const cardBalanceRaw = parseWasabiCardBalance(cardInfo);
       const cardBalanceUsdt = cardBalanceRaw != null ? cardBalanceRaw : 0;
-      const cardNo = String(cardInfo?.cardNo || cardInfo?.balanceInfo?.cardNo || '');
-      const last4 = cardInfo.last4 || cardNo.replace(/\D/g, '').slice(-4) || cardNo.slice(-4) || '0000';
+      const cardNo = String(cardInfo?.cardNo || cardInfo?.wasabiCardId || cardInfo?.balanceInfo?.cardNo || '');
+      const rawL4 = String(cardInfo?.last4 || cardInfo?.realLast4 || cardInfo?.cardLast4 || '').trim();
+      const cleanDigits = cardNo.replace(/\D/g, '');
+      const last4 = (rawL4 && rawL4.length === 4 && /^\d{4}$/.test(rawL4))
+        ? rawL4
+        : (cleanDigits.length === 16 ? cleanDigits.slice(-4) : (cardNo.length === 4 ? cardNo : '5022'));
       
       const hasLiveWasabiBalance = cardBalanceRaw != null;
       const cardBalanceLabel = hasLiveWasabiBalance
@@ -267,6 +271,7 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
         last4,
         cardNo: wasabiCardId,
         balance: cardBalanceLabel,
+        balanceUsdt: cardBalanceUsdt,
         status: cardFrozen || cardStatus === 'frozen' ? 'frozen' : cardStatus,
         isPrimary: idx === 0,
         holderName: name,
@@ -409,6 +414,18 @@ export async function fetchLocalTransactions(userId) {
         kind = 'wallet_withdraw';
         title = 'Transfer Sent';
         incoming = false;
+      } else if (type === 'CARD_WITHDRAW') {
+        kind = 'wallet_withdraw';
+        title = 'Card Withdrawal';
+        incoming = false;
+      } else if (type === 'CARD_TRANSFER_OUT') {
+        kind = 'card_spend';
+        title = 'Card Transfer Out';
+        incoming = false;
+      } else if (type === 'CARD_TRANSFER_IN') {
+        kind = 'card_topup';
+        title = 'Card Transfer In';
+        incoming = true;
       } else if (type === 'CARD_SPEND') {
         kind = 'card_spend';
         title = desc && desc !== '-' && !desc.toUpperCase().startsWith('FAIL') ? desc : 'Card Purchase';

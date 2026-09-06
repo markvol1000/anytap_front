@@ -136,6 +136,7 @@ export function CardQuickActionGroup({ s, card, activeId = null, className = '',
   const actions = useMemo(() => {
     const base = [
       { id: 'topUp', label: 'Top Up', icon: 'creditCard', accent: true },
+      { id: 'cardTransfer', label: 'Card Transfer', icon: 'arrowUpRight' },
     ];
     if (isSummary) return base;
     return [
@@ -153,6 +154,8 @@ export function CardQuickActionGroup({ s, card, activeId = null, className = '',
         return;
       }
       s.openQuickTopUp?.(card);
+    } else if (id === 'cardTransfer') {
+      s?.openCardTransfer?.(card);
     } else if (id === 'cardDetails') {
       s.openCardDetails?.(card);
     } else if (id === 'freeze') {

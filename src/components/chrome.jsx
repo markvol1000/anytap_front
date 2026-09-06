@@ -4,7 +4,7 @@ import { Logo, Icon } from './ui.jsx';
 import { NAV, FOOTER_COMPANY } from '../utils/nav.js';
 import { SOCIAL } from '../lib/site.ts';
 import { useTweaks, TweaksPanel, TweakSection, TweakColor } from './tweaks-panel.jsx';
-import { showAdminPortalLink, hasMemberSession, refreshAdminPortalLink } from '../lib/services/authService.js';
+import { showAdminPortalLink, hasMemberSession, refreshAdminPortalLink, attemptLogout } from '../lib/services/authService.js';
 import { PwaInstallPrompt } from './PwaInstallPrompt.jsx';
 import { ScrollToTop } from './ScrollToTop.jsx';
 import { IssuanceDepositPanel } from './account-wallet.jsx';
@@ -48,6 +48,7 @@ function SiteHeader({
   unreadNotifications = 0,
   onNotifications,
   onProfile,
+  onLogout,
   memberNavItems = [],
   memberNavActive,
   onMemberNav,
@@ -333,11 +334,28 @@ function SiteHeader({
               <button
                 type="button"
                 className="btn btn--outline mobnav__login"
-                onClick={() => {
+                onClick={async () => {
                   closeNav();
-                  onProfile?.();
+                  if (onLogout) {
+                    await onLogout();
+                  } else if (s?.logout) {
+                    await s.logout();
+                  } else {
+                    await attemptLogout();
+                    navigate('/login');
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  fontWeight: 600,
+                  color: 'var(--ink, #1a1a1a)',
                 }}>
-                Account settings
+                <Icon name="logOut" size={16} />
+                <span>Log out</span>
               </button>
             ) : isLoggedIn ? (
               <>

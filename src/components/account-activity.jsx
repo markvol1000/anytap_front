@@ -78,45 +78,50 @@ export function ActivityRow({ tx, onClick, dateStyle = 'standard', variant = 'de
       ? `portal-tx-group__row${status === 'failed' ? ' is-failed' : ''}`
       : 'portal-tx';
 
+  const typeLabel = tx.typeLabel || A.getActivityTypeLabel(tx.kind);
+  const typeSubtitle = subtitle && subtitle !== typeLabel ? `${typeLabel} · ${subtitle}` : typeLabel;
+
   const inner = (
     <>
       <ActivityIcon tx={tx} compact={isCompact} />
-      <div className="portal-tx__content" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-        {/* Line 1: Full-width Merchant Name across the top */}
-        <div className="portal-tx__line1" style={{ display: 'flex', alignItems: 'center', width: '100%', minWidth: 0 }}>
-          <span className="portal-tx__title" style={{ fontSize: '14px', fontWeight: '600', color: 'var(--portal-ink, #1a1a1a)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+      <div className="portal-tx__content" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        {/* Line 1: Merchant (Left) + Amount (Right) */}
+        <div className="portal-tx__line1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', width: '100%', minWidth: 0 }}>
+          <span className="portal-tx__title" style={{ fontSize: '14px', fontWeight: '600', color: 'var(--portal-ink, #1a1a1a)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, minWidth: 0 }}>
             {tx.title}
           </span>
+          <div style={{ flexShrink: 0, textAlign: 'right' }}>
+            <ActivityAmount amount={tx.amount} incoming={tx.incoming} failed={tx.failed} kind={tx.kind} item={tx} />
+          </div>
         </div>
 
-        {/* Line 2: Subtitle (Card/Wallet) + Amount */}
-        <div className="portal-tx__line2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', minWidth: 0 }}>
-          <span className="portal-tx__sub" style={{ fontSize: '12px', color: 'var(--portal-muted, #7a7570)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {subtitle}
-          </span>
-          <ActivityAmount amount={tx.amount} incoming={tx.incoming} failed={tx.failed} kind={tx.kind} item={tx} />
-        </div>
+        {/* Line 2: Type / Subtitle · Date (Left) + Status & Scope Badges (Right) */}
+        <div className="portal-tx__line2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', width: '100%', minWidth: 0 }}>
+          <div className="portal-tx__meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflow: 'hidden', fontSize: '12px', color: 'var(--portal-muted, #7a7570)' }}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {typeSubtitle}
+            </span>
+            <span style={{ color: 'var(--portal-subtle, #a09790)', flexShrink: 0 }}>·</span>
+            <span style={{ color: 'var(--portal-subtle, #a09790)', flexShrink: 0, fontSize: '11px' }}>
+              {when}
+            </span>
+          </div>
 
-        {/* Line 3: Date & Time + Status & Scope Badges */}
-        <div className="portal-tx__line3" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', minWidth: 0 }}>
-          <span className="portal-tx__when" style={{ fontSize: '11px', color: 'var(--portal-subtle, #a09790)' }}>
-            {when}
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
             {status === 'failed' ? (
-              <span style={{ fontSize: '10px', color: '#b91c1c', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#fee2e2', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.02em' }}>
+              <span style={{ fontSize: '10px', color: '#b91c1c', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#fee2e2', padding: '1px 6px', borderRadius: '4px', letterSpacing: '0.02em', lineHeight: '1.4' }}>
                 FAILED
               </span>
             ) : status === 'pending' ? (
-              <span style={{ fontSize: '10px', color: '#b45309', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.02em' }}>
+              <span style={{ fontSize: '10px', color: '#b45309', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#fef3c7', padding: '1px 6px', borderRadius: '4px', letterSpacing: '0.02em', lineHeight: '1.4' }}>
                 PENDING
               </span>
             ) : (tx.rawStatus === 'authorized' || (!tx.incoming && tx.kind !== 'card_topup' && tx.kind !== 'wallet_deposit' && tx.kind !== 'wallet_receive')) ? (
-              <span style={{ fontSize: '10px', color: '#0f766e', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#ccfbf1', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.02em' }}>
+              <span style={{ fontSize: '10px', color: '#0f766e', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#ccfbf1', padding: '1px 6px', borderRadius: '4px', letterSpacing: '0.02em', lineHeight: '1.4' }}>
                 AUTHORIZED
               </span>
             ) : (
-              <span style={{ fontSize: '10px', color: '#15803d', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#dcfce7', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.02em' }}>
+              <span style={{ fontSize: '10px', color: '#15803d', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#dcfce7', padding: '1px 6px', borderRadius: '4px', letterSpacing: '0.02em', lineHeight: '1.4' }}>
                 COMPLETED
               </span>
             )}

@@ -73,6 +73,9 @@ export function mapMemberRow(row) {
     cardType: row?.cardType || row?.card_type || null,
     unpaidTotalFee: Number(row?.unpaidTotalFee ?? 0) || 0,
     accumulatedTotalFee: Number(row?.accumulatedTotalFee ?? 0) || 0,
+    failureHistory: Array.isArray(row?.failureHistory) ? row.failureHistory : [],
+    failureReason: row?.failureReason || row?.rejectReason || row?.rejectionReason || '',
+    rejectReason: row?.rejectReason || row?.failureReason || '',
   };
 }
 
@@ -236,6 +239,9 @@ export function mapCardRow(row, idx = 0) {
     usedAmount: Number(row?.usedAmount ?? 0),
     noPinPaymentAmount: Number(row?.noPinPaymentAmount ?? 0),
     cardDeposits: Array.isArray(row?.cardDeposits) ? row.cardDeposits : [],
+    recentDeposits: Array.isArray(row?.recentDeposits) ? row.recentDeposits : [],
+    recentTopUps: Array.isArray(row?.recentTopUps) ? row.recentTopUps : [],
+    transfers: Array.isArray(row?.transfers) ? row.transfers : (Array.isArray(row?.cardTransfers) ? row.cardTransfers : []),
     cardTransactions: Array.isArray(row?.cardTransactions) ? row.cardTransactions : [],
     currency: row?.currency || 'USD',
     trackingNumber: row?.trackingNumber || '',
@@ -260,7 +266,7 @@ export function paginateLocal(items, {
 
   Object.entries(filters).forEach(([key, value]) => {
     if (value == null || value === '' || value === 'all') return;
-    if (['page', 'pageSize', 'search', 'sortKey', 'sortDir', 'searchKeys'].includes(key)) return;
+    if (['page', 'pageSize', 'limit', 'search', 'sortKey', 'sortDir', 'searchKeys'].includes(key)) return;
 
     if (key === 'onlyRegistered') {
       if (String(value) === 'true') {

@@ -25,6 +25,7 @@ const SVC = 'adminApiService';
 function asArray(data) {
   if (Array.isArray(data)) return data;
   if (data && Array.isArray(data.items)) return data.items;
+  if (data && Array.isArray(data.data)) return data.data;
   return [];
 }
 
@@ -151,16 +152,29 @@ export async function getMembers(params = {}) {
 
 export async function getMemberById(id) {
   const raw = String(id || '');
+  const members = await fetchMembersRaw().catch(() => []);
+  const memberInList = members.find((m) => m.id === raw || m.userId === raw || m.loginId === raw) || null;
+
   if (raw.startsWith('temp-')) {
-    const members = await fetchMembersRaw();
-    return members.find((m) => m.id === raw) || null;
+    return memberInList;
   }
   const userId = resolveUserId(id);
   try {
-    return mapUserDetail(await apiGet(`/users/${encodeURIComponent(userId)}`));
+    const userDetail = mapUserDetail(await apiGet(`/users/${encodeURIComponent(userId)}`));
+    if (memberInList) {
+      return {
+        ...memberInList,
+        ...userDetail,
+        failureHistory: (userDetail?.failureHistory?.length > 0 ? userDetail.failureHistory : memberInList.failureHistory) || [],
+        failureReason: userDetail?.failureReason || memberInList.failureReason || '',
+        rejectReason: userDetail?.rejectReason || memberInList.rejectReason || '',
+        unpaidTotalFee: userDetail?.unpaidTotalFee ?? memberInList.unpaidTotalFee ?? 0,
+        accumulatedTotalFee: userDetail?.accumulatedTotalFee ?? memberInList.accumulatedTotalFee ?? 0,
+      };
+    }
+    return userDetail;
   } catch {
-    const members = await fetchMembersRaw();
-    return members.find((m) => m.id === userId) || null;
+    return memberInList;
   }
 }
 
@@ -511,7 +525,18 @@ export async function getCardTransactions(userId, cardNo = '') {
     : `/admin/cards/transactions${queryString}`;
 
   const data = await apiGet(url).catch(() => ({ records: [], total: 0 }));
-  return data;
+  const rawList = Array.isArray(data) 
+    ? data 
+    : (Array.isArray(data?.records) ? data.records : (Array.isArray(data?.items) ? data.items : []));
+  const total = Number(data?.total ?? rawList.length) || rawList.length;
+  const totalPages = Math.max(1, Math.ceil(total / 10));
+
+  return {
+    items: rawList,
+    records: rawList,
+    total,
+    totalPages,
+  };
 }
 
 export async function simulateCardTransaction(cardNo, params = {}) {
@@ -568,11 +593,13 @@ export async function unlockWallet() {
 }
 
 export async function getTransactions(params = {}) {
-  const [rawList, members] = await Promise.all([
+  const { limit, pageSize = limit || 10, ...restParams } = params;
+  const [rawList, members, cards] = await Promise.all([
     apiGet('/admin/transactions/recent?limit=1000')
       .then(asArray)
       .catch(() => apiGet('/admin/transactions?limit=1000').then(asArray).catch(() => [])),
     fetchMembersRaw().catch(() => []),
+    fetchCardsRaw().catch(() => []),
   ]);
 
   const memberMap = new Map();
@@ -581,30 +608,203 @@ export async function getTransactions(params = {}) {
     if (m.id) memberMap.set(m.id, m);
   });
 
+  const cardMap = new Map();
+  const userCardMap = new Map();
+  cards.forEach((c) => {
+    const l4 = c.last4 && c.last4 !== '—' ? c.last4 : '';
+    if (l4) {
+      if (c.wasabiCardId) cardMap.set(String(c.wasabiCardId).toLowerCase(), l4);
+      if (c.id) cardMap.set(String(c.id).toLowerCase(), l4);
+      if (c.userId && !userCardMap.has(c.userId)) userCardMap.set(c.userId, l4);
+      if (c.memberId && !userCardMap.has(c.memberId)) userCardMap.set(c.memberId, l4);
+    }
+  });
+
   const mapped = rawList.map((t) => {
     const uId = t.userId || t.memberId || t.id;
     const mem = memberMap.get(uId);
-    const rawKind = String(t.type || t.txType || t.kind || t.transactionType || 'deposit').toLowerCase();
+    const rawType = String(t.type || t.txType || t.kind || t.transactionType || '').toUpperCase().trim();
+    const rawDesc = String(t.description || t.memo || '').trim();
 
-    let normalizedKind = rawKind;
-    if (rawKind === 'deposit' || rawKind === 'wallet_deposit' || rawKind === 'card_topup' || rawKind === 'wallet_topup' || rawKind === 'card_charge' || rawKind === 'topup') {
-      normalizedKind = 'wallet_topup';
-    } else if (rawKind === 'card_spend' || rawKind === 'payment' || rawKind === 'spend') {
-      normalizedKind = 'card_spend';
-    } else if (rawKind === 'withdraw' || rawKind === 'withdrawal' || rawKind === 'wallet_withdraw' || rawKind === 'wallet_send') {
-      normalizedKind = 'wallet_withdraw';
-    } else if (rawKind === 'refund') {
-      normalizedKind = 'refund';
+    // Channel determination: 'card' | 'wallet' | 'system'
+    let channel = 'wallet';
+    if (
+      rawType.includes('CARD') ||
+      rawType.includes('WASABI') ||
+      rawType === 'PAYMENT' ||
+      rawType === 'SPEND' ||
+      rawType === 'REFUND' ||
+      rawType === 'REVERSAL'
+    ) {
+      channel = 'card';
+    } else if (rawType.includes('ADJUSTMENT') || rawType.includes('SYSTEM')) {
+      channel = 'system';
+    }
+
+    // Action & Action Label & Direction determination
+    let action = 'other';
+    let actionLabel = 'Transaction';
+    let isInflow = false;
+
+    if (rawType === 'CARD_SPEND' || rawType === 'PAYMENT' || rawType === 'SPEND') {
+      channel = 'card';
+      action = 'payment';
+      actionLabel = 'Payment';
+      isInflow = false;
+    } else if (rawType === 'CARD_CHARGE' || rawType === 'CARD_TOPUP' || rawType === 'TOPUP') {
+      channel = 'card';
+      action = 'topup';
+      actionLabel = 'Top-Up';
+      isInflow = true;
+    } else if (rawType === 'CARD_REFUND' || rawType === 'REFUND' || rawType === 'CARD_REVERSAL' || rawType === 'REVERSAL') {
+      channel = 'card';
+      action = 'refund';
+      actionLabel = 'Refund';
+      isInflow = true;
+    } else if (rawType === 'CARD_TRANSFER_IN') {
+      channel = 'card';
+      action = 'transfer_in';
+      actionLabel = 'Transfer In';
+      isInflow = true;
+    } else if (rawType === 'CARD_TRANSFER_OUT') {
+      channel = 'card';
+      action = 'transfer_out';
+      actionLabel = 'Transfer Out';
+      isInflow = false;
+    } else if (rawType === 'CARD_WITHDRAW') {
+      channel = 'card';
+      action = 'withdraw';
+      actionLabel = 'Withdrawal';
+      isInflow = false;
+    } else if (rawType === 'DEPOSIT' || rawType === 'RECHARGE' || rawType === 'WALLET_DEPOSIT') {
+      channel = 'wallet';
+      action = 'deposit';
+      actionLabel = 'Deposit';
+      isInflow = true;
+    } else if (rawType === 'WITHDRAW' || rawType === 'WALLET_WITHDRAW' || rawType === 'WALLET_SEND') {
+      channel = 'wallet';
+      action = 'withdraw';
+      actionLabel = 'Withdrawal';
+      isInflow = false;
+    } else if (rawType === 'FEE_COLLECTION' || rawType === 'CARD_CHARGE_FEE' || rawType === 'SWEEP') {
+      channel = 'wallet';
+      action = 'fee_sweep';
+      actionLabel = 'Fee Sweep';
+      isInflow = false;
+    } else if (rawType === 'SYSTEM_ADJUSTMENT' || rawType === 'ADJUSTMENT') {
+      channel = 'system';
+      action = 'adjustment';
+      actionLabel = 'Adjustment';
+      isInflow = Number(t.amount ?? 0) >= 0;
+    } else {
+      if (rawType.includes('DEPOSIT')) {
+        channel = 'wallet';
+        action = 'deposit';
+        actionLabel = 'Deposit';
+        isInflow = true;
+      } else if (rawType.includes('WITHDRAW')) {
+        channel = 'wallet';
+        action = 'withdraw';
+        actionLabel = 'Withdrawal';
+        isInflow = false;
+      } else if (rawType.includes('FEE')) {
+        channel = 'wallet';
+        action = 'fee_sweep';
+        actionLabel = 'Fee Sweep';
+        isInflow = false;
+      }
+    }
+
+    // Normalized kind for backwards compatibility
+    let normalizedKind = rawType.toLowerCase();
+    if (channel === 'card') {
+      normalizedKind = action === 'payment' ? 'card_spend' : (action === 'refund' ? 'refund' : 'card_topup');
+    } else if (channel === 'wallet') {
+      normalizedKind = action === 'withdraw' ? 'wallet_withdraw' : 'wallet_topup';
+    }
+
+    // Description resolution (Merchant / Counterparty / Memo)
+    let description = rawDesc && rawDesc !== '-' ? rawDesc : '';
+    if (!description) {
+      if (action === 'payment') {
+        description = t.merchantName || 'Card Payment';
+      } else if (action === 'topup') {
+        description = 'Wallet → Card Top-Up';
+      } else if (action === 'refund') {
+        description = t.merchantName ? `Refund - ${t.merchantName}` : 'Card Refund';
+      } else if (action === 'transfer_in') {
+        description = 'Card Transfer In';
+      } else if (action === 'transfer_out') {
+        description = 'Card Transfer Out';
+      } else if (action === 'deposit') {
+        description = t.fromAddress && t.fromAddress !== '-' ? `From: ${t.fromAddress}` : 'On-Chain Deposit';
+      } else if (action === 'withdraw') {
+        description = t.toAddress && t.toAddress !== '-' ? `To: ${t.toAddress}` : 'On-Chain Withdrawal';
+      } else if (action === 'fee_sweep') {
+        description = 'Merchant Fee Collection';
+      } else if (action === 'adjustment') {
+        description = 'System Adjustment';
+      } else {
+        description = t.type || '—';
+      }
+    }
+
+    const fromAddr = t.fromAddress || '-';
+    const toAddr = t.toAddress || '-';
+    let fromL4 = t.fromCardLast4 || '';
+    let toL4 = t.toCardLast4 || '';
+
+    if (!fromL4 && fromAddr !== '-') {
+      fromL4 = cardMap.get(String(fromAddr).toLowerCase()) || '';
+      if (!fromL4 && /^\d{4}$/.test(fromAddr)) {
+        fromL4 = fromAddr;
+      } else if (!fromL4 && /\d{4}$/.test(fromAddr)) {
+        const clean = String(fromAddr).replace(/\D/g, '');
+        if (clean.length >= 4) fromL4 = clean.slice(-4);
+      }
+    }
+
+    if (!toL4 && toAddr !== '-') {
+      toL4 = cardMap.get(String(toAddr).toLowerCase()) || '';
+      if (!toL4 && /^\d{4}$/.test(toAddr)) {
+        toL4 = toAddr;
+      } else if (!toL4 && /\d{4}$/.test(toAddr)) {
+        const clean = String(toAddr).replace(/\D/g, '');
+        if (clean.length >= 4) toL4 = clean.slice(-4);
+      }
+    }
+
+    if (!fromL4 && !toL4 && channel === 'card' && uId && userCardMap.has(uId)) {
+      const uL4 = userCardMap.get(uId);
+      if (action === 'topup' || action === 'transfer_in') {
+        toL4 = uL4;
+      } else {
+        fromL4 = uL4;
+      }
     }
 
     return {
       id: String(t.txId || t.id || `TX_${Math.random().toString(36).substr(2, 6)}`),
       memberId: uId || '-',
+      userId: uId || '-',
       memberName: mem?.name || t.loginId || uId || 'Unknown',
       memberEmail: mem?.email || t.email || '—',
-      currency: t.currency || t.originalCurrency || (normalizedKind === 'card_spend' ? 'USD' : 'USDT'),
-      originalCurrency: t.originalCurrency || t.currency || (normalizedKind === 'card_spend' ? 'USD' : 'USDT'),
+      email: mem?.email || t.email || '—',
+      channel,
+      action,
+      actionLabel,
+      description,
+      rawType,
+      kind: normalizedKind,
+      currency: t.currency || t.originalCurrency || (channel === 'card' && action === 'payment' ? 'USD' : 'USDT'),
+      originalCurrency: t.originalCurrency || t.currency || (channel === 'card' && action === 'payment' ? 'USD' : 'USDT'),
       amount: Number(t.amount ?? 0),
+      isInflow,
+      fromAddress: fromAddr,
+      toAddress: toAddr,
+      fromCardLast4: fromL4 || t.fromCardLast4 || '',
+      toCardLast4: toL4 || t.toCardLast4 || '',
+      cardLast4: fromL4 || toL4 || t.cardLast4 || '',
       wallet: t.toAddress || t.fromAddress || t.subAddress || '-',
       status: (t.status || 'success').toLowerCase(),
       at: t.createdAt || t.createdDate || t.at || '-',
@@ -612,7 +812,27 @@ export async function getTransactions(params = {}) {
     };
   });
 
-  return paginateLocal(mapped, params, ['kind', 'memberName', 'memberId', 'memberEmail', 'id', 'reference']);
+  return paginateLocal(mapped, {
+    ...restParams,
+    pageSize,
+    searchKeys: [
+      'channel',
+      'action',
+      'actionLabel',
+      'description',
+      'kind',
+      'memberName',
+      'memberId',
+      'userId',
+      'memberEmail',
+      'email',
+      'loginId',
+      'id',
+      'reference',
+      'fromAddress',
+      'toAddress'
+    ]
+  });
 }
 
 export async function retryTransaction(txId) {
@@ -620,8 +840,26 @@ export async function retryTransaction(txId) {
   return apiPost(`/admin/transactions/${encodeURIComponent(txId)}/retry`);
 }
 
-export async function exportTransactionsCsv() {
-  apiNotImplemented(SVC, 'exportTransactionsCsv', 'No transactions export on ALB yet.');
+export async function exportTransactionsCsv(params = {}) {
+  const res = await getTransactions({ ...params, pageSize: 10000 });
+  const items = res?.items || [];
+  const headers = ['ID', 'Date', 'Member ID', 'Member Email', 'Channel', 'Action', 'Description', 'Amount', 'Currency', 'Status', 'From Address', 'To Address', 'Reference'];
+  const rows = items.map((t) => [
+    `"${t.id}"`,
+    `"${t.at}"`,
+    `"${t.memberId || t.userId || ''}"`,
+    `"${t.memberEmail || t.email || ''}"`,
+    `"${t.channel}"`,
+    `"${t.actionLabel || t.action}"`,
+    `"${(t.description || '').replace(/"/g, '""')}"`,
+    `"${t.amount}"`,
+    `"${t.currency}"`,
+    `"${t.status}"`,
+    `"${t.fromAddress || ''}"`,
+    `"${t.toAddress || ''}"`,
+    `"${(t.reference || '').replace(/"/g, '""')}"`,
+  ]);
+  return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
 }
 
 export async function getActiveMembers() {
@@ -1306,126 +1544,28 @@ export async function getFeesReport(params = {}) {
   if (params?.endDate) query.append('endDate', params.endDate);
   const qStr = query.toString() ? `?${query.toString()}` : '';
 
-  try {
-    const res = await apiGet(`/admin/reports/fees${qStr}`);
-    if (res?.summary && (res?.byUser || res?.byItem)) {
-      return res;
-    }
-    if (res?.data?.summary) {
-      return res.data;
-    }
-  } catch (e) {
-    console.warn('Failed to query backend /admin/reports/fees:', e);
+  const res = await apiGet(`/admin/reports/fees${qStr}`);
+  if (res?.summary && (res?.byUser || res?.byItem)) {
+    return res;
   }
+  if (res?.data?.summary) {
+    return res.data;
+  }
+  return { summary: {}, byUser: [], byItem: [] };
+}
 
-  const txList = await getTransactions(params).catch(() => ({ items: [] }));
-  const byUserMap = new Map();
-  const byItemList = [];
 
-  let totalFees = 0;
-  let totalChargeA3 = 0;
-  let totalGas = 0;
-  let totalIssuance = 0;
-
-  const items = txList.items || [];
-  items.forEach((t) => {
-    const amt = Number(t.amount || 0);
-    const isSpend = t.kind === 'card_spend' || t.kind?.includes('spend') || t.kind?.includes('payment');
-    const isCharge = t.kind === 'wallet_topup' || t.kind === 'card_charge' || t.kind === 'deposit' || t.kind === 'topup';
-    const isGas = t.kind?.includes('fee') || t.reference?.includes('FEE');
-
-    let feeCode = 'A3';
-    let feeName = 'Card Top-Up Fee (A3 - 2.0%)';
-    let feeRate = 2.0;
-    let feeAmt = Number(t.feeAmount || 0);
-    let feeExplanation = 'A 2.0% platform fee charged on card top-up transactions, deducted prior to merchant settlement.';
-
-    if (isSpend) {
-      feeCode = 'CARD_SPEND';
-      feeName = 'Card Purchase Spending (0.0%)';
-      feeAmt = 0;
-      feeRate = 0;
-      feeExplanation = 'Direct purchase payment using Wasabi prepaid card. No platform fee charged.';
-    } else if (isGas) {
-      feeCode = 'CARD_CHARGE_FIXED';
-      feeName = 'Fixed Network Gas Fee (3.00 USDT)';
-      feeAmt = 3.0;
-      feeRate = 0;
-      feeExplanation = 'Fixed blockchain network execution fee for TRON TRC-20 token transfer broadcasting.';
-    } else if (t.kind === 'wallet_withdraw') {
-      feeCode = 'WITHDRAWAL';
-      feeName = 'External Withdrawal Fee (3.00 USDT)';
-      feeAmt = 3.0;
-      feeRate = 0;
-      feeExplanation = 'Network processing fee charged when transferring funds from user wallet to external TRON addresses.';
-    } else if (isCharge || feeCode === 'A3') {
-      if (feeAmt === 0 && amt > 0) {
-        feeAmt = Number((amt * 0.02).toFixed(2));
-      }
-    }
-
-    totalFees += feeAmt;
-    if (feeCode === 'A3') totalChargeA3 += feeAmt;
-    else if (feeCode === 'CARD_CHARGE_FIXED') totalGas += feeAmt;
-
-    const item = {
-      id: t.id,
-      txId: t.id,
-      userId: t.memberId || 'US10001',
-      userName: t.memberName || 'User',
-      userEmail: t.memberEmail || '—',
-      feeCode,
-      feeName,
-      originalAmount: amt,
-      feeRate,
-      feeAmount: feeAmt,
-      netAmount: Math.max(0, Number((amt - feeAmt).toFixed(2))),
-      currency: t.currency || 'USDT',
-      createdAt: t.createdAt || t.createdDate || t.at || t.txTime || '',
-      status: t.status || 'SUCCESS',
-      description: feeName,
-      feeExplanation,
-    };
-    byItemList.push(item);
-
-    const uId = t.memberId || 'US10001';
-    if (!byUserMap.has(uId)) {
-      byUserMap.set(uId, {
-        userId: uId,
-        userName: t.memberName || 'User',
-        userEmail: t.memberEmail || '—',
-        cregisWalletAddress: t.wallet || '—',
-        unpaidTotalFee: Number(t.unpaidTotalFee || 0),
-        totalFee: 0,
-        cardChargeFee: 0,
-        gasFee: 0,
-        issuanceFee: 0,
-        withdrawalFee: 0,
-        txCount: 0,
-        lastFeeAt: t.at || '—',
-      });
-    }
-    const uRec = byUserMap.get(uId);
-    uRec.totalFee += feeAmt;
-    if (feeCode === 'A3') uRec.cardChargeFee += feeAmt;
-    else if (feeCode === 'CARD_CHARGE_FIXED') uRec.gasFee += feeAmt;
-    uRec.txCount += 1;
-    uRec.lastFeeAt = t.at || uRec.lastFeeAt;
-    uRec.unpaidTotalFee = uRec.unpaidTotalFee > 0 ? uRec.unpaidTotalFee : Number(uRec.totalFee.toFixed(2));
-  });
-
-  return {
-    summary: {
-      totalFeesCollected: totalFees,
-      totalChargeFeesA3: totalChargeA3,
-      totalGasFeesFixed: totalGas,
-      totalDepositIssuanceFees: totalIssuance,
-      activePayingUsers: byUserMap.size,
-      avgFeePerUser: byUserMap.size > 0 ? (totalFees / byUserMap.size).toFixed(2) : 0,
-    },
-    byUser: Array.from(byUserMap.values()),
-    byItem: byItemList,
-  };
+export async function getCardTransfersReport(params = {}) {
+  try {
+    const raw = asArray(await apiGet('/admin/reports/transfers'));
+    return paginateLocal(raw, {
+      ...params,
+      searchKeys: ['sourceCardNo', 'destinationCardNo', 'sourceCardLast4', 'destinationCardLast4', 'fromLoginId', 'toLoginId', 'fromHolder', 'toHolder', 'merchantOrderNo', 'wasabiOrderNo'],
+    });
+  } catch (e) {
+    console.warn('Failed to query backend /admin/reports/transfers:', e);
+    return paginateLocal([], params);
+  }
 }
 
 export const MAX_CARDS_PER_MEMBER = 999;

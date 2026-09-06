@@ -1,3 +1,5 @@
+import { Icon } from '../../components/ui.jsx';
+
 export function AdminFilterBar({
   search,
   onSearchChange,
@@ -15,12 +17,16 @@ export function AdminFilterBar({
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           aria-label="Search"
+          id="admin-filter-search"
+          name="search"
         />
       </div>
       {filters.map((f) => (
-        <label key={f.key} className="admin-filter-bar__field">
+        <label key={f.key} className="admin-filter-bar__field" htmlFor={`admin-filter-${f.key}`}>
           <span className="admin-filter-bar__label">{f.label}</span>
           <select
+            id={`admin-filter-${f.key}`}
+            name={f.key}
             className="admin-select"
             value={f.value}
             onChange={(e) => f.onChange(e.target.value)}>
@@ -35,14 +41,30 @@ export function AdminFilterBar({
   );
 }
 
-export function AdminPageHeader({ title, description, actions }) {
+export function AdminPageHeader({ title, description, actions, onRefresh, refreshing }) {
   return (
     <header className="admin-page-head">
       <div>
         <h1 className="admin-page-head__title">{title}</h1>
         {description ? <p className="admin-page-head__desc">{description}</p> : null}
       </div>
-      {actions ? <div className="admin-page-head__actions">{actions}</div> : null}
+      <div className="admin-page-head__actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {onRefresh ? (
+          <button
+            type="button"
+            className="admin-btn admin-btn--secondary"
+            onClick={onRefresh}
+            disabled={refreshing}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', height: '38px', padding: '0 12px' }}
+            title="Reload latest data without refreshing page">
+            <span style={{ display: 'inline-flex', transform: refreshing ? 'rotate(360deg)' : 'none', transition: 'transform 0.6s ease' }}>
+              <Icon name="refresh" size={15} stroke={2} />
+            </span>
+            <span>{refreshing ? 'Refreshing…' : 'Refresh'}</span>
+          </button>
+        ) : null}
+        {actions}
+      </div>
     </header>
   );
 }
