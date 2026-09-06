@@ -51,7 +51,7 @@ import { KycRequiredModal } from '../components/account/KycRequiredModal.jsx';
 import { resolvePortalScreenGate } from '../lib/portal-screen-gate.js';
 import { PhysicalCardActivateSheet } from '../components/account/PhysicalCardActivateSheet.jsx';
 
-import { PageLoader } from '../components/PageLoader.jsx';
+import { PageLoader } from '../components/PageLoader.tsx';
 import * as A from '../lib/account-data.js';
 import '../styles/account.css';
 

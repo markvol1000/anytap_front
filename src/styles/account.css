@@ -16622,8 +16622,4 @@ a.portal-mob-back { text-decoration: none; }
   max-width: 280px;
 }
 
-/* ───── Global Circular Page Loader (Hidden per user request) ───── */
-.global-page-loader {
-  display: none !important;
-}
 
