@@ -178,7 +178,11 @@ export function ContentPage() {
         page: templatePage,
         pageSize: templatePageSize,
       });
-      const items = res?.items || [];
+      const rawItems = res?.items || [];
+      const items = rawItems.map((t) => ({
+        ...t,
+        status: t.isActive === false || t.active === false ? 'INACTIVE' : 'ACTIVE',
+      }));
       setTemplates(items);
       setTemplateTotal(res?.total ?? items.length);
       setTemplateTotalPages(res?.totalPages ?? Math.max(1, Math.ceil((res?.total || items.length) / templatePageSize)));
