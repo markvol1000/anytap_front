@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react';
 import { Icon } from './ui.jsx';
-import { PageLoader } from './PageLoader.tsx';
+import { holdAtLeast, PageLoader } from './PageLoader.tsx';
 import { OutlineInput, OutlinePasswordInput } from './outline-field.jsx';
 import { emailOk, attemptLogin, attemptSignUp, establishLoginSession, hasMemberSession, setMockSession, sendMockEmailVerification, verifyMockEmailCode, saveSignupPending, loadSignupPending, refreshSignupExpiry, clearSignupPending, formatExpiresRemaining, formatSignupCodeTtl, verifyEmailCode, sendVerificationEmail, ensureAvailableLoginId, saveEmailLoginId, sendForgotPasswordEmail, resetPassword } from '../lib/services/authService.js';
 
@@ -174,6 +174,7 @@ function LoginPage() {
 
   const onLogin = async () => {
     if (entering) return;
+    const startedAt = Date.now();
     setEntering(true);
     const result = await Promise.resolve(attemptLogin(email, password));
     if (result.ok) {
@@ -184,6 +185,7 @@ function LoginPage() {
         showToast('Could not save your session. Check browser privacy settings and try again.');
         return;
       }
+      await holdAtLeast(startedAt);
       const from = location.state?.from;
       navigate(typeof from === 'string' && from.startsWith('/account') ? from : '/account', { replace: true });
       return;
