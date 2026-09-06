@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react';
 import { Icon } from './ui.jsx';
+import { PageLoader } from './PageLoader.tsx';
 import { OutlineInput, OutlinePasswordInput } from './outline-field.jsx';
 import { emailOk, attemptLogin, attemptSignUp, establishLoginSession, hasMemberSession, setMockSession, sendMockEmailVerification, verifyMockEmailCode, saveSignupPending, loadSignupPending, refreshSignupExpiry, clearSignupPending, formatExpiresRemaining, formatSignupCodeTtl, verifyEmailCode, sendVerificationEmail, ensureAvailableLoginId, saveEmailLoginId, sendForgotPasswordEmail, resetPassword } from '../lib/services/authService.js';
 
@@ -147,6 +148,7 @@ function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [fieldHint, setFieldHint] = useState('');
   const [errorFields, setErrorFields] = useState({ email: false, password: false });
+  const [entering, setEntering] = useState(false);
   const { toast, showToast, clearToast } = useAuthToast();
 
   const showEmailHint = errorFields.email && fieldHint;
@@ -171,11 +173,14 @@ function LoginPage() {
   }, [navigate]);
 
   const onLogin = async () => {
+    if (entering) return;
+    setEntering(true);
     const result = await Promise.resolve(attemptLogin(email, password));
     if (result.ok) {
       clearErrors();
       establishLoginSession(email);
       if (!hasMemberSession()) {
+        setEntering(false);
         showToast('Could not save your session. Check browser privacy settings and try again.');
         return;
       }
@@ -183,11 +188,13 @@ function LoginPage() {
       navigate(typeof from === 'string' && from.startsWith('/account') ? from : '/account', { replace: true });
       return;
     }
+    setEntering(false);
     applyAuthError(result, { showToast, setFieldHint, setErrorFields });
   };
 
   return (
     <section className="login-screen">
+      {entering && <PageLoader />}
       <AuthToast msg={toast} />
       <AuthDevModeBadge />
       <div className="shell login-screen__inner">
@@ -239,7 +246,7 @@ function LoginPage() {
             )}
           </div>
           <Link to="/forgot-password" className="login-screen__forgot">Forgot password?</Link>
-          <button type="submit" className="btn btn--primary btn--lg login-screen__submit">
+          <button type="submit" className="btn btn--primary btn--lg login-screen__submit" disabled={entering}>
             Log in <Icon name="arrowRight" size={16} />
           </button>
         </form>

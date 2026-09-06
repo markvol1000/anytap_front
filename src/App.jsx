@@ -7,7 +7,7 @@ import { NotFoundPage } from './pages/NotFoundPage.jsx';
 import { DemoStatesPage, DemoStateEnterPage } from './pages/DemoStatesPage.jsx';
 import { hasMemberSession } from './lib/services/authService.js';
 import { SCREEN_ROUTES } from './constants/routes.ts';
-import { PageLoader } from './components/PageLoader.jsx';
+import { PageLoader } from './components/PageLoader.tsx';
 
 import { AnyBotPage } from './pages/AnyBotPage.jsx';
 

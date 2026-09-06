@@ -5221,8 +5221,64 @@ body.auth-page main { padding-bottom: 0; }
   overflow-x: auto;
 }
 
-/* ───── Global Circular Page Loader (Hidden per user request) ───── */
-.global-page-loader {
-  display: none !important;
+/* ───── Global page loader (login / lazy route / portal fetch) ───── */
+@keyframes pageLoaderSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pageLoaderFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.page-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg-canvas, #f8f6f4);
+  animation: pageLoaderFadeIn 180ms ease;
+}
+
+.page-loader--inline {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  min-height: 240px;
+  background: transparent;
+}
+
+.page-loader__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.page-loader__logo {
+  height: 28px;
+  width: auto;
+}
+
+.page-loader__spinner {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--brand-primary-tint, #ffe4d9);
+  border-top-color: var(--brand-primary, #ff5500);
+  border-radius: 50%;
+  animation: pageLoaderSpin 0.7s linear infinite;
+}
+
+.page-loader__label {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--fg-muted, #6b6057);
 }
 
