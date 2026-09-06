@@ -60,12 +60,13 @@ export function formatAdminDate(value) {
   }
 }
 
-export function formatAmountWithCurrency(amount, currency = 'USDT') {
+export function formatAmountWithCurrency(amount, currency = '') {
   if (amount == null || amount === '') return '—';
   const num = Number(amount);
   if (Number.isNaN(num)) return '—';
 
-  const code = String(currency || 'USDT').toUpperCase().trim();
+  const rawCode = currency != null ? String(currency).trim() : '';
+  const code = rawCode.toUpperCase();
 
   if (code === 'IDR' || code === 'RP') {
     return `${num.toLocaleString('id-ID', { maximumFractionDigits: 0 })} IDR`;
@@ -95,10 +96,14 @@ export function formatAmountWithCurrency(amount, currency = 'USDT') {
     return `${num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PHP`;
   }
 
+  if (!code) {
+    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
   return `${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${code}`;
 }
 
-export function formatUsdt(amount, currency = 'USDT') {
+export function formatUsdt(amount, currency = '') {
   return formatAmountWithCurrency(amount, currency);
 }
 

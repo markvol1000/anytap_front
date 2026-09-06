@@ -9,7 +9,7 @@ import {
   AdminDetailSection,
   AdminSplitLayout,
 } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge, formatAdminDate, formatUsdt } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAdminDate, formatAmountWithCurrency, formatUsdt } from '../components/AdminStatusBadge.jsx';
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
@@ -31,7 +31,10 @@ const fetchMembers = (params) => getMembers(params);
 const fetchMemberDetail = (id) => getMemberById(id);
 
 function CurrencyBadgeMini({ currency }) {
-  const code = String(currency || 'USDT').toUpperCase().trim();
+  if (!currency || !String(currency).trim() || String(currency).trim().toLowerCase() === 'null') {
+    return null;
+  }
+  const code = String(currency).toUpperCase().trim();
   if (code === 'USDT') {
     return (
       <img
@@ -855,8 +858,8 @@ export function MembersPage() {
                                 color: color,
                                 fontFamily: 'monospace',
                               }}>
-                                <CurrencyBadgeMini currency={r.currency || 'USDT'} />
-                                <span>{sign}{num} {r.currency || 'USDT'}</span>
+                                <CurrencyBadgeMini currency={r.transCurrency || r.originalCurrency || r.currency} />
+                                <span>{sign}{formatAmountWithCurrency(Math.abs(Number(r.transAmount ?? r.amount) || 0), r.transCurrency || r.originalCurrency || r.currency || '')}</span>
                               </div>
                             );
                           },

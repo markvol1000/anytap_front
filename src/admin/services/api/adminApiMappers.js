@@ -243,7 +243,7 @@ export function mapCardRow(row, idx = 0) {
     recentTopUps: Array.isArray(row?.recentTopUps) ? row.recentTopUps : [],
     transfers: Array.isArray(row?.transfers) ? row.transfers : (Array.isArray(row?.cardTransfers) ? row.cardTransfers : []),
     cardTransactions: Array.isArray(row?.cardTransactions) ? row.cardTransactions : [],
-    currency: row?.currency || 'USD',
+    currency: row?.currency || '',
     trackingNumber: row?.trackingNumber || '',
     carrier: row?.carrier || '',
     loginId: row?.loginId || '',
@@ -508,7 +508,8 @@ export function mapDailySummaryToDashboard({
       memberName: member?.name || t.loginId || uId,
       memberEmail: member?.email || t.email || '—',
       kind: rawKind === 'deposit' ? 'wallet_deposit' : (rawKind === 'card_charge' ? 'card_spend' : rawKind),
-      amount: Number(t.amount ?? 0),
+      amount: Number(t.transAmount ?? t.originalAmount ?? t.amount ?? 0),
+      currency: t.transCurrency || t.originalCurrency || t.currency || t.coinType || t.txCurrency || t.settleCurrency || '',
       status: st,
       at: t.createdAt || t.createdDate || t.at || t.txTime || '',
     };

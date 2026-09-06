@@ -4,7 +4,11 @@
  */
 
 function pickAmount(record) {
-  const raw = record?.amount
+  const raw = record?.transAmount
+    ?? record?.originalAmount
+    ?? record?.tradeAmount
+    ?? record?.transactionAmount
+    ?? record?.amount
     ?? record?.authorizedAmount
     ?? record?.settleAmount
     ?? record?.receivedAmount
@@ -13,14 +17,19 @@ function pickAmount(record) {
 }
 
 function pickCurrency(record) {
-  const explicitCurr = record?.currency 
-    || record?.originalCurrency 
+  const explicitCurr = record?.transCurrency
+    || record?.originalCurrency
+    || record?.tradeCurrency
+    || record?.transactionCurrency
+    || record?.currency 
+    || record?.txCurrency
     || record?.authorizedCurrency 
-    || record?.settleCurrency;
-  if (explicitCurr && String(explicitCurr).trim()) {
+    || record?.settleCurrency
+    || record?.coinType;
+  if (explicitCurr && String(explicitCurr).trim() && String(explicitCurr).trim().toLowerCase() !== 'null') {
     return String(explicitCurr).trim().toUpperCase();
   }
-  return 'USD';
+  return '';
 }
 
 function pickTimestamp(record) {
@@ -186,7 +195,7 @@ export function mapWasabiTransactionRecord(record, opts = {}) {
     status,
     rawStatus: rawStatusVal ? String(rawStatusVal).toLowerCase() : (kind === 'card_spend' ? 'authorized' : 'completed'),
     authorizedAmount: record.authorizedAmount != null ? Math.abs(Number(record.authorizedAmount) || 0) : undefined,
-    authorizedCurrency: record.authorizedCurrency || 'USD',
+    authorizedCurrency: record.authorizedCurrency || '',
     reference: String(record.tradeNo || record.transactionId || record.orderNo || id),
     cardNo: String(record.cardNo || record.balanceInfo?.cardNo || opts.cardId || opts.wasabiCardId || ''),
     cardLast4: pickLast4(record, opts.last4 || '') || opts.last4 || '',

@@ -541,8 +541,8 @@ export function CardsPage() {
                             const numBorder = isOutflow ? '#fecaca' : '#bbf7d0';
 
                             const txIdent = dep.wasabiTxId || dep.referenceId || dep.txHash || dep.merchantOrderNo || dep.id;
-                            const amountVal = Math.abs(Number(dep.depositAmount || dep.grossAmount || dep.amount || dep.netAmount || 0));
-                            const curr = dep.currency || 'USD';
+                            const amountVal = Math.abs(Number(dep.transAmount || dep.originalAmount || dep.depositAmount || dep.grossAmount || dep.amount || dep.netAmount || 0));
+                            const curr = dep.transCurrency || dep.originalCurrency || dep.currency || dep.authorizedCurrency || dep.coinType || '';
 
                             return (
                               <div key={txIdent || idx} style={{
@@ -682,9 +682,9 @@ export function CardsPage() {
                       const resolvedTxId = t.txId || t.id || t.transId || t.referenceNo || t.orderNo || t.authCode || '';
                       // Resolve date from all possible date fields
                       const resolvedDate = t.at || t.txTime || t.createdDate || t.createdAt || t.transactionDate || t.authDate || t.date || '';
-                      const resolvedAmt = Math.abs(Number(t.originalAmount ?? t.amount ?? t.transAmount ?? 0));
-                      const resolvedCurr = t.originalCurrency || t.currency || t.authorizedCurrency || 'USD';
-                      const resolvedMerch = t.merchantName || t.merchant || t.description || 'Merchant Transaction';
+                      const resolvedAmt = Math.abs(Number(t.transAmount ?? t.originalAmount ?? t.amount ?? 0));
+                      const resolvedCurr = t.transCurrency || t.originalCurrency || t.currency || t.authorizedCurrency || t.settleCurrency || '';
+                      const resolvedMerch = t.merchantName || t.merchant || t.description || '—';
 
                       // Deduplication key: If txId exists, use it; otherwise deduplicate by date + amount + merchant
                       const dedupeKey = resolvedTxId 

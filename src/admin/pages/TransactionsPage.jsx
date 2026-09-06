@@ -9,7 +9,10 @@ import { exportTransactionsCsv, getTransactions, retryTransaction } from '../ser
 const fetchTx = (params) => getTransactions(params);
 
 function CurrencyBadge({ currency }) {
-  const code = String(currency || 'USDT').toUpperCase().trim();
+  if (!currency || !String(currency).trim() || String(currency).trim().toLowerCase() === 'null') {
+    return null;
+  }
+  const code = String(currency).toUpperCase().trim();
   if (code === 'USDT') {
     return (
       <img
@@ -528,8 +531,8 @@ export function TransactionsPage() {
                           color: color,
                           fontFamily: 'monospace',
                         }}>
-                          <CurrencyBadge currency={r.currency} />
-                          <span>{sign}{formatAmountWithCurrency(Math.abs(Number(r.amount) || 0), r.currency || 'USDT')}</span>
+                          <CurrencyBadge currency={r.currency || r.originalCurrency || r.transCurrency} />
+                          <span>{sign}{formatAmountWithCurrency(Math.abs(Number(r.transAmount ?? r.amount) || 0), r.currency || r.originalCurrency || r.transCurrency || '')}</span>
                         </div>
                       );
                     }
@@ -623,8 +626,8 @@ export function TransactionsPage() {
                       color: color,
                       fontFamily: 'monospace',
                     }}>
-                      <CurrencyBadge currency={selected.currency} />
-                      <span>{sign}{formatAmountWithCurrency(Math.abs(Number(selected.amount) || 0), selected.currency || 'USDT')}</span>
+                      <CurrencyBadge currency={selected.currency || selected.originalCurrency || selected.transCurrency} />
+                      <span>{sign}{formatAmountWithCurrency(Math.abs(Number(selected.transAmount ?? selected.amount) || 0), selected.currency || selected.originalCurrency || selected.transCurrency || '')}</span>
                     </div>
                   );
                 })()

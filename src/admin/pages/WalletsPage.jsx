@@ -8,7 +8,7 @@ import {
   AdminDetailSection,
   AdminSplitLayout,
 } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge, formatUsdt, shortenAddress } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAmountWithCurrency, formatUsdt, shortenAddress } from '../components/AdminStatusBadge.jsx';
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
@@ -276,17 +276,9 @@ export function WalletsPage() {
                         key: 'amount', 
                         label: 'Transaction Amount', 
                         render: (r) => {
-                          const curr = String(r.currency || r.originalCurrency || r.authorizedCurrency || r.settleCurrency || 'USDT').toUpperCase();
-                          const formattedAmt = curr === 'KRW'
-                            ? `${Number(r.amount || 0).toLocaleString('ko-KR')} KRW`
-                            : curr === 'USD'
-                              ? `$${Number(r.amount || 0).toFixed(2)}`
-                              : formatUsdt(r.amount);
-                          const formattedGross = curr === 'KRW'
-                            ? `${Number(r.rawAmount || 0).toLocaleString('ko-KR')} KRW`
-                            : curr === 'USD'
-                              ? `$${Number(r.rawAmount || 0).toFixed(2)}`
-                              : formatUsdt(r.rawAmount);
+                          const curr = String(r.transCurrency || r.originalCurrency || r.currency || r.authorizedCurrency || r.settleCurrency || '').toUpperCase();
+                          const formattedAmt = formatAmountWithCurrency(r.transAmount ?? r.amount ?? 0, curr);
+                          const formattedGross = formatAmountWithCurrency(r.rawAmount ?? 0, curr);
 
                           const isPlus = r.incoming || r.cardIncoming;
                           return (

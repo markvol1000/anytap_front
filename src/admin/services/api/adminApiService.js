@@ -543,7 +543,7 @@ export async function simulateCardTransaction(cardNo, params = {}) {
   const payload = {
     type: params.type || 'auth',
     amount: params.amount,
-    currency: params.currency || 'USD',
+    currency: params.currency || '',
     merchantName: params.merchantName || 'Simulated Merchant',
     merchantData: params.merchantData || { name: params.merchantName || 'Simulated Merchant', country: 'KR', city: 'SEOUL' },
     description: params.description || 'Admin Simulated Transaction',
@@ -725,6 +725,12 @@ export async function getTransactions(params = {}) {
 
     // Description resolution (Merchant / Counterparty / Memo)
     let description = rawDesc && rawDesc !== '-' ? rawDesc : '';
+    if (description) {
+      const lower = description.toLowerCase();
+      if (lower.includes('webhook') || (lower.includes('authorized') && lower.length < 50) || lower === 'card-auth') {
+        description = t.merchantName || 'Card Payment';
+      }
+    }
     if (!description) {
       if (action === 'payment') {
         description = t.merchantName || 'Card Payment';
@@ -796,9 +802,22 @@ export async function getTransactions(params = {}) {
       description,
       rawType,
       kind: normalizedKind,
-      currency: t.currency || t.originalCurrency || (channel === 'card' && action === 'payment' ? 'USD' : 'USDT'),
-      originalCurrency: t.originalCurrency || t.currency || (channel === 'card' && action === 'payment' ? 'USD' : 'USDT'),
-      amount: Number(t.amount ?? 0),
+      currency: (() => {
+        const raw = t.transCurrency || t.originalCurrency || t.currency || t.coinType || t.txCurrency || t.settleCurrency;
+        if (raw && String(raw).trim() && String(raw).trim().toLowerCase() !== 'null') {
+          return String(raw).trim().toUpperCase();
+        }
+        return '';
+      })(),
+      originalCurrency: (() => {
+        const raw = t.originalCurrency || t.transCurrency || t.currency || t.coinType || t.txCurrency;
+        if (raw && String(raw).trim() && String(raw).trim().toLowerCase() !== 'null') {
+          return String(raw).trim().toUpperCase();
+        }
+        return '';
+      })(),
+      transCurrency: t.transCurrency || t.originalCurrency || t.currency || '',
+      amount: Number(t.transAmount ?? t.originalAmount ?? t.amount ?? 0),
       isInflow,
       fromAddress: fromAddr,
       toAddress: toAddr,

@@ -509,18 +509,24 @@ export function formatActivityDateTime(isoOrDate) {
 }
 
 export function formatActivityAmountParts(amount, incoming, kind, item = {}) {
-  const displayAmount = item?.originalAmount ?? item?.amount ?? amount;
-  const itemCurr = item?.originalCurrency || item?.currency || item?.authorizedCurrency;
-  const currency = itemCurr || (kind === 'card_spend' || kind === 'refund' || kind === 'reversal' ? 'USD' : 'USDT');
+  const displayAmount = item?.transAmount ?? item?.originalAmount ?? item?.amount ?? amount;
+  const rawCurr = item?.transCurrency || item?.originalCurrency || item?.currency || item?.coinType || item?.txCurrency || item?.authorizedCurrency || item?.settleCurrency;
+  const itemCurr = rawCurr && String(rawCurr).trim() && String(rawCurr).trim().toLowerCase() !== 'null'
+    ? String(rawCurr).trim().toUpperCase() : '';
+  const currency = itemCurr;
 
-  const val = Math.abs(Number(displayAmount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const isZeroDecimal = currency === 'KRW' || currency === 'IDR' || currency === 'JPY' || currency === '₩' || currency === 'RP' || currency === '¥';
+  const val = Math.abs(Number(displayAmount) || 0).toLocaleString(
+    currency === 'KRW' ? 'ko-KR' : (currency === 'IDR' ? 'id-ID' : (currency === 'JPY' ? 'ja-JP' : 'en-US')),
+    { minimumFractionDigits: isZeroDecimal ? 0 : 2, maximumFractionDigits: isZeroDecimal ? 0 : 2 }
+  );
   
   const isIncoming = item?.incoming !== undefined 
     ? Boolean(item.incoming) 
     : (incoming !== undefined ? Boolean(incoming) : true);
 
   if (kind === 'card_topup' || item?.kind === 'card_topup') {
-    const topupCurr = itemCurr || 'USDT';
+    const topupCurr = itemCurr;
     if (item?.pageFilter === 'wallet' || item?.pageSource === 'wallet' || !isIncoming) {
       return { sign: '-', value: val, currency: topupCurr };
     }
@@ -534,20 +540,20 @@ export function formatActivityAmountParts(amount, incoming, kind, item = {}) {
   ]);
 
   if (walletOut.has(kind)) {
-    return { sign: '-', value: val, currency: itemCurr || 'USDT' };
+    return { sign: '-', value: val, currency: itemCurr };
   }
   if (walletIn.has(kind)) {
-    return { sign: '+', value: val, currency: itemCurr || 'USDT' };
+    return { sign: '+', value: val, currency: itemCurr };
   }
-  if (kind === 'refund' || kind === 'reversal') return { sign: '+', value: val, currency: itemCurr || currency };
+  if (kind === 'refund' || kind === 'reversal') return { sign: '+', value: val, currency: itemCurr };
   return isIncoming
-    ? { sign: '+', value: val, currency: itemCurr || currency }
-    : { sign: '-', value: val, currency: itemCurr || currency };
+    ? { sign: '+', value: val, currency: itemCurr }
+    : { sign: '-', value: val, currency: itemCurr };
 }
 
 export function formatActivityAmount(amount, incoming, kind, item = {}) {
   const { sign, value, currency } = formatActivityAmountParts(amount, incoming, kind, item);
-  return `${sign}${value} ${currency}`;
+  return currency ? `${sign}${value} ${currency}` : `${sign}${value}`;
 }
 
 export function formatActivityStatusLabel(status) {

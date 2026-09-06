@@ -13,11 +13,18 @@ export function ActivityAmount({ amount, incoming, failed, kind, large = false, 
   const origCurr = item?.originalCurrency;
   const useOriginal = origAmt && origCurr;
 
-  const displayAmt = item?.originalAmount ?? item?.amount ?? amount;
-  const displayCurr = item?.originalCurrency || item?.currency || item?.authorizedCurrency || (kind === 'card_spend' || kind === 'refund' || kind === 'reversal' ? 'USD' : 'USDT');
+  const displayAmt = item?.transAmount ?? item?.originalAmount ?? item?.amount ?? amount;
+  const rawCurr = item?.transCurrency || item?.originalCurrency || item?.currency || item?.coinType || item?.txCurrency || item?.authorizedCurrency || item?.settleCurrency;
+  const displayCurr = (rawCurr && String(rawCurr).trim() && String(rawCurr).trim().toLowerCase() !== 'null')
+    ? String(rawCurr).trim().toUpperCase()
+    : (kind === 'card_spend' || kind === 'refund' || kind === 'reversal' ? 'USD' : 'USDT');
 
   const { sign, value } = A.formatActivityAmountParts(amount, incoming, kind, item);
-  const val = value || Math.abs(Number(displayAmt) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const isZeroDec = displayCurr === 'KRW' || displayCurr === 'IDR' || displayCurr === 'JPY' || displayCurr === '₩' || displayCurr === 'RP' || displayCurr === '¥';
+  const val = value || Math.abs(Number(displayAmt) || 0).toLocaleString(
+    displayCurr === 'KRW' ? 'ko-KR' : (displayCurr === 'IDR' ? 'id-ID' : (displayCurr === 'JPY' ? 'ja-JP' : 'en-US')),
+    { minimumFractionDigits: isZeroDec ? 0 : 2, maximumFractionDigits: isZeroDec ? 0 : 2 }
+  );
   const isInc = sign === '+' || (item?.kind !== 'card_topup' && (item?.kind === 'refund' || item?.kind === 'reversal' || incoming));
   const variant = failed ? 'fail' : isInc ? 'in' : 'out';
 
