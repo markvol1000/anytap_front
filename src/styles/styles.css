@@ -5222,21 +5222,13 @@ body.auth-page main { padding-bottom: 0; }
 }
 
 /* ───── Global page loader (login / lazy route / portal fetch) ───── */
+@keyframes pageLoaderSpin {
+  to { transform: rotate(360deg); }
+}
+
 @keyframes pageLoaderFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
-}
-
-@keyframes pageLoaderClockHour {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes pageLoaderClockMinute {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes pageLoaderClockSecond {
-  to { transform: rotate(360deg); }
 }
 
 .page-loader {
@@ -5263,7 +5255,7 @@ body.auth-page main { padding-bottom: 0; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 22px;
+  gap: 18px;
 }
 
 .page-loader__logo {
@@ -5271,84 +5263,22 @@ body.auth-page main { padding-bottom: 0; }
   width: auto;
 }
 
-.page-loader__clock {
-  position: relative;
-  width: 72px;
-  height: 72px;
+.page-loader__spinner {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--brand-primary-tint, #ffe4d9);
+  border-top-color: var(--brand-primary, #ff5500);
   border-radius: 50%;
-  background: var(--paper, #fff);
-  border: 3px solid var(--brand-primary, #ff5500);
-  box-shadow: 0 8px 24px rgba(var(--brand-rgb, 255, 85, 0), 0.12);
+  animation: pageLoaderSpin 0.7s linear infinite;
 }
 
-.page-loader__clock-tick {
-  position: absolute;
-  background: var(--brand-primary, #ff5500);
-  border-radius: 1px;
-}
-
-.page-loader__clock-tick--12,
-.page-loader__clock-tick--6 {
-  left: 50%;
-  width: 2px;
-  height: 8px;
-  margin-left: -1px;
-}
-
-.page-loader__clock-tick--12 { top: 6px; }
-.page-loader__clock-tick--6 { bottom: 6px; }
-
-.page-loader__clock-tick--3,
-.page-loader__clock-tick--9 {
-  top: 50%;
-  width: 8px;
-  height: 2px;
-  margin-top: -1px;
-}
-
-.page-loader__clock-tick--3 { right: 6px; }
-.page-loader__clock-tick--9 { left: 6px; }
-
-.page-loader__clock-hand {
-  position: absolute;
-  left: 50%;
-  bottom: 50%;
-  transform-origin: center bottom;
-  border-radius: 999px;
-}
-
-.page-loader__clock-hand--hour {
-  width: 3px;
-  height: 18px;
-  margin-left: -1.5px;
-  background: var(--ink, #1a1a1a);
-  animation: pageLoaderClockHour 8s linear infinite;
-}
-
-.page-loader__clock-hand--minute {
-  width: 2px;
-  height: 24px;
-  margin-left: -1px;
-  background: var(--ink, #1a1a1a);
-  animation: pageLoaderClockMinute 2s linear infinite;
-}
-
-.page-loader__clock-hand--second {
-  width: 1.5px;
-  height: 26px;
-  margin-left: -0.75px;
-  background: var(--brand-primary, #ff5500);
-  animation: pageLoaderClockSecond 1s linear infinite;
-}
-
-.page-loader__clock-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 7px;
-  height: 7px;
-  margin: -3.5px 0 0 -3.5px;
-  border-radius: 50%;
-  background: var(--brand-primary, #ff5500);
+.page-loader__label {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--fg-muted, #6b6057);
 }
 
