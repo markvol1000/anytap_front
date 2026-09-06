@@ -19,6 +19,7 @@ import {
   testDispatchEventNotification,
   getContentItems,
 } from '../services/adminService.js';
+import { touchHttpSession } from '../../lib/api/httpSession.js';
 
 // Automatically extract all {{variable}} placeholders from HTML content
 const extractVariablesFromHtml = (html) => {
@@ -128,6 +129,7 @@ export function ContentPage() {
   const [templatesError, setTemplatesError] = useState(null);
   const [templateSearch, setTemplateSearch] = useState('');
   const [selectedTemplateCode, setSelectedTemplateCode] = useState(null);
+  const [originalTemplateCode, setOriginalTemplateCode] = useState(null);
   const [templateForm, setTemplateForm] = useState(null);
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
@@ -135,6 +137,10 @@ export function ContentPage() {
   const [testEmailSending, setTestEmailSending] = useState(false);
   const [testEmailResult, setTestEmailResult] = useState(null);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templatePage, setTemplatePage] = useState(1);
+  const [templatePageSize, setTemplatePageSize] = useState(20);
+  const [templateTotal, setTemplateTotal] = useState(0);
+  const [templateTotalPages, setTemplateTotalPages] = useState(1);
 
   // Dynamically extracted variables from current template content
   const extractedVariables = useMemo(() => {
@@ -163,15 +169,33 @@ export function ContentPage() {
   const [contentLoading, setContentLoading] = useState(false);
 
   // ── Load Templates ──
-  const loadTemplates = useCallback(async () => {
+  const loadTemplates = useCallback(async (targetCodeToSelect = null) => {
     setTemplatesLoading(true);
     setTemplatesError(null);
     try {
-      const res = await getEmailTemplates({ search: templateSearch, pageSize: 50 });
+      const res = await getEmailTemplates({
+        search: templateSearch,
+        page: templatePage,
+        pageSize: templatePageSize,
+      });
       const items = res?.items || [];
       setTemplates(items);
-      if (items.length > 0 && !selectedTemplateCode && !isCreatingTemplate) {
+      setTemplateTotal(res?.total ?? items.length);
+      setTemplateTotalPages(res?.totalPages ?? Math.max(1, Math.ceil((res?.total || items.length) / templatePageSize)));
+
+      if (targetCodeToSelect) {
+        const found = items.find((t) => t.templateCode === targetCodeToSelect);
+        if (found) {
+          setSelectedTemplateCode(found.templateCode);
+          setOriginalTemplateCode(found.templateCode);
+          setTemplateForm({
+            ...found,
+            contentHtml: found.contentHtml || found.bodyHtml || '',
+          });
+        }
+      } else if (items.length > 0 && !selectedTemplateCode && !isCreatingTemplate) {
         setSelectedTemplateCode(items[0].templateCode);
+        setOriginalTemplateCode(items[0].templateCode);
         setTemplateForm({
           ...items[0],
           contentHtml: items[0].contentHtml || items[0].bodyHtml || '',
@@ -182,7 +206,7 @@ export function ContentPage() {
     } finally {
       setTemplatesLoading(false);
     }
-  }, [templateSearch, selectedTemplateCode, isCreatingTemplate]);
+  }, [templateSearch, templatePage, templatePageSize, selectedTemplateCode, isCreatingTemplate]);
 
   // ── Load Event Notification Rules ──
   const loadEventRules = useCallback(async () => {
@@ -244,9 +268,16 @@ export function ContentPage() {
   const handleSelectTemplate = (template) => {
     setIsCreatingTemplate(false);
     setSelectedTemplateCode(template.templateCode);
+    setOriginalTemplateCode(template.templateCode);
     setTemplateForm({
-      ...template,
+      templateCode: template.templateCode,
+      templateName: template.templateName || '',
+      subject: template.subject || '',
+      description: template.description || template.variablesDescription || '',
+      status: template.isActive === false ? 'INACTIVE' : (template.status || 'ACTIVE'),
       contentHtml: template.contentHtml || template.bodyHtml || '',
+      contentText: template.contentText || '',
+      variablesDescription: template.variablesDescription || '',
     });
     setTestEmailResult(null);
     setPreviewMode(false);
@@ -256,6 +287,7 @@ export function ContentPage() {
   const handleStartCreateTemplate = () => {
     setIsCreatingTemplate(true);
     setSelectedTemplateCode(null);
+    setOriginalTemplateCode(null);
     setTemplateForm({
       templateCode: '',
       templateName: '',
@@ -283,11 +315,19 @@ export function ContentPage() {
 
   // ── Save Template ──
   const handleSaveTemplate = async () => {
-    if (!templateForm?.templateCode?.trim()) {
+    touchHttpSession();
+    const code = templateForm?.templateCode?.trim()?.toUpperCase();
+    if (!code) {
       alert('Template code is required.');
       return;
     }
-    if (!templateForm?.subject?.trim()) {
+    const name = templateForm?.templateName?.trim();
+    if (!name) {
+      alert('Template name is required.');
+      return;
+    }
+    const subj = templateForm?.subject?.trim();
+    if (!subj) {
       alert('Email subject is required.');
       return;
     }
@@ -299,20 +339,33 @@ export function ContentPage() {
     setSavingTemplate(true);
     try {
       const payload = {
-        ...templateForm,
+        templateCode: code,
+        templateName: name,
+        subject: subj,
         contentHtml: htmlBody,
-        isActive: templateForm.status === 'ACTIVE' || templateForm.isActive === true || templateForm.active === true,
+        contentText: templateForm.contentText || '',
+        variablesDescription: templateForm.variablesDescription || templateForm.description || '',
+        isActive: templateForm.status === 'ACTIVE' || templateForm.isActive === true,
       };
-      if (isCreatingTemplate) {
+
+      // If creating or if templateCode does not exist in loaded templates, use create (POST)
+      const existingInList = templates.some((t) => t.templateCode === code);
+      const shouldCreate = isCreatingTemplate || !originalTemplateCode || (!existingInList && originalTemplateCode !== code);
+
+      if (shouldCreate) {
         await createEmailTemplate(payload);
-        alert(`Template "${templateForm.templateCode}" created successfully!`);
+        alert(`Template "${code}" created successfully!`);
         setIsCreatingTemplate(false);
-        setSelectedTemplateCode(templateForm.templateCode);
+        setSelectedTemplateCode(code);
+        setOriginalTemplateCode(code);
       } else {
-        await updateEmailTemplate(templateForm.templateCode, payload);
-        alert(`Template "${templateForm.templateCode}" updated successfully!`);
+        const updateCode = originalTemplateCode || code;
+        await updateEmailTemplate(updateCode, payload);
+        alert(`Template "${code}" updated successfully!`);
+        setSelectedTemplateCode(code);
+        setOriginalTemplateCode(code);
       }
-      await loadTemplates();
+      await loadTemplates(code);
     } catch (err) {
       alert(`Failed to save template: ${err.message}`);
     } finally {
@@ -637,6 +690,19 @@ export function ContentPage() {
                       selectedId={selectedTemplateCode}
                       onSelectRow={handleSelectTemplate}
                       emptyMessage="No email templates found in database."
+                      pagination={{
+                        page: templatePage,
+                        pageSize: templatePageSize,
+                        total: templateTotal,
+                        totalPages: templateTotalPages,
+                        onPageChange: (newPage) => {
+                          setTemplatePage(newPage);
+                        },
+                        onPageSizeChange: (newSize) => {
+                          setTemplatePageSize(newSize);
+                          setTemplatePage(1);
+                        },
+                      }}
                     />
                   </AdminTableWrap>
                 </AdminPanel>

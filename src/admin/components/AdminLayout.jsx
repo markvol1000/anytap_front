@@ -51,8 +51,13 @@ export function AdminLayout() {
   }, [location.pathname]);
 
   useEffect(() => {
-    const handleExpired = () => {
-      window.alert('Login session has expired due to 30 minutes of inactivity. Please log in again.');
+    const handleExpired = (e) => {
+      const reason = e?.detail?.reason;
+      if (reason === 'unauthorized') {
+        window.alert('Admin session unauthorized or expired. Please sign in again.');
+      } else {
+        window.alert('Login session has expired due to 30 minutes of inactivity. Please log in again.');
+      }
       setAuthChecked(false);
     };
     window.addEventListener('anytap-session-expired', handleExpired);

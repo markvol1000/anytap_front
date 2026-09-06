@@ -90,7 +90,7 @@ export async function apiRequest(path, options = {}) {
         localStorage.removeItem('anytap_http_session');
         localStorage.removeItem('anytap_demo_http_session');
       } catch { /* noop */ }
-      window.dispatchEvent(new Event('anytap-session-expired'));
+      window.dispatchEvent(new CustomEvent('anytap-session-expired', { detail: { reason: 'unauthorized', status: res.status } }));
     }
     const rawMsg = data?.message || data?.error || res.statusText || 'Request failed';
     const message = sanitizeToastMessage(rawMsg);
