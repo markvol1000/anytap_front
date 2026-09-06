@@ -10,6 +10,7 @@ import { buildAccountScenarios } from './mock-context.js';
 import { hasCompletedKycProfile } from './member-profile.js';
 import { SCREEN_ROUTES } from '../constants/routes.ts';
 import { MAX_CARDS_PER_USER, getCardIssuanceFee } from '../constants/card.ts';
+import QRCode from 'qrcode';
 
 export * from './auth.js';
 export * from './card-helpers.js';
@@ -553,45 +554,26 @@ export function isUnifiedPortalScreen(screen) {
 // ─── QR code builder ─────────────────────────────────────────────────────────
 
 export function buildQR(text = '') {
-  const n = 25;
-  const size = 200;
-  const c = size / n;
-  const finderBoxes = [[0, 0], [0, n - 7], [n - 7, 0]];
-  const inAnyFinder = (i, j) => finderBoxes.some(([r, cc]) => i >= r && i < r + 7 && j >= cc && j < cc + 7);
-  const finderOn = (i, j) => {
-    for (const [r, cc] of finderBoxes) {
-      const li = i - r;
-      const lj = j - cc;
-      if (li >= 0 && li < 7 && lj >= 0 && lj < 7) {
-        const border = li === 0 || li === 6 || lj === 0 || lj === 6;
-        const center = li >= 2 && li <= 4 && lj >= 2 && lj <= 4;
-        return border || center;
-      }
-    }
-    return false;
-  };
-
-  let seed = 0;
   const str = String(text || '').trim();
-  for (let k = 0; k < str.length; k++) {
-    seed = ((seed << 5) - seed) + str.charCodeAt(k);
-    seed |= 0;
+  if (!str) {
+    return '<svg viewBox="0 0 200 200" width="100%" height="100%"><rect width="200" height="200" fill="#F8FAFC"/><text x="100" y="105" fill="#94A3B8" font-size="12" text-anchor="middle" font-family="sans-serif">No Address</text></svg>';
   }
-
-  let rects = '';
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      let on;
-      if (inAnyFinder(i, j)) {
-        on = finderOn(i, j);
-      } else {
-        const v = Math.sin(i * 12.9898 + j * 78.233 + seed) * 43758.5453;
-        on = (v - Math.floor(v)) > 0.5;
-      }
-      if (on) {
-        rects += `<rect x="${(j * c).toFixed(2)}" y="${(i * c).toFixed(2)}" width="${(c + 0.4).toFixed(2)}" height="${(c + 0.4).toFixed(2)}"/>`;
+  try {
+    const qr = QRCode.create(str, { errorCorrectionLevel: 'M' });
+    const n = qr.modules.size;
+    const margin = 2;
+    const total = n + margin * 2;
+    let path = '';
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        if (qr.modules.get(r, c)) {
+          path += `M${c + margin},${r + margin}h1v1h-1z`;
+        }
       }
     }
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" width="100%" height="100%" shape-rendering="crispEdges"><rect width="${total}" height="${total}" fill="#FFFFFF"/><path d="${path}" fill="#14171C"/></svg>`;
+  } catch (err) {
+    console.error('[buildQR] Failed to generate valid QR code:', err);
+    return '<svg viewBox="0 0 200 200" width="100%" height="100%"><rect width="200" height="200" fill="#F8FAFC"/><text x="100" y="105" fill="#EF4444" font-size="12" text-anchor="middle" font-family="sans-serif">QR Error</text></svg>';
   }
-  return `<svg viewBox="0 0 ${size} ${size}" width="100%" height="100%" fill="#14171C">${rects}</svg>`;
 }

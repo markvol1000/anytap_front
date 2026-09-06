@@ -215,6 +215,13 @@ export async function triggerFeePayout(userId) {
   return apiPost(`/admin/settlement/payout/${encodeURIComponent(userId)}`);
 }
 
+export async function simulateWasabiKycWebhook(userId, status = 'APPROVED', reason = '') {
+  return apiPost(`/admin/members/${encodeURIComponent(userId)}/simulate-kyc-webhook`, {
+    status,
+    reason,
+  });
+}
+
 export async function getMemberCards(userId) {
   if (!userId) return [];
   try {
@@ -821,6 +828,10 @@ export async function getTransactions(params = {}) {
       isInflow,
       fromAddress: fromAddr,
       toAddress: toAddr,
+      fromUserId: t.fromUserId || '',
+      fromLoginId: t.fromLoginId || '',
+      toUserId: t.toUserId || '',
+      toLoginId: t.toLoginId || '',
       fromCardLast4: fromL4 || t.fromCardLast4 || '',
       toCardLast4: toL4 || t.toCardLast4 || '',
       cardLast4: fromL4 || toL4 || t.cardLast4 || '',
@@ -1137,7 +1148,74 @@ export async function getNotifications() {
 }
 
 export async function getContentItems() {
-  apiNotImplemented(SVC, 'getContentItems', 'No GET /admin/content on ALB yet.');
+  try {
+    const res = await apiGet('/admin/content');
+    return asArray(res);
+  } catch {
+    return [];
+  }
+}
+
+export async function getEmailTemplates(params = {}) {
+  const query = new URLSearchParams();
+  query.append('pageNum', params.page || params.pageNum || 1);
+  query.append('pageSize', params.pageSize || params.limit || 20);
+  if (params.search) query.append('search', params.search);
+
+  const res = await apiGet(`/admin/email-templates?${query.toString()}`);
+  if (res && res.items) {
+    return {
+      items: res.items,
+      total: res.total || res.items.length,
+      page: res.page || 1,
+      totalPages: res.totalPages || 1,
+    };
+  }
+  return {
+    items: asArray(res),
+    total: asArray(res).length,
+    page: 1,
+    totalPages: 1,
+  };
+}
+
+export async function getEmailTemplateByCode(code) {
+  return apiGet(`/admin/email-templates/${encodeURIComponent(code)}`);
+}
+
+export async function createEmailTemplate(payload) {
+  return apiPost('/admin/email-templates', payload);
+}
+
+export async function updateEmailTemplate(code, payload) {
+  return apiPut(`/admin/email-templates/${encodeURIComponent(code)}`, payload);
+}
+
+export async function deleteEmailTemplate(code) {
+  return apiDelete(`/admin/email-templates/${encodeURIComponent(code)}`);
+}
+
+export async function sendTestEmailTemplate(code, email, variables = {}) {
+  return apiPost(`/admin/email-templates/${encodeURIComponent(code)}/send-test`, {
+    email,
+    variables,
+  });
+}
+
+export async function getEventNotifications() {
+  return apiGet('/admin/event-notifications');
+}
+
+export async function getEventNotificationRule(eventType) {
+  return apiGet(`/admin/event-notifications/${encodeURIComponent(eventType)}`);
+}
+
+export async function saveEventNotificationRule(eventType, rule) {
+  return apiPut(`/admin/event-notifications/${encodeURIComponent(eventType)}`, rule);
+}
+
+export async function testDispatchEventNotification(eventType, payload) {
+  return apiPost(`/admin/event-notifications/${encodeURIComponent(eventType)}/test-dispatch`, payload);
 }
 
 export async function getSettings() {

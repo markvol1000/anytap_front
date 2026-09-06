@@ -261,17 +261,11 @@ function DepositQrBox({ s }) {
       </div>
 
       <div className="portal-qrbox" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', background: '#FFFFFF', padding: '20px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-        {address ? (
-          <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(address)}`}
-            alt="TRC-20 Deposit QR Code"
-            width={160}
-            height={160}
-            style={{ width: '160px', height: '160px', borderRadius: '8px', border: '1px solid #CBD5E1', padding: '4px', background: '#FFFFFF' }}
-          />
-        ) : (
-          <div className="portal-qr" style={{ width: '160px', height: '160px', padding: '8px', background: '#FFFFFF', borderRadius: '8px', border: '1px solid #CBD5E1' }} dangerouslySetInnerHTML={{ __html: A.buildQR() }} />
-        )}
+        <div
+          className="portal-qr"
+          style={{ width: '160px', height: '160px', padding: '6px', background: '#FFFFFF', borderRadius: '8px', border: '1px solid #CBD5E1' }}
+          dangerouslySetInnerHTML={{ __html: A.buildQR(address) }}
+        />
         <p style={{ fontSize: '12px', fontWeight: '600', color: '#475569', margin: 0 }}>
           TRC-20 USDT Deposit Address
         </p>

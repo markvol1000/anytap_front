@@ -1945,9 +1945,9 @@ button.portal-tx:hover {
 }
 
 .portal-tx-detail__panel {
-  max-width: 480px;
-  max-height: min(94vh, 800px);
-  padding: 24px 24px calc(28px + env(safe-area-inset-bottom, 0px));
+  max-width: 500px;
+  max-height: min(96vh, 920px) !important;
+  padding: 22px 24px calc(24px + env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
 }
 
@@ -1955,8 +1955,8 @@ button.portal-tx:hover {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 4px 0 16px;
-  margin-bottom: 4px;
+  padding: 2px 0 12px;
+  margin-bottom: 2px;
   border-bottom: 1px solid rgba(20, 23, 28, 0.06);
 }
 
@@ -1987,7 +1987,7 @@ button.portal-tx:hover {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 10px 0;
+  padding: 8px 0;
   border-bottom: 1px solid rgba(20, 23, 28, 0.06);
 }
 

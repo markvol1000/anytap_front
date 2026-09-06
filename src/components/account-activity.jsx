@@ -123,7 +123,7 @@ export function ActivityRow({ tx, onClick, dateStyle = 'standard', variant = 'de
               <span style={{ fontSize: '10px', color: '#b45309', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#fef3c7', padding: '1px 6px', borderRadius: '4px', letterSpacing: '0.02em', lineHeight: '1.4' }}>
                 PENDING
               </span>
-            ) : (tx.rawStatus === 'authorized' || (!tx.incoming && tx.kind !== 'card_topup' && tx.kind !== 'wallet_deposit' && tx.kind !== 'wallet_receive')) ? (
+            ) : (tx.rawStatus === 'authorized' || (!tx.incoming && tx.kind !== 'card_topup' && tx.kind !== 'wallet_deposit' && tx.kind !== 'wallet_receive' && tx.kind !== 'card_transfer_out' && tx.kind !== 'card_transfer' && tx.kind !== 'wallet_send')) ? (
               <span style={{ fontSize: '10px', color: '#0f766e', fontWeight: '700', textTransform: 'uppercase', backgroundColor: '#ccfbf1', padding: '1px 6px', borderRadius: '4px', letterSpacing: '0.02em', lineHeight: '1.4' }}>
                 AUTHORIZED
               </span>

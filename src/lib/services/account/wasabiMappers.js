@@ -61,6 +61,9 @@ function sanitizeUserFacingTitle(text, record) {
   const lower = text.toLowerCase();
   if (lower.includes('wasabi') || lower.includes('webhook') || lower.includes('cregis') || lower.includes('wsb') || lower.includes('와사비')) {
     const typeStr = String(record?.type || record?.tradeType || record?.kind || '').toLowerCase();
+    if (typeStr.includes('transfer_out') || typeStr.includes('transfer out')) return 'Transfer Sent';
+    if (typeStr.includes('transfer_in') || typeStr.includes('transfer in')) return 'Transfer Received';
+    if (typeStr.includes('transfer')) return 'Transfer';
     if (typeStr.includes('withdraw')) return 'Card Withdrawal';
     if (typeStr.includes('deposit') || typeStr.includes('charge') || typeStr.includes('topup')) return 'Card Top Up';
     if (typeStr.includes('refund')) return 'Refund';
@@ -82,8 +85,9 @@ function pickTitle(record) {
   if (typeStr.includes('freeze') || subTypeStr.includes('freeze')) return 'Freeze';
   if (typeStr.includes('card_update') || typeStr.includes('card update')) return 'Card Update';
   if (typeStr.includes('create')) return 'Create Card';
-  if (typeStr.includes('card_transfer_in') || typeStr.includes('transfer in')) return 'Card Deposit / Transfer In';
-  if (typeStr.includes('card_transfer_out') || typeStr.includes('transfer out')) return 'Card Withdrawal / Transfer Out';
+  if (typeStr.includes('card_transfer_in') || typeStr.includes('transfer in')) return 'Transfer Received';
+  if (typeStr.includes('card_transfer_out') || typeStr.includes('transfer out')) return 'Transfer Sent';
+  if (typeStr.includes('transfer')) return 'Transfer';
   if (typeStr.includes('withdraw')) return 'Card Withdrawal';
   if (typeStr.includes('topup') || typeStr.includes('deposit')) return 'Card Top Up';
   if (typeStr.includes('refund')) return 'Refund';
@@ -127,8 +131,9 @@ function mapWasabiType(type = '') {
   const t = String(type).toLowerCase();
   if (t.includes('refund')) return 'refund';
   if (t.includes('reversal') || t.includes('reverse')) return 'reversal';
-  if (t.includes('transfer_in') || t.includes('transfer in')) return 'card_topup';
-  if (t.includes('transfer_out') || t.includes('transfer out')) return 'card_spend';
+  if (t.includes('transfer_out') || t.includes('transfer out')) return 'card_transfer_out';
+  if (t.includes('transfer_in') || t.includes('transfer in')) return 'card_transfer_in';
+  if (t.includes('transfer')) return 'card_transfer';
   if (t.includes('deposit') || t.includes('topup') || t.includes('top_up') || t.includes('charge')) {
     return 'card_topup';
   }
@@ -159,7 +164,7 @@ function mapWasabiStatus(status = '', type = '') {
 }
 
 function isIncomingKind(kind) {
-  return kind === 'refund' || kind === 'reversal' || kind === 'card_topup';
+  return kind === 'refund' || kind === 'reversal' || kind === 'card_topup' || kind === 'card_transfer_in';
 }
 
 /**
@@ -181,6 +186,15 @@ export function mapWasabiTransactionRecord(record, opts = {}) {
     || `tx-${pickTimestamp(record)}-${pickTitle(record)}`,
   );
 
+  const fromLoginId = record.fromLoginId || record.from_login_id || '';
+  const toLoginId = record.toLoginId || record.to_login_id || '';
+
+  let typeLabel = undefined;
+  if (kind === 'card_transfer_out') typeLabel = 'Transfer Sent';
+  else if (kind === 'card_transfer_in') typeLabel = 'Transfer Received';
+  else if (kind === 'card_transfer') typeLabel = 'Transfer';
+  else if (fromLoginId || toLoginId) typeLabel = incoming ? 'Transfer Received' : 'Transfer Sent';
+
   return {
     id,
     title: pickTitle(record),
@@ -201,6 +215,11 @@ export function mapWasabiTransactionRecord(record, opts = {}) {
     cardLast4: pickLast4(record, opts.last4 || '') || opts.last4 || '',
     cardNetwork: 'Visa',
     cardScheme: 'visa',
+    fromLoginId,
+    toLoginId,
+    from_login_id: fromLoginId,
+    to_login_id: toLoginId,
+    typeLabel,
   };
 }
 

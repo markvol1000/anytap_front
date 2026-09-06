@@ -823,7 +823,7 @@ export function IssuanceDepositPanel({ s, className = '', isModal = false }) {
 
       {!paid ? (
         <div className="portal-qrbox portal-issuance-deposit__qrbox" style={isModal ? { padding: '16px', gap: '10px' } : undefined}>
-          <div className="portal-qr" dangerouslySetInnerHTML={{ __html: A.buildQR() }} />
+          <div className="portal-qr" dangerouslySetInnerHTML={{ __html: A.buildQR(address) }} />
           <p className="portal-issuance-deposit__qr-label" style={{ fontSize: '12px', margin: 0 }}>USDT Deposit Address (TRC-20)</p>
           <div className="portal-addr" style={{ fontSize: '13px', padding: '8px 12px' }}>{address || 'Loading system wallet...'}</div>
           {isIssuance && (

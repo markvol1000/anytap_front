@@ -419,12 +419,12 @@ export async function fetchLocalTransactions(userId) {
         title = 'Card Withdrawal';
         incoming = false;
       } else if (type === 'CARD_TRANSFER_OUT') {
-        kind = 'card_spend';
-        title = 'Card Transfer Out';
+        kind = 'card_transfer_out';
+        title = 'Transfer Sent';
         incoming = false;
       } else if (type === 'CARD_TRANSFER_IN') {
-        kind = 'card_topup';
-        title = 'Card Transfer In';
+        kind = 'card_transfer_in';
+        title = 'Transfer Received';
         incoming = true;
       } else if (type === 'CARD_SPEND') {
         kind = 'card_spend';
@@ -453,6 +453,10 @@ export async function fetchLocalTransactions(userId) {
         status = 'completed';
       }
 
+      const fromLoginId = tx.fromLoginId || tx.from_login_id || '';
+      const toLoginId = tx.toLoginId || tx.to_login_id || '';
+      const isTransfer = kind === 'card_transfer_out' || kind === 'card_transfer_in' || type === 'CARD_TRANSFER_OUT' || type === 'CARD_TRANSFER_IN' || Boolean(fromLoginId || toLoginId);
+
       return {
         id: tx.txId || `local-${Date.now()}-${Math.random()}`,
         title: title,
@@ -464,6 +468,7 @@ export async function fetchLocalTransactions(userId) {
         failed: isFailed,
         pending: status === 'pending' || status === 'processing',
         kind: kind,
+        typeLabel: isTransfer ? (incoming ? 'Transfer Received' : 'Transfer Sent') : undefined,
         status: status,
         txId: tx.txId,
         cardNo: tx.cardNo || tx.cardId || tx.wasabiCardId || '',
@@ -471,10 +476,14 @@ export async function fetchLocalTransactions(userId) {
         cardId: tx.cardId || tx.cardNo || tx.wasabiCardId || '',
         wasabiCardId: tx.wasabiCardId || tx.cardId || tx.cardNo || '',
         reference: tx.txId ? tx.txId.slice(0, 10).toUpperCase() : '',
-        currency: tx.currency || tx.originalCurrency || tx.coinType || (type === 'CARD_SPEND' || type === 'CARD_CHARGE' ? 'USD' : 'USDT'),
-        originalCurrency: tx.originalCurrency || tx.currency || (type === 'CARD_SPEND' || type === 'CARD_CHARGE' ? 'USD' : 'USDT'),
+        currency: tx.currency || tx.originalCurrency || tx.coinType || '',
+        originalCurrency: tx.originalCurrency || tx.currency || '',
         originalAmount: tx.originalAmount ?? tx.amount ?? 0,
         description: tx.description || '',
+        fromLoginId,
+        toLoginId,
+        from_login_id: fromLoginId,
+        to_login_id: toLoginId,
       };
     });
   } catch (err) {

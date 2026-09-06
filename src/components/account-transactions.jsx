@@ -185,7 +185,225 @@ function DetailRow({ label, children }) {
   );
 }
 
+function downloadTransactionJpg(tx, { displayTypeLabel, status, maskedCard, network, fromLoginId, toLoginId, isTransfer }) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const scale = 2; // 2x retina sharpness
+  const width = 560;
+
+  // Build rows matching the drawer exactly
+  const rows = [];
+  if (['card_spend', 'refund', 'reversal'].includes(tx.kind) && !isTransfer && A.getActivityMerchantLabel(tx) && A.getActivityMerchantLabel(tx) !== '—') {
+    rows.push(['Merchant', A.getActivityMerchantLabel(tx)]);
+  }
+  rows.push(['Transaction Type', displayTypeLabel]);
+  rows.push(['Amount', A.formatActivityAmount(tx.amount, tx.incoming, tx.kind, tx)]);
+  rows.push(['Date & Time', A.formatActivityDateTime(tx.at)]);
+  rows.push(['Status', A.formatActivityStatusLabel(status)]);
+
+  if (fromLoginId || (isTransfer && toLoginId)) {
+    rows.push(['From', fromLoginId || '—']);
+  }
+  if (toLoginId || (isTransfer && fromLoginId)) {
+    rows.push(['To', toLoginId || '—']);
+  }
+
+  if (tx.remainingBalance != null && !Number.isNaN(tx.remainingBalance)) {
+    rows.push(['Remaining Balance', `$${Number(tx.remainingBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`]);
+  }
+
+  rows.push(['Wallet / Card', A.getActivitySourceFullLabel(tx)]);
+
+  if (maskedCard) {
+    rows.push(['Card Number', maskedCard]);
+  }
+
+  if (tx.reference && tx.reference.trim() !== '' && tx.reference.trim() !== '—') {
+    rows.push(['Reference Number', tx.reference.trim()]);
+  }
+
+  if (network) {
+    rows.push(['Network', network]);
+  }
+
+  // Dimensions
+  const paddingX = 36;
+  const headerHeight = 72;
+  const heroHeight = 114;
+  const rowHeight = 36;
+  const rowsHeight = rows.length * rowHeight;
+  const footerHeight = 64;
+  const height = headerHeight + heroHeight + rowsHeight + footerHeight + 40;
+
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  ctx.scale(scale, scale);
+
+  // Background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  // Outer border
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(12, 12, width - 24, height - 24);
+
+  // 1. Header (Brand)
+  let curY = 46;
+  ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = '#0f172a';
+  ctx.textAlign = 'left';
+  ctx.fillText('AnyTap', paddingX, curY);
+
+  ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = '#64748b';
+  ctx.textAlign = 'right';
+  ctx.fillText('TRANSACTION RECEIPT', width - paddingX, curY - 2);
+
+  // Divider 1
+  curY += 24;
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(paddingX, curY);
+  ctx.lineTo(width - paddingX, curY);
+  ctx.stroke();
+
+  // 2. Hero Section
+  curY += 28;
+  ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = '#64748b';
+  ctx.textAlign = 'center';
+  ctx.fillText(displayTypeLabel, width / 2, curY);
+
+  curY += 34;
+  ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  const amountStr = A.formatActivityAmount(tx.amount, tx.incoming, tx.kind, tx);
+  if (status === 'failed' || tx.failed) {
+    ctx.fillStyle = '#dc2626';
+  } else if (tx.incoming) {
+    ctx.fillStyle = '#16a34a';
+  } else {
+    ctx.fillStyle = '#0f172a';
+  }
+  ctx.fillText(amountStr, width / 2, curY);
+
+  // Status Pill Badge
+  curY += 26;
+  const statusLabel = A.formatActivityStatusLabel(status).toUpperCase();
+  ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  const textWidth = ctx.measureText(statusLabel).width;
+  const badgeWidth = textWidth + 22;
+  const badgeHeight = 22;
+  const badgeX = (width - badgeWidth) / 2;
+  const badgeY = curY - 14;
+
+  let badgeBg = '#dcfce7';
+  let badgeFg = '#15803d';
+  if (status === 'failed' || tx.failed) {
+    badgeBg = '#fee2e2';
+    badgeFg = '#b91c1c';
+  } else if (status === 'pending' || tx.pending) {
+    badgeBg = '#fef3c7';
+    badgeFg = '#b45309';
+  }
+
+  // Draw rounded pill
+  ctx.fillStyle = badgeBg;
+  ctx.beginPath();
+  const radius = 11;
+  ctx.moveTo(badgeX + radius, badgeY);
+  ctx.lineTo(badgeX + badgeWidth - radius, badgeY);
+  ctx.quadraticCurveTo(badgeX + badgeWidth, badgeY, badgeX + badgeWidth, badgeY + radius);
+  ctx.lineTo(badgeX + badgeWidth, badgeY + badgeHeight - radius);
+  ctx.quadraticCurveTo(badgeX + badgeWidth, badgeY + badgeHeight, badgeX + badgeWidth - radius, badgeY + badgeHeight);
+  ctx.lineTo(badgeX + radius, badgeY + badgeHeight);
+  ctx.quadraticCurveTo(badgeX, badgeY + badgeHeight, badgeX, badgeY + badgeHeight - radius);
+  ctx.lineTo(badgeX, badgeY + radius);
+  ctx.quadraticCurveTo(badgeX, badgeY, badgeX + radius, badgeY);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = badgeFg;
+  ctx.textAlign = 'center';
+  ctx.fillText(statusLabel, width / 2, curY + 1);
+
+  // Divider 2
+  curY += 24;
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.beginPath();
+  ctx.moveTo(paddingX, curY);
+  ctx.lineTo(width - paddingX, curY);
+  ctx.stroke();
+
+  // 3. Detail Rows
+  curY += 16;
+  for (const [label, val] of rows) {
+    curY += rowHeight;
+
+    // Label
+    ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, paddingX, curY);
+
+    // Value
+    ctx.font = '600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = '#0f172a';
+    ctx.textAlign = 'right';
+
+    // Truncate value if too wide to avoid overlapping label
+    let safeVal = String(val || '');
+    const maxValWidth = width - (paddingX * 2) - 130;
+    while (safeVal.length > 4 && ctx.measureText(safeVal).width > maxValWidth) {
+      safeVal = safeVal.slice(0, -2) + '…';
+    }
+    ctx.fillText(safeVal, width - paddingX, curY);
+  }
+
+  // Divider 3
+  curY += 20;
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(paddingX, curY);
+  ctx.lineTo(width - paddingX, curY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 4. Footer
+  curY += 22;
+  ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.textAlign = 'center';
+  ctx.fillText('Official AnyTap Transaction Record · anytap.com', width / 2, curY);
+
+  curY += 15;
+  const genDate = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+  ctx.font = '400 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillText(`Generated at: ${genDate}`, width / 2, curY);
+
+  // Convert to Blob and trigger JPG download
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const refCode = (tx.reference || tx.txId || tx.id || Date.now()).toString().replace(/[^a-zA-Z0-9_-]/g, '_');
+    a.download = `anytap-transaction-${refCode}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, 'image/jpeg', 0.95);
+}
+
 export function TxDetailSheet({ tx, onClose }) {
+  const [isDownloading, setIsDownloading] = useState(false);
+
   useEffect(() => {
     if (!tx) return undefined;
     const onKeyDown = (e) => {
@@ -201,26 +419,78 @@ export function TxDetailSheet({ tx, onClose }) {
   const network = A.getActivityNetwork(tx);
   const maskedCard = A.getActivityMaskedCard(tx);
 
+  const fromLoginId = tx.fromLoginId || tx.from_login_id || '';
+  const toLoginId = tx.toLoginId || tx.to_login_id || '';
+
+  const isTransfer = Boolean(
+    fromLoginId ||
+    toLoginId ||
+    tx.kind === 'card_transfer_out' ||
+    tx.kind === 'card_transfer_in' ||
+    tx.kind === 'card_transfer' ||
+    tx.kind === 'wallet_send' ||
+    tx.kind === 'wallet_receive' ||
+    String(tx.type || tx.txType || '').toUpperCase().includes('TRANSFER') ||
+    String(tx.title || tx.description || '').toLowerCase().includes('transfer')
+  );
+
+  const displayTypeLabel = isTransfer
+    ? (['card_spend', 'Card Purchase'].includes(tx.kind) || tx.typeLabel === 'Card Purchase'
+        ? (tx.incoming ? 'Transfer Received' : 'Transfer Sent')
+        : (tx.typeLabel || (tx.incoming ? 'Transfer Received' : 'Transfer Sent')))
+    : (tx.typeLabel || 'Transaction');
+
+  const handleDownloadJpg = () => {
+    setIsDownloading(true);
+    try {
+      downloadTransactionJpg(tx, {
+        displayTypeLabel,
+        status,
+        maskedCard,
+        network,
+        fromLoginId,
+        toLoginId,
+        isTransfer,
+      });
+    } catch (err) {
+      console.error('[TxDetailSheet] Failed to generate transaction JPG', err);
+    } finally {
+      setTimeout(() => setIsDownloading(false), 600);
+    }
+  };
+
   return (
     <div className="portal-sheet portal-tx-detail" role="dialog" aria-modal="true" aria-label="Transaction details">
       <button type="button" className="portal-sheet__backdrop" onClick={onClose} aria-label="Close" />
-      <div className="portal-sheet__panel portal-wallet-sheet portal-tx-detail__panel">
+      <div className="portal-sheet__panel portal-tx-detail__panel" style={{ maxHeight: 'min(96vh, 920px)', maxWidth: '500px' }}>
         <div className="portal-sheet__head">
           <h3 className="portal-sheet__title">Transaction Details</h3>
-          <button type="button" className="portal-sheet__close" onClick={onClose} aria-label="Close">
-            <Icon name="close" size={18} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              className="portal-sheet__close"
+              onClick={handleDownloadJpg}
+              title="Download Receipt (JPG)"
+              aria-label="Download Receipt as JPG"
+              disabled={isDownloading}
+            >
+              <Icon name="download" size={17} />
+            </button>
+            <button type="button" className="portal-sheet__close" onClick={onClose} aria-label="Close">
+              <Icon name="close" size={18} />
+            </button>
+          </div>
         </div>
 
         <div className="portal-tx-detail__hero">
-          <TxIcon tx={tx} />
+          <TxIcon tx={{ ...tx, typeLabel: displayTypeLabel, kind: isTransfer && tx.kind === 'card_spend' ? 'card_transfer_out' : tx.kind }} />
           <div className="portal-tx-detail__hero-body">
-            <span className="portal-tx-detail__hero-type">{tx.typeLabel}</span>
+            <span className="portal-tx-detail__hero-type">{displayTypeLabel}</span>
             <ActivityAmount
               amount={tx.amount}
               incoming={tx.incoming}
               failed={tx.failed}
-              kind={tx.kind}
+              kind={isTransfer && tx.kind === 'card_spend' ? 'card_transfer_out' : tx.kind}
               item={tx}
               large
             />
@@ -229,10 +499,10 @@ export function TxDetailSheet({ tx, onClose }) {
         </div>
 
         <dl className="portal-tx-detail__list">
-          {['card_spend', 'refund', 'reversal'].includes(tx.kind) && A.getActivityMerchantLabel(tx) && A.getActivityMerchantLabel(tx) !== '—' && (
+          {['card_spend', 'refund', 'reversal'].includes(tx.kind) && !isTransfer && A.getActivityMerchantLabel(tx) && A.getActivityMerchantLabel(tx) !== '—' && (
             <DetailRow label="Merchant">{A.getActivityMerchantLabel(tx)}</DetailRow>
           )}
-          <DetailRow label="Transaction Type">{tx.typeLabel}</DetailRow>
+          <DetailRow label="Transaction Type">{displayTypeLabel}</DetailRow>
           <DetailRow label="Amount">{A.formatActivityAmount(tx.amount, tx.incoming, tx.kind, tx)}</DetailRow>
           <DetailRow label="Date & Time">{A.formatActivityDateTime(tx.at)}</DetailRow>
           <DetailRow label="Status">
@@ -240,6 +510,13 @@ export function TxDetailSheet({ tx, onClose }) {
               {A.formatActivityStatusLabel(status)}
             </span>
           </DetailRow>
+
+          {(fromLoginId || (isTransfer && toLoginId)) && (
+            <DetailRow label="From">{fromLoginId || '—'}</DetailRow>
+          )}
+          {(toLoginId || (isTransfer && fromLoginId)) && (
+            <DetailRow label="To">{toLoginId || '—'}</DetailRow>
+          )}
 
           {tx.remainingBalance != null && !Number.isNaN(tx.remainingBalance) && (
             <DetailRow label="Remaining Balance">
@@ -260,6 +537,30 @@ export function TxDetailSheet({ tx, onClose }) {
             <DetailRow label="Network">{network}</DetailRow>
           )}
         </dl>
+
+        <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid var(--portal-border, #eee)' }}>
+          <button
+            type="button"
+            className="portal-btn portal-btn--primary"
+            onClick={handleDownloadJpg}
+            disabled={isDownloading}
+            style={{
+              width: '100%',
+              height: '44px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              borderRadius: '10px',
+              cursor: isDownloading ? 'wait' : 'pointer',
+            }}
+          >
+            <Icon name="download" size={18} />
+            <span>{isDownloading ? 'Generating JPG...' : 'Download Receipt (JPG)'}</span>
+          </button>
+        </div>
       </div>
     </div>
   );

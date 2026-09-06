@@ -23,9 +23,12 @@ import {
   saveMemberMemo,
   suspendMember,
   retryCregisWallet,
+  simulateWasabiKycWebhook,
   triggerFeePayout,
   updateMember,
 } from '../services/adminService.js';
+
+const isDevEnv = (import.meta.env.DEV || import.meta.env.MODE === 'development' || import.meta.env.MODE === 'dev' || (typeof window !== 'undefined' && (['localhost', '127.0.0.1'].includes(window.location.hostname) || window.location.hostname.includes('dev') || window.location.port === '5173'))) && !(typeof window !== 'undefined' && (window.location.hostname.endsWith('anytap.io') && !window.location.hostname.includes('dev')));
 
 const fetchMembers = (params) => getMembers(params);
 const fetchMemberDetail = (id) => getMemberById(id);
@@ -125,6 +128,7 @@ export function MembersPage() {
   const [memberTx, setMemberTx] = useState([]);
   const [memberTxLoading, setMemberTxLoading] = useState(false);
   const [retryLoading, setRetryLoading] = useState(false);
+  const [simulatingKyc, setSimulatingKyc] = useState(false);
   const [copiedTxId, setCopiedTxId] = useState(null);
   const list = useAdminList(fetchMembers);
   const { detail, loading: detailLoading, setDetail } = useAdminDetail(fetchMemberDetail, selectedId);
@@ -262,6 +266,52 @@ export function MembersPage() {
         const updated = await getMemberById(latestDetail.id);
         setDetail(updated);
         list.reload();
+      } else if (action === 'simulateKycSuccess') {
+        const ok = await runConfirm(confirm, {
+          title: 'Simulate Wasabi KYC Success (Approved)',
+          message: `[Dev/Testing] Trigger simulated Wasabi KYC Approval webhook for ${detail.name || detail.id}?\n\n• Webhook Status: APPROVED\n• Updates account status to ACTIVE\n• Auto-generates Cregis USDT wallet\n• Records KYC_ACTIVE event log`,
+          confirmLabel: 'Trigger KYC Success',
+        });
+        if (!ok) return;
+
+        setSimulatingKyc(true);
+        try {
+          const res = await simulateWasabiKycWebhook(detail.id, 'APPROVED');
+          const data = res?.data || res;
+          window.alert(`✅ Wasabi KYC Success Webhook Simulated Successfully!\n\nUser ID: ${data?.userId}\nStatus: ${data?.accountStatus}\nCregis Wallet: ${data?.cregisWalletAddress || 'Generated'}`);
+          const updated = await getMemberById(detail.id);
+          setDetail(updated);
+          list.reload();
+        } catch (err) {
+          window.alert(`❌ Failed to simulate Wasabi KYC success webhook:\n${err.message}`);
+        } finally {
+          setSimulatingKyc(false);
+        }
+      } else if (action === 'simulateKycFail') {
+        const reasonInput = window.prompt(`[Dev/Testing] Trigger simulated Wasabi KYC Failure webhook for ${detail.name || detail.id}.\n\nEnter rejection reason (optional):`, 'Identity document verification failed (Simulated)');
+        if (reasonInput === null) return; // User cancelled prompt
+
+        const ok = await runConfirm(confirm, {
+          title: 'Simulate Wasabi KYC Failure (Rejected)',
+          message: `Are you sure you want to trigger KYC Rejection webhook for ${detail.name || detail.id}?\n\n• Webhook Status: REJECTED\n• Reason: ${reasonInput || 'None'}\n• Updates account status to REJECTED\n• Records KYC_REJECTED event log`,
+          confirmLabel: 'Trigger KYC Fail',
+          danger: true,
+        });
+        if (!ok) return;
+
+        setSimulatingKyc(true);
+        try {
+          const res = await simulateWasabiKycWebhook(detail.id, 'REJECTED', reasonInput || 'Identity verification failed');
+          const data = res?.data || res;
+          window.alert(`✅ Wasabi KYC Fail Webhook Simulated Successfully!\n\nUser ID: ${data?.userId}\nStatus: ${data?.accountStatus || 'REJECTED'}\nSimulated: REJECTED`);
+          const updated = await getMemberById(detail.id);
+          setDetail(updated);
+          list.reload();
+        } catch (err) {
+          window.alert(`❌ Failed to simulate Wasabi KYC fail webhook:\n${err.message}`);
+        } finally {
+          setSimulatingKyc(false);
+        }
       }
     } catch (err) {
       window.alert(`❌ Action error: ${err.message}`);
@@ -934,6 +984,59 @@ export function MembersPage() {
                     )
                   )}
                 </AdminActionStack>
+
+                {/* Dev-Only Simulated KYC Webhook Panel (운영상에서는 절대 미노출) */}
+                {isDevEnv && (
+                  <AdminDetailSection title="🧪 KYC Webhook Simulator (Dev Only)" className="admin-detail-full-width">
+                    <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
+                      [개발/테스트 전용] Wasabi KYC 인증 완료/반려 웹훅을 가상으로 시뮬레이션합니다. 운영 환경에서는 노출되지 않습니다.
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn--outline admin-btn--sm"
+                        disabled={simulatingKyc}
+                        onClick={() => handleAction('simulateKycSuccess')}
+                        title="Wasabi KYC 승인(APPROVED) 웹훅을 가상으로 백엔드에 트리거합니다."
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          color: '#059669',
+                          borderColor: '#a7f3d0',
+                          backgroundColor: '#ecfdf5',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          cursor: simulatingKyc ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        {simulatingKyc ? '⏳ Processing…' : '⚡ KYC Success (Approved)'}
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn--outline admin-btn--sm"
+                        disabled={simulatingKyc}
+                        onClick={() => handleAction('simulateKycFail')}
+                        title="Wasabi KYC 반려/실패(REJECTED) 웹훅을 가상으로 백엔드에 트리거합니다."
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          color: '#dc2626',
+                          borderColor: '#fca5a5',
+                          backgroundColor: '#fef2f2',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          cursor: simulatingKyc ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        {simulatingKyc ? '⏳ Processing…' : '✕ KYC Fail (Rejected)'}
+                      </button>
+                    </div>
+                  </AdminDetailSection>
+                )}
               </>
             ) : null}
           </AdminDetailPanel>

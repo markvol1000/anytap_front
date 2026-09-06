@@ -554,94 +554,134 @@ export function TransactionsPage() {
             </AdminTableWrap>
           </AdminPanel>
         )}
-        right={selected ? (
-          <AdminDetailPanel 
-            title={`Transaction Detail — ${selected.actionLabel || selected.action || 'Detail'}`}
-            onClose={() => { setSelectedId(null); setRetryMsg(null); }}
-          >
-            <AdminDetailRow 
-              label="Transaction ID" 
-              value={<CopyableId text={selected.id} />} 
-            />
-            <AdminDetailRow 
-              label="Member" 
-              value={
-                (() => {
-                  const memberId = selected.memberId || selected.userId;
-                  const memberEmail = selected.memberEmail || selected.email;
-                  if (memberId && memberEmail && memberEmail !== '—') {
-                    return (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <CopyableId text={memberId} />
-                        <span style={{ color: '#64748b' }}>/ {memberEmail}</span>
-                      </span>
-                    );
-                  }
-                  return <CopyableId text={memberId || memberEmail} />;
-                })()
-              } 
-            />
-            <AdminDetailRow 
-              label="Channel" 
-              value={<ChannelBadge channel={selected.channel} />} 
-            />
-            <AdminDetailRow 
-              label="Action" 
-              value={<ActionBadge action={selected.action} label={selected.actionLabel} />} 
-            />
-            <AdminDetailRow 
-              label="Description / Merchant" 
-              value={
-                <span style={{ fontWeight: '600', color: '#0f172a' }}>
-                  {selected.description || '—'}
-                </span>
-              } 
-            />
-            <AdminDetailRow 
-              label="Amount" 
-              value={
-                (() => {
-                  const isInflow = selected.isInflow ?? (
-                    selected.action === 'deposit' ||
-                    selected.action === 'topup' ||
-                    selected.action === 'refund' ||
-                    selected.action === 'transfer_in'
-                  );
-                  const sign = isInflow ? '+' : '-';
-                  const color = isInflow ? '#16a34a' : '#dc2626';
-                  const bg = isInflow ? '#f0fdf4' : '#fef2f2';
-                  const border = isInflow ? '#bbf7d0' : '#fecaca';
+        right={selected ? (() => {
+          const isTransfer = Boolean(
+            selected.action === 'transfer' ||
+            selected.action === 'transfer_in' ||
+            selected.action === 'transfer_out' ||
+            String(selected.rawType || selected.type || '').toUpperCase().includes('TRANSFER') ||
+            String(selected.actionLabel || '').toLowerCase().includes('transfer')
+          );
 
-                  return (
-                    <div style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '3px 8px',
-                      borderRadius: '5px',
-                      backgroundColor: bg,
-                      border: `1px solid ${border}`,
-                      fontWeight: '800',
-                      fontSize: '13px',
-                      color: color,
-                      fontFamily: 'monospace',
-                    }}>
-                      <CurrencyBadge currency={selected.currency || selected.originalCurrency || selected.transCurrency} />
-                      <span>{sign}{formatAmountWithCurrency(Math.abs(Number(selected.transAmount ?? selected.amount) || 0), selected.currency || selected.originalCurrency || selected.transCurrency || '')}</span>
-                    </div>
-                  );
-                })()
-              } 
-            />
-            <AdminDetailRow 
-              label="From Address" 
-              value={<AddressWithLast4 address={selected.fromAddress} last4={selected.fromCardLast4} />} 
-            />
-            <AdminDetailRow 
-              label="To Address" 
-              value={<AddressWithLast4 address={selected.toAddress} last4={selected.toCardLast4} />} 
-            />
-            <AdminDetailRow label="Status" value={<AdminStatusBadge status={selected.status} />} />
+          return (
+            <AdminDetailPanel 
+              title={isTransfer ? "Transaction Detail — Transfer" : `Transaction Detail — ${selected.actionLabel || selected.action || 'Detail'}`}
+              onClose={() => { setSelectedId(null); setRetryMsg(null); }}
+            >
+              <AdminDetailRow 
+                label="Transaction ID" 
+                value={<CopyableId text={selected.id} />} 
+              />
+              <AdminDetailRow 
+                label="Member" 
+                value={
+                  (() => {
+                    const memberId = selected.memberId || selected.userId;
+                    const memberEmail = selected.memberEmail || selected.email;
+                    if (memberId && memberEmail && memberEmail !== '—') {
+                      return (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <CopyableId text={memberId} />
+                          <span style={{ color: '#64748b' }}>/ {memberEmail}</span>
+                        </span>
+                      );
+                    }
+                    return <CopyableId text={memberId || memberEmail} />;
+                  })()
+                } 
+              />
+              <AdminDetailRow 
+                label="Channel" 
+                value={<ChannelBadge channel={selected.channel} />} 
+              />
+              <AdminDetailRow 
+                label="Action" 
+                value={<ActionBadge action={selected.action} label={selected.actionLabel} />} 
+              />
+              <AdminDetailRow 
+                label="Description / Merchant" 
+                value={
+                  <span style={{ fontWeight: '600', color: '#0f172a' }}>
+                    {selected.description || '—'}
+                  </span>
+                } 
+              />
+              <AdminDetailRow 
+                label="Amount" 
+                value={
+                  (() => {
+                    const isInflow = selected.isInflow ?? (
+                      selected.action === 'deposit' ||
+                      selected.action === 'topup' ||
+                      selected.action === 'refund' ||
+                      selected.action === 'transfer_in'
+                    );
+                    const sign = isInflow ? '+' : '-';
+                    const color = isInflow ? '#16a34a' : '#dc2626';
+                    const bg = isInflow ? '#f0fdf4' : '#fef2f2';
+                    const border = isInflow ? '#bbf7d0' : '#fecaca';
+
+                    return (
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '3px 8px',
+                        borderRadius: '5px',
+                        backgroundColor: bg,
+                        border: `1px solid ${border}`,
+                        fontWeight: '800',
+                        fontSize: '13px',
+                        color: color,
+                        fontFamily: 'monospace',
+                      }}>
+                        <CurrencyBadge currency={selected.currency || selected.originalCurrency || selected.transCurrency} />
+                        <span>{sign}{formatAmountWithCurrency(Math.abs(Number(selected.transAmount ?? selected.amount) || 0), selected.currency || selected.originalCurrency || selected.transCurrency || '')}</span>
+                      </div>
+                    );
+                  })()
+                } 
+              />
+
+              {/* FROM Information */}
+              <AdminDetailRow 
+                label={isTransfer ? "From (Sender ID)" : "From Address"} 
+                value={
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {(selected.fromUserId || selected.fromLoginId) && (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>ID:</span>
+                        <CopyableId text={selected.fromUserId || selected.fromLoginId} color="#2563eb" />
+                        {selected.fromLoginId && selected.fromUserId && selected.fromLoginId !== selected.fromUserId && (
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>/ {selected.fromLoginId}</span>
+                        )}
+                      </div>
+                    )}
+                    <AddressWithLast4 address={selected.fromAddress} last4={selected.fromCardLast4} />
+                  </div>
+                } 
+              />
+
+              {/* TO Information */}
+              <AdminDetailRow 
+                label={isTransfer ? "To (Recipient ID)" : "To Address"} 
+                value={
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {(selected.toUserId || selected.toLoginId) && (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>ID:</span>
+                        <CopyableId text={selected.toUserId || selected.toLoginId} color="#2563eb" />
+                        {selected.toLoginId && selected.toUserId && selected.toLoginId !== selected.toUserId && (
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>/ {selected.toLoginId}</span>
+                        )}
+                      </div>
+                    )}
+                    <AddressWithLast4 address={selected.toAddress} last4={selected.toCardLast4} />
+                  </div>
+                } 
+              />
+
+              <AdminDetailRow label="Status" value={<AdminStatusBadge status={selected.status} />} />
             <AdminDetailRow label="Date" value={formatAdminDate(selected.at)} />
             <AdminDetailRow 
               label="Reference" 
@@ -671,8 +711,9 @@ export function TransactionsPage() {
                 )}
               </div>
             )}
-          </AdminDetailPanel>
-        ) : null}
+            </AdminDetailPanel>
+          );
+        })() : null}
       />
     </div>
   );

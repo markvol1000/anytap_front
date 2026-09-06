@@ -44,7 +44,15 @@ const WALLET_KINDS = new Set([
   'wallet_receive',
   'card_topup',
 ]);
-const CARD_KINDS = new Set(['card_spend', 'card_topup', 'refund', 'reversal']);
+const CARD_KINDS = new Set([
+  'card_spend',
+  'card_topup',
+  'card_transfer_out',
+  'card_transfer_in',
+  'card_transfer',
+  'refund',
+  'reversal',
+]);
 const REWARD_KINDS = new Set([
   'referral_reward',
   'referral_commission',
@@ -79,6 +87,9 @@ const TYPE_LABELS = {
   card_topup: 'Card Top Up',
   card_charge_fee: 'Card Top Up Fee',
   card_spend: 'Card Purchase',
+  card_transfer_out: 'Transfer Sent',
+  card_transfer_in: 'Transfer Received',
+  card_transfer: 'Transfer',
   refund: 'Refund',
   reversal: 'Reversal',
   referral_reward: 'Referral Reward',
@@ -629,6 +640,9 @@ export function getActivityDescription(item) {
     wallet_fee: 'Network fee for on-chain transfer',
     card_topup: 'Wallet balance transferred to card',
     card_spend: item?.title ? `Payment at ${item.title}` : 'Card purchase',
+    card_transfer_out: 'Card transfer sent',
+    card_transfer_in: 'Card transfer received',
+    card_transfer: 'Card transfer',
     refund: item?.title ?? 'Refund to your card balance',
     reversal: 'Transaction reversal',
     referral_reward: 'Referral reward credited',
@@ -661,7 +675,7 @@ export function getActivityNetwork(item) {
     'wallet_topup', 'wallet_send', 'wallet_receive', 'wallet_withdraw', 'wallet_fee',
   ]);
   if (walletKinds.has(item?.kind)) return 'TRON (TRC-20)';
-  if (item?.kind === 'card_spend' || item?.kind === 'refund' || item?.kind === 'reversal') return 'Visa';
+  if (item?.kind === 'card_spend' || item?.kind === 'card_transfer_out' || item?.kind === 'card_transfer_in' || item?.kind === 'card_transfer' || item?.kind === 'refund' || item?.kind === 'reversal') return 'Visa';
   return null;
 }
 
