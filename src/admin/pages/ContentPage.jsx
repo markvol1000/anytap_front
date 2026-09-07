@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AdminDataTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
 import {
@@ -79,26 +79,59 @@ const buildMappingRowsForTemplate = (templateHtml, existingMappings = {}) => {
   return rows;
 };
 
+// Resolve mapped expressions into preview/resolved values using dynamic context
+const resolveExpressionToPreview = (expr, context = {}) => {
+  if (!expr || !expr.trim()) return '';
+  const trimmed = expr.trim();
+
+  // 1. Functions: qrCode(innerExpression)
+  if (trimmed.startsWith('qrCode(') && trimmed.endsWith(')')) {
+    const inner = trimmed.substring(7, trimmed.length - 1).trim();
+    const resolvedInner = resolveExpressionToPreview(inner, context);
+    if (resolvedInner) {
+      return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(resolvedInner)}`;
+    }
+    return '';
+  }
+
+  // 2. Dynamic property path starting with 'user.' or 'context.'
+  if (trimmed.startsWith('user.') || trimmed.startsWith('context.')) {
+    const path = trimmed.startsWith('context.') ? trimmed.substring(8) : trimmed;
+
+    // Check direct key in context
+    if (context[path] !== undefined && context[path] !== null && context[path] !== '') {
+      return String(context[path]);
+    }
+
+    // Check nested object path (e.g. user.email -> context.user?.email)
+    const parts = path.split('.');
+    let current = context;
+    let resolved = true;
+    for (const part of parts) {
+      if (current && typeof current === 'object' && part in current) {
+        current = current[part];
+      } else {
+        resolved = false;
+        break;
+      }
+    }
+    if (resolved && current !== undefined && current !== null && current !== '') {
+      return String(current);
+    }
+    return '';
+  }
+
+  // 3. Direct literal value configured in the mapping table (e.g. 'TRC-20', wallet address, text, URLs)
+  return trimmed;
+};
+
 export function ContentPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
 
   // Primary Tab: 'email' (Email Templates) | 'pages' (Web Content & Pages)
   const isPagesPath = location.pathname.toLowerCase().includes('/pages') || location.pathname.toLowerCase().includes('/web');
   const primaryTab = isPagesPath ? 'pages' : 'email';
-
-  // Sub Tab under Email Templates: 'templates' (Template Library) | 'events' (Event Triggers & Variable Mapping)
-  const queryTab = searchParams.get('tab');
-  const [emailSubTab, setEmailSubTab] = useState(() => (queryTab === 'events' ? 'events' : 'templates'));
-
-  useEffect(() => {
-    if (queryTab === 'events') {
-      setEmailSubTab('events');
-    } else if (queryTab === 'templates') {
-      setEmailSubTab('templates');
-    }
-  }, [queryTab]);
 
   const handlePrimaryTabChange = (tab) => {
     if (tab === 'email') {
@@ -108,21 +141,8 @@ export function ContentPage() {
     }
   };
 
-  const handleEmailSubTabChange = (subTab) => {
-    setEmailSubTab(subTab);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (subTab === 'events') {
-        next.set('tab', 'events');
-      } else {
-        next.delete('tab');
-      }
-      return next;
-    });
-  };
-
   // ═════════════════════════════════════════════════════════════
-  // TAB 1: EMAIL TEMPLATES STATE
+  // EMAIL TEMPLATES & EVENT RULES INTEGRATED STATE
   // ═════════════════════════════════════════════════════════════
   const [templates, setTemplates] = useState([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
@@ -133,115 +153,146 @@ export function ContentPage() {
   const [templateForm, setTemplateForm] = useState(null);
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
-  const [testEmailAddress, setTestEmailAddress] = useState('');
-  const [testEmailSending, setTestEmailSending] = useState(false);
-  const [testEmailResult, setTestEmailResult] = useState(null);
-  const [savingTemplate, setSavingTemplate] = useState(false);
+
+  // Template pagination
   const [templatePage, setTemplatePage] = useState(1);
   const [templatePageSize, setTemplatePageSize] = useState(20);
   const [templateTotal, setTemplateTotal] = useState(0);
   const [templateTotalPages, setTemplateTotalPages] = useState(1);
+
+  // Event rules and unified automated dispatch state
+  const [eventRules, setEventRules] = useState([]);
+  const [selectedRule, setSelectedRule] = useState(null);
+  const [mappingRows, setMappingRows] = useState([]);
+  const [savingAll, setSavingAll] = useState(false);
+
+  // Test email and test dispatch state
+  const [testEmailAddress, setTestEmailAddress] = useState('');
+  const [testEmailSending, setTestEmailSending] = useState(false);
+  const [testEmailResult, setTestEmailResult] = useState(null);
+
+  const [testDispatchAddress, setTestDispatchAddress] = useState('');
+  const [testDispatching, setTestDispatching] = useState(false);
+  const [testDispatchResult, setTestDispatchResult] = useState(null);
+
+  // Web Content (Pages) State
+  const [contentItems, setContentItems] = useState([]);
+  const [contentLoading, setContentLoading] = useState(false);
 
   // Dynamically extracted variables from current template content
   const extractedVariables = useMemo(() => {
     return extractVariablesFromHtml(templateForm?.contentHtml);
   }, [templateForm?.contentHtml]);
 
-  // ═════════════════════════════════════════════════════════════
-  // TAB 2: EVENT NOTIFICATION RULES & VARIABLE MAPPING STATE
-  // ═════════════════════════════════════════════════════════════
-  const [eventRules, setEventRules] = useState([]);
-  const [eventsLoading, setEventsLoading] = useState(false);
-  const [eventsError, setEventsError] = useState(null);
-  const [selectedEventType, setSelectedEventType] = useState('KYC_APPROVED');
-  const [selectedRule, setSelectedRule] = useState(null);
-  const [mappingRows, setMappingRows] = useState([]);
-  const [savingRule, setSavingRule] = useState(false);
-  const [testDispatchEmail, setTestDispatchEmail] = useState('markvol319@gmail.com');
-  const [testDispatchAddress, setTestDispatchAddress] = useState('');
-  const [testDispatching, setTestDispatching] = useState(false);
-  const [testDispatchResult, setTestDispatchResult] = useState(null);
+  // When selected template changes, sync the active rule and mapping rows
+  const syncRuleForTemplate = useCallback((tplCode, tplHtml, allRules) => {
+    if (!tplCode) {
+      setSelectedRule(null);
+      setMappingRows([]);
+      return;
+    }
+    const curCode = tplCode.trim().toUpperCase();
+    const foundRule = (allRules || []).find((r) => {
+      const tCode = (r.templateCode || r.targetTemplateCode || '').trim().toUpperCase();
+      return tCode === curCode;
+    });
 
-  // ═════════════════════════════════════════════════════════════
-  // TAB 3: WEB CONTENT (PAGES) STATE
-  // ═════════════════════════════════════════════════════════════
-  const [contentItems, setContentItems] = useState([]);
-  const [contentLoading, setContentLoading] = useState(false);
+    if (foundRule) {
+      const normalized = {
+        ...foundRule,
+        targetTemplateCode: curCode,
+        templateCode: curCode,
+      };
+      setSelectedRule(normalized);
+      const rows = buildMappingRowsForTemplate(tplHtml, foundRule.variableMappings || {});
+      setMappingRows(rows);
+    } else {
+      // If no existing rule matches this template, provide a default rule linked to it
+      const fallbackRule = {
+        eventType: curCode.startsWith('KYC') ? 'KYC_APPROVED' : curCode,
+        eventName: curCode,
+        description: 'Automated dispatch rule for ' + curCode,
+        enabled: true,
+        templateCode: curCode,
+        targetTemplateCode: curCode,
+        recipientMapping: 'user.email',
+        variableMappings: {},
+      };
+      setSelectedRule(fallbackRule);
+      const rows = buildMappingRowsForTemplate(tplHtml, {});
+      setMappingRows(rows);
+    }
+  }, []);
 
-  // ── Load Templates ──
-  const loadTemplates = useCallback(async (targetCodeToSelect = null) => {
+  // ── Load Templates and Event Rules ──
+  const loadTemplatesAndRules = useCallback(async (targetCodeToSelect = null) => {
     setTemplatesLoading(true);
     setTemplatesError(null);
     try {
-      const res = await getEmailTemplates({
-        search: templateSearch,
-        page: templatePage,
-        pageSize: templatePageSize,
+      const [resTemplates, resRules] = await Promise.all([
+        getEmailTemplates({
+          search: templateSearch,
+          page: templatePage,
+          pageSize: templatePageSize,
+        }),
+        getEventNotifications().catch(() => []),
+      ]);
+
+      const rawItems = resTemplates?.items || [];
+      const rulesList = Array.isArray(resRules) ? resRules : [];
+      setEventRules(rulesList);
+
+      // Create a map of templateCode -> rule enabled status
+      const ruleStatusMap = new Map();
+      rulesList.forEach((r) => {
+        const code = (r.templateCode || r.targetTemplateCode || '').trim().toUpperCase();
+        if (code) {
+          ruleStatusMap.set(code, r.enabled);
+        }
       });
-      const rawItems = res?.items || [];
-      const items = rawItems.map((t) => ({
-        ...t,
-        status: t.isActive === false || t.active === false ? 'INACTIVE' : 'ACTIVE',
-      }));
+
+      const items = rawItems.map((t) => {
+        const tCode = (t.templateCode || '').trim().toUpperCase();
+        const ruleActive = ruleStatusMap.has(tCode) ? ruleStatusMap.get(tCode) : (t.isActive !== false);
+        return {
+          ...t,
+          status: ruleActive ? 'ACTIVE' : 'DISABLED',
+          isRuleActive: ruleActive,
+        };
+      });
+
       setTemplates(items);
-      setTemplateTotal(res?.total ?? items.length);
-      setTemplateTotalPages(res?.totalPages ?? Math.max(1, Math.ceil((res?.total || items.length) / templatePageSize)));
+      setTemplateTotal(resTemplates?.total ?? items.length);
+      setTemplateTotalPages(resTemplates?.totalPages ?? Math.max(1, Math.ceil((resTemplates?.total || items.length) / templatePageSize)));
 
       if (targetCodeToSelect) {
         const found = items.find((t) => t.templateCode === targetCodeToSelect);
         if (found) {
           setSelectedTemplateCode(found.templateCode);
           setOriginalTemplateCode(found.templateCode);
+          const tplHtml = found.contentHtml || found.bodyHtml || '';
           setTemplateForm({
             ...found,
-            contentHtml: found.contentHtml || found.bodyHtml || '',
+            contentHtml: tplHtml,
           });
+          syncRuleForTemplate(found.templateCode, tplHtml, rulesList);
         }
       } else if (items.length > 0 && !selectedTemplateCode && !isCreatingTemplate) {
         setSelectedTemplateCode(items[0].templateCode);
         setOriginalTemplateCode(items[0].templateCode);
+        const tplHtml = items[0].contentHtml || items[0].bodyHtml || '';
         setTemplateForm({
           ...items[0],
-          contentHtml: items[0].contentHtml || items[0].bodyHtml || '',
+          contentHtml: tplHtml,
         });
+        syncRuleForTemplate(items[0].templateCode, tplHtml, rulesList);
       }
     } catch (err) {
       setTemplatesError(err.message || 'Failed to load email templates.');
     } finally {
       setTemplatesLoading(false);
     }
-  }, [templateSearch, templatePage, templatePageSize, selectedTemplateCode, isCreatingTemplate]);
-
-  // ── Load Event Notification Rules ──
-  const loadEventRules = useCallback(async () => {
-    setEventsLoading(true);
-    setEventsError(null);
-    try {
-      const rules = await getEventNotifications();
-      const list = Array.isArray(rules) ? rules : [];
-      setEventRules(list);
-      const current = list.find((r) => r.eventType === selectedEventType) || list[0] || null;
-      if (current) {
-        setSelectedEventType(current.eventType);
-        const targetCode = current.templateCode || current.targetTemplateCode || '';
-        const normalized = {
-          ...current,
-          targetTemplateCode: targetCode,
-        };
-        setSelectedRule(normalized);
-
-        // Find matched template HTML if loaded
-        const matchedTpl = templates.find((t) => t.templateCode === targetCode);
-        const tplHtml = matchedTpl ? (matchedTpl.contentHtml || matchedTpl.bodyHtml || '') : '';
-        const mergedRows = buildMappingRowsForTemplate(tplHtml, current.variableMappings || {});
-        setMappingRows(mergedRows);
-      }
-    } catch (err) {
-      setEventsError(err.message || 'Failed to load event notification rules.');
-    } finally {
-      setEventsLoading(false);
-    }
-  }, [selectedEventType, templates]);
+  }, [templateSearch, templatePage, templatePageSize, selectedTemplateCode, isCreatingTemplate, syncRuleForTemplate]);
 
   // ── Load Web Content ──
   const loadWebContent = useCallback(async () => {
@@ -257,34 +308,32 @@ export function ContentPage() {
   }, []);
 
   useEffect(() => {
-    loadTemplates();
-  }, [loadTemplates]);
-
-  useEffect(() => {
-    if (primaryTab === 'email' && emailSubTab === 'events') {
-      loadEventRules();
+    if (primaryTab === 'email') {
+      loadTemplatesAndRules();
     } else if (primaryTab === 'pages') {
       loadWebContent();
     }
-  }, [primaryTab, emailSubTab, loadEventRules, loadWebContent]);
+  }, [primaryTab, loadTemplatesAndRules, loadWebContent]);
 
   // ── Select Template Row ──
   const handleSelectTemplate = (template) => {
     setIsCreatingTemplate(false);
     setSelectedTemplateCode(template.templateCode);
     setOriginalTemplateCode(template.templateCode);
+    const tplHtml = template.contentHtml || template.bodyHtml || '';
     setTemplateForm({
       templateCode: template.templateCode,
       templateName: template.templateName || '',
       subject: template.subject || '',
       description: template.description || template.variablesDescription || '',
-      status: template.isActive === false ? 'INACTIVE' : (template.status || 'ACTIVE'),
-      contentHtml: template.contentHtml || template.bodyHtml || '',
+      contentHtml: tplHtml,
       contentText: template.contentText || '',
       variablesDescription: template.variablesDescription || '',
     });
     setTestEmailResult(null);
+    setTestDispatchResult(null);
     setPreviewMode(false);
+    syncRuleForTemplate(template.templateCode, tplHtml, eventRules);
   };
 
   // ── Start Create Template ──
@@ -292,13 +341,7 @@ export function ContentPage() {
     setIsCreatingTemplate(true);
     setSelectedTemplateCode(null);
     setOriginalTemplateCode(null);
-    setTemplateForm({
-      templateCode: '',
-      templateName: '',
-      subject: '',
-      description: '',
-      status: 'ACTIVE',
-      contentHtml: `<!DOCTYPE html>
+    const initialHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -311,14 +354,64 @@ export function ContentPage() {
     <p>Your action has been processed successfully.</p>
   </div>
 </body>
-</html>`,
+</html>`;
+
+    setTemplateForm({
+      templateCode: '',
+      templateName: '',
+      subject: '',
+      description: '',
+      contentHtml: initialHtml,
+      contentText: '',
+      variablesDescription: '',
     });
+    setSelectedRule({
+      eventType: '',
+      eventName: '',
+      description: '',
+      enabled: true,
+      templateCode: '',
+      targetTemplateCode: '',
+      recipientMapping: 'user.email',
+      variableMappings: {},
+    });
+    setMappingRows(buildMappingRowsForTemplate(initialHtml, {}));
     setPreviewMode(false);
     setTestEmailResult(null);
+    setTestDispatchResult(null);
   };
 
-  // ── Save Template ──
-  const handleSaveTemplate = async () => {
+  // ── Variable Mapping Table Handlers ──
+  const handleVariableRowChange = (id, field, value) => {
+    setMappingRows((prev) =>
+      prev.map((row) => (row.id === id ? { ...row, [field]: value } : row))
+    );
+  };
+
+  const handleAddVariableRow = () => {
+    setMappingRows((prev) => [
+      ...prev,
+      {
+        id: `row_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        key: '',
+        val: 'user.email',
+        isFromTemplate: false,
+      },
+    ]);
+  };
+
+  const handleRemoveVariableRow = (id) => {
+    setMappingRows((prev) => prev.filter((row) => row.id !== id));
+  };
+
+  const handleResetMappingsFromHtml = () => {
+    const tplHtml = templateForm?.contentHtml || '';
+    const freshRows = buildMappingRowsForTemplate(tplHtml, {});
+    setMappingRows(freshRows);
+  };
+
+  // ── Unified Save Handler (Template + Event Rule + Active Status) ──
+  const handleSaveAll = async () => {
     touchHttpSession();
     const code = templateForm?.templateCode?.trim()?.toUpperCase();
     if (!code) {
@@ -340,40 +433,62 @@ export function ContentPage() {
       alert('Email HTML content is required.');
       return;
     }
-    setSavingTemplate(true);
+
+    setSavingAll(true);
     try {
-      const payload = {
+      // 1. Save or Update Email Template
+      const templatePayload = {
         templateCode: code,
         templateName: name,
         subject: subj,
         contentHtml: htmlBody,
         contentText: templateForm.contentText || '',
         variablesDescription: templateForm.variablesDescription || templateForm.description || '',
-        isActive: templateForm.status === 'ACTIVE' || templateForm.isActive === true,
+        isActive: selectedRule ? selectedRule.enabled : true,
       };
 
-      // If creating or if templateCode does not exist in loaded templates, use create (POST)
       const existingInList = templates.some((t) => t.templateCode === code);
       const shouldCreate = isCreatingTemplate || !originalTemplateCode || (!existingInList && originalTemplateCode !== code);
 
       if (shouldCreate) {
-        await createEmailTemplate(payload);
-        alert(`Template "${code}" created successfully!`);
+        await createEmailTemplate(templatePayload);
         setIsCreatingTemplate(false);
-        setSelectedTemplateCode(code);
-        setOriginalTemplateCode(code);
       } else {
         const updateCode = originalTemplateCode || code;
-        await updateEmailTemplate(updateCode, payload);
-        alert(`Template "${code}" updated successfully!`);
-        setSelectedTemplateCode(code);
-        setOriginalTemplateCode(code);
+        await updateEmailTemplate(updateCode, templatePayload);
       }
-      await loadTemplates(code);
+
+      // 2. Save Event Rule and Variable Mappings if rule exists or configured
+      if (selectedRule && (selectedRule.eventType || code.startsWith('KYC'))) {
+        const eventType = (selectedRule.eventType || (code.startsWith('KYC') ? 'KYC_APPROVED' : code)).trim().toUpperCase();
+        const variableMappings = {};
+        mappingRows.forEach((r) => {
+          const k = (r.key || '').trim();
+          if (k) {
+            variableMappings[k] = (r.val || '').trim();
+          }
+        });
+
+        const rulePayload = {
+          ...selectedRule,
+          eventType,
+          templateCode: code,
+          targetTemplateCode: code,
+          enabled: selectedRule.enabled !== false,
+          variableMappings,
+        };
+
+        await saveEventNotificationRule(eventType, rulePayload);
+      }
+
+      alert(`Template "${code}" and variable mappings saved successfully!`);
+      setSelectedTemplateCode(code);
+      setOriginalTemplateCode(code);
+      await loadTemplatesAndRules(code);
     } catch (err) {
-      alert(`Failed to save template: ${err.message}`);
+      alert(`Failed to save template and rules: ${err.message}`);
     } finally {
-      setSavingTemplate(false);
+      setSavingAll(false);
     }
   };
 
@@ -385,7 +500,9 @@ export function ContentPage() {
       alert(`Template "${code}" deleted.`);
       setSelectedTemplateCode(null);
       setTemplateForm(null);
-      await loadTemplates();
+      setSelectedRule(null);
+      setMappingRows([]);
+      await loadTemplatesAndRules();
     } catch (err) {
       alert(`Failed to delete template: ${err.message}`);
     }
@@ -400,18 +517,28 @@ export function ContentPage() {
     setTestEmailSending(true);
     setTestEmailResult(null);
     try {
-      const res = await sendTestEmailTemplate(templateForm.templateCode, testEmailAddress.trim(), {
-        userEMail: testEmailAddress.trim(),
-        loginId: testEmailAddress.split('@')[0],
-        depositAddress: 'TXYZ1234567890ExampleTRC20Address',
-        network: 'TRC-20',
-        qr_code_url: 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=TXYZ1234567890ExampleTRC20Address',
-        cardApplyUrl: 'https://www.anytap.io/account',
-        supportEmail: 'support@anytap.io',
+      const recipient = testEmailAddress.trim();
+      const testContext = {
+        email: recipient,
+        loginId: recipient.split('@')[0],
+        user: {
+          email: recipient,
+          loginId: recipient.split('@')[0],
+        },
+      };
+
+      const resolvedVars = {};
+      mappingRows.forEach((r) => {
+        const k = (r.key || '').trim();
+        if (k) {
+          resolvedVars[k] = resolveExpressionToPreview(r.val, testContext);
+        }
       });
+
+      const res = await sendTestEmailTemplate(templateForm.templateCode, recipient, resolvedVars);
       setTestEmailResult({
         success: true,
-        message: res?.message || `Test email sent to ${testEmailAddress.trim()}`,
+        message: res?.message || `Test email sent to ${recipient}`,
       });
     } catch (err) {
       setTestEmailResult({
@@ -423,121 +550,33 @@ export function ContentPage() {
     }
   };
 
-  // ── Rule Changes ──
-  const handleRuleChange = (field, val) => {
-    setSelectedRule((prev) => ({ ...prev, [field]: val }));
-
-    if (field === 'targetTemplateCode') {
-      const targetTpl = templates.find((t) => t.templateCode === val);
-      const tplHtml = targetTpl ? (targetTpl.contentHtml || targetTpl.bodyHtml || '') : '';
-      // Retain already typed values in current mappingRows where matching
-      const currentMap = {};
-      mappingRows.forEach((r) => {
-        if (r.key && r.key.trim()) {
-          currentMap[r.key.trim()] = r.val || '';
-        }
-      });
-      const newRows = buildMappingRowsForTemplate(tplHtml, currentMap);
-      setMappingRows(newRows);
-    }
-  };
-
-  const handleVariableRowChange = (id, field, value) => {
-    setMappingRows((prev) =>
-      prev.map((row) => (row.id === id ? { ...row, [field]: value } : row))
-    );
-  };
-
-  const handleAddVariableRow = () => {
-    setMappingRows((prev) => [
-      ...prev,
-      {
-        id: `row_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        key: '',
-        val: 'user.email',
-      },
-    ]);
-  };
-
-  const handleRemoveVariableRow = (id) => {
-    setMappingRows((prev) => prev.filter((row) => row.id !== id));
-  };
-
-  // ── Save Event Rule ──
-  const handleSaveEventRule = async () => {
-    if (!selectedRule) return;
-    setSavingRule(true);
-    try {
-      const variableMappings = {};
-      mappingRows.forEach((r) => {
-        const k = (r.key || '').trim();
-        if (k) {
-          variableMappings[k] = (r.val || '').trim();
-        }
-      });
-
-      const templateCode = selectedRule.targetTemplateCode || selectedRule.templateCode || '';
-      const payload = {
-        ...selectedRule,
-        templateCode,
-        targetTemplateCode: templateCode,
-        variableMappings,
-      };
-
-      await saveEventNotificationRule(selectedRule.eventType, payload);
-      alert(`Event rule for "${selectedRule.eventType}" saved successfully!`);
-      await loadEventRules();
-    } catch (err) {
-      alert(`Failed to save event rule: ${err.message}`);
-    } finally {
-      setSavingRule(false);
-    }
-  };
-
-  // ── Test Dispatch Event ──
-  const handleTestDispatchEvent = async () => {
-    if (!testDispatchEmail.trim()) {
-      alert('Recipient email is required.');
-      return;
-    }
-    setTestDispatching(true);
-    setTestDispatchResult(null);
-    try {
-      const payload = {
-        email: testDispatchEmail.trim(),
-        depositAddress: testDispatchAddress.trim() || undefined,
-        network: 'TRC-20',
-      };
-      const res = await testDispatchEventNotification(selectedRule.eventType, payload);
-      setTestDispatchResult({
-        success: true,
-        message: res?.message || `Test notification dispatched for ${testDispatchEmail.trim()}`,
-      });
-    } catch (err) {
-      setTestDispatchResult({
-        success: false,
-        message: err.message || 'Failed to dispatch test notification.',
-      });
-    } finally {
-      setTestDispatching(false);
-    }
-  };
-
-  // ── HTML Live Preview Generator with sample tokens ──
-  const generatePreviewHtml = (html) => {
+  // ── Dynamic HTML Live Preview Generator (Based on user mapping rows) ──
+  const renderedPreviewHtml = useMemo(() => {
+    let html = templateForm?.contentHtml || templateForm?.bodyHtml || '';
     if (!html) return '';
-    return html
-      .replace(/\{\{userEMail\}\}/g, 'markvol319@gmail.com')
-      .replace(/\{\{loginId\}\}/g, 'markvol319')
-      .replace(/\{\{depositAddress\}\}/g, 'TYsBqN2E8Wv8j3fK9Xz1qA5oP7rS8tUvWx')
-      .replace(/\{\{network\}\}/g, 'TRC-20')
-      .replace(
-        /\{\{qr_code_url\}\}/g,
-        'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=TYsBqN2E8Wv8j3fK9Xz1qA5oP7rS8tUvWx'
-      )
-      .replace(/\{\{cardApplyUrl\}\}/g, 'https://www.anytap.io/account')
-      .replace(/\{\{supportEmail\}\}/g, 'support@anytap.io');
-  };
+
+    const recipient = testEmailAddress.trim();
+    const previewContext = {
+      email: recipient,
+      loginId: recipient ? recipient.split('@')[0] : '',
+      user: {
+        email: recipient,
+        loginId: recipient ? recipient.split('@')[0] : '',
+      },
+    };
+
+    // Replace all mapping row keys in HTML
+    mappingRows.forEach((row) => {
+      const key = (row.key || '').trim();
+      if (key) {
+        const val = resolveExpressionToPreview(row.val, previewContext);
+        const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g');
+        html = html.replace(regex, val !== undefined && val !== null ? val : '');
+      }
+    });
+
+    return html;
+  }, [templateForm?.contentHtml, templateForm?.bodyHtml, mappingRows, testEmailAddress]);
 
   return (
     <div className="admin-page">
@@ -571,251 +610,198 @@ export function ContentPage() {
       {/* ══════════════════════════════════════════════════════════ */}
       {primaryTab === 'email' && (
         <div>
-          {/* Refined Sub-Tab Segmented Control */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-            <div
-              style={{
-                display: 'inline-flex',
-                backgroundColor: '#e2e8f0',
-                padding: '3px',
-                borderRadius: '8px',
-                gap: '3px',
-              }}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '14px' }}>
+            <button
+              type="button"
+              className="admin-btn admin-btn--primary admin-btn--sm"
+              onClick={handleStartCreateTemplate}
             >
-              <button
-                type="button"
-                onClick={() => handleEmailSubTabChange('templates')}
-                style={{
-                  padding: '7px 18px',
-                  fontSize: '13px',
-                  fontWeight: emailSubTab === 'templates' ? '700' : '500',
-                  color: emailSubTab === 'templates' ? '#0f172a' : '#475569',
-                  backgroundColor: emailSubTab === 'templates' ? '#ffffff' : 'transparent',
-                  border: 'none',
-                  borderRadius: '6px',
-                  boxShadow: emailSubTab === 'templates' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                Template Library
-              </button>
-              <button
-                type="button"
-                onClick={() => handleEmailSubTabChange('events')}
-                style={{
-                  padding: '7px 18px',
-                  fontSize: '13px',
-                  fontWeight: emailSubTab === 'events' ? '700' : '500',
-                  color: emailSubTab === 'events' ? '#0f172a' : '#475569',
-                  backgroundColor: emailSubTab === 'events' ? '#ffffff' : 'transparent',
-                  border: 'none',
-                  borderRadius: '6px',
-                  boxShadow: emailSubTab === 'events' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                Event Triggers & Variable Mapping
-              </button>
-            </div>
-
-            {emailSubTab === 'templates' && (
-              <button
-                type="button"
-                className="admin-btn admin-btn--primary admin-btn--sm"
-                onClick={handleStartCreateTemplate}
-              >
-                + Create Template
-              </button>
-            )}
+              + Create Template
+            </button>
           </div>
 
-          {/* SUB-VIEW 1: TEMPLATE LIBRARY */}
-          {emailSubTab === 'templates' && (
-            <AdminSplitLayout
-              left={
-                <AdminPanel>
-                  <div style={{ marginBottom: '12px' }}>
-                    <AdminFilterBar
-                      search={templateSearch}
-                      onSearchChange={setTemplateSearch}
-                      searchPlaceholder="Search templates by code or subject…"
-                    />
-                  </div>
+          <AdminSplitLayout
+            left={
+              <AdminPanel>
+                <div style={{ marginBottom: '12px' }}>
+                  <AdminFilterBar
+                    search={templateSearch}
+                    onSearchChange={setTemplateSearch}
+                    searchPlaceholder="Search templates by code or subject…"
+                  />
+                </div>
 
-                  <AdminTableWrap
-                    loading={templatesLoading}
-                    error={templatesError}
-                    hasData={templates.length > 0}
-                  >
-                    <AdminDataTable
-                      columns={[
-                        {
-                          key: 'templateCode',
-                          label: 'Template Code',
-                          render: (r) => (
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                padding: '2px 8px',
-                                borderRadius: '4px',
-                                backgroundColor: '#f0f9ff',
-                                color: '#0369a1',
-                                border: '1px solid #bae6fd',
-                                fontWeight: '700',
-                                fontSize: '12px',
-                                fontFamily: 'monospace',
-                              }}
-                            >
-                              {r.templateCode}
-                            </span>
-                          ),
-                        },
-                        { key: 'templateName', label: 'Template Name' },
-                        { key: 'subject', label: 'Email Subject' },
-                        {
-                          key: 'status',
-                          label: 'Status',
-                          render: (r) => <AdminStatusBadge status={r.status || 'ACTIVE'} />,
-                        },
-                        {
-                          key: 'updatedAt',
-                          label: 'Updated',
-                          render: (r) => (
-                            <span style={{ fontSize: '12px', color: '#64748b' }}>
-                              {r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : '—'}
-                            </span>
-                          ),
-                        },
-                      ]}
-                      rows={templates}
-                      rowKey="templateCode"
-                      selectedId={selectedTemplateCode}
-                      onSelectRow={handleSelectTemplate}
-                      emptyMessage="No email templates found in database."
-                      pagination={{
-                        page: templatePage,
-                        pageSize: templatePageSize,
-                        total: templateTotal,
-                        totalPages: templateTotalPages,
-                        onPageChange: (newPage) => {
-                          setTemplatePage(newPage);
-                        },
-                        onPageSizeChange: (newSize) => {
-                          setTemplatePageSize(newSize);
-                          setTemplatePage(1);
-                        },
-                      }}
-                    />
-                  </AdminTableWrap>
-                </AdminPanel>
-              }
-              right={
-                <AdminDetailPanel
-                  title={
-                    isCreatingTemplate
-                      ? 'Create New Email Template'
-                      : templateForm
-                      ? templateForm.templateName || templateForm.templateCode
-                      : null
-                  }
-                  onClose={() => {
-                    setSelectedTemplateCode(null);
-                    setTemplateForm(null);
-                    setIsCreatingTemplate(false);
-                  }}
+                <AdminTableWrap
+                  loading={templatesLoading}
+                  error={templatesError}
+                  hasData={templates.length > 0}
                 >
-                  {templateForm ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      {/* View Toggle: Editor vs HTML Preview */}
-                      <div
+                  <AdminDataTable
+                    columns={[
+                      {
+                        key: 'templateCode',
+                        label: 'Template Code',
+                        render: (r) => (
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              backgroundColor: '#f0f9ff',
+                              color: '#0369a1',
+                              border: '1px solid #bae6fd',
+                              fontWeight: '700',
+                              fontSize: '12px',
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            {r.templateCode}
+                          </span>
+                        ),
+                      },
+                      { key: 'templateName', label: 'Template Name' },
+                      { key: 'subject', label: 'Email Subject' },
+                      {
+                        key: 'status',
+                        label: 'Automated Status',
+                        render: (r) => (
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              padding: '2px 8px',
+                              borderRadius: '999px',
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              backgroundColor: r.isRuleActive ? '#dcfce7' : '#f1f5f9',
+                              color: r.isRuleActive ? '#15803d' : '#64748b',
+                              border: `1px solid ${r.isRuleActive ? '#86efac' : '#cbd5e1'}`,
+                            }}
+                          >
+                            {r.isRuleActive ? 'ACTIVE' : 'PAUSED'}
+                          </span>
+                        ),
+                      },
+                      {
+                        key: 'updatedAt',
+                        label: 'Updated',
+                        render: (r) => (
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>
+                            {r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : '—'}
+                          </span>
+                        ),
+                      },
+                    ]}
+                    rows={templates}
+                    rowKey="templateCode"
+                    selectedId={selectedTemplateCode}
+                    onSelectRow={handleSelectTemplate}
+                    emptyMessage="No email templates found in database."
+                    pagination={{
+                      page: templatePage,
+                      pageSize: templatePageSize,
+                      total: templateTotal,
+                      totalPages: templateTotalPages,
+                      onPageChange: (newPage) => {
+                        setTemplatePage(newPage);
+                      },
+                      onPageSizeChange: (newSize) => {
+                        setTemplatePageSize(newSize);
+                        setTemplatePage(1);
+                      },
+                    }}
+                  />
+                </AdminTableWrap>
+              </AdminPanel>
+            }
+            right={
+              <AdminDetailPanel
+                title={
+                  isCreatingTemplate
+                    ? 'Create New Email Template'
+                    : templateForm
+                    ? templateForm.templateName || templateForm.templateCode
+                    : null
+                }
+                onClose={() => {
+                  setSelectedTemplateCode(null);
+                  setTemplateForm(null);
+                  setIsCreatingTemplate(false);
+                }}
+              >
+                {templateForm ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* View Toggle: Editor vs HTML Preview */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        backgroundColor: '#f1f5f9',
+                        borderRadius: '8px',
+                        padding: '3px',
+                        gap: '4px',
+                      }}
+                    >
+                      <button
+                        type="button"
                         style={{
-                          display: 'flex',
-                          backgroundColor: '#f1f5f9',
-                          borderRadius: '8px',
-                          padding: '3px',
-                          gap: '4px',
+                          flex: 1,
+                          padding: '7px 12px',
+                          fontSize: '12px',
+                          fontWeight: !previewMode ? '700' : '500',
+                          color: !previewMode ? '#0f172a' : '#64748b',
+                          backgroundColor: !previewMode ? '#ffffff' : 'transparent',
+                          border: 'none',
+                          borderRadius: '6px',
+                          boxShadow: !previewMode ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                          cursor: 'pointer',
                         }}
+                        onClick={() => setPreviewMode(false)}
                       >
-                        <button
-                          type="button"
-                          style={{
-                            flex: 1,
-                            padding: '6px 12px',
-                            fontSize: '12px',
-                            fontWeight: !previewMode ? '700' : '500',
-                            color: !previewMode ? '#0f172a' : '#64748b',
-                            backgroundColor: !previewMode ? '#ffffff' : 'transparent',
-                            border: 'none',
-                            borderRadius: '6px',
-                            boxShadow: !previewMode ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
-                            cursor: 'pointer',
-                          }}
-                          onClick={() => setPreviewMode(false)}
-                        >
-                          Edit Content & Fields
-                        </button>
-                        <button
-                          type="button"
-                          style={{
-                            flex: 1,
-                            padding: '6px 12px',
-                            fontSize: '12px',
-                            fontWeight: previewMode ? '700' : '500',
-                            color: previewMode ? '#0f172a' : '#64748b',
-                            backgroundColor: previewMode ? '#ffffff' : 'transparent',
-                            border: 'none',
-                            borderRadius: '6px',
-                            boxShadow: previewMode ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
-                            cursor: 'pointer',
-                          }}
-                          onClick={() => setPreviewMode(true)}
-                        >
-                          Live HTML Preview
-                        </button>
-                      </div>
+                        ✏️ Edit Template & Variables
+                      </button>
+                      <button
+                        type="button"
+                        style={{
+                          flex: 1,
+                          padding: '7px 12px',
+                          fontSize: '12px',
+                          fontWeight: previewMode ? '700' : '500',
+                          color: previewMode ? '#0f172a' : '#64748b',
+                          backgroundColor: previewMode ? '#ffffff' : 'transparent',
+                          border: 'none',
+                          borderRadius: '6px',
+                          boxShadow: previewMode ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => setPreviewMode(true)}
+                      >
+                        🌐 Live HTML Preview
+                      </button>
+                    </div>
 
-                      {!previewMode ? (
-                        <>
-                          <AdminDetailSection title="Template Metadata">
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                              <div>
-                                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                                  Template Code
-                                </label>
-                                <input
-                                  type="text"
-                                  className="admin-input"
-                                  value={templateForm.templateCode || ''}
-                                  readOnly={!isCreatingTemplate}
-                                  disabled={!isCreatingTemplate}
-                                  onChange={(e) =>
-                                    setTemplateForm({ ...templateForm, templateCode: e.target.value })
-                                  }
-                                  placeholder="e.g. KYC_WELCOME_CARD_GUIDE_2"
-                                  style={{ fontFamily: 'monospace', fontSize: '12px' }}
-                                />
-                              </div>
-
-                              <div>
-                                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                                  Status
-                                </label>
-                                <select
-                                  className="admin-input"
-                                  value={templateForm.status || 'ACTIVE'}
-                                  onChange={(e) =>
-                                    setTemplateForm({ ...templateForm, status: e.target.value })
-                                  }
-                                >
-                                  <option value="ACTIVE">ACTIVE (Enabled)</option>
-                                  <option value="INACTIVE">INACTIVE (Disabled)</option>
-                                </select>
-                              </div>
+                    {!previewMode ? (
+                      <>
+                        {/* 1. Template Metadata (No duplicate Status dropdown) */}
+                        <AdminDetailSection title="Template Information">
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                            <div>
+                              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
+                                Template Code
+                              </label>
+                              <input
+                                type="text"
+                                className="admin-input"
+                                value={templateForm.templateCode || ''}
+                                readOnly={!isCreatingTemplate}
+                                disabled={!isCreatingTemplate}
+                                onChange={(e) =>
+                                  setTemplateForm({ ...templateForm, templateCode: e.target.value })
+                                }
+                                placeholder="e.g. KYC_WELCOME_CARD_GUIDE_2"
+                                style={{ fontFamily: 'monospace', fontSize: '12px' }}
+                              />
                             </div>
 
-                            <div style={{ marginBottom: '12px' }}>
+                            <div>
                               <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
                                 Template Name
                               </label>
@@ -829,170 +815,326 @@ export function ContentPage() {
                                 placeholder="e.g. KYC Approved Welcome & Card Guide"
                               />
                             </div>
+                          </div>
 
-                            <div style={{ marginBottom: '12px' }}>
-                              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                                Email Subject Line
-                              </label>
-                              <input
-                                type="text"
-                                className="admin-input"
-                                value={templateForm.subject || ''}
-                                onChange={(e) =>
-                                  setTemplateForm({ ...templateForm, subject: e.target.value })
-                                }
-                                placeholder="e.g. [AnyTap] Welcome to AnyTap - Card Issuance Guide"
-                              />
+                          <div style={{ marginBottom: '12px' }}>
+                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
+                              Email Subject Line
+                            </label>
+                            <input
+                              type="text"
+                              className="admin-input"
+                              value={templateForm.subject || ''}
+                              onChange={(e) =>
+                                setTemplateForm({ ...templateForm, subject: e.target.value })
+                              }
+                              placeholder="e.g. [AnyTap] Welcome to AnyTap - Card Issuance Guide"
+                            />
+                          </div>
+
+                          <div style={{ marginBottom: '4px' }}>
+                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
+                              Description / Internal Notes
+                            </label>
+                            <input
+                              type="text"
+                              className="admin-input"
+                              value={templateForm.description || ''}
+                              onChange={(e) =>
+                                setTemplateForm({ ...templateForm, description: e.target.value })
+                              }
+                              placeholder="Internal note explaining when this template is dispatched"
+                            />
+                          </div>
+                        </AdminDetailSection>
+
+                        {/* 2. Automated Dispatch & Variable Mapping (Active switch placed here) */}
+                        <AdminDetailSection title="Dynamic Variable Mapping & Automated Dispatch">
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '12px 14px',
+                              backgroundColor: selectedRule?.enabled ? '#f0fdf4' : '#f8fafc',
+                              border: `1px solid ${selectedRule?.enabled ? '#bbf7d0' : '#e2e8f0'}`,
+                              borderRadius: '8px',
+                              marginBottom: '12px',
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontSize: '13px', fontWeight: '700', color: selectedRule?.enabled ? '#15803d' : '#475569' }}>
+                                Automated Dispatch: {selectedRule?.enabled ? 'ACTIVE (Enabled)' : 'PAUSED (Disabled)'}
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                                {selectedRule?.eventType
+                                  ? `Bound to event trigger [${selectedRule.eventType}]. Automatic email dispatch will run when this event occurs.`
+                                  : 'Configure automated trigger dispatch status for this template.'}
+                              </div>
                             </div>
-
-                            <div style={{ marginBottom: '12px' }}>
-                              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                                Description / Internal Notes
-                              </label>
-                              <input
-                                type="text"
-                                className="admin-input"
-                                value={templateForm.description || ''}
-                                onChange={(e) =>
-                                  setTemplateForm({ ...templateForm, description: e.target.value })
-                                }
-                                placeholder="Internal note explaining when this template is dispatched"
-                              />
-                            </div>
-                          </AdminDetailSection>
-
-                          <AdminDetailSection title="HTML Email Body">
-                            <div
-                              style={{
-                                backgroundColor: '#f8fafc',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '6px',
-                                padding: '12px 14px',
-                                marginBottom: '12px',
-                                fontSize: '12px',
-                                color: '#475569',
-                                lineHeight: '1.6',
+                            <select
+                              className="admin-input"
+                              style={{ width: '170px', fontWeight: '600', fontSize: '12px' }}
+                              value={selectedRule?.enabled ? 'ACTIVE' : 'PAUSED'}
+                              onChange={(e) => {
+                                const isAct = e.target.value === 'ACTIVE';
+                                setSelectedRule((prev) => ({
+                                  ...(prev || {}),
+                                  enabled: isAct,
+                                  eventType: prev?.eventType || templateForm.templateCode,
+                                }));
                               }}
                             >
-                              <div style={{ fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
-                                💡 HTML Email Template Guide
-                              </div>
-                              <div>
-                                Live HTML email source code stored in database. You can edit markup, styles, and layout directly.
-                              </div>
-                              <div style={{ marginTop: '4px', color: '#0284c7', fontWeight: '500' }}>
-                                ※ Any <code>&#123;&#123;variable&#125;&#125;</code> placeholders in the template are automatically substituted with real member data (e.g. email, deposit address, QR code) at dispatch time. There is no need to register variables separately; simply write them into the HTML.
-                              </div>
+                              <option value="ACTIVE">ACTIVE (Enabled)</option>
+                              <option value="PAUSED">PAUSED (Disabled)</option>
+                            </select>
+                          </div>
+
+                          <div
+                            style={{
+                              padding: '10px 12px',
+                              backgroundColor: '#eff6ff',
+                              borderRadius: '6px',
+                              border: '1px solid #bfdbfe',
+                              marginBottom: '12px',
+                              fontSize: '12px',
+                              color: '#1e3a8a',
+                              lineHeight: '1.5',
+                            }}
+                          >
+                            <div style={{ fontWeight: '700', marginBottom: '2px' }}>
+                              Dynamic Expression Tokens:
+                            </div>
+                            <div>
+                              • <code>user.email</code>, <code>user.loginId</code>, <code>user.cregisWalletAddress</code>, <code>qrCode(user.cregisWalletAddress)</code>, <code>network</code><br />
+                              • Static text/URL literals (e.g. <code>https://www.anytap.io/account</code>, <code>support@anytap.io</code>)
+                            </div>
+                          </div>
+
+                          {/* Variable Mapping Table */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+                            <div
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: '190px 1fr 36px',
+                                gap: '8px',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                color: '#64748b',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.04em',
+                              }}
+                            >
+                              <span>Template Variable Key</span>
+                              <span>Source Expression / Dynamic Value</span>
+                              <span></span>
                             </div>
 
-                            {/* Dynamically detected template variables */}
-                            <div style={{ marginBottom: '14px' }}>
-                              <div style={{ fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '6px' }}>
-                                Detected Template Variables ({extractedVariables.length}):
+                            {mappingRows.length === 0 ? (
+                              <div style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: '#94a3b8', backgroundColor: '#f8fafc', borderRadius: '6px' }}>
+                                No variables mapped yet. Click "+ Add Variable Mapping" or "↺ Reset from HTML".
                               </div>
-                              {extractedVariables.length === 0 ? (
-                                <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', padding: '6px 0' }}>
-                                  No &#123;&#123;variable&#125;&#125; placeholders detected in template.
-                                </div>
-                              ) : (
+                            ) : (
+                              mappingRows.map((row) => (
                                 <div
+                                  key={row.id}
                                   style={{
-                                    display: 'flex',
-                                    flexWrap: 'wrap',
-                                    gap: '6px',
-                                    padding: '10px 12px',
-                                    backgroundColor: '#f8fafc',
-                                    border: '1px solid #e2e8f0',
-                                    borderRadius: '6px',
+                                    display: 'grid',
+                                    gridTemplateColumns: '190px 1fr 36px',
+                                    gap: '8px',
+                                    alignItems: 'center',
                                   }}
                                 >
-                                  {extractedVariables.map((varName) => (
-                                    <span
-                                      key={varName}
+                                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    <input
+                                      type="text"
+                                      className="admin-input"
+                                      value={row.key}
+                                      onChange={(e) => handleVariableRowChange(row.id, 'key', e.target.value)}
+                                      placeholder="e.g. depositAddress"
                                       style={{
-                                        padding: '4px 8px',
-                                        borderRadius: '4px',
-                                        backgroundColor: '#ffffff',
-                                        color: '#0369a1',
-                                        fontSize: '11px',
                                         fontFamily: 'monospace',
-                                        border: '1px solid #cbd5e1',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        fontWeight: '600',
+                                        fontSize: '12px',
+                                        width: '100%',
+                                        paddingRight: row.isFromTemplate ? '42px' : '8px',
                                       }}
-                                    >
-                                      &#123;&#123;{varName}&#125;&#125;
-                                    </span>
-                                  ))}
+                                    />
+                                    {row.isFromTemplate && (
+                                      <span
+                                        title="Auto-extracted from HTML template body"
+                                        style={{
+                                          position: 'absolute',
+                                          right: '6px',
+                                          fontSize: '9px',
+                                          fontWeight: '700',
+                                          color: '#0284c7',
+                                          backgroundColor: '#e0f2fe',
+                                          padding: '2px 5px',
+                                          borderRadius: '4px',
+                                          pointerEvents: 'none',
+                                        }}
+                                      >
+                                        TPL
+                                      </span>
+                                    )}
+                                  </div>
+                                  <input
+                                    type="text"
+                                    className="admin-input"
+                                    value={row.val}
+                                    onChange={(e) => handleVariableRowChange(row.id, 'val', e.target.value)}
+                                    placeholder="e.g. user.cregisWalletAddress"
+                                    style={{ fontFamily: 'monospace', fontSize: '12px', color: '#0369a1', fontWeight: '600' }}
+                                  />
+                                  <button
+                                    type="button"
+                                    className="admin-btn admin-btn--ghost admin-btn--sm"
+                                    onClick={() => handleRemoveVariableRow(row.id)}
+                                    style={{ color: '#dc2626', padding: '6px' }}
+                                    title="Delete variable mapping"
+                                  >
+                                    ✕
+                                  </button>
                                 </div>
-                              )}
+                              ))
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn--secondary admin-btn--sm"
+                              onClick={handleAddVariableRow}
+                            >
+                              + Add Variable Mapping
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn--ghost admin-btn--sm"
+                              onClick={handleResetMappingsFromHtml}
+                              title="Reset mappings using variables extracted from current HTML"
+                              style={{ fontSize: '12px', color: '#64748b' }}
+                            >
+                              ↺ Reset from HTML
+                            </button>
+                          </div>
+                        </AdminDetailSection>
+
+                        {/* 3. HTML Email Body Editor */}
+                        <AdminDetailSection title="HTML Email Body">
+                          {/* Detected placeholders */}
+                          <div style={{ marginBottom: '12px' }}>
+                            <div style={{ fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '6px' }}>
+                              Detected Placeholders in HTML ({extractedVariables.length}):
                             </div>
+                            {extractedVariables.length === 0 ? (
+                              <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', padding: '4px 0' }}>
+                                No &#123;&#123;variable&#125;&#125; placeholders detected in template.
+                              </div>
+                            ) : (
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  flexWrap: 'wrap',
+                                  gap: '6px',
+                                  padding: '8px 10px',
+                                  backgroundColor: '#f8fafc',
+                                  border: '1px solid #e2e8f0',
+                                  borderRadius: '6px',
+                                }}
+                              >
+                                {extractedVariables.map((varName) => (
+                                  <span
+                                    key={varName}
+                                    style={{
+                                      padding: '3px 8px',
+                                      borderRadius: '4px',
+                                      backgroundColor: '#ffffff',
+                                      color: '#0369a1',
+                                      fontSize: '11px',
+                                      fontFamily: 'monospace',
+                                      border: '1px solid #cbd5e1',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      fontWeight: '600',
+                                    }}
+                                  >
+                                    &#123;&#123;{varName}&#125;&#125;
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
 
-                            <textarea
-                              className="admin-textarea"
-                              rows={18}
-                              value={templateForm.contentHtml || ''}
-                              onChange={(e) =>
-                                setTemplateForm({ ...templateForm, contentHtml: e.target.value })
-                              }
-                              placeholder="<!DOCTYPE html><html>...</html>"
-                              style={{
-                                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                                fontSize: '12px',
-                                lineHeight: '1.45',
-                                backgroundColor: '#f8fafc',
-                                color: '#0f172a',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '6px',
-                                padding: '12px',
-                                width: '100%',
-                              }}
-                            />
+                          <textarea
+                            className="admin-textarea"
+                            rows={16}
+                            value={templateForm.contentHtml || ''}
+                            onChange={(e) =>
+                              setTemplateForm({ ...templateForm, contentHtml: e.target.value })
+                            }
+                            placeholder="<!DOCTYPE html><html>...</html>"
+                            style={{
+                              fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                              fontSize: '12px',
+                              lineHeight: '1.45',
+                              backgroundColor: '#f8fafc',
+                              color: '#0f172a',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '6px',
+                              padding: '12px',
+                              width: '100%',
+                            }}
+                          />
 
-                            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                          {/* Save & Delete Action Row */}
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', gap: '8px' }}>
                               <button
                                 type="button"
                                 className="admin-btn admin-btn--primary admin-btn--sm"
-                                disabled={savingTemplate}
-                                onClick={handleSaveTemplate}
+                                disabled={savingAll}
+                                onClick={handleSaveAll}
+                                style={{ fontWeight: '700', padding: '8px 20px' }}
                               >
-                                {savingTemplate ? 'Saving...' : 'Save Template'}
+                                {savingAll ? 'Saving Template & Mappings...' : '💾 Save Template & Mappings'}
                               </button>
-                              {!isCreatingTemplate && (
-                                <button
-                                  type="button"
-                                  className="admin-btn admin-btn--danger admin-btn--sm"
-                                  onClick={() => handleDeleteTemplate(templateForm.templateCode)}
-                                >
-                                  Delete
-                                </button>
-                              )}
                             </div>
-                          </AdminDetailSection>
-                        </>
-                      ) : (
-                        /* Clean Browser Frame Preview */
-                        <AdminDetailSection title="Rendered Email Preview">
+                            {!isCreatingTemplate && (
+                              <button
+                                type="button"
+                                className="admin-btn admin-btn--danger admin-btn--sm"
+                                onClick={() => handleDeleteTemplate(templateForm.templateCode)}
+                              >
+                                Delete Template
+                              </button>
+                            )}
+                          </div>
+                        </AdminDetailSection>
+                      </>
+                    ) : (
+                      /* Live HTML Preview using mapped dynamic values */
+                      <AdminDetailSection title="Live Rendered Email Preview (Using Mapped Values)">
+                        <div
+                          style={{
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            backgroundColor: '#ffffff',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                          }}
+                        >
                           <div
                             style={{
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '8px',
-                              overflow: 'hidden',
-                              backgroundColor: '#ffffff',
-                              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                              padding: '8px 12px',
+                              backgroundColor: '#f1f5f9',
+                              borderBottom: '1px solid #e2e8f0',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
                             }}
                           >
-                            <div
-                              style={{
-                                padding: '8px 12px',
-                                backgroundColor: '#f1f5f9',
-                                borderBottom: '1px solid #e2e8f0',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                              }}
-                            >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <div style={{ display: 'flex', gap: '5px' }}>
                                 <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
                                 <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#eab308' }} />
@@ -1002,404 +1144,23 @@ export function ContentPage() {
                                 preview://email-render/{templateForm.templateCode}
                               </span>
                             </div>
-                            <iframe
-                              title="Email Preview"
-                              srcDoc={generatePreviewHtml(templateForm.contentHtml || templateForm.bodyHtml || '')}
-                              style={{ width: '100%', height: '520px', border: 'none', display: 'block' }}
-                              sandbox="allow-same-origin"
-                            />
-                          </div>
-                        </AdminDetailSection>
-                      )}
-
-                      {/* Test Email Dispatch Card */}
-                      {!isCreatingTemplate && (
-                        <AdminDetailSection title="Send Test Email">
-                          <div
-                            style={{
-                              backgroundColor: '#f8fafc',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '8px',
-                              padding: '12px',
-                            }}
-                          >
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <input
-                                type="email"
-                                className="admin-input"
-                                value={testEmailAddress}
-                                onChange={(e) => setTestEmailAddress(e.target.value)}
-                                placeholder="Recipient email (e.g. markvol319@gmail.com)"
-                                style={{ flex: 1, backgroundColor: '#ffffff' }}
-                              />
-                              <button
-                                type="button"
-                                className="admin-btn admin-btn--primary admin-btn--sm"
-                                disabled={testEmailSending}
-                                onClick={handleSendTestEmail}
-                                style={{
-                                  whiteSpace: 'nowrap',
-                                  backgroundColor: '#0284c7',
-                                  borderColor: '#0284c7',
-                                  fontWeight: '700',
-                                  padding: '8px 16px',
-                                }}
-                              >
-                                {testEmailSending ? 'Sending...' : 'Send Test Email'}
-                              </button>
-                            </div>
-
-                            {testEmailResult && (
-                              <div
-                                style={{
-                                  marginTop: '10px',
-                                  padding: '8px 12px',
-                                  borderRadius: '6px',
-                                  fontSize: '12px',
-                                  backgroundColor: testEmailResult.success ? '#f0fdf4' : '#fef2f2',
-                                  color: testEmailResult.success ? '#15803d' : '#b91c1c',
-                                  border: `1px solid ${testEmailResult.success ? '#bbf7d0' : '#fecaca'}`,
-                                }}
-                              >
-                                {testEmailResult.success ? '✓ ' : '✕ '}
-                                {testEmailResult.message}
-                              </div>
-                            )}
-                          </div>
-                        </AdminDetailSection>
-                      )}
-                    </div>
-                  ) : null}
-                </AdminDetailPanel>
-              }
-            />
-          )}
-
-          {/* SUB-VIEW 2: EVENT TRIGGERS & VARIABLE MAPPING */}
-          {emailSubTab === 'events' && (
-            <AdminSplitLayout
-              left={
-                <AdminPanel>
-                  <div style={{ marginBottom: '14px' }}>
-                    <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', color: '#0f172a', fontWeight: '700' }}>
-                      Automated System Event Triggers
-                    </h3>
-                    <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
-                      Select an event trigger to configure which email template is automatically dispatched and how dynamic variables are evaluated.
-                    </p>
-                  </div>
-
-                  <AdminTableWrap
-                    loading={eventsLoading}
-                    error={eventsError}
-                    hasData={eventRules.length > 0}
-                  >
-                    <AdminDataTable
-                      columns={[
-                        {
-                          key: 'eventType',
-                          label: 'Event Trigger ID',
-                          render: (r) => (
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                padding: '2px 8px',
-                                borderRadius: '4px',
-                                backgroundColor: '#f0f9ff',
-                                color: '#0369a1',
-                                border: '1px solid #bae6fd',
-                                fontWeight: '700',
-                                fontSize: '12px',
-                                fontFamily: 'monospace',
-                              }}
-                            >
-                              {r.eventType}
+                            <span style={{ fontSize: '11px', color: '#0284c7', fontWeight: '600' }}>
+                              Dynamic Variable Substitution Active
                             </span>
-                          ),
-                        },
-                        { key: 'description', label: 'Trigger Description' },
-                        {
-                          key: 'targetTemplateCode',
-                          label: 'Target Template',
-                          render: (r) => (
-                            <span
-                              style={{
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                backgroundColor: '#f8fafc',
-                                color: '#334155',
-                                fontSize: '11px',
-                                fontFamily: 'monospace',
-                                border: '1px solid #cbd5e1',
-                              }}
-                            >
-                              {r.templateCode || r.targetTemplateCode || '—'}
-                            </span>
-                          ),
-                        },
-                        {
-                          key: 'enabled',
-                          label: 'Status',
-                          render: (r) => (
-                            <span
-                              style={{
-                                padding: '2px 8px',
-                                borderRadius: '999px',
-                                fontSize: '11px',
-                                fontWeight: '700',
-                                backgroundColor: r.enabled ? '#dcfce7' : '#f1f5f9',
-                                color: r.enabled ? '#15803d' : '#64748b',
-                                border: `1px solid ${r.enabled ? '#86efac' : '#cbd5e1'}`,
-                              }}
-                            >
-                              {r.enabled ? 'ACTIVE' : 'DISABLED'}
-                            </span>
-                          ),
-                        },
-                      ]}
-                      rows={eventRules}
-                      rowKey="eventType"
-                      selectedId={selectedEventType}
-                      onSelectRow={(r) => {
-                        setSelectedEventType(r.eventType);
-                        const targetCode = r.templateCode || r.targetTemplateCode || '';
-                        const normalized = {
-                          ...r,
-                          targetTemplateCode: targetCode,
-                        };
-                        setSelectedRule(normalized);
-
-                        const matchedTpl = templates.find((t) => t.templateCode === targetCode);
-                        const tplHtml = matchedTpl ? (matchedTpl.contentHtml || matchedTpl.bodyHtml || '') : '';
-                        const mergedRows = buildMappingRowsForTemplate(tplHtml, r.variableMappings || {});
-                        setMappingRows(mergedRows);
-                        setTestDispatchResult(null);
-                      }}
-                      emptyMessage="No event notification rules found."
-                    />
-                  </AdminTableWrap>
-                </AdminPanel>
-              }
-              right={
-                <AdminDetailPanel
-                  title={selectedRule ? `Event Rule: ${selectedRule.eventType}` : null}
-                >
-                  {selectedRule ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <AdminDetailSection title="Trigger Configuration">
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                          <div>
-                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                              Event Type (Trigger Identifier)
-                            </label>
-                            <input
-                              type="text"
-                              className="admin-input"
-                              value={selectedRule.eventType}
-                              readOnly
-                              disabled
-                              style={{ fontFamily: 'monospace', backgroundColor: '#f8fafc', color: '#0369a1' }}
-                            />
                           </div>
-
-                          <div>
-                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                              Automated Dispatch
-                            </label>
-                            <select
-                              className="admin-input"
-                              value={selectedRule.enabled ? 'true' : 'false'}
-                              onChange={(e) => handleRuleChange('enabled', e.target.value === 'true')}
-                            >
-                              <option value="true">Active (Automated dispatch enabled)</option>
-                              <option value="false">Paused (Do not dispatch)</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div style={{ marginBottom: '12px' }}>
-                          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                            Target Email Template
-                          </label>
-                          <select
-                            className="admin-input"
-                            value={selectedRule.targetTemplateCode || ''}
-                            onChange={(e) => handleRuleChange('targetTemplateCode', e.target.value)}
-                            style={{ fontFamily: 'monospace' }}
-                          >
-                            <option value="">-- Select Target Template --</option>
-                            {templates.map((t) => (
-                              <option key={t.templateCode} value={t.templateCode}>
-                                {t.templateCode} — {t.templateName || t.subject}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div style={{ marginBottom: '12px' }}>
-                          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                            Description
-                          </label>
-                          <input
-                            type="text"
-                            className="admin-input"
-                            value={selectedRule.description || ''}
-                            onChange={(e) => handleRuleChange('description', e.target.value)}
-                            placeholder="e.g. Sent automatically when KYC verification is approved."
+                          <iframe
+                            title="Email Live Preview"
+                            srcDoc={renderedPreviewHtml}
+                            style={{ width: '100%', height: '560px', border: 'none', display: 'block' }}
+                            sandbox="allow-same-origin"
                           />
                         </div>
                       </AdminDetailSection>
+                    )}
 
-                      {/* Variable Mapping Section */}
-                      <AdminDetailSection title="Dynamic Variable Mapping">
-                        {/* Clean Instruction Box in Soft Blue */}
-                        <div
-                          style={{
-                            padding: '12px',
-                            backgroundColor: '#eff6ff',
-                            borderRadius: '8px',
-                            border: '1px solid #bfdbfe',
-                            marginBottom: '14px',
-                            fontSize: '12px',
-                            color: '#1e3a8a',
-                            lineHeight: '1.6',
-                          }}
-                        >
-                          <div style={{ fontWeight: '700', marginBottom: '4px' }}>
-                            Supported Dynamic Expression Tokens:
-                          </div>
-                          <div>
-                            • <code style={{ backgroundColor: '#dbeafe', padding: '1px 5px', borderRadius: '3px' }}>user.email</code> : User's registered email address<br />
-                            • <code style={{ backgroundColor: '#dbeafe', padding: '1px 5px', borderRadius: '3px' }}>user.loginId</code> : Member's username / login ID<br />
-                            • <code style={{ backgroundColor: '#dbeafe', padding: '1px 5px', borderRadius: '3px' }}>user.cregisWalletAddress</code> : Member's Cregis on-chain deposit address<br />
-                            • <code style={{ backgroundColor: '#dbeafe', padding: '1px 5px', borderRadius: '3px' }}>qrCode(user.cregisWalletAddress)</code> : Auto QR Code image generator URL<br />
-                            • <code style={{ backgroundColor: '#dbeafe', padding: '1px 5px', borderRadius: '3px' }}>network</code> : Network passed from event context (e.g. TRC-20)<br />
-                            • Direct static literals (e.g. <code style={{ backgroundColor: '#dbeafe', padding: '1px 5px', borderRadius: '3px' }}>https://www.anytap.io/account</code>, <code style={{ backgroundColor: '#dbeafe', padding: '1px 5px', borderRadius: '3px' }}>support@anytap.io</code>)
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
-                          <div
-                            style={{
-                              display: 'grid',
-                              gridTemplateColumns: '190px 1fr 36px',
-                              gap: '8px',
-                              fontSize: '11px',
-                              fontWeight: '700',
-                              color: '#64748b',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.04em',
-                            }}
-                          >
-                            <span>Template Variable Key</span>
-                            <span>Source Expression / Dynamic Value</span>
-                            <span></span>
-                          </div>
-
-                          {mappingRows.length === 0 ? (
-                            <div style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: '#94a3b8', backgroundColor: '#f8fafc', borderRadius: '6px' }}>
-                              No variables mapped yet. Select a target template or click "+ Add Variable Mapping".
-                            </div>
-                          ) : (
-                            mappingRows.map((row) => (
-                              <div
-                                key={row.id}
-                                style={{
-                                  display: 'grid',
-                                  gridTemplateColumns: '190px 1fr 36px',
-                                  gap: '8px',
-                                  alignItems: 'center',
-                                }}
-                              >
-                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                  <input
-                                    type="text"
-                                    className="admin-input"
-                                    value={row.key}
-                                    onChange={(e) => handleVariableRowChange(row.id, 'key', e.target.value)}
-                                    placeholder="e.g. depositAddress"
-                                    style={{ fontFamily: 'monospace', fontSize: '12px', width: '100%', paddingRight: row.isFromTemplate ? '42px' : '8px' }}
-                                  />
-                                  {row.isFromTemplate && (
-                                    <span
-                                      title="Auto-extracted from target email template HTML"
-                                      style={{
-                                        position: 'absolute',
-                                        right: '6px',
-                                        fontSize: '9px',
-                                        fontWeight: '700',
-                                        color: '#0284c7',
-                                        backgroundColor: '#e0f2fe',
-                                        padding: '2px 5px',
-                                        borderRadius: '4px',
-                                        pointerEvents: 'none',
-                                      }}
-                                    >
-                                      TPL
-                                    </span>
-                                  )}
-                                </div>
-                                <input
-                                  type="text"
-                                  className="admin-input"
-                                  value={row.val}
-                                  onChange={(e) => handleVariableRowChange(row.id, 'val', e.target.value)}
-                                  placeholder="e.g. user.cregisWalletAddress"
-                                  style={{ fontFamily: 'monospace', fontSize: '12px', color: '#0369a1', fontWeight: '600' }}
-                                />
-                                <button
-                                  type="button"
-                                  className="admin-btn admin-btn--ghost admin-btn--sm"
-                                  onClick={() => handleRemoveVariableRow(row.id)}
-                                  style={{ color: '#dc2626', padding: '6px' }}
-                                  title="Delete variable mapping"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ))
-                          )}
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                              type="button"
-                              className="admin-btn admin-btn--secondary admin-btn--sm"
-                              onClick={handleAddVariableRow}
-                            >
-                              + Add Variable Mapping
-                            </button>
-                            {selectedRule.targetTemplateCode && (
-                              <button
-                                type="button"
-                                className="admin-btn admin-btn--ghost admin-btn--sm"
-                                onClick={() => {
-                                  const targetTpl = templates.find((t) => t.templateCode === selectedRule.targetTemplateCode);
-                                  const tplHtml = targetTpl ? (targetTpl.contentHtml || targetTpl.bodyHtml || '') : '';
-                                  const freshRows = buildMappingRowsForTemplate(tplHtml, {});
-                                  setMappingRows(freshRows);
-                                }}
-                                title="Reset all mappings to default template variables and expressions"
-                                style={{ fontSize: '12px', color: '#64748b' }}
-                              >
-                                ↺ Reset from Template
-                              </button>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn--primary admin-btn--sm"
-                            disabled={savingRule}
-                            onClick={handleSaveEventRule}
-                          >
-                            {savingRule ? 'Saving Rule...' : 'Save Event Rule'}
-                          </button>
-                        </div>
-                      </AdminDetailSection>
-
-                      {/* Test Dispatch Event Section */}
-                      <AdminDetailSection title="Test Event Dispatch">
+                    {/* Test Dispatch & Test Email Section */}
+                    {!isCreatingTemplate && (
+                      <AdminDetailSection title="Dispatch Test Email">
                         <div
                           style={{
                             backgroundColor: '#f8fafc',
@@ -1412,76 +1173,62 @@ export function ContentPage() {
                           }}
                         >
                           <div>
-                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '2px' }}>
-                              Target Recipient Email
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
+                              Recipient Email Address
                             </label>
                             <input
                               type="email"
                               className="admin-input"
-                              value={testDispatchEmail}
-                              onChange={(e) => setTestDispatchEmail(e.target.value)}
-                              placeholder="markvol319@gmail.com"
+                              value={testEmailAddress}
+                              onChange={(e) => setTestEmailAddress(e.target.value)}
+                              placeholder="e.g. markvol319@gmail.com"
                               style={{ backgroundColor: '#ffffff' }}
                             />
                           </div>
 
-                          <div>
-                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '2px' }}>
-                              Custom Test Wallet Address (Optional)
-                            </label>
-                            <input
-                              type="text"
-                              className="admin-input"
-                              value={testDispatchAddress}
-                              onChange={(e) => setTestDispatchAddress(e.target.value)}
-                              placeholder="Leave blank to use user's DB address"
-                              style={{ fontFamily: 'monospace', fontSize: '12px', backgroundColor: '#ffffff' }}
-                            />
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn--primary admin-btn--sm"
+                              disabled={testEmailSending}
+                              onClick={handleSendTestEmail}
+                              style={{
+                                backgroundColor: '#0284c7',
+                                borderColor: '#0284c7',
+                                fontWeight: '700',
+                                padding: '8px 16px',
+                              }}
+                            >
+                              {testEmailSending ? 'Sending...' : '📨 Send Test Email (With Mappings)'}
+                            </button>
                           </div>
 
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn--primary admin-btn--sm"
-                            disabled={testDispatching}
-                            onClick={handleTestDispatchEvent}
-                            style={{
-                              alignSelf: 'flex-start',
-                              backgroundColor: '#0284c7',
-                              borderColor: '#0284c7',
-                              fontWeight: '700',
-                              padding: '8px 18px',
-                            }}
-                          >
-                            {testDispatching ? 'Dispatching...' : '🚀 Dispatch Test Event'}
-                          </button>
-
-                          {testDispatchResult && (
+                          {testEmailResult && (
                             <div
                               style={{
                                 padding: '8px 12px',
                                 borderRadius: '6px',
                                 fontSize: '12px',
-                                backgroundColor: testDispatchResult.success ? '#f0fdf4' : '#fef2f2',
-                                color: testDispatchResult.success ? '#15803d' : '#b91c1c',
-                                border: `1px solid ${testDispatchResult.success ? '#bbf7d0' : '#fecaca'}`,
+                                backgroundColor: testEmailResult.success ? '#f0fdf4' : '#fef2f2',
+                                color: testEmailResult.success ? '#15803d' : '#b91c1c',
+                                border: `1px solid ${testEmailResult.success ? '#bbf7d0' : '#fecaca'}`,
                               }}
                             >
-                              {testDispatchResult.success ? '✓ ' : '✕ '}
-                              {testDispatchResult.message}
+                              {testEmailResult.success ? '✓ ' : '✕ '}
+                              {testEmailResult.message}
                             </div>
                           )}
                         </div>
                       </AdminDetailSection>
-                    </div>
-                  ) : null}
-                </AdminDetailPanel>
-              }
-            />
-          )}
+                    )}
+                  </div>
+                ) : null}
+              </AdminDetailPanel>
+            }
+          />
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════ */}
       {/* PRIMARY TAB 2: WEB CONTENT & PAGES                         */}
       {/* ══════════════════════════════════════════════════════════ */}
       {primaryTab === 'pages' && (
