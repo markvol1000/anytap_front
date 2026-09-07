@@ -442,18 +442,17 @@ export function ContentPage() {
         contentHtml: htmlBody,
         contentText: templateForm.contentText || '',
         variablesDescription: templateForm.variablesDescription || templateForm.description || '',
-        isActive: selectedRule ? selectedRule.enabled : true,
+        isActive: selectedRule ? selectedRule.enabled !== false : (templateForm.isActive !== false),
       };
 
-      const existingInList = templates.some((t) => t.templateCode === code);
-      const shouldCreate = isCreatingTemplate || !originalTemplateCode || (!existingInList && originalTemplateCode !== code);
-
-      if (shouldCreate) {
+      if (isCreatingTemplate) {
+        // [신규 템플릿 생성] POST /admin/email-templates
         await createEmailTemplate(templatePayload);
         setIsCreatingTemplate(false);
       } else {
-        const updateCode = originalTemplateCode || code;
-        await updateEmailTemplate(updateCode, templatePayload);
+        // [기존 템플릿 수정] PUT /admin/email-templates/{templateCode}
+        const targetCode = originalTemplateCode || code;
+        await updateEmailTemplate(targetCode, templatePayload);
       }
 
       // 2. Save Event Rule and Variable Mappings if rule exists or configured
@@ -476,7 +475,11 @@ export function ContentPage() {
           variableMappings,
         };
 
-        await saveEventNotificationRule(eventType, rulePayload);
+        try {
+          await saveEventNotificationRule(eventType, rulePayload);
+        } catch (ruleErr) {
+          console.warn('Failed to save event rule:', ruleErr);
+        }
       }
 
       alert(`Template "${code}" and variable mappings saved successfully!`);
@@ -484,7 +487,7 @@ export function ContentPage() {
       setOriginalTemplateCode(code);
       await loadTemplatesAndRules(code);
     } catch (err) {
-      alert(`Failed to save template and rules: ${err.message}`);
+      alert(`Failed to save template and rules: ${err.message || 'Please check template content and network connection.'}`);
     } finally {
       setSavingAll(false);
     }
