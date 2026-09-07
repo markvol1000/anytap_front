@@ -61,12 +61,19 @@ export async function apiRequest(path, options = {}) {
   const { json, headers: extraHeaders, ...init } = options;
   const headers = new Headers(extraHeaders);
 
-  const token = getAccessToken();
-  if (token) headers.set('Authorization', `Bearer ${token}`);
+  const isAdminReq = path && String(path).includes('/admin');
 
-  if (path && String(path).includes('/admin')) {
+  const token = getAccessToken();
+  if (token && !isAdminReq) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  if (isAdminReq) {
     headers.set('X-User-Role', 'ADMIN');
     headers.set('X-User-Id', 'admin@anytap.io');
+    if (token) {
+      headers.set('X-Admin-Token', token);
+    }
   }
 
   let body = init.body;
@@ -83,7 +90,7 @@ export async function apiRequest(path, options = {}) {
   const isEnvelope = data && typeof data === 'object' && !Array.isArray(data) && 'result' in data;
 
   if (!res.ok || (isEnvelope && data.result === false)) {
-    if (res.status === 401 || res.status === 403) {
+    if ((res.status === 401 || res.status === 403) && !isAdminReq) {
       clearAccessToken();
       try {
         sessionStorage.removeItem('anytap_http_session');
