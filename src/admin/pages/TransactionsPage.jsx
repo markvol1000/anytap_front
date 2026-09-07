@@ -2,17 +2,17 @@ import { useCallback, useState } from 'react';
 import { AdminDataTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
 import { AdminDetailPanel, AdminDetailRow, AdminSplitLayout } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge, formatAdminDate, formatAmountWithCurrency } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAdminDate, formatAmountWithCurrency, normalizeDisplayCurrency, cleanTransactionDescription } from '../components/AdminStatusBadge.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { exportTransactionsCsv, getTransactions, retryTransaction } from '../services/adminService.js';
 
 const fetchTx = (params) => getTransactions(params);
 
 function CurrencyBadge({ currency }) {
-  if (!currency || !String(currency).trim() || String(currency).trim().toLowerCase() === 'null') {
+  const code = normalizeDisplayCurrency(currency).toUpperCase().trim();
+  if (!code || code.toLowerCase() === 'null') {
     return null;
   }
-  const code = String(currency).toUpperCase().trim();
   if (code === 'USDT') {
     return (
       <img
@@ -602,7 +602,7 @@ export function TransactionsPage() {
                 label="Description / Merchant" 
                 value={
                   <span style={{ fontWeight: '600', color: '#0f172a' }}>
-                    {selected.description || '—'}
+                    {cleanTransactionDescription(selected.description) || '—'}
                   </span>
                 } 
               />

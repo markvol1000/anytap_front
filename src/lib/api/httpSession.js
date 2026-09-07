@@ -88,12 +88,6 @@ export function touchHttpSession() {
   const current = readJson(sessionStorage, HTTP_SESSION_KEY) || readJson(localStorage, HTTP_SESSION_KEY);
   if (!current?.userId) return;
 
-  // Don't touch expired sessions
-  if (current.expiresAt && now > current.expiresAt) {
-    checkExpired(current);
-    return;
-  }
-
   const updated = {
     ...current,
     lastActiveAt: now,

@@ -9,7 +9,7 @@ import {
   AdminDetailSection,
   AdminSplitLayout,
 } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge, formatAdminDate, formatAmountWithCurrency, formatUsdt } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAdminDate, formatAmountWithCurrency, formatUsdt, normalizeDisplayCurrency } from '../components/AdminStatusBadge.jsx';
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
@@ -34,10 +34,10 @@ const fetchMembers = (params) => getMembers(params);
 const fetchMemberDetail = (id) => getMemberById(id);
 
 function CurrencyBadgeMini({ currency }) {
-  if (!currency || !String(currency).trim() || String(currency).trim().toLowerCase() === 'null') {
+  const code = normalizeDisplayCurrency(currency).toUpperCase().trim();
+  if (!code || code.toLowerCase() === 'null') {
     return null;
   }
-  const code = String(currency).toUpperCase().trim();
   if (code === 'USDT') {
     return (
       <img

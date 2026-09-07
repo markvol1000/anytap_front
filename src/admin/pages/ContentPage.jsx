@@ -19,7 +19,6 @@ import {
   testDispatchEventNotification,
   getContentItems,
 } from '../services/adminService.js';
-import { touchHttpSession } from '../../lib/api/httpSession.js';
 
 // Automatically extract all {{variable}} placeholders from HTML content
 const extractVariablesFromHtml = (html) => {
@@ -412,7 +411,6 @@ export function ContentPage() {
 
   // ── Unified Save Handler (Template + Event Rule + Active Status) ──
   const handleSaveAll = async () => {
-    touchHttpSession();
     const code = templateForm?.templateCode?.trim()?.toUpperCase();
     if (!code) {
       alert('Template code is required.');

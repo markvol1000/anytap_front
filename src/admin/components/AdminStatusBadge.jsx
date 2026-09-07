@@ -60,12 +60,52 @@ export function formatAdminDate(value) {
   }
 }
 
+export function normalizeDisplayCurrency(currency = '') {
+  if (!currency) return '';
+  const trimmed = String(currency).trim();
+  const upper = trimmed.toUpperCase();
+
+  // Cregis TRON (195) TRC-20 USDT contract addresses or truncated forms (e.g. 195@TR7NHQJEKQXGTCI8...)
+  if (upper.includes('TR7NH') || upper.includes('TG3XX')) {
+    return 'USDT';
+  }
+  // Cregis Ethereum (60) ERC-20 USDT
+  if (upper.includes('0XDAC17F')) {
+    return 'USDT';
+  }
+  // Cregis Ethereum (60) ERC-20 USDC
+  if (upper.includes('0XA0B869')) {
+    return 'USDC';
+  }
+  // Native Cregis coin tokens (195@195 -> TRX, 60@60 -> ETH, 0@0 -> BTC)
+  if (upper === '195@195' || upper === '195') {
+    return 'TRX';
+  }
+  if (upper === '60@60' || upper === '60') {
+    return 'ETH';
+  }
+  if (upper === '0@0' || upper === '0') {
+    return 'BTC';
+  }
+
+  return trimmed;
+}
+
+export function cleanTransactionDescription(desc = '') {
+  if (!desc) return '';
+  return String(desc)
+    .replace(/195@TR7NH[a-zA-Z0-9]*/gi, 'USDT')
+    .replace(/195@TG3XX[a-zA-Z0-9]*/gi, 'USDT')
+    .replace(/60@0xdac17f[a-zA-Z0-9]*/gi, 'USDT')
+    .replace(/60@0xa0b869[a-zA-Z0-9]*/gi, 'USDC');
+}
+
 export function formatAmountWithCurrency(amount, currency = '') {
   if (amount == null || amount === '') return '—';
   const num = Number(amount);
   if (Number.isNaN(num)) return '—';
 
-  const rawCode = currency != null ? String(currency).trim() : '';
+  const rawCode = normalizeDisplayCurrency(currency);
   const code = rawCode.toUpperCase();
 
   if (code === 'IDR' || code === 'RP') {
