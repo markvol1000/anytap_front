@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AdminSidebar } from './AdminSidebar.jsx';
 import { AdminTopbar } from './AdminTopbar.jsx';
 import { AdminConfirmProvider } from './AdminConfirmModal.jsx';
@@ -19,6 +19,7 @@ export function AdminLayout() {
   const [admin, setAdmin] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let cancelled = false;
@@ -58,11 +59,16 @@ export function AdminLayout() {
       } else {
         window.alert('Login session has expired due to 30 minutes of inactivity. Please log in again.');
       }
-      setAuthChecked(false);
+      setAdmin(null);
+      setAuthChecked(true);
+      navigate('/login', {
+        replace: true,
+        state: { from: location.pathname.startsWith('/admin') ? location.pathname : '/admin' },
+      });
     };
     window.addEventListener('anytap-session-expired', handleExpired);
     return () => window.removeEventListener('anytap-session-expired', handleExpired);
-  }, []);
+  }, [location.pathname, navigate]);
 
   if (!authChecked) {
     return <div className="admin-shell admin-shell--gate"><p className="admin-loading">Loading…</p></div>;
