@@ -54,14 +54,16 @@ export function AdminLayout() {
   useEffect(() => {
     const handleExpired = (e) => {
       const reason = e?.detail?.reason;
-      if (reason === 'unauthorized') {
+      if (reason === 'server_unreachable') {
+        // 서버 점검/무응답 시 차단 팝업 없이 로그인 페이지의 영문 토스트로 일관되게 처리
+      } else if (reason === 'unauthorized') {
         window.alert('Admin session unauthorized or expired. Please sign in again.');
       } else {
         window.alert('Login session has expired due to 30 minutes of inactivity. Please log in again.');
       }
       setAdmin(null);
       setAuthChecked(true);
-      navigate('/login', {
+      navigate(`/login?expired=1&reason=${encodeURIComponent(reason || 'expired')}`, {
         replace: true,
         state: { from: location.pathname.startsWith('/admin') ? location.pathname : '/admin' },
       });

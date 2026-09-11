@@ -37,28 +37,12 @@ export const MAINTENANCE_NOTICE = {
   cta: 'Got it',
 };
 
+/** 한국 시간 2026.09.12 12:00 까지만 활성화 (UTC 2026-09-12 03:00) */
 export function isMaintenanceNoticeActive(now = Date.now()): boolean {
   return Number.isFinite(MAINTENANCE_END_UTC) && now < MAINTENANCE_END_UTC;
 }
 
-export function isMaintenanceNoticeDismissed(): boolean {
-  try {
-    return localStorage.getItem(MAINTENANCE_STORAGE_KEY) === MAINTENANCE_NOTICE_ID;
-  } catch {
-    return false;
-  }
-}
-
-export function dismissMaintenanceNotice(): void {
-  try {
-    localStorage.setItem(MAINTENANCE_STORAGE_KEY, MAINTENANCE_NOTICE_ID);
-  } catch {
-    /* private mode / quota — still close for this session */
-  }
-}
-
 export function shouldShowMaintenanceNotice(now = Date.now()): boolean {
   if (typeof window === 'undefined') return false;
-  if (!isMaintenanceNoticeActive(now)) return false;
-  return !isMaintenanceNoticeDismissed();
+  return isMaintenanceNoticeActive(now);
 }

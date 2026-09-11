@@ -370,7 +370,7 @@ export async function changePassword({ userId, currentPassword, newPassword }) {
     return { ok: true, message: res?.message || 'Password changed successfully' };
   } catch (err) {
     const msg = err?.status === 503 || err?.message?.includes('503') || err?.message?.includes('fetch')
-      ? 'Backend service is currently unreachable (503). Please check server connection.'
+      ? 'System is under maintenance. Please try again later.'
       : (err?.message || 'Failed to change password');
     return { ok: false, message: msg };
   }
@@ -382,7 +382,7 @@ export async function sendForgotPasswordEmail({ email }) {
     return { ok: true, message: res?.message || 'Verification code sent to email' };
   } catch (err) {
     const msg = err?.status === 503 || err?.message?.includes('503') || err?.message?.includes('fetch')
-      ? 'Backend service is currently unreachable (503). Please check server connection.'
+      ? 'System is under maintenance. Please try again later.'
       : (err?.message || 'Failed to send verification email');
     return { ok: false, message: msg };
   }
@@ -398,7 +398,7 @@ export async function resetPassword({ email, code, newPassword }) {
     return { ok: true, message: res?.message || 'Password reset successfully' };
   } catch (err) {
     const msg = err?.status === 503 || err?.message?.includes('503') || err?.message?.includes('fetch')
-      ? 'Backend service is currently unreachable (503). Please check server connection.'
+      ? 'System is under maintenance. Please try again later.'
       : (err?.message || 'Failed to reset password');
     return { ok: false, message: msg };
   }

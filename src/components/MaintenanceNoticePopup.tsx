@@ -4,33 +4,38 @@ import { ClockIcon } from '@phosphor-icons/react';
 import { Icon } from './ui.jsx';
 import {
   MAINTENANCE_NOTICE,
-  dismissMaintenanceNotice,
   shouldShowMaintenanceNotice,
 } from '../lib/maintenance-notice.ts';
 import '../styles/maintenance-notice.css';
 
-function isAdminPath(pathname: string): boolean {
-  return pathname === '/admin' || pathname.startsWith('/admin/');
+function isTargetNoticePage(pathname: string): boolean {
+  return pathname === '/' || pathname === '/login';
 }
 
 export function MaintenanceNoticePopup() {
   const location = useLocation();
   const titleId = useId();
   const [open, setOpen] = useState(
-    () => !isAdminPath(location.pathname) && shouldShowMaintenanceNotice(),
+    () => isTargetNoticePage(location.pathname) && shouldShowMaintenanceNotice(),
   );
 
   const close = useCallback(() => {
-    dismissMaintenanceNotice();
     setOpen(false);
   }, []);
 
+  // 기존에 브라우저 localStorage에 남아있던 영구 닫힘 키 정리
   useEffect(() => {
-    if (isAdminPath(location.pathname) || !shouldShowMaintenanceNotice()) {
+    try {
+      localStorage.removeItem('anytap_maintenance_dismissed:2026-09-12');
+    } catch { /* noop */ }
+  }, []);
+
+  useEffect(() => {
+    if (isTargetNoticePage(location.pathname) && shouldShowMaintenanceNotice()) {
+      setOpen(true);
+    } else {
       setOpen(false);
-      return;
     }
-    setOpen(true);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -50,7 +55,7 @@ export function MaintenanceNoticePopup() {
     };
   }, [open, close]);
 
-  if (!open || isAdminPath(location.pathname)) return null;
+  if (!open || !isTargetNoticePage(location.pathname)) return null;
 
   const notice = MAINTENANCE_NOTICE;
 

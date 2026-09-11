@@ -150,6 +150,7 @@ function LoginPage() {
   const [errorFields, setErrorFields] = useState({ email: false, password: false });
   const [entering, setEntering] = useState(false);
   const { toast, showToast, clearToast } = useAuthToast();
+  const hasShownToastRef = useRef(false);
 
   const showEmailHint = errorFields.email && fieldHint;
   const showPasswordHint = errorFields.password && fieldHint && !errorFields.email;
@@ -164,6 +165,18 @@ function LoginPage() {
     const params = new URLSearchParams(location.search);
     const prefill = String(params.get('email') || '').trim();
     if (prefill) setEmail(prefill);
+
+    const expired = params.get('expired');
+    const reason = params.get('reason');
+    if ((expired || reason) && !hasShownToastRef.current) {
+      hasShownToastRef.current = true;
+      showToast('System is under maintenance. Please try again later.');
+
+      // 주소창에서 쿼리스트링(?expired=1...)을 즉시 정리하여 리렌더링 시 중복 토스트 재발 방지
+      try {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch { /* noop */ }
+    }
   }, [location.search]);
 
   useEffect(() => {

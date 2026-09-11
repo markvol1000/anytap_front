@@ -51,17 +51,63 @@ function resolveUrl(path) {
   return `${baseUrl}${cleanPath}`;
 }
 
+let isRedirecting = false;
+
+export function forceLogoutAndRedirect(reason = 'server_unreachable') {
+  clearAccessToken();
+  try {
+    sessionStorage.removeItem('anytap_http_session');
+    localStorage.removeItem('anytap_http_session');
+    localStorage.removeItem('anytap_demo_http_session');
+    sessionStorage.removeItem('anytap_mock_session');
+    localStorage.removeItem('anytap_mock_session');
+    sessionStorage.removeItem('anytap_admin_session');
+    localStorage.removeItem('anytap_admin_session');
+  } catch { /* noop */ }
+
+  try {
+    window.dispatchEvent(new Event('anytap-member-session'));
+    window.dispatchEvent(new CustomEvent('anytap-session-expired', {
+      detail: { reason }
+    }));
+  } catch { /* noop */ }
+
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const publicPaths = ['/login', '/sign-up', '/forgot-password', '/sign-up/verify'];
+  const isAlreadyOnAuthPage = publicPaths.some((p) => currentPath === p || currentPath.startsWith(p));
+
+  if (isAlreadyOnAuthPage) {
+    return;
+  }
+
+  if (isRedirecting) return;
+  isRedirecting = true;
+
+  console.warn(`[AnyTap] Server unreachable or session expired (${reason}). Redirecting to /login...`);
+
+  setTimeout(() => {
+    try {
+      window.location.replace(`/login?expired=1&reason=${encodeURIComponent(reason)}`);
+    } catch {
+      window.location.href = `/login?expired=1&reason=${encodeURIComponent(reason)}`;
+    } finally {
+      setTimeout(() => { isRedirecting = false; }, 3000);
+    }
+  }, 100);
+}
+
 /**
  * @param {string} path — e.g. '/admin/members' (prepended with VITE_API_BASE_URL)
- * @param {RequestInit & { json?: unknown }} options
+ * @param {RequestInit & { json?: unknown, timeout?: number }} options
  */
 export async function apiRequest(path, options = {}) {
   assertApiBaseUrl();
 
-  const { json, headers: extraHeaders, ...init } = options;
+  const { json, headers: extraHeaders, timeout = 12000, ...init } = options;
   const headers = new Headers(extraHeaders);
 
   const isAdminReq = path && String(path).includes('/admin');
+  const isLoginEndpoint = path && String(path).includes('/auth/login');
 
   const token = getAccessToken();
   if (token && !isAdminReq) {
@@ -83,21 +129,54 @@ export async function apiRequest(path, options = {}) {
   }
 
   const requestUrl = resolveUrl(path);
-  const res = await fetch(requestUrl, { ...init, headers, body });
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  if (init.signal) {
+    init.signal.addEventListener('abort', () => controller.abort());
+  }
+
+  let res;
+  try {
+    res = await fetch(requestUrl, { ...init, headers, body, signal: controller.signal });
+  } catch (fetchErr) {
+    clearTimeout(timeoutId);
+    const isTimeout = fetchErr.name === 'AbortError';
+    const isNetworkError = fetchErr instanceof TypeError || isTimeout || String(fetchErr).includes('Failed to fetch') || String(fetchErr).includes('NetworkError');
+
+    console.error(`[API Network Error] ${requestUrl}:`, fetchErr);
+
+    // 로그인 엔드포인트 자체를 제외하고, 서버 무응답/다운 시 즉시 로그인으로 탈출
+    if (!isLoginEndpoint && isNetworkError) {
+      forceLogoutAndRedirect('server_unreachable');
+    }
+
+    const err = new Error('System is under maintenance. Please try again later.');
+    err.status = isTimeout ? 504 : 0;
+    err.isNetworkError = true;
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  // 502 Bad Gateway, 503 Service Unavailable, 504 Gateway Timeout 등 서버 다운 응답
+  const isServerDown = res.status === 502 || res.status === 503 || res.status === 504;
+  if (isServerDown && !isLoginEndpoint) {
+    console.error(`[API Server Down] HTTP ${res.status} from ${requestUrl}`);
+    forceLogoutAndRedirect('server_unreachable');
+    const err = new Error('System is under maintenance. Please try again later.');
+    err.status = res.status;
+    throw err;
+  }
+
   const data = await parseBody(res);
 
   // Spring Boot envelope: { result, message, data, sqlLogs }
   const isEnvelope = data && typeof data === 'object' && !Array.isArray(data) && 'result' in data;
 
   if (!res.ok || (isEnvelope && data.result === false)) {
-    if ((res.status === 401 || res.status === 403) && !isAdminReq) {
-      clearAccessToken();
-      try {
-        sessionStorage.removeItem('anytap_http_session');
-        localStorage.removeItem('anytap_http_session');
-        localStorage.removeItem('anytap_demo_http_session');
-      } catch { /* noop */ }
-      window.dispatchEvent(new CustomEvent('anytap-session-expired', { detail: { reason: 'unauthorized', status: res.status } }));
+    if ((res.status === 401 || res.status === 403) && !isAdminReq && !isLoginEndpoint) {
+      forceLogoutAndRedirect('unauthorized');
     }
     const rawMsg = data?.message || data?.error || res.statusText || 'Request failed';
     const message = sanitizeToastMessage(rawMsg);
@@ -135,12 +214,12 @@ export function apiDelete(path, options) {
  * Multipart file upload (e.g. KYC documents).
  * @param {string} path
  * @param {Blob|File} file
- * @param {{ query?: Record<string, string>, fieldName?: string }} [options]
+ * @param {{ query?: Record<string, string>, fieldName?: string, timeout?: number }} [options]
  */
 export async function apiUpload(path, file, options = {}) {
   assertApiBaseUrl();
 
-  const { query, fieldName = 'file', headers: extraHeaders } = options;
+  const { query, fieldName = 'file', headers: extraHeaders, timeout = 30000 } = options;
   const headers = new Headers(extraHeaders);
   const token = getAccessToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
@@ -158,11 +237,40 @@ export async function apiUpload(path, file, options = {}) {
     if (q) url += `?${q}`;
   }
 
-  const res = await fetch(url, { method: 'POST', headers, body });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  let res;
+  try {
+    res = await fetch(url, { method: 'POST', headers, body, signal: controller.signal });
+  } catch (fetchErr) {
+    clearTimeout(timeoutId);
+    const isTimeout = fetchErr.name === 'AbortError';
+    const isNetworkError = fetchErr instanceof TypeError || isTimeout || String(fetchErr).includes('Failed to fetch') || String(fetchErr).includes('NetworkError');
+    if (isNetworkError) {
+      forceLogoutAndRedirect('server_unreachable');
+    }
+    const err = new Error(isTimeout ? 'Upload timed out.' : 'System is under maintenance. Please try again later.');
+    err.status = isTimeout ? 504 : 0;
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (res.status === 502 || res.status === 503 || res.status === 504) {
+    forceLogoutAndRedirect('server_unreachable');
+    const err = new Error('System is under maintenance. Please try again later.');
+    err.status = res.status;
+    throw err;
+  }
+
   const data = await parseBody(res);
   const isEnvelope = data && typeof data === 'object' && !Array.isArray(data) && 'result' in data;
 
   if (!res.ok || (isEnvelope && data.result === false)) {
+    if (res.status === 401 || res.status === 403) {
+      forceLogoutAndRedirect('unauthorized');
+    }
     const rawMsg = data?.message || data?.error || (res.statusText && res.statusText !== 'OK' ? res.statusText : '') || 'Image upload failed. Please check your internet connection or try another JPG/PNG photo.';
     const message = sanitizeToastMessage(rawMsg);
     const err = new Error(message);

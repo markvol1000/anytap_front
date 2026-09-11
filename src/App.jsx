@@ -9,6 +9,7 @@ import { hasMemberSession } from './lib/services/authService.js';
 import { SCREEN_ROUTES } from './constants/routes.ts';
 import { HoldPageLoader, PageLoader } from './components/PageLoader.tsx';
 import { MaintenanceNoticePopup } from './components/MaintenanceNoticePopup.tsx';
+import { ServerHealthGuard } from './components/ServerHealthGuard.jsx';
 
 import { SysDiagnosticPage } from './pages/SysDiagnosticPage.jsx';
 
@@ -74,6 +75,7 @@ export default function App() {
         </Route>
       </Routes>
       <MaintenanceNoticePopup />
+      <ServerHealthGuard />
     </>
   );
 }
