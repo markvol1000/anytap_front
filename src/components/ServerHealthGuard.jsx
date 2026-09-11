@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { API_BASE_URL, isHttpApi } from '../lib/api/config.js';
+import { forceLogoutAndRedirect } from '../lib/api/httpClient.js';
 import { hasMemberSession } from '../lib/services/authService.js';
-import { apiGet, forceLogoutAndRedirect } from '../lib/api/httpClient.js';
-import { isHttpApi } from '../lib/api/config.js';
 
-const HEALTH_CHECK_INTERVAL_MS = 10000; // 10초마다 서버 생존 여부 감시
+const HEALTH_CHECK_INTERVAL_MS = 15000; // 15초마다 서버 생존 여부 확인
 
 export function ServerHealthGuard() {
   const location = useLocation();
@@ -27,17 +27,36 @@ export function ServerHealthGuard() {
       if (!hasMemberSession()) return;
 
       checkingRef.current = true;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
       try {
-        // 백엔드 /api/v1/auth/session 엔드포인트로 경량 세션 및 서버 생존 확인
-        await apiGet('/auth/session', { timeout: 4000 });
+        const baseUrl = (API_BASE_URL || '').replace(/\/$/, '');
+        const pingUrl = baseUrl.endsWith('/api/v1')
+          ? `${baseUrl}/common/regions`
+          : `${baseUrl}/api/v1/common/regions`;
+
+        const res = await fetch(pingUrl, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+
+        // 502, 503, 504 등 게이트웨이 다운 상태일 때만 서버 다운으로 판단
+        if (res.status === 502 || res.status === 503 || res.status === 504) {
+          if (isMounted && hasMemberSession()) {
+            console.warn('[ServerHealthGuard] Server down (HTTP ' + res.status + '). Evacuating to login...');
+            forceLogoutAndRedirect('server_unreachable');
+          }
+        }
+        // 응답이 온 경우(200, 400 등)는 서버가 정상 작동 중이므로 로그인 유지!
       } catch (err) {
-        // err 발생 시 httpClient.js의 apiRequest에서 이미 forceLogoutAndRedirect가 트리거됨
-        // 만약 처리되지 않은 경우를 대비한 2차 안전장치
+        // 서버 프로세스가 종료되어 연결 거부(ERR_CONNECTION_REFUSED) 또는 타임아웃된 경우
         if (isMounted && hasMemberSession()) {
-          console.warn('[ServerHealthGuard] Backend server unreachable or session lost. Evacuating to login...', err);
+          console.warn('[ServerHealthGuard] Server unreachable. Evacuating to login...', err);
           forceLogoutAndRedirect('server_unreachable');
         }
       } finally {
+        clearTimeout(timeoutId);
         checkingRef.current = false;
       }
     };

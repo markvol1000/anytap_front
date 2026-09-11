@@ -176,7 +176,13 @@ export async function apiRequest(path, options = {}) {
 
   if (!res.ok || (isEnvelope && data.result === false)) {
     if ((res.status === 401 || res.status === 403) && !isAdminReq && !isLoginEndpoint) {
-      forceLogoutAndRedirect('unauthorized');
+      clearAccessToken();
+      try {
+        sessionStorage.removeItem('anytap_http_session');
+        localStorage.removeItem('anytap_http_session');
+        localStorage.removeItem('anytap_demo_http_session');
+      } catch { /* noop */ }
+      window.dispatchEvent(new CustomEvent('anytap-session-expired', { detail: { reason: 'unauthorized', status: res.status } }));
     }
     const rawMsg = data?.message || data?.error || res.statusText || 'Request failed';
     const message = sanitizeToastMessage(rawMsg);
@@ -269,7 +275,13 @@ export async function apiUpload(path, file, options = {}) {
 
   if (!res.ok || (isEnvelope && data.result === false)) {
     if (res.status === 401 || res.status === 403) {
-      forceLogoutAndRedirect('unauthorized');
+      clearAccessToken();
+      try {
+        sessionStorage.removeItem('anytap_http_session');
+        localStorage.removeItem('anytap_http_session');
+        localStorage.removeItem('anytap_demo_http_session');
+      } catch { /* noop */ }
+      window.dispatchEvent(new CustomEvent('anytap-session-expired', { detail: { reason: 'unauthorized', status: res.status } }));
     }
     const rawMsg = data?.message || data?.error || (res.statusText && res.statusText !== 'OK' ? res.statusText : '') || 'Image upload failed. Please check your internet connection or try another JPG/PNG photo.';
     const message = sanitizeToastMessage(rawMsg);
