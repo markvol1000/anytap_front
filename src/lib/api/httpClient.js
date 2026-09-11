@@ -159,13 +159,16 @@ export async function apiRequest(path, options = {}) {
     clearTimeout(timeoutId);
   }
 
-  // 502 Bad Gateway, 503 Service Unavailable, 504 Gateway Timeout 등 서버 다운 응답
+  // 502 Bad Gateway, 503 Service Unavailable, 504 Gateway Timeout 등 서버 다운 응답 (운영 AWS ALB 응답)
   const isServerDown = res.status === 502 || res.status === 503 || res.status === 504;
-  if (isServerDown && !isLoginEndpoint) {
+  if (isServerDown) {
     console.error(`[API Server Down] HTTP ${res.status} from ${requestUrl}`);
-    forceLogoutAndRedirect('server_unreachable');
+    if (!isLoginEndpoint) {
+      forceLogoutAndRedirect('server_unreachable');
+    }
     const err = new Error('System is under maintenance. Please try again later.');
     err.status = res.status;
+    err.isServerDown = true;
     throw err;
   }
 
@@ -184,7 +187,7 @@ export async function apiRequest(path, options = {}) {
       } catch { /* noop */ }
       window.dispatchEvent(new CustomEvent('anytap-session-expired', { detail: { reason: 'unauthorized', status: res.status } }));
     }
-    const rawMsg = data?.message || data?.error || res.statusText || 'Request failed';
+    const rawMsg = data?.message || data?.error || res.statusText || 'System is under maintenance. Please try again later.';
     const message = sanitizeToastMessage(rawMsg);
     const err = new Error(message);
     err.status = res.ok ? 400 : res.status;

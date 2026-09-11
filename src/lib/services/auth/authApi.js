@@ -34,6 +34,16 @@ export function loginIdOk(loginId) {
 function mapLoginError(err) {
   const message = err?.message || err?.data?.message || err?.data?.msg || '';
   const msg = message.toLowerCase();
+
+  // Server outage (500+), network error, or maintenance message
+  if (!err?.status || err?.status >= 500 || err?.isNetworkError || err?.isServerDown || msg.includes('maintenance')) {
+    return {
+      ok: false,
+      code: 'MAINTENANCE',
+      message: 'System is under maintenance. Please try again later.',
+    };
+  }
+
   if (msg.includes('locked')) {
     return { ok: false, code: 'LOCKED', message: 'Account locked due to 10 failed login attempts. Please reset your password.' };
   }
@@ -49,7 +59,7 @@ function mapLoginError(err) {
   if (err?.status === 401 || msg.includes('invalid credential') || msg.includes('incorrect password')) {
     return { ok: false, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' };
   }
-  return { ok: false, code: 'SERVER_ERROR', message: message || 'Server error. Please try again.' };
+  return { ok: false, code: 'MAINTENANCE', message: 'System is under maintenance. Please try again later.' };
 }
 
 function normalizeAuthProfile(data, loginId) {
