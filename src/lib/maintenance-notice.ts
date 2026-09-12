@@ -37,9 +37,9 @@ export const MAINTENANCE_NOTICE = {
   cta: 'Got it',
 };
 
-/** 한국 시간 2026.09.12 12:00 까지만 활성화 (UTC 2026-09-12 03:00) */
-export function isMaintenanceNoticeActive(now = Date.now()): boolean {
-  return Number.isFinite(MAINTENANCE_END_UTC) && now < MAINTENANCE_END_UTC;
+/** 공지 팝업 비활성화 (종료) */
+export function isMaintenanceNoticeActive(_now = Date.now()): boolean {
+  return false;
 }
 
 export function shouldShowMaintenanceNotice(now = Date.now()): boolean {
