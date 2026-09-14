@@ -14,6 +14,16 @@ export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 export const OG_IMAGE_ALT = 'Anytap crypto card — spend anywhere with Visa';
 
+/**
+ * Google Search / Knowledge Panel Organization logo.
+ * Must be square (1:1), ≥112×112, and look correct on a white background.
+ * Do not use the wide wordmark (`anytap-logo.png`, 2006×584) here — Google
+ * shows that rectangle in search results instead of a square mark.
+ */
+export const ORG_LOGO_PATH = '/assets/anytap-logo-square.png';
+export const ORG_LOGO_WIDTH = 512;
+export const ORG_LOGO_HEIGHT = 512;
+
 const DEFAULT_OG = `${SITE_ORIGIN}/assets/og-share.jpg`;
 const BRAND = 'Anytap';
 
@@ -243,12 +253,26 @@ export function defaultOgImage(): string {
   return DEFAULT_OG;
 }
 
+export function organizationLogoJsonLd() {
+  const url = `${SITE_ORIGIN}${ORG_LOGO_PATH}`;
+  return {
+    '@type': 'ImageObject' as const,
+    url,
+    contentUrl: url,
+    width: ORG_LOGO_WIDTH,
+    height: ORG_LOGO_HEIGHT,
+    caption: 'Anytap',
+  };
+}
+
 export function organizationJsonLd() {
+  const logo = organizationLogoJsonLd();
   return {
     '@type': 'Organization' as const,
     name: 'Anytap',
     url: `${SITE_ORIGIN}/`,
-    logo: `${SITE_ORIGIN}/assets/anytap-logo.png`,
+    logo,
+    image: logo.url,
     description: 'Crypto debit card enabling USDT spending anywhere Visa is accepted.',
     contactPoint: {
       '@type': 'ContactPoint' as const,

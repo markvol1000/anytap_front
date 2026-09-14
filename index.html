@@ -52,7 +52,15 @@
             "@type": "Organization",
             "name": "Anytap",
             "url": "https://www.anytap.io/",
-            "logo": "https://www.anytap.io/assets/anytap-logo.png",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://www.anytap.io/assets/anytap-logo-square.png",
+              "contentUrl": "https://www.anytap.io/assets/anytap-logo-square.png",
+              "width": 512,
+              "height": 512,
+              "caption": "Anytap"
+            },
+            "image": "https://www.anytap.io/assets/anytap-logo-square.png",
             "description": "Crypto debit card enabling USDT spending anywhere Visa is accepted.",
             "contactPoint": {
               "@type": "ContactPoint",
@@ -170,9 +178,11 @@
     <meta name="theme-color" content="#1a1a1a" />
     <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=()" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/assets/anytap-logo-square.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/anytap-app-icon-192.png" />
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
