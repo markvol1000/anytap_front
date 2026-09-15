@@ -1,9 +1,12 @@
 /**
- * Generates public/sitemap.xml and public/sitemap.txt.
+ * Generates public/sitemap.xml, sitemap.xml.txt, and sitemap.txt.
  * Run: node scripts/generate-sitemap.mjs
  *
  * URL host is www.anytap.io because apex (anytap.io) is GoDaddy forwarding
  * and only `/` redirects; other apex paths 404.
+ *
+ * sitemap.xml.txt is the same XML document with a .txt extension so Amplify
+ * SPA rewrite (which serves index.html for *.xml) still returns real XML.
  */
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -65,8 +68,11 @@ ${urls}
 
 const txt = `${PATHS.map(locFor).join('\n')}\n`;
 
-const xmlOut = join(__dirname, '../public/sitemap.xml');
-const txtOut = join(__dirname, '../public/sitemap.txt');
+const publicDir = join(__dirname, '../public');
+const xmlOut = join(publicDir, 'sitemap.xml');
+const xmlTxtOut = join(publicDir, 'sitemap.xml.txt');
+const txtOut = join(publicDir, 'sitemap.txt');
 writeFileSync(xmlOut, xml, 'utf8');
+writeFileSync(xmlTxtOut, xml, 'utf8');
 writeFileSync(txtOut, txt, 'utf8');
-console.log(`Wrote ${xmlOut} and ${txtOut} (${PATHS.length} urls)`);
+console.log(`Wrote ${xmlOut}, ${xmlTxtOut}, and ${txtOut} (${PATHS.length} urls)`);
