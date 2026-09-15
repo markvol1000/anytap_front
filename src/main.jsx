@@ -9,6 +9,7 @@ import './styles/colors_and_type.css';
 import './styles/styles.css';
 
 document.documentElement.lang = 'en';
+document.documentElement.setAttribute('translate', 'no');
 
 // initBrowserConsoleLogger();
 registerServiceWorker();
