@@ -41,7 +41,7 @@ export const SEO_KNOWS_ABOUT = [
   'USDT Visa',
 ] as const;
 
-export const DEFAULT_TITLE = `${BRAND} — Crypto card | 크립토카드`;
+export const DEFAULT_TITLE = `${BRAND} — Crypto card`;
 
 const DEFAULT_DESC =
   'Anytap crypto card (크립토카드) — spend USDT and USDC anywhere Visa is accepted. 60+ global BINs, Apple Pay, Google Pay, and Samsung Pay.';
