@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { PageShell } from './components/chrome.jsx';
 import { Seo } from './components/Seo.tsx';
+import { TranslateSafeTree } from './components/TranslateSafeTree.tsx';
 import { appRoutes } from './routes.jsx';
 import { NotFoundPage } from './pages/NotFoundPage.jsx';
 import { DemoStatesPage, DemoStateEnterPage } from './pages/DemoStatesPage.jsx';
@@ -39,40 +40,42 @@ export default function App() {
   return (
     <>
       <Seo />
-      <Routes>
-        <Route
-          path="/admin/*"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <AdminApp />
-            </Suspense>
-          }
-        />
-        <Route path="/admin/hanzb" element={<SysDiagnosticPage />} />
-        <Route
-          path="/account/*"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <HoldPageLoader>
-                <AccountApp />
-              </HoldPageLoader>
-            </Suspense>
-          }
-        />
-        <Route path="/kyc/step1" element={<KycStep1Redirect />} />
-        <Route element={<AppLayout />}>
-          <Route path="/demo/states" element={<DemoStatesPage />} />
+      <TranslateSafeTree>
+        <Routes>
           <Route
-            path="/demo/kyc"
-            element={<Navigate to="/account/kyc?demo=page-kyc-entry" replace />}
+            path="/admin/*"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <AdminApp />
+              </Suspense>
+            }
           />
-          <Route path="/demo/state/:slug" element={<DemoStateEnterPage />} />
-          {appRoutes.map(({ path, page: Page }) => (
-            <Route key={path} path={path} element={<Page />} />
-          ))}
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-      </Routes>
+          <Route path="/admin/hanzb" element={<SysDiagnosticPage />} />
+          <Route
+            path="/account/*"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <HoldPageLoader>
+                  <AccountApp />
+                </HoldPageLoader>
+              </Suspense>
+            }
+          />
+          <Route path="/kyc/step1" element={<KycStep1Redirect />} />
+          <Route element={<AppLayout />}>
+            <Route path="/demo/states" element={<DemoStatesPage />} />
+            <Route
+              path="/demo/kyc"
+              element={<Navigate to="/account/kyc?demo=page-kyc-entry" replace />}
+            />
+            <Route path="/demo/state/:slug" element={<DemoStateEnterPage />} />
+            {appRoutes.map(({ path, page: Page }) => (
+              <Route key={path} path={path} element={<Page />} />
+            ))}
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Routes>
+      </TranslateSafeTree>
       <MaintenanceNoticePopup />
     </>
   );
