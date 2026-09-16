@@ -34,6 +34,12 @@ const BRAND = 'Anytap';
 export const SEO_KEYWORDS =
   'crypto card, 크립토카드, crypto debit card, USDT Visa card, Anytap';
 
+/** Naver Search Advisor HTML-tag codes (apex + www are separate properties). */
+export const NAVER_SITE_VERIFICATIONS = [
+  '2a5e4bf4f2722aaa22f035db9d83d2008d4d582d',
+  '8102ebc51cc098cdf82627d59a28039c3fa0119f',
+] as const;
+
 export const SEO_KNOWS_ABOUT = [
   'crypto card',
   '크립토카드',
