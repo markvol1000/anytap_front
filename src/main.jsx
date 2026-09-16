@@ -5,11 +5,12 @@ import App from './App.jsx';
 import { registerServiceWorker } from './lib/register-sw.js';
 // import { initBrowserConsoleLogger } from './lib/browserLogger.js';
 import { onFieldInvalid } from './utils/formValidation.js';
+import { patchGoogleTranslateDom } from './lib/google-translate-spa.ts';
 import './styles/colors_and_type.css';
 import './styles/styles.css';
 
 document.documentElement.lang = 'en';
-document.documentElement.setAttribute('translate', 'no');
+patchGoogleTranslateDom();
 
 // initBrowserConsoleLogger();
 registerServiceWorker();
