@@ -10,6 +10,7 @@ import {
   organizationJsonLd,
   resolveSeo,
   SEO_KEYWORDS,
+  NAVER_SITE_VERIFICATIONS,
   SEO_KNOWS_ABOUT,
 } from '../lib/seo.ts';
 import { faqPageJsonLd } from '../lib/home-faq.ts';
@@ -24,6 +25,15 @@ function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
     document.head.appendChild(el);
   }
   el.setAttribute('content', content);
+}
+
+function ensureNamedMeta(name: string, content: string) {
+  const selector = `meta[name="${name}"][content="${content}"]`;
+  if (document.head.querySelector(selector)) return;
+  const el = document.createElement('meta');
+  el.setAttribute('name', name);
+  el.setAttribute('content', content);
+  document.head.appendChild(el);
 }
 
 function upsertLink(rel: string, href: string) {
@@ -77,11 +87,9 @@ export function Seo() {
     upsertMeta('name', 'description', seo.description);
     upsertMeta('name', 'keywords', SEO_KEYWORDS);
     upsertMeta('name', 'robots', seo.noindex ? 'noindex, nofollow' : 'index, follow');
-    upsertMeta(
-      'name',
-      'naver-site-verification',
-      '2a5e4bf4f2722aaa22f035db9d83d2008d4d582d',
-    );
+    for (const code of NAVER_SITE_VERIFICATIONS) {
+      ensureNamedMeta('naver-site-verification', code);
+    }
 
     upsertLink('canonical', url);
     upsertHreflang('en', url);
