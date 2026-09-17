@@ -28,11 +28,11 @@ const DEFAULT_OG = `${SITE_ORIGIN}/assets/og-share.jpg`;
 const BRAND = 'Anytap';
 
 /**
- * Generic product terms for search (English + Korean).
+ * Generic product terms for search.
  * Do not include competitor brand names in site HTML or meta tags.
  */
 export const SEO_KEYWORDS =
-  'crypto card, 크립토카드, crypto debit card, USDT Visa card, Anytap';
+  'crypto card, crypto debit card, USDT Visa card, Anytap';
 
 /** Naver Search Advisor HTML-tag codes (apex + www are separate properties). */
 export const NAVER_SITE_VERIFICATIONS = [
@@ -42,7 +42,6 @@ export const NAVER_SITE_VERIFICATIONS = [
 
 export const SEO_KNOWS_ABOUT = [
   'crypto card',
-  '크립토카드',
   'crypto debit card',
   'USDT Visa',
 ] as const;
@@ -50,7 +49,7 @@ export const SEO_KNOWS_ABOUT = [
 export const DEFAULT_TITLE = `${BRAND} — Crypto card`;
 
 const DEFAULT_DESC =
-  'Anytap crypto card (크립토카드) — spend USDT and USDC anywhere Visa is accepted. 60+ global BINs, Apple Pay, Google Pay, and Samsung Pay.';
+  'Anytap crypto card — spend USDT and USDC anywhere Visa is accepted. 60+ global BINs, Apple Pay, Google Pay, and Samsung Pay.';
 
 /** Marketing + legal routes that should be indexed. */
 export const SEO_PAGES: PageSeo[] = [
@@ -62,7 +61,7 @@ export const SEO_PAGES: PageSeo[] = [
   {
     path: '/about',
     title: `About ${BRAND}`,
-    description: `Learn about ${BRAND} — the crypto card (크립토카드) built for reliable worldwide spending with Visa.`,
+    description: `Learn about ${BRAND} — the crypto card built for reliable worldwide spending with Visa.`,
   },
   {
     path: '/contact',
@@ -73,7 +72,7 @@ export const SEO_PAGES: PageSeo[] = [
     path: '/faq',
     title: `FAQ | ${BRAND}`,
     description:
-      'Frequently asked questions about the Anytap crypto card (크립토카드), KYC, top-ups, fees, security, and the referral program.',
+      'Frequently asked questions about the Anytap crypto card, KYC, top-ups, fees, security, and the referral program.',
   },
   {
     path: '/card-how-to-use',
@@ -137,7 +136,7 @@ export const SEO_PAGES: PageSeo[] = [
     path: '/innovation-market',
     title: `Crypto card market outlook | ${BRAND}`,
     description:
-      'Market outlook for stablecoins and crypto cards (크립토카드) with Anytap.',
+      'Market outlook for stablecoins and crypto cards with Anytap.',
   },
   {
     path: '/referral-why',
