@@ -560,6 +560,11 @@ export async function simulateCardTransaction(cardNo, params = {}) {
   return data;
 }
 
+export async function triggerMockCardSpend(payload = {}) {
+  const data = await apiPost('/admin/mock-webhook/card-spend', payload);
+  return data;
+}
+
 function mapWalletRow(u) {
   return {
     id: u.userId || u.id,

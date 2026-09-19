@@ -22,6 +22,7 @@ import {
   rejectCard,
   simulateCardTransaction,
   terminateCard,
+  triggerMockCardSpend,
   unfreezeCard,
 } from '../services/api/adminApiService.js';
 
@@ -85,15 +86,15 @@ function CopyableTxId({ txId, color = '#b45309' }) {
 }
 
 const SIM_CURRENCIES = [
-  { code: 'KRW', label: '₩ KRW', name: '한국 원', symbol: '₩', defaultAmt: '15000', defaultMerch: 'Starbucks Gangnam' },
-  { code: 'USD', label: '$ USD', name: '미국 달러', symbol: '$', defaultAmt: '10.00', defaultMerch: 'Starbucks Coffee' },
-  { code: 'EUR', label: '€ EUR', name: '유로', symbol: '€', defaultAmt: '10.00', defaultMerch: 'Paris Bistro' },
-  { code: 'SGD', label: 'S$ SGD', name: '싱가포르', symbol: 'S$', defaultAmt: '15.00', defaultMerch: 'Marina Bay Merchant' },
-  { code: 'HKD', label: 'HK$ HKD', name: '홍콩 달러', symbol: 'HK$', defaultAmt: '80.00', defaultMerch: 'Central Cafe HK' },
-  { code: 'CNY', label: '¥ CNY', name: '중국 위안', symbol: '¥', defaultAmt: '70.00', defaultMerch: 'Shanghai Mart' },
-  { code: 'PHP', label: '₱ PHP', name: '필리핀 페소', symbol: '₱', defaultAmt: '500.00', defaultMerch: 'Manila Store' },
-  { code: 'IDR', label: 'Rp IDR', name: '인도네시아', symbol: 'Rp', defaultAmt: '150000', defaultMerch: 'Jakarta Cafe' },
-  { code: 'USDT', label: '₮ USDT', name: '테더', symbol: '₮', defaultAmt: '10.00', defaultMerch: 'Online Crypto Store' },
+  { code: 'KRW', label: '₩ KRW', name: 'South Korean Won', symbol: '₩', defaultAmt: '15000', defaultMerch: 'Starbucks Gangnam' },
+  { code: 'USD', label: '$ USD', name: 'US Dollar', symbol: '$', defaultAmt: '10.00', defaultMerch: 'Starbucks Coffee' },
+  { code: 'EUR', label: '€ EUR', name: 'Euro', symbol: '€', defaultAmt: '10.00', defaultMerch: 'Paris Bistro' },
+  { code: 'SGD', label: 'S$ SGD', name: 'Singapore Dollar', symbol: 'S$', defaultAmt: '15.00', defaultMerch: 'Marina Bay Merchant' },
+  { code: 'HKD', label: 'HK$ HKD', name: 'Hong Kong Dollar', symbol: 'HK$', defaultAmt: '80.00', defaultMerch: 'Central Cafe HK' },
+  { code: 'CNY', label: '¥ CNY', name: 'Chinese Yuan', symbol: '¥', defaultAmt: '70.00', defaultMerch: 'Shanghai Mart' },
+  { code: 'PHP', label: '₱ PHP', name: 'Philippine Peso', symbol: '₱', defaultAmt: '500.00', defaultMerch: 'Manila Store' },
+  { code: 'IDR', label: 'Rp IDR', name: 'Indonesian Rupiah', symbol: 'Rp', defaultAmt: '150000', defaultMerch: 'Jakarta Cafe' },
+  { code: 'USDT', label: '₮ USDT', name: 'Tether USD', symbol: '₮', defaultAmt: '10.00', defaultMerch: 'Online Crypto Store' },
 ];
 
 export function CardsPage() {
@@ -119,12 +120,16 @@ export function CardsPage() {
   const [txSectionPage, setTxSectionPage] = useState(1);
 
   const [showSimModal, setShowSimModal] = useState(false);
+  const [selectedAuthTx, setSelectedAuthTx] = useState(null);
   const [simCurrency, setSimCurrency] = useState('KRW');
   const [simType, setSimType] = useState('auth');
   const [simAmount, setSimAmount] = useState('15000');
   const [simMerchant, setSimMerchant] = useState('Starbucks Gangnam');
   const [simDescription, setSimDescription] = useState('Test Card Payment Auth');
+  const [simScenario, setSimScenario] = useState('APPROVED');
+  const [simAutoFreeze, setSimAutoFreeze] = useState(true);
   const [simLoading, setSimLoading] = useState(false);
+  const [cardActionLoading, setCardActionLoading] = useState(false);
 
   const loadTxs = useCallback(async (p = 1) => {
     if (!selectedId) return;
@@ -146,14 +151,72 @@ export function CardsPage() {
     setSimLoading(true);
     try {
       const cardId = detail.wasabiCardId || detail.id;
-      await simulateCardTransaction(cardId, {
-        amount: Number(simAmount),
-        currency: simCurrency,
-        type: simType,
-        merchantName: simMerchant,
-        description: simDescription || simMerchant,
-      });
-      window.alert(`[${simCurrency}] ${Number(simAmount).toLocaleString()} ${simCurrency} payment simulation successfully executed.`);
+      const memberId = detail.memberId || detail.userId;
+
+      if (simScenario === 'PIN_BLOCKED') {
+        const pinMerchant = simMerchant.includes('PIN') ? simMerchant : `${simMerchant} (PIN Blocked)`;
+        const finalDesc = simDescription && simDescription.includes('PIN') ? simDescription : `${pinMerchant} - Incorrect PIN (Card Blocked)`;
+        await triggerMockCardSpend({
+          userId: memberId,
+          cardNo: cardId,
+          amount: Number(simAmount),
+          currency: simCurrency,
+          merchantName: pinMerchant,
+          status: 'FAILED',
+          description: finalDesc,
+          declineReason: 'Incorrect PIN (Card Blocked)'
+        });
+
+        if (simAutoFreeze) {
+          try {
+            await freezeCard(selectedId);
+            const refreshed = await fetchCardDetail(selectedId);
+            setDetail(refreshed);
+            await list.refresh();
+          } catch (freezeErr) {
+            console.warn('[CardsPage] Note on auto-freezing card:', freezeErr);
+          }
+        }
+
+        window.alert(`[${simCurrency}] PIN Error / Card Blocked simulation successfully executed.`);
+      } else if (simScenario === 'INSUFFICIENT_FUNDS') {
+        const finalDesc = simDescription || `${simMerchant} - Insufficient Funds`;
+        await triggerMockCardSpend({
+          userId: memberId,
+          cardNo: cardId,
+          amount: Number(simAmount),
+          currency: simCurrency,
+          merchantName: simMerchant,
+          status: 'DECLINED',
+          description: finalDesc,
+          declineReason: 'Insufficient Funds'
+        });
+        window.alert(`[${simCurrency}] Insufficient Funds transaction simulation successfully executed.`);
+      } else {
+        // Standard APPROVED
+        try {
+          await simulateCardTransaction(cardId, {
+            amount: Number(simAmount),
+            currency: simCurrency,
+            type: simType,
+            merchantName: simMerchant,
+            description: simDescription || simMerchant,
+          });
+        } catch (simErr) {
+          // If Wasabi simulate endpoint fails in dev, record via mock webhook
+          await triggerMockCardSpend({
+            userId: memberId,
+            cardNo: cardId,
+            amount: Number(simAmount),
+            currency: simCurrency,
+            merchantName: simMerchant,
+            status: 'SUCCESS',
+            description: simDescription || simMerchant
+          });
+        }
+        window.alert(`[${simCurrency}] ${Number(simAmount).toLocaleString()} ${simCurrency} payment simulation successfully executed.`);
+      }
+
       setShowSimModal(false);
       loadTxs(1);
     } catch (err) {
@@ -161,7 +224,57 @@ export function CardsPage() {
     } finally {
       setSimLoading(false);
     }
-  }, [detail, simAmount, simCurrency, simType, simMerchant, simDescription, loadTxs]);
+  }, [detail, simScenario, simAmount, simCurrency, simType, simMerchant, simDescription, simAutoFreeze, selectedId, setDetail, list, loadTxs]);
+
+  const handleUnfreezeCard = useCallback(async () => {
+    if (!detail) return;
+    const cardId = detail.wasabiCardId || detail.id;
+    const ok = await runConfirm(confirm, {
+      title: 'Unfreeze Card',
+      message: `Are you sure you want to unfreeze card ${cardId}? The card will be restored to active operational status.`,
+      confirmLabel: 'Unfreeze Card',
+      danger: false,
+    });
+    if (!ok) return;
+
+    setCardActionLoading(true);
+    try {
+      await unfreezeCard(selectedId);
+      await list.refresh();
+      const refreshed = await fetchCardDetail(selectedId);
+      setDetail(refreshed);
+      window.alert('Card has been successfully unfrozen and restored to active status.');
+    } catch (err) {
+      window.alert(err?.message || 'Failed to unfreeze card.');
+    } finally {
+      setCardActionLoading(false);
+    }
+  }, [confirm, detail, list, selectedId, setDetail]);
+
+  const handleFreezeCard = useCallback(async () => {
+    if (!detail) return;
+    const cardId = detail.wasabiCardId || detail.id;
+    const ok = await runConfirm(confirm, {
+      title: 'Freeze Card',
+      message: `Are you sure you want to freeze card ${cardId}? The card will be blocked from making payments.`,
+      confirmLabel: 'Freeze Card',
+      danger: true,
+    });
+    if (!ok) return;
+
+    setCardActionLoading(true);
+    try {
+      await freezeCard(selectedId);
+      await list.refresh();
+      const refreshed = await fetchCardDetail(selectedId);
+      setDetail(refreshed);
+      window.alert('Card has been frozen and blocked.');
+    } catch (err) {
+      window.alert(err?.message || 'Failed to freeze card.');
+    } finally {
+      setCardActionLoading(false);
+    }
+  }, [confirm, detail, list, selectedId, setDetail]);
 
   useEffect(() => {
     setTxPage(1);
@@ -374,7 +487,7 @@ export function CardsPage() {
                   },
                   { 
                     key: 'cregisActualBalance', 
-                    label: 'Wallet Balance (가용/실잔액)', 
+                    label: 'Wallet Balance (Avail / Actual)', 
                     render: (r) => {
                       const avail = Number(r.walletBalance ?? r.balance ?? 0).toFixed(2);
                       const actual = Number(r.cregisActualBalance ?? r.actualBalance ?? r.walletBalance ?? 0).toFixed(2);
@@ -428,7 +541,35 @@ export function CardsPage() {
                   <AdminDetailRow label="Member ID" value={detail.memberId || detail.userId || '—'} copyable />
                   <AdminDetailRow label="Email" value={detail.memberEmail || detail.email || '—'} copyable />
                   <AdminDetailRow label="Card Type" value={detail.cardType || 'Physical'} />
-                  <AdminDetailRow label="Status" value={<AdminStatusBadge status={detail.cardStatus || detail.status} />} />
+                  <AdminDetailRow 
+                    label="Status" 
+                    value={
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <AdminStatusBadge status={detail.cardStatus || detail.status} />
+                        {(String(detail.cardStatus || detail.status).toLowerCase() === 'frozen' || String(detail.cardStatus || detail.status).toLowerCase() === 'blocked') ? (
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn--primary admin-btn--sm"
+                            style={{ fontSize: '11px', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                            onClick={handleUnfreezeCard}
+                            disabled={cardActionLoading}
+                          >
+                            🔓 Unfreeze Card
+                          </button>
+                        ) : String(detail.cardStatus || detail.status).toLowerCase() === 'active' ? (
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn--ghost admin-btn--sm"
+                            style={{ fontSize: '11px', padding: '3px 8px', color: '#dc2626', borderColor: '#fca5a5' }}
+                            onClick={handleFreezeCard}
+                            disabled={cardActionLoading}
+                          >
+                            🔒 Freeze Card
+                          </button>
+                        ) : null}
+                      </div>
+                    } 
+                  />
                 </AdminDetailSection>
 
                 {/* Single-line Compact Card & Wallet Balances Section */}
@@ -470,7 +611,7 @@ export function CardsPage() {
                 </AdminDetailSection>
 
                 {/* Card Deposit / Top-Up & Transfer In/Out History Section */}
-                <AdminDetailSection title="Card Balance & Transfer History (충전 및 이체 내역)">
+                <AdminDetailSection title="Card Balance & Transfer History">
                   {(() => {
                     // Also capture any deposit/topup/transfer transactions from txs or cardTransactions
                     const txItems = [...(txs?.items || []), ...(detail.cardTransactions || [])];
@@ -734,36 +875,69 @@ export function CardsPage() {
                             const numBg = isRefund ? '#f0fdf4' : '#fef2f2';
                             const numBorder = isRefund ? '#bbf7d0' : '#fecaca';
 
-                            const rawStatus = String(t.status || 'SUCCESS').toUpperCase();
+                            const rawStatus = String(t.status || t.rawStatus || 'SUCCESS').toUpperCase();
+                            const rawDesc = String(t.description || t.merchantName || t.merchant || t.remark || t.reason || t.declineReason || t.errorMsg || '').toUpperCase();
                             const isAuth = rawStatus.includes('AUTH');
-                            const isFailed = rawStatus.includes('FAIL') || rawStatus.includes('REJECT') || rawStatus.includes('DECLIN');
+                            const isFailed = rawStatus.includes('FAIL') || rawStatus.includes('REJECT') || rawStatus.includes('DECLIN') || rawStatus.includes('BLOCK');
+                            const isPinBlocked = isFailed && (rawDesc.includes('PIN') || rawStatus.includes('PIN') || rawDesc.includes('BLOCK') || rawStatus.includes('BLOCK'));
+                            const isJustBlocked = isFailed && !isPinBlocked && (rawDesc.includes('BLOCK') || rawStatus.includes('BLOCK') || rawDesc.includes('FROZEN') || detail?.cardStatus === 'frozen' || detail?.status === 'frozen');
 
                             let statusLabel = '✓ Completed';
                             let statusBg = '#dcfce7';
                             let statusColor = '#166534';
+                            let statusBorder = '#bbf7d0';
 
-                            if (isAuth) {
-                              statusLabel = '⏳ Authorized';
-                              statusBg = '#e0f2fe';
-                              statusColor = '#0369a1';
+                            if (isPinBlocked) {
+                              statusLabel = '✕ Blocked (PIN Error)';
+                              statusBg = '#fee2e2';
+                              statusColor = '#991b1b';
+                              statusBorder = '#f87171';
+                            } else if (isJustBlocked) {
+                              statusLabel = '✕ Card Blocked';
+                              statusBg = '#fee2e2';
+                              statusColor = '#991b1b';
+                              statusBorder = '#fca5a5';
                             } else if (isFailed) {
                               statusLabel = '✕ Failed';
                               statusBg = '#fee2e2';
                               statusColor = '#b91c1c';
+                              statusBorder = '#fecaca';
+                            } else if (isAuth) {
+                              statusLabel = '⏳ Authorized';
+                              statusBg = '#e0f2fe';
+                              statusColor = '#0369a1';
+                              statusBorder = '#bae6fd';
                             }
 
                             return (
-                              <div key={t.resolvedTxId || idx} style={{
-                                padding: '8px 10px',
-                                backgroundColor: '#f8fafc',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '6px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                fontSize: '11px',
-                                gap: '8px',
-                              }}>
+                              <div
+                                key={t.resolvedTxId || idx}
+                                onClick={() => setSelectedAuthTx(t)}
+                                role="button"
+                                tabIndex={0}
+                                title="Click to view transaction details"
+                                style={{
+                                  padding: '8px 10px',
+                                  backgroundColor: '#f8fafc',
+                                  border: '1px solid #e2e8f0',
+                                  borderRadius: '6px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  fontSize: '11px',
+                                  gap: '8px',
+                                  cursor: 'pointer',
+                                  transition: 'background-color 0.15s ease, border-color 0.15s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#f1f5f9';
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#f8fafc';
+                                  e.currentTarget.style.borderColor = '#e2e8f0';
+                                }}
+                              >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                   <span style={{ fontWeight: '600', color: '#1e293b', textOverflow: 'ellipsis', overflow: 'hidden' }}>
                                     {t.resolvedMerch}
@@ -951,7 +1125,7 @@ export function CardsPage() {
               {/* 1. Currency Selection */}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '8px' }}>
-                  1. Select Payment Currency (결제 통화 선택)
+                  1. Select Payment Currency
                 </label>
                 <div style={{
                   display: 'grid',
@@ -967,7 +1141,13 @@ export function CardsPage() {
                         onClick={() => {
                           setSimCurrency(cur.code);
                           setSimAmount(cur.defaultAmt);
-                          setSimMerchant(cur.defaultMerch);
+                          if (simScenario === 'PIN_BLOCKED') {
+                            setSimMerchant('ATM / POS Terminal');
+                          } else if (simScenario === 'INSUFFICIENT_FUNDS') {
+                            setSimMerchant('Online Merchant');
+                          } else {
+                            setSimMerchant(cur.defaultMerch);
+                          }
                         }}
                         style={{
                           display: 'flex',
@@ -995,11 +1175,85 @@ export function CardsPage() {
                 </div>
               </div>
 
-              {/* 2. Amount & Type */}
+              {/* 2. Simulation Scenario Selector */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '8px' }}>
+                  2. Simulation Scenario
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                  {[
+                    { id: 'APPROVED', label: '✓ Approved', desc: 'Normal approval' },
+                    { id: 'PIN_BLOCKED', label: '🚫 PIN Blocked', desc: 'Wrong PIN retry limit' },
+                    { id: 'INSUFFICIENT_FUNDS', label: '✕ Low Funds', desc: 'Insufficient balance' },
+                  ].map((sc) => {
+                    const isSelected = simScenario === sc.id;
+                    return (
+                      <button
+                        key={sc.id}
+                        type="button"
+                        onClick={() => {
+                          setSimScenario(sc.id);
+                          if (sc.id === 'PIN_BLOCKED') {
+                            setSimMerchant('ATM / POS Terminal');
+                            setSimDescription('POS Terminal - Incorrect PIN (Card Blocked)');
+                          } else if (sc.id === 'INSUFFICIENT_FUNDS') {
+                            setSimMerchant('Online Merchant');
+                            setSimDescription('Online Merchant - Insufficient Funds');
+                          } else {
+                            setSimMerchant('Starbucks Gangnam');
+                            setSimDescription('Test Card Payment Auth');
+                          }
+                        }}
+                        style={{
+                          padding: '8px 6px',
+                          borderRadius: '8px',
+                          border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                          backgroundColor: isSelected ? '#eff6ff' : '#f8fafc',
+                          color: isSelected ? '#1d4ed8' : '#334155',
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <div style={{ fontWeight: '700', fontSize: '12px' }}>{sc.label}</div>
+                        <div style={{ fontSize: '10px', color: isSelected ? '#2563eb' : '#64748b', marginTop: '2px', lineHeight: 1.2 }}>
+                          {sc.desc}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {simScenario === 'PIN_BLOCKED' && (
+                <div style={{
+                  padding: '10px 12px',
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '6px',
+                  fontSize: '11.5px',
+                  color: '#991b1b'
+                }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: '600' }}>
+                    <input
+                      type="checkbox"
+                      checked={simAutoFreeze}
+                      onChange={(e) => setSimAutoFreeze(e.target.checked)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    <span>Automatically freeze card in DB (Simulate Security Block)</span>
+                  </label>
+                  <div style={{ fontSize: '10.5px', color: '#b91c1c', marginTop: '4px', paddingLeft: '22px' }}>
+                    Card status will become <strong>Frozen</strong> and can be tested with the Unfreeze action.
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Amount & Type */}
               <div style={{ display: 'flex', gap: '10px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
-                    2. Payment Amount ({simCurrency})
+                    3. Payment Amount ({simCurrency})
                   </label>
                   <input
                     type="number"
@@ -1029,10 +1283,10 @@ export function CardsPage() {
                 </div>
               </div>
 
-              {/* 3. Merchant Name */}
+              {/* 4. Merchant Name */}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
-                  3. Merchant Name
+                  4. Merchant Name
                 </label>
                 <input
                   type="text"
@@ -1045,10 +1299,10 @@ export function CardsPage() {
                 />
               </div>
 
-              {/* 4. Description */}
+              {/* 5. Description */}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
-                  4. Description
+                  5. Description
                 </label>
                 <input
                   type="text"
@@ -1080,6 +1334,332 @@ export function CardsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Authorization Transaction Detail Modal Popup */}
+      {selectedAuthTx && (
+        <div className="admin-modal-backdrop" onClick={() => setSelectedAuthTx(null)}>
+          <div
+            className="admin-modal"
+            style={{ maxWidth: '560px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="admin-modal__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>💳</span>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1e293b' }}>
+                  Authorization Transaction Detail
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="admin-modal__close"
+                onClick={() => setSelectedAuthTx(null)}
+                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}
+              >
+                ×
+              </button>
+            </div>
+
+            {(() => {
+              const t = selectedAuthTx;
+              const rawType = String(t.type || t.txType || t.kind || '').toLowerCase();
+              const isRefund = rawType.includes('refund') || rawType.includes('reversal') || rawType.includes('deposit') || rawType.includes('topup');
+              const sign = isRefund ? '+' : '-';
+              const numColor = isRefund ? '#16a34a' : '#dc2626';
+              const numBg = isRefund ? '#f0fdf4' : '#fef2f2';
+              const numBorder = isRefund ? '#bbf7d0' : '#fecaca';
+
+              const rawStatus = String(t.status || t.rawStatus || 'SUCCESS').toUpperCase();
+              const rawDesc = String(t.description || t.merchantName || t.merchant || t.remark || t.reason || t.declineReason || t.errorMsg || '').toUpperCase();
+              const isAuth = rawStatus.includes('AUTH');
+              const isFailed = rawStatus.includes('FAIL') || rawStatus.includes('REJECT') || rawStatus.includes('DECLIN') || rawStatus.includes('BLOCK');
+              const isPinBlocked = isFailed && (rawDesc.includes('PIN') || rawStatus.includes('PIN') || rawDesc.includes('BLOCK') || rawStatus.includes('BLOCK'));
+              const isJustBlocked = isFailed && !isPinBlocked && (rawDesc.includes('BLOCK') || rawStatus.includes('BLOCK') || rawDesc.includes('FROZEN') || detail?.cardStatus === 'frozen' || detail?.status === 'frozen');
+
+              let statusLabel = 'Completed';
+              let statusBg = '#dcfce7';
+              let statusColor = '#166534';
+              if (isPinBlocked) {
+                statusLabel = 'Blocked (PIN Error)';
+                statusBg = '#fee2e2';
+                statusColor = '#991b1b';
+              } else if (isJustBlocked) {
+                statusLabel = 'Card Blocked';
+                statusBg = '#fee2e2';
+                statusColor = '#991b1b';
+              } else if (isFailed) {
+                statusLabel = 'Failed / Declined';
+                statusBg = '#fee2e2';
+                statusColor = '#b91c1c';
+              } else if (isAuth) {
+                statusLabel = 'Authorized';
+                statusBg = '#e0f2fe';
+                statusColor = '#0369a1';
+              }
+
+              const txId = t.resolvedTxId || t.txId || t.id || t.tradeNo || t.orderNo || '—';
+              const authCode = t.authCode || t.authorizationCode || '—';
+              const merchant = t.resolvedMerch || t.merchantName || t.merchant || t.description || '—';
+              const mcc = t.mcc || t.merchantCategoryCode || '—';
+              const dateStr = t.resolvedDate || t.at || t.txTime || t.createdDate || t.createdAt || '';
+              const cardMasked = t.cardMasked || (t.last4 ? `VISA **** ${t.last4}` : (detail?.last4 ? `VISA **** ${detail.last4}` : '—'));
+
+              const amountFormatted = formatAmountWithCurrency(t.resolvedAmt ?? t.amount ?? 0, t.resolvedCurr || t.currency);
+
+              const billingAmt = t.billingAmount ?? t.settleAmount;
+              const billingCurr = t.billingCurrency ?? t.settleCurrency;
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Amount & Status Banner */}
+                  <div style={{
+                    padding: '14px 16px',
+                    borderRadius: '8px',
+                    backgroundColor: numBg,
+                    border: `1px solid ${numBorder}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: '700', color: '#64748b', letterSpacing: '0.04em' }}>
+                        Transaction Amount
+                      </div>
+                      <div style={{ fontSize: '20px', fontWeight: '800', color: numColor, fontFamily: 'monospace', marginTop: '2px' }}>
+                        {sign}{amountFormatted}
+                      </div>
+                      {billingAmt != null && Number(billingAmt) > 0 && billingCurr && (billingCurr !== (t.resolvedCurr || t.currency) || Number(billingAmt) !== Number(t.resolvedAmt)) && (
+                        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>
+                          Settlement: {formatAmountWithCurrency(billingAmt, billingCurr)}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                      <span style={{
+                        fontSize: '11px',
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        backgroundColor: statusBg,
+                        color: statusColor,
+                        fontWeight: '700',
+                      }}>
+                        {statusLabel}
+                      </span>
+                      <span style={{ fontSize: '11px', color: '#64748b', textTransform: 'capitalize' }}>
+                        {t.type || t.txType || (isRefund ? 'Refund' : 'Card Purchase')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Prominent Decline / Security Alert Banner */}
+                  {isFailed && (
+                    <div style={{
+                      backgroundColor: '#fef2f2',
+                      border: '1px solid #f87171',
+                      borderRadius: '8px',
+                      padding: '12px 14px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '12px',
+                      color: '#991b1b'
+                    }}>
+                      <span style={{ fontSize: '22px', lineHeight: 1 }}>🚫</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '700', fontSize: '13px', marginBottom: '3px' }}>
+                          {isPinBlocked
+                            ? 'Card Payment Declined & Blocked (PIN Verification Failed)'
+                            : isJustBlocked
+                              ? 'Card Payment Declined (Card Blocked / Frozen)'
+                              : 'Card Payment Declined / Failed'}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#b91c1c', lineHeight: 1.4 }}>
+                          {t.declineReason || t.remark || t.reason || t.errorMessage || (
+                            isPinBlocked
+                              ? 'The payment was declined due to multiple incorrect PIN entries. For security protection, the card has been automatically blocked and frozen.'
+                              : isJustBlocked
+                                ? 'The transaction was declined because the card is currently blocked or frozen.'
+                                : 'The transaction could not be processed and was declined by the card network.'
+                          )}
+                        </div>
+                        {(isPinBlocked || isJustBlocked || (detail && (String(detail.cardStatus || detail.status).toLowerCase() === 'frozen' || String(detail.cardStatus || detail.status).toLowerCase() === 'blocked'))) && (
+                          <div style={{ marginTop: '10px' }}>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn--primary admin-btn--sm"
+                              style={{ fontSize: '11px', padding: '4px 12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              onClick={async () => {
+                                setSelectedAuthTx(null);
+                                await handleUnfreezeCard();
+                              }}
+                              disabled={cardActionLoading}
+                            >
+                              🔓 Unfreeze Card Now
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Detail Key-Value Grid */}
+                  <div style={{
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    padding: '12px 14px',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: '12px',
+                    fontSize: '12px'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Merchant Name</div>
+                      <div style={{ fontWeight: '700', color: '#1e293b' }}>{merchant}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Transaction Date & Time</div>
+                      <div style={{ fontWeight: '600', color: '#1e293b' }}>{dateStr ? formatAdminDate(dateStr) : '—'}</div>
+                    </div>
+                    {isFailed && (
+                      <>
+                        <div>
+                          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Decline Reason</div>
+                          <div style={{ fontWeight: '700', color: '#b91c1c' }}>
+                            {t.declineReason || (isPinBlocked ? 'Incorrect PIN (Card Blocked)' : isJustBlocked ? 'Card Blocked / Frozen' : 'Declined')}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Security Impact</div>
+                          <div style={{ fontWeight: '700', color: (isPinBlocked || isJustBlocked) ? '#dc2626' : '#64748b' }}>
+                            {(isPinBlocked || isJustBlocked) ? '🔒 Card Blocked (Frozen)' : 'None'}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Network Response Code</div>
+                          <div style={{ fontWeight: '700', color: '#1e293b', fontFamily: 'monospace' }}>
+                            {t.respCode || t.responseCode || (isPinBlocked ? '55 (Incorrect PIN)' : '05 (Declined)')}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Transaction ID (Trade No)</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', color: '#1e293b' }}>
+                        <span style={{ fontFamily: 'monospace', fontSize: '11.5px', wordBreak: 'break-all' }}>{txId}</span>
+                        {txId !== '—' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              try {
+                                if (navigator.clipboard && navigator.clipboard.writeText) {
+                                  navigator.clipboard.writeText(txId);
+                                }
+                              } catch (err) {
+                                console.error(err);
+                              }
+                            }}
+                            title="Copy full Transaction ID"
+                            style={{
+                              border: '1px solid #cbd5e1',
+                              background: '#fff',
+                              borderRadius: '4px',
+                              padding: '2px 8px',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              color: '#475569',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            📋 Copy
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Authorization Code</div>
+                      <div style={{ fontWeight: '600', color: '#1e293b', fontFamily: 'monospace' }}>{authCode}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Card Number</div>
+                      <div style={{ fontWeight: '600', color: '#1e293b' }}>{cardMasked}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Merchant Category (MCC)</div>
+                      <div style={{ fontWeight: '600', color: '#1e293b' }}>{mcc}</div>
+                    </div>
+                    {(t.merchantCity || t.merchantCountry) && (
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Location</div>
+                        <div style={{ fontWeight: '600', color: '#1e293b' }}>
+                          {[t.merchantCity, t.merchantCountry].filter(Boolean).join(', ')}
+                        </div>
+                      </div>
+                    )}
+                    {t.fee != null && Number(t.fee) > 0 && (
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Fee</div>
+                        <div style={{ fontWeight: '600', color: '#d97706' }}>
+                          {formatAmountWithCurrency(t.fee, t.feeCurrency || t.resolvedCurr || t.currency)}
+                        </div>
+                      </div>
+                    )}
+                    {t.exchangeRate != null && Number(t.exchangeRate) > 0 && (
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Exchange Rate</div>
+                        <div style={{ fontWeight: '600', color: '#1e293b', fontFamily: 'monospace' }}>{t.exchangeRate}</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Raw Data Accordion */}
+                  <details style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    fontSize: '11px'
+                  }}>
+                    <summary style={{ cursor: 'pointer', fontWeight: '600', color: '#64748b', userSelect: 'none' }}>
+                      View Raw Payload (JSON)
+                    </summary>
+                    <pre style={{
+                      marginTop: '8px',
+                      padding: '8px',
+                      backgroundColor: '#f1f5f9',
+                      borderRadius: '4px',
+                      fontSize: '10.5px',
+                      fontFamily: 'monospace',
+                      overflowX: 'auto',
+                      maxHeight: '180px',
+                      color: '#0f172a',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-all'
+                    }}>
+                      {JSON.stringify(t, null, 2)}
+                    </pre>
+                  </details>
+
+                  {/* Modal Footer */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--primary"
+                      onClick={() => setSelectedAuthTx(null)}
+                      style={{ padding: '8px 20px', fontWeight: '600' }}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
