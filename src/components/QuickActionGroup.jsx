@@ -51,8 +51,8 @@ export function QuickActionGroup({
                 accent ? 'quick-action-group__btn--accent' : '',
                 isDisabled ? 'is-disabled' : '',
               ].filter(Boolean).join(' ')}
+              aria-disabled={isDisabled}
               onClick={() => onAction?.(id)}
-              style={isDisabled ? { opacity: 0.6, cursor: 'pointer' } : undefined}
               aria-pressed={active}>
               <span className="quick-action-group__icon" aria-hidden="true">
                 <Icon name={icon} size={21} stroke={1.75} />
@@ -155,6 +155,10 @@ export function CardQuickActionGroup({ s, card, activeId = null, className = '',
       }
       s.openQuickTopUp?.(card);
     } else if (id === 'cardTransfer') {
+      if (isFrozen) {
+        s?.showToast?.('Card is frozen. Please unfreeze your card before card transfer.', 'error');
+        return;
+      }
       s?.openCardTransfer?.(card);
     } else if (id === 'cardDetails') {
       s.openCardDetails?.(card);
@@ -179,6 +183,10 @@ export function CardQuickActionGroup({ s, card, activeId = null, className = '',
     <QuickActionGroup
       actions={actions}
       activeId={activeId ?? (!isSummary && (s.showCardDetails ? 'cardDetails' : (isFrozen ? 'freeze' : null)))}
+      disabled={{
+        topUp: isFrozen,
+        cardTransfer: isFrozen,
+      }}
       onAction={handleAction}
       className={className}
     />

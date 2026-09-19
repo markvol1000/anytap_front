@@ -122,6 +122,10 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
   }, [step, targetUser, selectedDestCard, sourceCard]);
 
   const handleLookup = useCallback(async () => {
+    if ((sourceCard?.status || s?.currentCard?.status) === 'frozen') {
+      s?.showToast?.('Card is frozen. Card transfer is unavailable while frozen.');
+      return;
+    }
     const trimmedInput = (targetEmail || '').trim();
     if (!trimmedInput || trimmedInput.length < 2) {
       s?.showToast?.('Please enter recipient email or ID.');
@@ -218,6 +222,7 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
   const parsedBal = typeof rawBal === 'number' ? rawBal : parseFloat(String(rawBal).replace(/[^0-9.]/g, ''));
   const currentBalance = Number.isFinite(parsedBal) ? parsedBal : 0;
   const cardBalStr = currentBalance.toFixed(2);
+  const isSourceFrozen = (cardObj?.status || sourceCard?.status) === 'frozen';
 
   const minTransferGross = 30.00;
   const minFeeVal = Math.round(minTransferGross * feeRate * 100) / 100;
@@ -267,6 +272,10 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
   }, [s]);
 
   const handleExecuteTransfer = useCallback(async () => {
+    if (isSourceFrozen) {
+      s?.showToast?.('Card is frozen. Card transfer is unavailable while frozen.');
+      return;
+    }
     if (!grossVal || grossVal < minTransferGross) {
       s?.showToast?.(`Minimum card-to-card transfer amount is $${minTransferGross.toFixed(2)} USD.`);
       return;
@@ -434,9 +443,9 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
                 type="button"
                 className="portal-btn-primary portal-wallet-sheet__btn"
                 onClick={handleLookup}
-                disabled={loading || !targetEmail}
+                disabled={loading || !targetEmail || isSourceFrozen}
                 style={{ height: '42px', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase' }}>
-                {loading ? 'Sending Code...' : 'Next (Send Code)'}
+                {loading ? 'Sending Code...' : isSourceFrozen ? 'Card Frozen' : 'Next (Send Code)'}
               </button>
             </div>
           </div>
@@ -665,16 +674,16 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
                 type="button"
                 className="portal-btn-primary portal-wallet-sheet__btn"
                 onClick={handleExecuteTransfer}
-                disabled={loading || !isAmountValid || !password || verificationCode?.length !== 6 || !selectedDestCard || !agreedToNotice || isBalanceError}
+                disabled={loading || !isAmountValid || !password || verificationCode?.length !== 6 || !selectedDestCard || !agreedToNotice || isBalanceError || isSourceFrozen}
                 style={{
                   height: '42px',
                   fontSize: '13px',
                   fontWeight: 700,
                   textTransform: 'uppercase',
-                  opacity: (!isAmountValid || isBalanceError) ? 0.5 : undefined,
-                  cursor: (!isAmountValid || isBalanceError) ? 'not-allowed' : undefined
+                  opacity: (!isAmountValid || isBalanceError || isSourceFrozen) ? 0.5 : undefined,
+                  cursor: (!isAmountValid || isBalanceError || isSourceFrozen) ? 'not-allowed' : undefined
                 }}>
-                {loading ? 'Processing...' : isBalanceError ? 'Insufficient Balance' : 'Confirm Transfer'}
+                {loading ? 'Processing...' : isSourceFrozen ? 'Card Frozen' : isBalanceError ? 'Insufficient Balance' : 'Confirm Transfer'}
               </button>
             </div>
           </div>

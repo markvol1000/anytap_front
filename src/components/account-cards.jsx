@@ -42,6 +42,7 @@ export function PortalCardMedia({
   pageLayout = false,
   expiry,
   className = '',
+  isFrozen = false,
 }) {
   const [imgFailed, setImgFailed] = useState(false);
   const src = A.CARD_IMAGES[variant] ?? A.CARD_IMAGES.virtual;
@@ -59,6 +60,7 @@ export function PortalCardMedia({
         `portal-card-media--${variant}`,
         ' is-bg-art',
         dimmed ? ' is-dimmed' : '',
+        isFrozen ? ' is-frozen' : '',
         blur ? ' is-blur' : '',
         shimmer ? ' is-shimmer' : '',
         compact ? ' is-compact' : '',
@@ -101,9 +103,9 @@ export function PortalCardMedia({
                 )}
               </div>
               {showBalance && balance ? (
-                <div className="portal-card-media__prepaid-balance">
+                <div className={`portal-card-media__prepaid-balance${isFrozen ? ' is-frozen' : ''}`}>
                   <span className="portal-card-media__balance-label">{balanceLabel}</span>
-                  <span className="portal-card-media__balance-val">{balance}</span>
+                  <span className={`portal-card-media__balance-val${isFrozen ? ' is-frozen' : ''}`}>{balance}</span>
                 </div>
               ) : null}
               {(maskedNumber || expiry) && (
@@ -133,9 +135,9 @@ export function PortalCardMedia({
                   )}
                 </div>
                 {showBalance && balance && (
-                  <div className="portal-card-media__balance">
+                  <div className={`portal-card-media__balance${isFrozen ? ' is-frozen' : ''}`}>
                     <span className="portal-card-media__balance-label">{balanceLabel}</span>
-                    <span className="portal-card-media__balance-val">{A.formatCardBalance(balance)}</span>
+                    <span className={`portal-card-media__balance-val${isFrozen ? ' is-frozen' : ''}`}>{A.formatCardBalance(balance)}</span>
                   </div>
                 )}
               </div>
@@ -177,7 +179,8 @@ export function DebitCardFace({
 
   const variant = card.variant === 'physical' ? 'physical' : 'virtual';
   const badge = A.getCardStatusDisplay(card);
-  const canShowBalance = showBalance && card.status === 'active'
+  const isFrozen = card.status === 'frozen';
+  const canShowBalance = showBalance && (card.status === 'active' || isFrozen)
     && (card.balanceUsdt != null || card.balance);
   const canShowFooter = showFooter && card.last4;
 
@@ -198,6 +201,7 @@ export function DebitCardFace({
       balanceLabel="Available Balance"
       maskedNumber={canShowFooter ? A.maskCardDashboard(card.last4) : undefined}
       expiry={canShowFooter && card.expiry ? card.expiry : undefined}
+      isFrozen={isFrozen}
     />
   );
 
@@ -309,7 +313,7 @@ function CardSlide({
         dashboard={dashboard}
         dimmed={dimmed || ['creating', 'issued', 'shipping', 'frozen'].includes(card.status)}
         shimmer={shimmer || ['creating', 'issued'].includes(card.status)}
-        showBalance={s.cardIsActive && card.status === 'active'}
+        showBalance={(s.cardIsActive || card.status === 'frozen') && (card.status === 'active' || card.status === 'frozen')}
         showFooter={s.cardHasNumber && card.status !== 'creating' && !!card.last4}
       />
     );
@@ -337,7 +341,7 @@ function CardSlide({
     );
   }
 
-  const showBalance = s.cardIsActive && card.status === 'active' && !!card.balance;
+  const showBalance = (card.status === 'active' || card.status === 'frozen') && (card.balanceUsdt != null || !!card.balance);
   const showDetails = s.cardHasNumber && (!dashboard || card.status !== 'creating');
 
   return (
@@ -1104,10 +1108,12 @@ export function CardInformationPanel({ card, s, className = '' }) {
               </dd>
             </div>
           )}
-          {card.status === 'active' && (
+          {(card.status === 'active' || card.status === 'frozen') && (
             <div className="portal-card-info__item">
               <dt className="portal-card-info__label">Available Balance</dt>
-              <dd className="portal-card-info__value">{A.formatAvailableLimit(card)}</dd>
+              <dd className={`portal-card-info__value${card.status === 'frozen' ? ' portal-card-info__value--frozen' : ''}`}>
+                {A.formatAvailableLimit(card)}
+              </dd>
             </div>
           )}
           {walletAddress ? (

@@ -239,7 +239,7 @@ function CardsDesktopCarousel({
                           card={card}
                           hero
                           dashboard={quickActionsVariant === 'hub' || quickActionsVariant === 'dashboard'}
-                          showBalance={showBalanceOnCard && card.status === 'active'}
+                          showBalance={showBalanceOnCard && (card.status === 'active' || card.status === 'frozen')}
                           showFooter={!!card.last4}
                         />
                       </button>

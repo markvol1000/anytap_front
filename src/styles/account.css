@@ -9566,6 +9566,44 @@ a.portal-mob-back { text-decoration: none; }
 .portal-card-media.is-dimmed .portal-card-media__network {
   display: none;
 }
+
+/* Frozen card balance styling — subtle muted grey text without box/border */
+.portal-card-media.is-frozen .portal-card-media__prepaid-balance,
+.portal-card-media.is-frozen .portal-card-media__balance {
+  opacity: 0.95;
+}
+
+.portal-card-media.is-frozen .portal-card-media__balance-val,
+.portal-card-media__balance-val.is-frozen {
+  color: #94a3b8 !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.portal-card-media--virtual.is-frozen .portal-card-media__balance-val,
+.portal-card-media[data-card-theme='light'].is-frozen .portal-card-media__balance-val {
+  color: #64748b !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.portal-card-media.is-frozen .portal-card-media__balance-label,
+.portal-card-media__balance.is-frozen .portal-card-media__balance-label,
+.portal-card-media__prepaid-balance.is-frozen .portal-card-media__balance-label {
+  color: rgba(148, 163, 184, 0.7) !important;
+}
+
+.portal-card-info__value--frozen {
+  color: #64748b !important;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
 .portal-card-media__pulse {
   position: absolute;
   inset: 0;
@@ -15798,9 +15836,17 @@ a.portal-mob-back { text-decoration: none; }
   transition: transform 0.15s ease;
 }
 
-.quick-action-group__btn:disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
+.quick-action-group__btn:disabled,
+.quick-action-group__btn.is-disabled {
+  opacity: 0.42;
+  cursor: pointer;
+}
+
+.quick-action-group__btn--accent.is-disabled:not(.is-active) .quick-action-group__icon {
+  background: var(--paper, #fff) !important;
+  border: 1px solid var(--border-default, rgba(26, 26, 26, 0.10)) !important;
+  color: #1f2937 !important;
+  box-shadow: 0 1px 2px rgba(20, 23, 28, 0.04) !important;
 }
 
 .quick-action-group__btn:active:not(:disabled) {
