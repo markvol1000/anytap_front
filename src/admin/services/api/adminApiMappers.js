@@ -193,7 +193,8 @@ export function mapCardRow(row, idx = 0) {
   const cardNo = last4 !== '—' ? `•••• •••• •••• ${last4}` : (wasabiCardId && wasabiCardId !== '-' ? wasabiCardId : '—');
 
   const cardTypeRaw = row?.cardType || row?.card_type || 'physical';
-  const cardTypeLabel = row?.cardTypeLabel || (cardTypeRaw === 'physical' ? 'Physical Card' : 'Virtual Card');
+  const isPhysical = cardTypeRaw === 'physical' || row?.cardTypeLabel === '실물카드';
+  const cardTypeLabel = isPhysical ? 'Physical Card' : 'Virtual Card';
 
   return {
     id,
