@@ -1130,61 +1130,74 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
               onQuickAdd={addQuick}
               isExceeded={isExceeded || isUnderMin}
             />
-            <p className="portal-wallet-quick-wallet">
+            <p className="portal-wallet-quick-wallet" style={{ marginBottom: '14px' }}>
               Wallet balance: <strong>{W.formatUsdtAmount(walletBal)} USDT</strong>
             </p>
+            <TransactionSummary
+              selectedCard={card}
+              topUpAmount={amount}
+              cardFeeRate={cardFeeRate}
+              gasFee={gasFee}
+              isUnderMin={isUnderMin}
+            />
+            <div style={{ marginTop: '12px' }}>
+              <WalletNotice>Funds topped up to a card cannot be reversed.</WalletNotice>
+            </div>
           </>
         ) : (
           <div style={{ margin: '16px 0' }}>
-            <div style={{ padding: '12px 14px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '14px', fontSize: '13px' }}>
-              <div>Top-up Amount: <strong>{topUpVal.toFixed(2)} USDT</strong></div>
-              <div>Card Charge Fee ({feePercentLabel}%): <strong>{cardFeeAmt.toFixed(2)} USDT</strong></div>
-              <div>Gas Fee: <strong>{gasFee.toFixed(2)} USDT</strong></div>
-              <div>Total Deduction: <strong>{requiredTotal.toFixed(2)} USDT</strong></div>
-            </div>
-            <label className="portal-wallet-field">
-              <span className="portal-wallet-field__label">Confirm Password (AnyTap Password)</span>
-              <input
-                className="portal-wallet-field__input"
-                type="password"
-                placeholder="Enter account password to authorize top-up"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                autoFocus
-                autoComplete="current-password"
-                style={{ width: '100%', height: '48px', padding: '12px 14px', fontSize: '15px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}
-              />
-            </label>
-
-            {/* Mandatory Terms & I understand Checkbox (Orange Title + Slate Gray Body Theme) */}
-            <div style={{
-              marginTop: '14px',
-              marginBottom: '14px',
-              padding: '14px 16px',
-              backgroundColor: '#ffffff',
-              border: '1.5px solid #f97316',
-              borderRadius: '10px',
-              lineHeight: '1.6',
-              boxShadow: '0 4px 12px rgba(249, 115, 22, 0.08)',
-            }}>
-              <strong style={{ color: '#ea580c', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '900', letterSpacing: '0.3px' }}>
-                ⚠️ Before You Top Up
-              </strong>
-              <ol style={{ margin: '0 0 12px 20px', padding: 0, color: '#334155', fontWeight: '600', fontSize: '13px' }}>
-                <li style={{ color: '#334155', marginBottom: '4px' }}>Processing may take up to 60 minutes</li>
-                <li style={{ color: '#334155', marginBottom: '4px' }}>Top-up amount is non-refundable</li>
-                <li style={{ color: '#334155' }}>Exchange rate is not 1:1 (may vary)</li>
-              </ol>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#1e293b', fontWeight: '800', fontSize: '14px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+            <TransactionSummary
+              selectedCard={card}
+              topUpAmount={amount}
+              cardFeeRate={cardFeeRate}
+              gasFee={gasFee}
+              isUnderMin={false}
+            />
+            <div style={{ marginTop: '16px' }}>
+              <label className="portal-wallet-field">
+                <span className="portal-wallet-field__label">Confirm Password (AnyTap Password)</span>
                 <input
-                  type="checkbox"
-                  checked={isUnderstood}
-                  onChange={(e) => setIsUnderstood(e.target.checked)}
-                  style={{ width: '18px', height: '18px', accentColor: '#f97316', cursor: 'pointer' }}
+                  className="portal-wallet-field__input"
+                  type="password"
+                  placeholder="Enter account password to authorize top-up"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  autoFocus
+                  autoComplete="current-password"
+                  style={{ width: '100%', height: '48px', padding: '12px 14px', fontSize: '15px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}
                 />
-                <span style={{ color: '#1e293b', fontSize: '14px', fontWeight: '800' }}>I understand</span>
               </label>
+
+              {/* Mandatory Terms & I understand Checkbox (Orange Title + Slate Gray Body Theme) */}
+              <div style={{
+                marginTop: '14px',
+                marginBottom: '14px',
+                padding: '14px 16px',
+                backgroundColor: '#ffffff',
+                border: '1.5px solid #f97316',
+                borderRadius: '10px',
+                lineHeight: '1.6',
+                boxShadow: '0 4px 12px rgba(249, 115, 22, 0.08)',
+              }}>
+                <strong style={{ color: '#ea580c', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '900', letterSpacing: '0.3px' }}>
+                  ⚠️ Before You Top Up
+                </strong>
+                <ol style={{ margin: '0 0 12px 20px', padding: 0, color: '#334155', fontWeight: '600', fontSize: '13px' }}>
+                  <li style={{ color: '#334155', marginBottom: '4px' }}>Processing may take up to 60 minutes</li>
+                  <li style={{ color: '#334155', marginBottom: '4px' }}>Top-up amount is non-refundable</li>
+                  <li style={{ color: '#334155' }}>Exchange rate is not 1:1 (may vary)</li>
+                </ol>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#1e293b', fontWeight: '800', fontSize: '14px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+                  <input
+                    type="checkbox"
+                    checked={isUnderstood}
+                    onChange={(e) => setIsUnderstood(e.target.checked)}
+                    style={{ width: '18px', height: '18px', accentColor: '#f97316', cursor: 'pointer' }}
+                  />
+                  <span style={{ color: '#1e293b', fontSize: '14px', fontWeight: '800' }}>I understand</span>
+                </label>
+              </div>
             </div>
           </div>
         )}

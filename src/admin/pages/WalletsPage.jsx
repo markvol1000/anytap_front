@@ -12,8 +12,10 @@ import { AdminStatusBadge, formatAmountWithCurrency, formatUsdt, shortenAddress 
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
-import { getWalletById, getWallets, lockWallet, unlockWallet, getCregisDepositList, syncUserCregisDeposits, triggerFeePayout } from '../services/adminService.js';
+import { getWalletById, getWallets, lockWallet, unlockWallet, getCregisDepositList, syncUserCregisDeposits, triggerFeePayout, triggerMockDepositWebhook } from '../services/adminService.js';
 import { fetchLocalTransactions } from '../../lib/services/account/accountApi.js';
+
+const isDevEnv = (import.meta.env.DEV || import.meta.env.MODE === 'development' || import.meta.env.MODE === 'dev' || (typeof window !== 'undefined' && (['localhost', '127.0.0.1'].includes(window.location.hostname) || window.location.hostname.includes('dev') || window.location.port === '5173'))) && !(typeof window !== 'undefined' && (window.location.hostname.endsWith('anytap.io') && !window.location.hostname.includes('dev')));
 
 const fetchWallets = (params) => getWallets(params);
 const fetchWalletDetail = (id) => getWalletById(id);
@@ -151,6 +153,49 @@ export function WalletsPage() {
     list.reload();
   }, [confirm, detail, list, setDetail]);
 
+  const [simDepositAmount, setSimDepositAmount] = useState('100');
+  const [simulatingDeposit, setSimulatingDeposit] = useState(false);
+
+  const handleSimulateDeposit = useCallback(async () => {
+    if (!detail) return;
+    const targetUserId = detail.memberId || detail.id;
+    const amt = parseFloat(simDepositAmount);
+    if (isNaN(amt) || amt <= 0) {
+      window.alert('Please enter a valid deposit amount greater than 0.');
+      return;
+    }
+
+    const ok = await runConfirm(confirm, {
+      title: 'Simulate Deposit Webhook',
+      message: `Trigger mock Cregis deposit webhook of ${amt.toFixed(2)} USDT for ${detail.memberName || targetUserId}?`,
+      confirmLabel: 'Simulate Now',
+    });
+    if (!ok) return;
+
+    setSimulatingDeposit(true);
+    try {
+      const res = await triggerMockDepositWebhook({
+        userId: targetUserId,
+        amount: amt,
+        coinType: 'USDT-TRC20',
+      });
+      const msg = res?.message || res?.data?.message || 'Mock deposit webhook triggered successfully!';
+      window.alert(msg);
+
+      const updated = await getWalletById(detail.id, true);
+      setDetail(updated);
+      fetchDepositList(targetUserId, 1);
+      fetchLocalTransactions(targetUserId)
+        .then((txs) => setLocalTxs(Array.isArray(txs) ? txs : []))
+        .catch(() => {});
+      list.reload();
+    } catch (err) {
+      window.alert('Failed to simulate deposit webhook: ' + (err.message || err));
+    } finally {
+      setSimulatingDeposit(false);
+    }
+  }, [confirm, detail, fetchDepositList, list, setDetail, simDepositAmount]);
+
   return (
     <div className="admin-page">
       <AdminPageHeader
@@ -267,6 +312,56 @@ export function WalletsPage() {
                   />
                   <AdminDetailRow label="Status" value={<AdminStatusBadge status={detail.status} />} />
                 </AdminDetailSection>
+
+                {/* Dev-Only Simulated Deposit Webhook Section */}
+                {isDevEnv && (
+                  <AdminDetailSection title="🧪 Test Deposit Webhook (Dev Only)">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <input
+                          type="number"
+                          min="1"
+                          step="0.01"
+                          placeholder="Amount (USDT)"
+                          value={simDepositAmount}
+                          onChange={(e) => setSimDepositAmount(e.target.value)}
+                          style={{
+                            width: '130px',
+                            height: '32px',
+                            padding: '4px 8px',
+                            fontSize: '12px',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            color: '#1e293b',
+                            backgroundColor: '#ffffff',
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn--sm"
+                          onClick={handleSimulateDeposit}
+                          disabled={simulatingDeposit}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            backgroundColor: '#0284c7',
+                            color: '#ffffff',
+                            border: '1px solid #0369a1',
+                            cursor: simulatingDeposit ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {simulatingDeposit ? 'Processing…' : '⚡ Simulate Cregis Deposit Webhook'}
+                        </button>
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--admin-text-muted, #64748b)' }}>
+                        Trigger a simulated on-chain USDT deposit webhook in dev to test wallet balance credit & sweep processing.
+                      </span>
+                    </div>
+                  </AdminDetailSection>
+                )}
 
                 <AdminDetailSection title="💳 Unified Wallet Transaction & On-Chain History Ledger">
                   <AdminMiniTable
