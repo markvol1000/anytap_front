@@ -23,17 +23,12 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function formatUsdt(n) {
-  return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 export function ReferralMembersTable({ members = [], onDetail, onShowToast }) {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [page, setPage] = useState(1);
-  const pageSize = 5; // 5 referred members per page
+  const pageSize = 5;
 
-  // Filtered referred members list based on user search & status conditions
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return members.filter((m) => {
@@ -41,17 +36,15 @@ export function ReferralMembersTable({ members = [], onDetail, onShowToast }) {
       if (!q) return true;
       const nameMatch = (m.name || '').toLowerCase().includes(q);
       const emailMatch = (m.email || '').toLowerCase().includes(q);
-      const idMatch = (m.id || '').toLowerCase().includes(q);
+      const idMatch = (m.id || m.userId || '').toLowerCase().includes(q);
       return nameMatch || emailMatch || idMatch;
     });
   }, [members, search, status]);
 
-  // Reset to page 1 whenever search or status filter changes
   useEffect(() => {
     setPage(1);
   }, [search, status]);
 
-  // Pagination calculation
   const totalPages = Math.ceil(filtered.length / pageSize) || 1;
   const safePage = Math.min(Math.max(1, page), totalPages);
   const pagedItems = useMemo(() => {
@@ -59,10 +52,45 @@ export function ReferralMembersTable({ members = [], onDetail, onShowToast }) {
     return filtered.slice(start, start + pageSize);
   }, [filtered, safePage, pageSize]);
 
+  const handleExportCsv = () => {
+    if (!filtered || filtered.length === 0) {
+      if (onShowToast) onShowToast('No referred members available to export.');
+      return;
+    }
+    const headers = ['Member ID', 'Name', 'Email', 'Status', 'Card Status', 'Joined Date'];
+    const escapeCsv = (v) => {
+      const s = String(v ?? '').replace(/"/g, '""');
+      return `"${s}"`;
+    };
+    const rows = filtered.map((m) => {
+      const cardCount = Number(m.cards) || 0;
+      const hasCard = cardCount > 0 || (m.cardStatus && m.cardStatus !== 'not_issued');
+      const cardStatusStr = hasCard ? `Issued (${cardCount > 0 ? cardCount : 1} cards)` : 'Not Issued (0 cards)';
+      return [
+        escapeCsv(m.id || m.userId || ''),
+        escapeCsv(m.name || ''),
+        escapeCsv(m.email || ''),
+        escapeCsv(m.status || 'active'),
+        escapeCsv(cardStatusStr),
+        escapeCsv(formatDate(m.joinedAt)),
+      ].join(',');
+    });
+    const csvContent = '\uFEFF' + [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `referred_members_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if (onShowToast) onShowToast('Referred members CSV exported successfully.');
+  };
+
   return (
     <section className="portal-ref-dash__members portal-dash-panel" aria-labelledby="referral-members-title">
-      {/* Header with Search and Filter Conditions (조회 조건) */}
-      <div className="portal-ref-dash__members-head">
+      <div className="portal-ref-dash__members-head" style={{ flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h2 id="referral-members-title" className="portal-ref-dash__section-title" style={{ margin: 0 }}>
             My Referred Members ({filtered.length})
@@ -72,14 +100,15 @@ export function ReferralMembersTable({ members = [], onDetail, onShowToast }) {
           </span>
         </div>
 
-        <div className="portal-ref-dash__members-filters">
-          <label className="portal-ref-dash__search">
-            <Icon name="scan" size={16} stroke={1.75} />
+        <div className="portal-ref-dash__members-filters" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          <label className="portal-ref-dash__search" style={{ height: '34px', padding: '0 10px', minWidth: '140px', maxWidth: '180px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+            <Icon name="scan" size={14} stroke={1.75} />
             <input
               type="search"
-              placeholder="Search member name, email, ID..."
+              placeholder="Member ID, email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              style={{ fontSize: '12px' }}
             />
           </label>
           <select
@@ -87,23 +116,53 @@ export function ReferralMembersTable({ members = [], onDetail, onShowToast }) {
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             aria-label="Filter by status"
+            style={{
+              height: '34px',
+              padding: '0 10px',
+              fontSize: '12px',
+              fontWeight: '600',
+              borderRadius: '6px',
+              border: '1px solid #cbd5e1',
+              backgroundColor: '#fff',
+              cursor: 'pointer',
+            }}
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            style={{
+              height: '34px',
+              padding: '0 10px',
+              fontSize: '12px',
+              fontWeight: '700',
+              color: '#0284c7',
+              backgroundColor: '#f0f9ff',
+              border: '1.5px solid #bae6fd',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            📥 Export CSV
+          </button>
         </div>
       </div>
 
-      {/* Table List */}
+      {/* Table List: ID / Status / Card Status / Joined (per requirements) */}
       <div className="portal-ref-dash__table-wrap">
         <table className="portal-ref-dash__table">
           <thead>
             <tr>
-              <th scope="col">Member</th>
+              <th scope="col">Member ID</th>
               <th scope="col">Status</th>
               <th scope="col">Card Status</th>
-              <th scope="col">Total Top-up</th>
               <th scope="col">Joined</th>
             </tr>
           </thead>
@@ -111,34 +170,35 @@ export function ReferralMembersTable({ members = [], onDetail, onShowToast }) {
             {pagedItems.length > 0 ? pagedItems.map((m) => {
               const cardCount = Number(m.cards) || 0;
               const hasCard = cardCount > 0 || (m.cardStatus && m.cardStatus !== 'not_issued');
-              const topUpVal = Number(m.topUpUsdt ?? m.totalTopUp ?? m.totalDeposit ?? 0);
+              const memId = m.id || m.userId || '—';
               return (
-                <tr key={m.id || m.name}>
-                  <td data-label="Member">
-                    <span className="portal-ref-dash__member-name">{m.name}</span>
-                    {m.email && <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8' }}>{m.email}</span>}
+                <tr key={memId}>
+                  <td data-label="Member ID">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span className="portal-ref-dash__member-name" style={{ fontFamily: 'monospace', fontWeight: '700', color: '#0f172a' }}>
+                        {memId}
+                      </span>
+                      {m.email && <span style={{ display: 'block', fontSize: '11px', color: '#64748b' }}>{m.email}</span>}
+                    </div>
                   </td>
                   <td data-label="Status"><StatusBadge status={m.status} /></td>
                   <td data-label="Card Status">
                     {hasCard ? (
-                      <span style={{ color: '#38bdf8', fontWeight: '600', fontSize: '12px', background: 'rgba(56, 189, 248, 0.1)', padding: '3px 8px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                      <span style={{ color: '#0284c7', fontWeight: '600', fontSize: '12px', background: '#f0f9ff', border: '1px solid #bae6fd', padding: '3px 8px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
                         💳 Issued ({cardCount > 0 ? cardCount : 1} card{cardCount > 1 ? 's' : ''})
                       </span>
                     ) : (
-                      <span style={{ color: '#64748b', fontSize: '12px', background: 'rgba(255, 255, 255, 0.05)', padding: '3px 8px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                      <span style={{ color: '#64748b', fontSize: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
                         Not Issued (0 cards)
                       </span>
                     )}
-                  </td>
-                  <td data-label="Total Top-up" style={{ fontWeight: '700', color: '#38bdf8' }}>
-                    {formatUsdt(topUpVal)} USDT
                   </td>
                   <td data-label="Joined">{formatDate(m.joinedAt)}</td>
                 </tr>
               );
             }) : (
               <tr>
-                <td colSpan={5} className="portal-ref-dash__table-empty">
+                <td colSpan={4} className="portal-ref-dash__table-empty">
                   No referred members match your search & filter parameters.
                 </td>
               </tr>
@@ -147,7 +207,6 @@ export function ReferralMembersTable({ members = [], onDetail, onShowToast }) {
         </table>
       </div>
 
-      {/* Pagination Controls (페이지 처리) */}
       {filtered.length > 0 && (
         <div style={{
           display: 'flex',

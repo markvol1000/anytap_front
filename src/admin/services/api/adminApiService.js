@@ -165,6 +165,8 @@ export async function getMemberById(id) {
       return {
         ...memberInList,
         ...userDetail,
+        referralCode: userDetail?.referralCode || memberInList.referralCode || null,
+        referrerName: userDetail?.referrerName || memberInList.referrerName || null,
         failureHistory: (userDetail?.failureHistory?.length > 0 ? userDetail.failureHistory : memberInList.failureHistory) || [],
         failureReason: userDetail?.failureReason || memberInList.failureReason || '',
         rejectReason: userDetail?.rejectReason || memberInList.rejectReason || '',

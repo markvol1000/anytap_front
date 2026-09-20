@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AdminDataTable, AdminMiniTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
@@ -26,6 +26,8 @@ import {
   simulateWasabiKycWebhook,
   triggerFeePayout,
   updateMember,
+  updateMemberReferralCode,
+  getReferrals,
 } from '../services/adminService.js';
 
 const isDevEnv = (import.meta.env.DEV || import.meta.env.MODE === 'development' || import.meta.env.MODE === 'dev' || (typeof window !== 'undefined' && (['localhost', '127.0.0.1'].includes(window.location.hostname) || window.location.hostname.includes('dev') || window.location.port === '5173'))) && !(typeof window !== 'undefined' && (window.location.hostname.endsWith('anytap.io') && !window.location.hostname.includes('dev')));
@@ -167,6 +169,84 @@ export function MembersPage() {
       setMemberTx([]);
     }
   }, [detail?.id, detail?.email]);
+
+  const [savingReferrer, setSavingReferrer] = useState(false);
+  const [showReferrerModal, setShowReferrerModal] = useState(false);
+  const [referralCodesList, setReferralCodesList] = useState([]);
+  const [referralCodesLoading, setReferralCodesLoading] = useState(false);
+  const [referrerModalSearch, setReferrerModalSearch] = useState('');
+
+  useEffect(() => {
+    if (showReferrerModal) {
+      setReferralCodesLoading(true);
+      getReferrals({ page: 1, pageSize: 1000 })
+        .then((res) => {
+          const items = Array.isArray(res) ? res : (res?.items || []);
+          setReferralCodesList(items);
+        })
+        .catch(() => setReferralCodesList([]))
+        .finally(() => setReferralCodesLoading(false));
+    }
+  }, [showReferrerModal]);
+
+  const filteredReferralCodes = useMemo(() => {
+    if (!referrerModalSearch.trim()) return referralCodesList;
+    const q = referrerModalSearch.toLowerCase().trim();
+    return referralCodesList.filter((r) => {
+      const code = String(r.referralCode || r.code || '').toLowerCase();
+      const name = String(r.memberName || r.name || '').toLowerCase();
+      const email = String(r.userEmail || r.email || '').toLowerCase();
+      const uId = String(r.userId || r.user_id || '').toLowerCase();
+      return code.includes(q) || name.includes(q) || email.includes(q) || uId.includes(q);
+    });
+  }, [referralCodesList, referrerModalSearch]);
+
+  const handleSelectReferrerFromModal = async (selectedRefCode) => {
+    if (!detail?.id || !selectedRefCode) return;
+    const ok = await runConfirm(confirm, {
+      title: 'Assign Referrer',
+      message: `Assign referral code '${selectedRefCode}' to member ${detail.name || detail.id}?`,
+      confirmLabel: 'Assign',
+    });
+    if (!ok) return;
+
+    setSavingReferrer(true);
+    try {
+      await updateMemberReferralCode(detail.id, selectedRefCode);
+      const updated = await getMemberById(detail.id);
+      setDetail(updated);
+      setShowReferrerModal(false);
+      list.reload();
+      window.alert(`✅ Referrer assigned successfully: ${selectedRefCode}`);
+    } catch (err) {
+      window.alert(`❌ Failed to assign referrer: ${err.message}`);
+    } finally {
+      setSavingReferrer(false);
+    }
+  };
+
+  const handleRemoveReferrer = async () => {
+    if (!detail?.id) return;
+    const ok = await runConfirm(confirm, {
+      title: 'Remove Referrer',
+      message: `Remove referrer assignment from ${detail.name || detail.id}?`,
+      confirmLabel: 'Remove',
+      danger: true,
+    });
+    if (!ok) return;
+    setSavingReferrer(true);
+    try {
+      await updateMemberReferralCode(detail.id, '');
+      const updated = await getMemberById(detail.id);
+      setDetail(updated);
+      list.reload();
+      window.alert('✅ Referrer removed successfully.');
+    } catch (err) {
+      window.alert(`❌ Failed to remove referrer: ${err.message}`);
+    } finally {
+      setSavingReferrer(false);
+    }
+  };
 
   const selectRow = (row) => {
     setSelectedId(row.id);
@@ -536,6 +616,20 @@ export function MembersPage() {
                     <AdminDetailRow label="Country" value={detail.country} />
                   ) : null}
                   <AdminDetailRow label="Join date" value={formatAdminDate(detail.joinDate)} />
+                  <AdminDetailRow label="Referrer" value={(
+                    detail.referralCode ? (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontWeight: '700', color: '#0284c7', fontFamily: 'monospace' }}>
+                          {detail.referralCode}
+                        </span>
+                        {detail.referrerName ? (
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>({detail.referrerName})</span>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <span style={{ color: '#94a3b8', fontSize: '12px' }}>None</span>
+                    )
+                  )} />
                   <AdminDetailRow label="KYC" value={<AdminStatusBadge status={detail.kycStatus} />} />
                   <AdminDetailRow label="Card" value={<AdminStatusBadge status={detail.cardStatus} />} />
                   <AdminDetailRow label="Wallet" value={(
@@ -602,6 +696,57 @@ export function MembersPage() {
                         <option value="rejected">❌ Rejected</option>
                       ) : null}
                     </select>
+                  )} />
+                </AdminDetailSection>
+
+                <AdminDetailSection title="Referrer Assignment & Matching">
+                  <AdminDetailRow label="Current Referrer" value={(
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      {detail.referralCode ? (
+                        <>
+                          <strong style={{ color: '#0284c7', fontFamily: 'monospace', fontSize: '13px' }}>
+                            {detail.referralCode} {detail.referrerName ? `(${detail.referrerName})` : ''}
+                          </strong>
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn--secondary admin-btn--sm"
+                            disabled={savingReferrer}
+                            onClick={() => {
+                              setReferrerModalSearch('');
+                              setShowReferrerModal(true);
+                            }}
+                            style={{ padding: '3px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            🔍 Change
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn--ghost admin-btn--sm"
+                            disabled={savingReferrer}
+                            onClick={handleRemoveReferrer}
+                            style={{ padding: '3px 8px', fontSize: '11px', color: '#dc2626', borderColor: '#fca5a5' }}
+                          >
+                            Remove
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ color: '#94a3b8' }}>None assigned</span>
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn--primary admin-btn--sm"
+                            disabled={savingReferrer}
+                            onClick={() => {
+                              setReferrerModalSearch('');
+                              setShowReferrerModal(true);
+                            }}
+                            style={{ padding: '3px 10px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            🔍 Assign Referrer
+                          </button>
+                        </>
+                      )}
+                    </div>
                   )} />
                 </AdminDetailSection>
 
@@ -1042,6 +1187,124 @@ export function MembersPage() {
           </AdminDetailPanel>
         ) : null}
       />
+      {showReferrerModal && (
+        <div className="admin-modal-backdrop" onClick={() => setShowReferrerModal(false)}>
+          <div
+            className="admin-modal"
+            style={{ maxWidth: '640px', width: '90%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="admin-modal__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', marginBottom: '12px' }}>
+              <h3 className="admin-modal__title" style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
+                Select Referrer Partner
+              </h3>
+              <button
+                type="button"
+                className="admin-modal__close"
+                onClick={() => setShowReferrerModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '12px' }}>
+              <input
+                type="text"
+                className="admin-input"
+                autoFocus
+                placeholder="Search by code, partner name, email, or user ID..."
+                value={referrerModalSearch}
+                onChange={(e) => setReferrerModalSearch(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', fontSize: '13px', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: '240px', maxHeight: '420px', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+              {referralCodesLoading ? (
+                <div style={{ textAlign: 'center', padding: '32px', color: '#64748b', fontSize: '13px' }}>
+                  Loading referral partners...
+                </div>
+              ) : filteredReferralCodes.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '32px', color: '#94a3b8', fontSize: '13px' }}>
+                  No referral codes found.
+                </div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
+                      <th style={{ padding: '8px 12px' }}>Referral Code</th>
+                      <th style={{ padding: '8px 12px' }}>Partner Name</th>
+                      <th style={{ padding: '8px 12px' }}>User ID / Email</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'center' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredReferralCodes.map((item) => {
+                      const code = item.referralCode || item.code;
+                      const isCurrent = detail?.referralCode && detail.referralCode.toUpperCase() === String(code).toUpperCase();
+                      return (
+                        <tr
+                          key={item.id || code}
+                          style={{
+                            borderBottom: '1px solid #f1f5f9',
+                            backgroundColor: isCurrent ? '#f0f9ff' : 'transparent',
+                            cursor: 'pointer',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isCurrent) e.currentTarget.style.backgroundColor = '#f8fafc';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isCurrent) e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                          onClick={() => handleSelectReferrerFromModal(code)}
+                        >
+                          <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontWeight: 600, color: '#0284c7' }}>
+                            {code}
+                            {isCurrent && (
+                              <span style={{ marginLeft: '6px', fontSize: '10px', background: '#bae6fd', color: '#0369a1', padding: '1px 5px', borderRadius: '4px' }}>
+                                Current
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '8px 12px', fontWeight: 500 }}>
+                            {item.memberName || item.name || '—'}
+                          </td>
+                          <td style={{ padding: '8px 12px', color: '#64748b' }}>
+                            <div>{item.userId || '—'}</div>
+                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>{item.userEmail || item.email || ''}</div>
+                          </td>
+                          <td style={{ padding: '8px 12px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn--primary admin-btn--sm"
+                              disabled={savingReferrer || isCurrent}
+                              onClick={() => handleSelectReferrerFromModal(code)}
+                              style={{ padding: '3px 10px', fontSize: '11px' }}
+                            >
+                              {isCurrent ? 'Current' : 'Select'}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div className="admin-modal__footer" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+              <button
+                type="button"
+                className="admin-btn admin-btn--ghost admin-btn--sm"
+                onClick={() => setShowReferrerModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

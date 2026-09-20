@@ -62,6 +62,8 @@ export function mapMemberRow(row) {
       ? row.cregisWalletAddress
       : '',
     referralStatus: lower(row?.referralStatus, 'none'),
+    referralCode: row?.referralCode || row?.referral_code || null,
+    referrerName: row?.referrerName || row?.referrer_name || null,
     accountStatus: mapAccountStatus(row?.status || row?.accountStatus),
     phone: row?.phone || '—',
     memo: row?.memo || '',
@@ -84,6 +86,8 @@ export function mapUserDetail(data) {
   const mapped = mapMemberRow(data);
   return {
     ...mapped,
+    referralCode: data?.referralCode || data?.referral_code || mapped.referralCode || null,
+    referrerName: data?.referrerName || data?.referrer_name || mapped.referrerName || null,
     cregisActualBalance: Number(data.cregisActualBalance ?? data.actualBalance ?? mapped.cregisActualBalance ?? 0) || 0,
     cardIds: Array.isArray(data.cardIds) ? data.cardIds : [],
     merchantId: data.merchantId || '',
