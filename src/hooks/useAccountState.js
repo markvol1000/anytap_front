@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { isHttpApi } from '../lib/api/config.js';
-import { loadAccountContext, loadReferralContext, submitKycApplication as submitKycApplicationApi, submitCardApplication as submitCardApplicationApi } from '../lib/services/accountService.js';
+import { loadAccountContext, loadReferralContext, fetchFeePolicy, submitKycApplication as submitKycApplicationApi, submitCardApplication as submitCardApplicationApi } from '../lib/services/accountService.js';
 import { fetchCardTransactions } from '../lib/services/account/accountApi.js';
 import { getHttpSession, hasHttpSession } from '../lib/api/httpSession.js';
 import { resolveWalletAddress } from '../lib/api/display-data.js';
@@ -59,6 +59,7 @@ export function useAccountState() {
   const [referralStateKey, setReferralStateKey] = useState('normalMember');
   const [remoteContext, setRemoteContext] = useState(null);
   const [remoteReferral, setRemoteReferral] = useState(null);
+  const [feePolicy, setFeePolicy] = useState(null);
   const [remoteLoading, setRemoteLoading] = useState(() => isHttpApi && hasHttpSession());
 
   const [cardDeductions, setCardDeductions] = useState({});
@@ -104,13 +105,15 @@ export function useAccountState() {
       }
       if (!cancelled) setRemoteLoading(true);
       try {
-        const [accountCtx, referralCtx] = await Promise.all([
+        const [accountCtx, referralCtx, policyRes] = await Promise.all([
           loadAccountContext(),
           loadReferralContext(),
+          fetchFeePolicy(),
         ]);
         if (!cancelled && generation === loadGeneration) {
           setRemoteContext(accountCtx);
           setRemoteReferral(referralCtx);
+          if (policyRes) setFeePolicy(policyRes);
         }
       } catch (err) {
         if (err?.message === 'Not authenticated') {
@@ -138,12 +141,14 @@ export function useAccountState() {
     if (!isHttpApi || !hasHttpSession()) return;
     setRemoteLoading(true);
     try {
-      const [accountCtx, referralCtx] = await Promise.all([
+      const [accountCtx, referralCtx, policyRes] = await Promise.all([
         loadAccountContext(),
         loadReferralContext(),
+        fetchFeePolicy(),
       ]);
       setRemoteContext(accountCtx);
       setRemoteReferral(referralCtx);
+      if (policyRes) setFeePolicy(policyRes);
     } catch (err) {
       if (err?.message !== 'Not authenticated') {
         console.error('[account] remote context reload failed', err);
@@ -601,5 +606,12 @@ export function useAccountState() {
     cardPickOpen, openCardPickModal, closeCardPickModal,
     openCardDetails,
     activePhysicalCardOpen, activePhysicalTargetCard, openActivePhysical, closeActivePhysical,
+    feePolicy: feePolicy || {
+      cardChargeFeeRate: 0.02,
+      cardChargeGasFee: 3.00,
+      withdrawGasFee: 3.00,
+      minTopUp: 50.00,
+      minSend: 50.00,
+    },
   };
 }
