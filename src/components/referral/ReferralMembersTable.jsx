@@ -226,29 +226,47 @@ export function ReferralMembersTable({ members = [], onDetail, onShowToast }) {
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button
               type="button"
-              className="portal-ref-dash__detail-btn"
               disabled={safePage <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               style={{
-                opacity: safePage <= 1 ? 0.4 : 1,
-                cursor: safePage <= 1 ? 'not-allowed' : 'pointer',
+                backgroundColor: safePage <= 1 ? '#f1f5f9' : '#ffffff',
+                border: '1px solid #cbd5e1',
+                color: safePage <= 1 ? '#94a3b8' : '#0f172a',
                 padding: '5px 12px',
+                borderRadius: '6px',
+                cursor: safePage <= 1 ? 'not-allowed' : 'pointer',
+                fontSize: '12px',
+                fontWeight: '600',
+                boxShadow: safePage <= 1 ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.05)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'all 0.15s ease',
               }}
             >
               ◀ Prev
             </button>
-            <span style={{ fontWeight: '700', color: 'var(--portal-text, #f8fafc)', padding: '0 6px' }}>
+            <span style={{ fontWeight: '600', color: '#334155', padding: '0 4px', fontSize: '12px' }}>
               Page {safePage} of {totalPages}
             </span>
             <button
               type="button"
-              className="portal-ref-dash__detail-btn"
               disabled={safePage >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               style={{
-                opacity: safePage >= totalPages ? 0.4 : 1,
-                cursor: safePage >= totalPages ? 'not-allowed' : 'pointer',
+                backgroundColor: safePage >= totalPages ? '#f1f5f9' : '#ffffff',
+                border: '1px solid #cbd5e1',
+                color: safePage >= totalPages ? '#94a3b8' : '#0f172a',
                 padding: '5px 12px',
+                borderRadius: '6px',
+                cursor: safePage >= totalPages ? 'not-allowed' : 'pointer',
+                fontSize: '12px',
+                fontWeight: '600',
+                boxShadow: safePage >= totalPages ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.05)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'all 0.15s ease',
               }}
             >
               Next ▶

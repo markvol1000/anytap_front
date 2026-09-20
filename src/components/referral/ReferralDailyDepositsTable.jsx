@@ -74,8 +74,8 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
         id: d.id || d.txId || `charge-${idx + 1}`,
         date: d.date || d.depositDate || d.createdAt || d.at || d.timestamp || d.chainTime,
         memberId: d.memberId || d.userId || (d.id && String(d.id).startsWith('US') ? d.id : `US_${idx + 1}`),
-        memberName: d.memberName || d.userEmail || d.loginId || d.userId || 'Member',
-        memberEmail: d.memberEmail || d.email || '',
+        memberName: d.memberName || d.userEmail || d.loginId || d.email || '',
+        memberEmail: d.memberEmail || d.email || d.loginId || (d.memberName && d.memberName.includes('@') ? d.memberName : ''),
         amount: Number(d.amount || d.topUpAmount || d.topUpUsdt || 0),
         feeAmount: Number(d.feeAmount || d.fee || 0),
       }));
@@ -89,8 +89,8 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
             id: m.id || `charge-${idx + 1}`,
             date: m.joinedAt || new Date().toISOString(),
             memberId: m.id || m.userId || `US_${idx + 1}`,
-            memberName: m.name || m.loginId || m.email || 'Member',
-            memberEmail: m.email || '',
+            memberName: m.loginId || m.email || m.name || '',
+            memberEmail: m.email || m.loginId || '',
             amount: topUp,
             feeAmount: 0,
           });
@@ -142,9 +142,9 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
     if (search && search.trim()) {
       const q = search.toLowerCase().trim();
       res = res.filter((d) => (
-        (d.memberId && String(d.memberId).toLowerCase().includes(q)) ||
-        (d.memberName && String(d.memberName).toLowerCase().includes(q)) ||
         (d.memberEmail && String(d.memberEmail).toLowerCase().includes(q)) ||
+        (d.memberName && String(d.memberName).toLowerCase().includes(q)) ||
+        (d.memberId && String(d.memberId).toLowerCase().includes(q)) ||
         (d.id && String(d.id).toLowerCase().includes(q))
       ));
     }
@@ -153,26 +153,24 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-
   const pagedItems = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
     return filtered.slice(start, start + PAGE_SIZE);
   }, [filtered, currentPage]);
 
   const handleExportCsv = () => {
-    if (!filtered || filtered.length === 0) {
-      if (onShowToast) onShowToast('No data available to export.');
+    if (filtered.length === 0) {
+      if (onShowToast) onShowToast('No data to export.');
       return;
     }
-    const headers = ['Date & Time', 'Member ID', 'Email', 'Card Charge Amount (USDT)', 'Fee (USDT)'];
+    const headers = ['Date & Time', 'Login ID (Email)', 'Card Charge Amount (USDT)', 'Fee (USDT)'];
     const escapeCsv = (v) => {
       const s = String(v ?? '').replace(/"/g, '""');
       return `"${s}"`;
     };
     const rows = filtered.map((d) => [
       escapeCsv(formatDate(d.date || d.at)),
-      escapeCsv(d.memberId || ''),
-      escapeCsv(d.memberEmail || ''),
+      escapeCsv(d.memberEmail || d.memberName || d.loginId || d.email || d.memberId || ''),
       escapeCsv(d.amount?.toFixed(2) || '0.00'),
       escapeCsv(d.feeAmount?.toFixed(2) || '0.00'),
     ].join(','));
@@ -246,7 +244,7 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
             <Icon name="scan" size={14} stroke={1.75} />
             <input
               type="search"
-              placeholder="Member ID, email..."
+              placeholder="Search email..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
@@ -327,33 +325,31 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
           <thead>
             <tr>
               <th scope="col">Date & Time</th>
-              <th scope="col">Member ID</th>
+              <th scope="col">Login ID (Email)</th>
               <th scope="col">Card Charge Amount</th>
               <th scope="col">Fee</th>
             </tr>
           </thead>
           <tbody>
-            {pagedItems.length > 0 ? pagedItems.map((d) => (
-              <tr key={d.id}>
-                <td data-label="Date & Time">{formatDate(d.date || d.at)}</td>
-                <td data-label="Member ID">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontWeight: '700', color: '#0f172a', fontFamily: 'monospace', fontSize: '13px' }}>
-                      {d.memberId}
+            {pagedItems.length > 0 ? pagedItems.map((d) => {
+              const displayEmail = d.memberEmail || d.memberName || d.loginId || d.email || d.memberId || '—';
+              return (
+                <tr key={d.id}>
+                  <td data-label="Date & Time">{formatDate(d.date || d.at)}</td>
+                  <td data-label="Login ID (Email)">
+                    <span style={{ fontWeight: '600', color: 'var(--ink, #0f172a)' }}>
+                      {displayEmail}
                     </span>
-                    {d.memberEmail ? (
-                      <span style={{ fontSize: '11px', color: '#64748b' }}>{d.memberEmail}</span>
-                    ) : null}
-                  </div>
-                </td>
-                <td data-label="Card Charge Amount" style={{ fontWeight: '800', color: '#0284c7', fontSize: '14px' }}>
-                  +{formatUsdt(d.amount)} USDT
-                </td>
-                <td data-label="Fee" style={{ fontWeight: '600', color: '#64748b', fontSize: '13px' }}>
-                  {formatUsdt(d.feeAmount)} USDT
-                </td>
-              </tr>
-            )) : (
+                  </td>
+                  <td data-label="Card Charge Amount" style={{ fontWeight: '800', color: '#0284c7', fontSize: '14px' }}>
+                    +{formatUsdt(d.amount)} USDT
+                  </td>
+                  <td data-label="Fee" style={{ fontWeight: '600', color: '#64748b', fontSize: '13px' }}>
+                    {formatUsdt(d.feeAmount)} USDT
+                  </td>
+                </tr>
+              );
+            }) : (
               <tr>
                 <td colSpan={4} className="portal-ref-dash__table-empty">
                   No card charge records match your search criteria.
@@ -371,14 +367,14 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
           alignItems: 'center',
           marginTop: '16px',
           paddingTop: '12px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          borderTop: '1px solid #e2e8f0',
           fontSize: '13px',
-          color: 'var(--portal-text-muted, #94a3b8)',
+          color: '#64748b',
           flexWrap: 'wrap',
           gap: '10px',
         }}>
           <span>
-            Showing {Math.min((currentPage - 1) * PAGE_SIZE + 1, filtered.length)} - {Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} records
+            Showing <strong>{Math.min((currentPage - 1) * PAGE_SIZE + 1, filtered.length)}</strong> - <strong>{Math.min(currentPage * PAGE_SIZE, filtered.length)}</strong> of <strong>{filtered.length}</strong> records
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
@@ -386,18 +382,24 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
               disabled={currentPage <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: currentPage <= 1 ? '#475569' : '#f8fafc',
-                padding: '4px 10px',
-                borderRadius: '4px',
+                backgroundColor: currentPage <= 1 ? '#f1f5f9' : '#ffffff',
+                border: '1px solid #cbd5e1',
+                color: currentPage <= 1 ? '#94a3b8' : '#0f172a',
+                padding: '5px 12px',
+                borderRadius: '6px',
                 cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
                 fontSize: '12px',
+                fontWeight: '600',
+                boxShadow: currentPage <= 1 ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.05)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'all 0.15s ease',
               }}
             >
               ◀ Prev
             </button>
-            <span style={{ fontSize: '12px', fontWeight: '500' }}>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#334155', padding: '0 4px' }}>
               Page {currentPage} of {totalPages}
             </span>
             <button
@@ -405,13 +407,19 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
               disabled={currentPage >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: currentPage >= totalPages ? '#475569' : '#f8fafc',
-                padding: '4px 10px',
-                borderRadius: '4px',
+                backgroundColor: currentPage >= totalPages ? '#f1f5f9' : '#ffffff',
+                border: '1px solid #cbd5e1',
+                color: currentPage >= totalPages ? '#94a3b8' : '#0f172a',
+                padding: '5px 12px',
+                borderRadius: '6px',
                 cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
                 fontSize: '12px',
+                fontWeight: '600',
+                boxShadow: currentPage >= totalPages ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.05)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'all 0.15s ease',
               }}
             >
               Next ▶
