@@ -414,15 +414,16 @@ function AmountBlock({
   );
 }
 
-function TransactionSummary({ selectedCard, topUpAmount, gasFee, isUnderMin = false }) {
+function TransactionSummary({ selectedCard, topUpAmount, cardFeeRate = 0.02, gasFee = 3.0, isUnderMin = false }) {
   if (!selectedCard) return null;
 
   const cardBal = parseFloat(W.parseCardBalanceUsdt(selectedCard.balance)) || 0;
   const topUpVal = parseFloat(topUpAmount) || 0;
-  const cardFee = topUpVal * (W.CARD_CHARGE_FEE_RATE || 0.02);
+  const cardFee = topUpVal * cardFeeRate;
   const totalDeduction = topUpVal + cardFee + gasFee;
   const balanceAfter = (cardBal + topUpVal).toFixed(2);
   const hasAmount = topUpVal > 0;
+  const feePercentLabel = (cardFeeRate * 100).toFixed(cardFeeRate * 100 % 1 === 0 ? 0 : 1);
 
   return (
     <section className="portal-wallet-desk__summary portal-wallet-summary" aria-label="Transaction summary">
@@ -443,7 +444,7 @@ function TransactionSummary({ selectedCard, topUpAmount, gasFee, isUnderMin = fa
           </dd>
         </div>
         <div className="portal-wallet-desk__summary-row">
-          <dt>Card Fee (2%)</dt>
+          <dt>Card Fee ({feePercentLabel}%)</dt>
           <dd>{hasAmount ? `${cardFee.toFixed(2)} USDT` : '0.00 USDT'}</dd>
         </div>
         <div className="portal-wallet-desk__summary-row">
@@ -524,19 +525,24 @@ function WalletTopUpSide({
 }) {
   if (!selectedCard) return null;
 
+  const cardFeeRate = Number(s?.feePolicy?.cardChargeFeeRate ?? W.CARD_CHARGE_FEE_RATE ?? 0.02);
+  const gasFee = Number(s?.feePolicy?.cardChargeGasFee ?? W.GAS_FEE_CHARGE ?? 3.00);
+  const minTopUp = Number(s?.feePolicy?.minTopUp ?? W.MIN_TOPUP ?? 50);
+
   const walletBal = resolveWalletBalance(s.walletBalance);
   const topUpVal = parseFloat(topUpAmount) || 0;
-  const isUnderMin = topUpVal > 0 && topUpVal < W.MIN_TOPUP;
-  const isExceeded = topUpVal > 0 && (topUpVal + W.GAS_FEE_CHARGE > walletBal);
-  const canSubmit = W.isValidTopUp(topUpAmount) && !isExceeded;
+  const isUnderMin = topUpVal > 0 && topUpVal < minTopUp;
+  const requiredTotal = topUpVal > 0 ? (topUpVal * (1 + cardFeeRate) + gasFee) : 0;
+  const isExceeded = topUpVal > 0 && (requiredTotal > walletBal);
+  const canSubmit = topUpVal >= minTopUp && !isExceeded;
 
   const handleTopUpClick = () => {
     if (!topUpAmount || !String(topUpAmount).trim() || topUpVal <= 0) {
-      s.showToast?.('Please enter a top-up amount (Min. 50 USDT).', 'error');
+      s.showToast?.(`Please enter a top-up amount (Min. ${minTopUp} USDT).`, 'error');
       return;
     }
     if (isUnderMin) {
-      s.showToast?.('Minimum top-up amount is 50 USDT.', 'error');
+      s.showToast?.(`Minimum top-up amount is ${minTopUp} USDT.`, 'error');
       return;
     }
     if (isExceeded) {
@@ -555,11 +561,13 @@ function WalletTopUpSide({
         onQuickAdd={addTopUpQuick}
         isExceeded={isExceeded}
         isUnderMin={isUnderMin}
+        hint={`Min. ${minTopUp} USDT · Gas fee ${gasFee.toFixed(2)} USDT`}
       />
       <TransactionSummary
         selectedCard={selectedCard}
         topUpAmount={topUpAmount}
-        gasFee={W.GAS_FEE_CHARGE}
+        cardFeeRate={cardFeeRate}
+        gasFee={gasFee}
         isUnderMin={isUnderMin}
       />
       <WalletNotice>Funds topped up to a card cannot be reversed.</WalletNotice>
@@ -1029,11 +1037,18 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
 
   if (!open || !card) return null;
 
+  const cardFeeRate = Number(s?.feePolicy?.cardChargeFeeRate ?? W.CARD_CHARGE_FEE_RATE ?? 0.02);
+  const gasFee = Number(s?.feePolicy?.cardChargeGasFee ?? W.GAS_FEE_CHARGE ?? 3.00);
+  const minTopUp = Number(s?.feePolicy?.minTopUp ?? W.MIN_TOPUP ?? 50);
+
   const bal = W.parseCardBalanceUsdt(card.balance);
   const topUpVal = parseFloat(amount) || 0;
-  const isUnderMin = topUpVal > 0 && topUpVal < W.MIN_TOPUP;
+  const isUnderMin = topUpVal > 0 && topUpVal < minTopUp;
   const walletBal = resolveWalletBalance(s.walletBalance);
-  const isExceeded = topUpVal > 0 && (topUpVal + W.GAS_FEE_CHARGE > walletBal);
+  const cardFeeAmt = topUpVal * cardFeeRate;
+  const requiredTotal = topUpVal > 0 ? (topUpVal + cardFeeAmt + gasFee) : 0;
+  const isExceeded = topUpVal > 0 && (requiredTotal > walletBal);
+  const feePercentLabel = (cardFeeRate * 100).toFixed(cardFeeRate * 100 % 1 === 0 ? 0 : 1);
 
   const addQuick = (n) => {
     const cur = parseFloat(amount) || 0;
@@ -1042,11 +1057,11 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
 
   const handleNextOrConfirm = async () => {
     if (!amount || !String(amount).trim() || topUpVal <= 0) {
-      s.showToast?.('Please enter a top-up amount (Min. 50 USDT).', 'error');
+      s.showToast?.(`Please enter a top-up amount (Min. ${minTopUp} USDT).`, 'error');
       return;
     }
     if (isUnderMin) {
-      s.showToast?.('Minimum card top-up amount must be 50 USDT or higher.', 'error');
+      s.showToast?.(`Minimum card top-up amount must be ${minTopUp} USDT or higher.`, 'error');
       return;
     }
     if (isExceeded) {
@@ -1071,7 +1086,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
     setLoading(true);
     try {
       await chargeCard(topUpVal, card?.cardId || card?.id, password);
-      s.deductWalletBalance?.(topUpVal + W.GAS_FEE_CHARGE);
+      s.deductWalletBalance?.(requiredTotal);
       onClose();
       s.showToast('Top up complete!');
       s.refresh?.();
@@ -1108,68 +1123,81 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
         {!showPasswordStep ? (
           <>
             <AmountBlock
-              label="Amount to top up (Min 50 USDT)"
+              label={`Amount to top up (Min ${minTopUp} USDT)`}
               amount={amount}
               onChange={setAmount}
-              hint={`Min. 50 USDT · Gas fee 3.00 USDT`}
+              hint={`Min. ${minTopUp} USDT · Gas fee ${gasFee.toFixed(2)} USDT`}
               onQuickAdd={addQuick}
               isExceeded={isExceeded || isUnderMin}
             />
-            <p className="portal-wallet-quick-wallet">
+            <p className="portal-wallet-quick-wallet" style={{ marginBottom: '14px' }}>
               Wallet balance: <strong>{W.formatUsdtAmount(walletBal)} USDT</strong>
             </p>
+            <TransactionSummary
+              selectedCard={card}
+              topUpAmount={amount}
+              cardFeeRate={cardFeeRate}
+              gasFee={gasFee}
+              isUnderMin={isUnderMin}
+            />
+            <div style={{ marginTop: '12px' }}>
+              <WalletNotice>Funds topped up to a card cannot be reversed.</WalletNotice>
+            </div>
           </>
         ) : (
           <div style={{ margin: '16px 0' }}>
-            <div style={{ padding: '12px 14px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '14px', fontSize: '13px' }}>
-              <div>Top-up Amount: <strong>{topUpVal.toFixed(2)} USDT</strong></div>
-              <div>Card Charge Fee (2%): <strong>{(topUpVal * 0.02).toFixed(2)} USDT</strong></div>
-              <div>Gas Fee: <strong>3.00 USDT</strong></div>
-              <div>Total Deduction: <strong>{(topUpVal + topUpVal * 0.02 + 3).toFixed(2)} USDT</strong></div>
-            </div>
-            <label className="portal-wallet-field">
-              <span className="portal-wallet-field__label">Confirm Password (AnyTap Password)</span>
-              <input
-                className="portal-wallet-field__input"
-                type="password"
-                placeholder="Enter account password to authorize top-up"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                autoFocus
-                autoComplete="current-password"
-                style={{ width: '100%', height: '48px', padding: '12px 14px', fontSize: '15px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}
-              />
-            </label>
-
-            {/* Mandatory Terms & I understand Checkbox (Orange Title + Slate Gray Body Theme) */}
-            <div style={{
-              marginTop: '14px',
-              marginBottom: '14px',
-              padding: '14px 16px',
-              backgroundColor: '#ffffff',
-              border: '1.5px solid #f97316',
-              borderRadius: '10px',
-              lineHeight: '1.6',
-              boxShadow: '0 4px 12px rgba(249, 115, 22, 0.08)',
-            }}>
-              <strong style={{ color: '#ea580c', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '900', letterSpacing: '0.3px' }}>
-                ⚠️ Before You Top Up
-              </strong>
-              <ol style={{ margin: '0 0 12px 20px', padding: 0, color: '#334155', fontWeight: '600', fontSize: '13px' }}>
-                <li style={{ color: '#334155', marginBottom: '4px' }}>Processing may take up to 60 minutes</li>
-                <li style={{ color: '#334155', marginBottom: '4px' }}>Top-up amount is non-refundable</li>
-                <li style={{ color: '#334155' }}>Exchange rate is not 1:1 (may vary)</li>
-              </ol>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#1e293b', fontWeight: '800', fontSize: '14px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+            <TransactionSummary
+              selectedCard={card}
+              topUpAmount={amount}
+              cardFeeRate={cardFeeRate}
+              gasFee={gasFee}
+              isUnderMin={false}
+            />
+            <div style={{ marginTop: '16px' }}>
+              <label className="portal-wallet-field">
+                <span className="portal-wallet-field__label">Confirm Password (AnyTap Password)</span>
                 <input
-                  type="checkbox"
-                  checked={isUnderstood}
-                  onChange={(e) => setIsUnderstood(e.target.checked)}
-                  style={{ width: '18px', height: '18px', accentColor: '#f97316', cursor: 'pointer' }}
+                  className="portal-wallet-field__input"
+                  type="password"
+                  placeholder="Enter account password to authorize top-up"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  autoFocus
+                  autoComplete="current-password"
+                  style={{ width: '100%', height: '48px', padding: '12px 14px', fontSize: '15px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}
                 />
-                <span style={{ color: '#1e293b', fontSize: '14px', fontWeight: '800' }}>I understand</span>
               </label>
+
+              {/* Mandatory Terms & I understand Checkbox (Orange Title + Slate Gray Body Theme) */}
+              <div style={{
+                marginTop: '14px',
+                marginBottom: '14px',
+                padding: '14px 16px',
+                backgroundColor: '#ffffff',
+                border: '1.5px solid #f97316',
+                borderRadius: '10px',
+                lineHeight: '1.6',
+                boxShadow: '0 4px 12px rgba(249, 115, 22, 0.08)',
+              }}>
+                <strong style={{ color: '#ea580c', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '900', letterSpacing: '0.3px' }}>
+                  ⚠️ Before You Top Up
+                </strong>
+                <ol style={{ margin: '0 0 12px 20px', padding: 0, color: '#334155', fontWeight: '600', fontSize: '13px' }}>
+                  <li style={{ color: '#334155', marginBottom: '4px' }}>Processing may take up to 60 minutes</li>
+                  <li style={{ color: '#334155', marginBottom: '4px' }}>Top-up amount is non-refundable</li>
+                  <li style={{ color: '#334155' }}>Exchange rate is not 1:1 (may vary)</li>
+                </ol>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#1e293b', fontWeight: '800', fontSize: '14px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+                  <input
+                    type="checkbox"
+                    checked={isUnderstood}
+                    onChange={(e) => setIsUnderstood(e.target.checked)}
+                    style={{ width: '18px', height: '18px', accentColor: '#f97316', cursor: 'pointer' }}
+                  />
+                  <span style={{ color: '#1e293b', fontSize: '14px', fontWeight: '800' }}>I understand</span>
+                </label>
+              </div>
             </div>
           </div>
         )}
@@ -1266,15 +1294,21 @@ export function AccountWallet({ s }) {
     }
   }, [activeCards, selectedCardId]);
 
+  const cardFeeRate = Number(s?.feePolicy?.cardChargeFeeRate ?? W.CARD_CHARGE_FEE_RATE ?? 0.02);
+  const gasFeeVal = Number(s?.feePolicy?.cardChargeGasFee ?? W.GAS_FEE_CHARGE ?? 3.00);
+  const withdrawGasFeeVal = Number(s?.feePolicy?.withdrawGasFee ?? W.GAS_FEE_SEND ?? 3.00);
+  const minTopUp = Number(s?.feePolicy?.minTopUp ?? W.MIN_TOPUP ?? 50);
+  const minSend = Number(s?.feePolicy?.minSend ?? W.MIN_SEND ?? 50);
+
   const selectedCard = activeCards.find((c) => c.id === selectedCardId) ?? activeCards[0] ?? null;
   const topUpVal = parseFloat(topUpAmount) || 0;
-  const cardFeeVal = topUpVal * (W.CARD_CHARGE_FEE_RATE || 0.02);
-  const gasFeeVal = W.GAS_FEE_CHARGE || 3.00;
+  const cardFeeVal = topUpVal * cardFeeRate;
   const totalChargeFee = cardFeeVal + gasFeeVal;
   const sendVal = parseFloat(sendAmount) || 0;
   const walletBal = resolveWalletBalance(s.walletBalance);
-  const sendExceeded = sendVal > 0 && (sendVal + W.GAS_FEE_SEND > walletBal);
+  const sendExceeded = sendVal > 0 && (sendVal + withdrawGasFeeVal > walletBal);
   const chargeTotal = (topUpVal + totalChargeFee).toFixed(2);
+  const feePercentLabel = (cardFeeRate * 100).toFixed(cardFeeRate * 100 % 1 === 0 ? 0 : 1);
 
   const addTopUpQuick = (n) => {
     const cur = parseFloat(topUpAmount) || 0;
@@ -1312,7 +1346,7 @@ export function AccountWallet({ s }) {
     setLoading(true);
     try {
       await withdrawToExternal(sendVal, sendAddress, password);
-      s.deductWalletBalance?.(sendVal + W.GAS_FEE_SEND);
+      s.deductWalletBalance?.(sendVal + withdrawGasFeeVal);
       closeConfirm();
       setSendAddress('');
       setSendAmount('');
@@ -1479,13 +1513,13 @@ export function AccountWallet({ s }) {
                   label="Amount to send"
                   amount={sendAmount}
                   onChange={setSendAmount}
-                  hint={sendExceeded ? `Exceeds available balance (${W.formatUsdtAmount(walletBal)} USDT)` : `Min. ${W.MIN_SEND} USDT · Available: ${W.formatUsdtAmount(walletBal)} USDT`}
+                  hint={sendExceeded ? `Exceeds available balance (${W.formatUsdtAmount(walletBal)} USDT)` : `Min. ${minSend} USDT · Available: ${W.formatUsdtAmount(walletBal)} USDT`}
                   isExceeded={sendExceeded}
                 />
                 <SendSummaryDesk
                   address={sendAddress}
                   sendAmount={sendAmount}
-                  gasFee={W.GAS_FEE_SEND}
+                  gasFee={withdrawGasFeeVal}
                 />
                 <WalletNotice>
                   Anytap is not responsible for transfers to incorrect addresses. Always verify before sending.
@@ -1515,7 +1549,7 @@ export function AccountWallet({ s }) {
           title="Confirm Card Charge"
           rows={[
             { label: 'Charge Amount', value: `${topUpVal.toFixed(2)} USDT`, emphasis: true },
-            { label: 'Card Fee (2%)', value: `${cardFeeVal.toFixed(2)} USDT` },
+            { label: `Card Fee (${feePercentLabel}%)`, value: `${cardFeeVal.toFixed(2)} USDT` },
             { label: 'Gas Fee', value: `${gasFeeVal.toFixed(2)} USDT` },
             { label: 'Total from Wallet', value: `${chargeTotal} USDT`, emphasis: true },
           ]}
@@ -1536,8 +1570,8 @@ export function AccountWallet({ s }) {
           rows={[
             { label: 'To Address', value: W.maskAddress(sendAddress, 8, 4) },
             { label: 'Amount', value: `${sendVal.toFixed(2)} USDT`, danger: true },
-            { label: 'Gas Fee', value: `${W.GAS_FEE_SEND.toFixed(2)} USDT` },
-            { label: 'Total', value: `${(sendVal + W.GAS_FEE_SEND).toFixed(2)} USDT`, emphasis: true },
+            { label: 'Gas Fee', value: `${withdrawGasFeeVal.toFixed(2)} USDT` },
+            { label: 'Total', value: `${(sendVal + withdrawGasFeeVal).toFixed(2)} USDT`, emphasis: true },
           ]}
           password={password}
           onPassword={setPassword}

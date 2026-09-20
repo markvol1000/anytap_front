@@ -94,6 +94,20 @@ export async function fetchSystemAddress() {
   return '';
 }
 
+export async function fetchFeePolicy() {
+  if (isHttpApi) {
+    try {
+      const { apiGet } = await import('../api/httpClient.js');
+      const res = await apiGet('/common/fee-policy');
+      if (res?.data) return res.data;
+      if (res && typeof res === 'object' && !res.code) return res;
+    } catch (err) {
+      console.warn('Failed to fetch fee policy from backend:', err);
+    }
+  }
+  return null;
+}
+
 export {
   MOCK_FLOW_SCENARIO_KEYS,
   FLOW_STATE_LABELS,
