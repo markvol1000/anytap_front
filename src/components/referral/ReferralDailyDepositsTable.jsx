@@ -77,7 +77,7 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
         memberName: d.memberName || d.userEmail || d.loginId || d.email || '',
         memberEmail: d.memberEmail || d.email || d.loginId || (d.memberName && d.memberName.includes('@') ? d.memberName : ''),
         amount: Number(d.amount || d.topUpAmount || d.topUpUsdt || 0),
-        feeAmount: Number(d.feeAmount || d.fee || 0),
+        feeAmount: Number(d.feeAmount ?? d.commission ?? d.referrerAllowance ?? d.fee ?? 0),
       }));
     }
     if (Array.isArray(memberRows) && memberRows.length > 0) {
@@ -344,7 +344,7 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
                   <td data-label="Card Charge Amount" style={{ fontWeight: '800', color: '#0284c7', fontSize: '14px' }}>
                     +{formatUsdt(d.amount)} USDT
                   </td>
-                  <td data-label="Fee" style={{ fontWeight: '600', color: '#64748b', fontSize: '13px' }}>
+                  <td data-label="Fee" style={{ fontWeight: '600', color: 'var(--ink, #0f172a)', fontSize: '13px' }}>
                     {formatUsdt(d.feeAmount)} USDT
                   </td>
                 </tr>

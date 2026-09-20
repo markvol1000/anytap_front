@@ -995,13 +995,17 @@ export async function getReferredMembers(code, params = {}) {
     const mapped = data.items.map((m, i) => ({
       id: m.id || m.userId || m.user_id || `MEM_${i + 1}`,
       userId: m.userId || m.user_id || m.id || `MEM_${i + 1}`,
-      name: m.memberName || m.name || m.loginId || 'Member',
-      memberName: m.memberName || m.name || m.loginId || 'Member',
+      name: m.memberName || m.name || m.loginId || m.email || 'Member',
+      memberName: m.memberName || m.name || m.loginId || m.email || 'Member',
       email: m.email || m.userEmail || '—',
-      joinDate: m.joinDate || m.createdAt || m.created_at || '2026-08-01T15:00:00.000Z',
-      createdAt: m.joinDate || m.createdAt || m.created_at || '2026-08-01T15:00:00.000Z',
-      totalDeposit: Number(m.totalDeposit ?? m.depositAmount ?? 105.00),
-      earnedCommission: Number(m.earnedCommission ?? m.commission ?? 0.315),
+      loginId: m.loginId || m.email || '—',
+      cards: Number(m.cards) || 0,
+      joinDate: m.joinedAt || m.joinDate || m.createdAt || m.created_at || '—',
+      createdAt: m.joinedAt || m.joinDate || m.createdAt || m.created_at || '—',
+      totalDeposit: Number(m.topUpUsdt ?? m.totalTopUp ?? m.totalDeposit ?? 0),
+      topUpUsdt: Number(m.topUpUsdt ?? m.totalTopUp ?? m.totalDeposit ?? 0),
+      earnedCommission: Number(m.rewardUsdt ?? m.earnedCommission ?? m.commission ?? 0),
+      rewardUsdt: Number(m.rewardUsdt ?? m.earnedCommission ?? m.commission ?? 0),
       status: m.status || 'active',
     }));
     return {
@@ -1013,10 +1017,23 @@ export async function getReferredMembers(code, params = {}) {
     };
   }
   
-  const fallbackList = [
-    { id: 'US512799', userId: 'US512799', name: 'test217@217.com', memberName: 'test217@217.com', email: 'test217@217.com', joinDate: '2026-08-01T15:00:00.000Z', createdAt: '2026-08-01T15:00:00.000Z', totalDeposit: 155.00, earnedCommission: 0.465, status: 'active' },
-  ];
-  return paginateLocal(fallbackList, params, ['userId', 'name', 'email', 'memberName']);
+  return { items: [], total: 0, page: pageNum, pageSize: pageSize, totalPages: 1 };
+}
+
+export async function getAdminReferredDailyDeposits(code, params = {}) {
+  const pageNum = params.page || 1;
+  const pageSize = params.pageSize || 100;
+  const data = await apiGet(`/admin/referrals/${encodeURIComponent(code)}/daily-deposits?pageNum=${pageNum}&pageSize=${pageSize}`).catch(() => null);
+  if (data && data.items) {
+    return {
+      items: data.items,
+      total: data.total || data.items.length,
+      page: data.page || pageNum,
+      pageSize: data.pageSize || pageSize,
+      totalPages: data.totalPages || 1,
+    };
+  }
+  return { items: [], total: 0, page: pageNum, pageSize: pageSize, totalPages: 1 };
 }
 
 export async function getCommissionLedger(params = {}) {

@@ -14,17 +14,42 @@ import { AdminStatusBadge, formatAdminDate, formatUsdt } from '../components/Adm
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
+import QRCode from 'qrcode';
+import { ReferralDailyDepositsTable } from '../../components/referral/ReferralDailyDepositsTable.jsx';
 import {
   adjustReferralReward,
   createReferralCode,
   getCommissionLedger,
   getReferredMembers,
+  getAdminReferredDailyDeposits,
   getReferralById,
   getReferrals,
   getActiveMembers,
   updateReferralCode,
   updateMemberReferralCode,
 } from '../services/adminService.js';
+
+function buildReferralQrSvg(text) {
+  const str = String(text || '').trim();
+  if (!str) return '';
+  try {
+    const qr = QRCode.create(str, { errorCorrectionLevel: 'M' });
+    const n = qr.modules.size;
+    const margin = 1;
+    const total = n + margin * 2;
+    let path = '';
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        if (qr.modules.get(r, c)) {
+          path += `M${c + margin},${r + margin}h1v1h-1z`;
+        }
+      }
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" width="100%" height="100%" shape-rendering="crispEdges"><rect width="${total}" height="${total}" fill="#ffffff" rx="2"/><path d="${path}" fill="#0f172a"/></svg>`;
+  } catch {
+    return '';
+  }
+}
 
 const fetchReferrals = (params) => getReferrals(params);
 const fetchReferralDetail = (id) => getReferralById(id);
@@ -36,6 +61,9 @@ export function ReferralPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [copiedCode, setCopiedCode] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [partnerDetailTab, setPartnerDetailTab] = useState('members'); // 'members' | 'charges'
+  const [dailyDeposits, setDailyDeposits] = useState([]);
+  const [dailyLoading, setDailyLoading] = useState(false);
 
   // Active Users List for Referral Partner Registration
   const [activeMembers, setActiveMembers] = useState([]);
@@ -123,6 +151,19 @@ export function ReferralPage() {
   // List 3: Commission Ledger (Paginated)
   const ledgerFetcher = useCallback((params) => getCommissionLedger(params), []);
   const ledgerList = useAdminList(ledgerFetcher);
+
+  // Real-time Card Charge History for selected partner code
+  useEffect(() => {
+    if (selectedCode && selectedCode !== '—') {
+      setDailyLoading(true);
+      getAdminReferredDailyDeposits(selectedCode)
+        .then((res) => setDailyDeposits(res?.items || []))
+        .catch(() => setDailyDeposits([]))
+        .finally(() => setDailyLoading(false));
+    } else {
+      setDailyDeposits([]);
+    }
+  }, [selectedCode]);
 
   // Filter Apply Callback
   const handleApplyFilter = useCallback(() => {
@@ -495,8 +536,17 @@ export function ReferralPage() {
                       ),
                     },
                     { key: 'memberName', label: 'Owner / Partner Name' },
+                    {
+                      key: 'referralRatePercent',
+                      label: 'Rate (%)',
+                      render: (r) => (
+                        <span style={{ fontWeight: '700', color: '#0284c7' }}>
+                          {r.referralRatePercent != null ? `${Number(r.referralRatePercent).toFixed(1)}%` : '5.0%'}
+                        </span>
+                      ),
+                    },
                     { key: 'joinDate', label: 'Joined', render: (r) => formatAdminDate(r.joinDate || r.createdAt || r.created_at) },
-                    { key: 'totalDeposit', label: 'Total Deposit', render: (r) => <strong style={{ color: '#0284c7' }}>{formatUsdt(r.totalDeposit)}</strong> },
+                    { key: 'totalDeposit', label: 'Total Top-up', render: (r) => <strong style={{ color: '#0284c7' }}>{formatUsdt(r.totalDeposit)}</strong> },
                     { key: 'available', label: 'Reward Balance', render: (r) => formatUsdt(r.available) },
                     { key: 'members', label: 'Referred Count' },
                     { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
@@ -577,12 +627,49 @@ export function ReferralPage() {
                         </div>
                       )}
                     />
+                    <AdminDetailRow
+                      label="Commission Rate"
+                      value={<span style={{ fontWeight: '700', color: '#0284c7', fontSize: '13px' }}>{detail.referralRatePercent != null ? `${Number(detail.referralRatePercent).toFixed(2)}%` : '5.00%'}</span>}
+                    />
                     <AdminDetailRow label="Reward Balance" value={formatUsdt(detail.rewardBalance)} />
-                    <AdminDetailRow label="Total Member Deposit" value={<strong style={{ color: '#0284c7' }}>{formatUsdt(detail.totalDeposit)}</strong>} />
+                    <AdminDetailRow label="Total Member Top-up" value={<strong style={{ color: '#0284c7' }}>{formatUsdt(detail.totalDeposit)}</strong>} />
                     <AdminDetailRow label="Available Amount" value={formatUsdt(detail.available)} />
                     <AdminDetailRow label="Pending Amount" value={formatUsdt(detail.pending)} />
                     <AdminDetailRow label="Referred Users" value={<span style={{ fontWeight: '700', color: '#10b981' }}>{detail.members} Users</span>} />
                     <AdminDetailRow label="Code Status" value={<AdminStatusBadge status={detail.status} />} />
+                    {detail.referralCode && (
+                      <AdminDetailRow
+                        label="Referral Link & QR"
+                        value={(
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#f8fafc', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '6px' }}>
+                            <div
+                              style={{ width: '64px', height: '64px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '4px', flexShrink: 0 }}
+                              dangerouslySetInnerHTML={{ __html: buildReferralQrSvg(`https://www.anytap.io/sign-up?ref=${detail.referralCode}`) }}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '3px' }}>
+                                Signup Invite Link
+                              </div>
+                              <div style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a', wordBreak: 'break-all', marginBottom: '6px' }}>
+                                {`https://www.anytap.io/sign-up?ref=${detail.referralCode}`}
+                              </div>
+                              <button
+                                type="button"
+                                className="admin-btn admin-btn--secondary admin-btn--sm"
+                                style={{ padding: '3px 8px', fontSize: '11px' }}
+                                onClick={() => {
+                                  const link = `https://www.anytap.io/sign-up?ref=${detail.referralCode}`;
+                                  try { navigator.clipboard?.writeText(link); } catch {}
+                                  window.alert('Referral link copied to clipboard!');
+                                }}
+                              >
+                                📋 Copy Link
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      />
+                    )}
                   </AdminDetailSection>
 
                   <AdminActionStack>
@@ -594,69 +681,118 @@ export function ReferralPage() {
                     </button>
                   </AdminActionStack>
 
-                  {/* ── LOWER SECTION: Referred Users List for THIS Referral Code ── */}
-                  <AdminDetailSection title={`👥 Users using '${detail.referralCode}' as Referrer`} className="admin-detail-full-width">
-                    <AdminFilterBar
-                      search={memberList.search}
-                      onSearchChange={memberList.setSearch}
-                      searchPlaceholder="Search member name or email…"
-                    />
-                    <AdminTableWrap loading={memberList.loading} error={memberList.error} hasData={memberList.items.length > 0}>
-                      <AdminDataTable
-                        columns={[
-                          {
-                            key: 'id',
-                            label: 'User ID',
-                            render: (r) => {
+                  {/* ── LOWER SECTION: Sub-tabs (Referred Members & Member Card Charge History) ── */}
+                  <AdminDetailSection title={`Network Analytics for '${detail.referralCode}'`} className="admin-detail-full-width">
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                      <button
+                        type="button"
+                        className={`admin-btn ${partnerDetailTab === 'members' ? 'admin-btn--primary' : 'admin-btn--secondary'} admin-btn--sm`}
+                        onClick={() => setPartnerDetailTab('members')}
+                      >
+                        👥 Referred Members ({memberList.total || memberList.items.length})
+                      </button>
+                      <button
+                        type="button"
+                        className={`admin-btn ${partnerDetailTab === 'charges' ? 'admin-btn--primary' : 'admin-btn--secondary'} admin-btn--sm`}
+                        onClick={() => setPartnerDetailTab('charges')}
+                      >
+                        💳 Member Card Charge History ({dailyDeposits.length})
+                      </button>
+                    </div>
+
+                    {partnerDetailTab === 'members' && (
+                      <>
+                        <AdminFilterBar
+                          search={memberList.search}
+                          onSearchChange={memberList.setSearch}
+                          searchPlaceholder="Search member name, email or login ID…"
+                        />
+                        <AdminTableWrap loading={memberList.loading} error={memberList.error} hasData={memberList.items.length > 0}>
+                          <AdminDataTable
+                            columns={[
+                              {
+                                key: 'id',
+                                label: 'User ID',
+                                render: (r) => {
+                                  const memId = r.id || r.userId;
+                                  return (
+                                    <Link
+                                      to={`/admin/members?id=${memId}`}
+                                      style={{ color: '#0284c7', fontWeight: '700', textDecoration: 'underline' }}
+                                      title={`Open member ${memId} detail`}
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {memId} ➔
+                                    </Link>
+                                  );
+                                },
+                              },
+                              {
+                                key: 'name',
+                                label: 'Login ID (Email)',
+                                render: (r) => {
+                                  const memId = r.id || r.userId;
+                                  const display = r.loginId || r.email || r.name || r.memberName || 'Member';
+                                  return (
+                                    <Link
+                                      to={`/admin/members?id=${memId}`}
+                                      style={{ color: 'inherit', fontWeight: '600' }}
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {display}
+                                    </Link>
+                                  );
+                                },
+                              },
+                              {
+                                key: 'cards',
+                                label: 'Card Status',
+                                render: (r) => {
+                                  const count = Number(r.cards) || 0;
+                                  return count > 0 ? (
+                                    <span style={{ color: '#0284c7', fontWeight: '600', fontSize: '12px', background: '#f0f9ff', border: '1px solid #bae6fd', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                                      💳 Issued ({count})
+                                    </span>
+                                  ) : (
+                                    <span style={{ color: '#94a3b8', fontSize: '12px', whiteSpace: 'nowrap' }}>Not Issued</span>
+                                  );
+                                },
+                              },
+                              { key: 'joinDate', label: 'Joined', render: (r) => formatAdminDate(r.joinDate || r.createdAt || r.created_at) },
+                              { key: 'totalDeposit', label: 'Card Top-up', render: (r) => <strong style={{ color: '#0284c7' }}>{formatUsdt(r.topUpUsdt ?? r.totalDeposit)}</strong> },
+                              { key: 'earnedCommission', label: 'Earned Commission', render: (r) => <strong style={{ color: '#10b981' }}>{formatUsdt(r.rewardUsdt ?? r.earnedCommission)}</strong> },
+                              { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
+                            ]}
+                            rows={memberList.items}
+                            onSelectRow={(r) => {
                               const memId = r.id || r.userId;
-                              return (
-                                <Link
-                                  to={`/admin/members?id=${memId}`}
-                                  style={{ color: '#0284c7', fontWeight: '700', textDecoration: 'underline' }}
-                                  title={`Open member ${memId} detail`}
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {memId} ➔
-                                </Link>
-                              );
-                            },
-                          },
-                          {
-                            key: 'name',
-                            label: 'Name',
-                            render: (r) => {
-                              const memId = r.id || r.userId;
-                              return (
-                                <Link
-                                  to={`/admin/members?id=${memId}`}
-                                  style={{ color: 'inherit', fontWeight: '600' }}
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {r.name || r.memberName || 'Member'}
-                                </Link>
-                              );
-                            },
-                          },
-                          { key: 'email', label: 'Email' },
-                          { key: 'joinDate', label: 'Joined', render: (r) => formatAdminDate(r.joinDate || r.createdAt || r.created_at) },
-                          { key: 'totalDeposit', label: 'Total Deposit', render: (r) => <strong style={{ color: '#0284c7' }}>{formatUsdt(r.totalDeposit)}</strong> },
-                          { key: 'earnedCommission', label: 'Earned Commission', render: (r) => <strong style={{ color: '#10b981' }}>{formatUsdt(r.earnedCommission)}</strong> },
-                          { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
-                        ]}
-                        rows={memberList.items}
-                        onSelectRow={(r) => {
-                          const memId = r.id || r.userId;
-                          if (memId) navigate(`/admin/members?id=${memId}`);
-                        }}
-                        sortKey={memberList.sortKey}
-                        sortDir={memberList.sortDir}
-                        onSort={memberList.toggleSort}
-                        page={memberList.page}
-                        totalPages={memberList.totalPages}
-                        total={memberList.total}
-                        onPageChange={memberList.setPage}
-                      />
-                    </AdminTableWrap>
+                              if (memId) navigate(`/admin/members?id=${memId}`);
+                            }}
+                            sortKey={memberList.sortKey}
+                            sortDir={memberList.sortDir}
+                            onSort={memberList.toggleSort}
+                            page={memberList.page}
+                            totalPages={memberList.totalPages}
+                            total={memberList.total}
+                            onPageChange={memberList.setPage}
+                          />
+                        </AdminTableWrap>
+                      </>
+                    )}
+
+                    {partnerDetailTab === 'charges' && (
+                      <div style={{ marginTop: '8px' }}>
+                        {dailyLoading ? (
+                          <p className="admin-loading admin-loading--inline">Loading card charge records…</p>
+                        ) : (
+                          <ReferralDailyDepositsTable
+                            deposits={dailyDeposits}
+                            memberRows={memberList.items}
+                            onShowToast={(msg) => window.alert(msg)}
+                          />
+                        )}
+                      </div>
+                    )}
                   </AdminDetailSection>
                 </>
               ) : null}
