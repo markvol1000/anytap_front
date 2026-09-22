@@ -109,7 +109,7 @@ export const REFERRAL_FAQ: ReferralFaqItem[] = [
   },
   {
     question: 'When are rewards paid?',
-    answer: 'Commissions are calculated in real time and added to Pending Rewards first. They move to Available Balance after the referred member\'s transaction is confirmed — typically within 24 hours.',
+    answer: 'Rewards are finalized at month-end and paid out within 2 days of the following month.',
   },
   {
     question: 'How do withdrawals work?',
