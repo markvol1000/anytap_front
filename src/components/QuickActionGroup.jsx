@@ -130,7 +130,7 @@ export const DashboardQuickActionGroup = WalletFlowQuickActionGroup;
 /** Card page — Top Up (+ Card Info, Freeze in detail mode) */
 export function CardQuickActionGroup({ s, card, activeId = null, className = '', mode = 'detail' }) {
   const isFrozen = card?.status === 'frozen';
-  const canUse = card?.status === 'active' || card?.status === 'shipping' || s.cardIsActive;
+  const canUse = card?.status === 'active' || card?.status === 'shipping';
   const isSummary = mode === 'summary';
 
   const actions = useMemo(() => {

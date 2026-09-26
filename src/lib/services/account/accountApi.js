@@ -57,8 +57,8 @@ function cardStatusRank(status) {
     creating: 3,
     shipping: 4,
     issued: 5,
+    frozen: 5,
     active: 6,
-    frozen: 6,
   };
   return order[mapCardStatus(status)] ?? 0;
 }
@@ -76,11 +76,11 @@ function preferCardStatus(localStatus, backendStatus) {
  * UI needs application_review to show the $100 issuance deposit QR.
  */
 function resolveCardStatusForUi(session, cardInfo) {
-  let cardStatus = mapCardStatus(session.cardStatus);
   const demoLocked = session.demoLockState === true;
   const cardNo = String(cardInfo?.cardNo || cardInfo?.balanceInfo?.cardNo || '');
-  const cardStatusFromWasabi = String(cardInfo?.status || '').toLowerCase();
-  const cardFrozen = cardStatusFromWasabi === 'frozen' || cardInfo?.blocked === true;
+  const rawStatus = String(cardInfo?.status || '').toLowerCase().trim();
+  const rawLinkStatus = String(cardInfo?.linkStatus || '').toLowerCase().trim();
+  const cardFrozen = rawStatus === 'frozen' || rawLinkStatus === 'frozen' || cardInfo?.blocked === true;
 
   let isPhysical = session.cardType === 'physical' || cardInfo?.cardType === 'physical';
   if (cardInfo?.cardTypeId) {
@@ -90,38 +90,32 @@ function resolveCardStatusForUi(session, cardInfo) {
 
   if (!demoLocked) {
     if (cardFrozen) return 'frozen';
-    
-    const rawLinkStatus = String(cardInfo?.linkStatus || '').toLowerCase();
-    if (rawLinkStatus === 'active') {
+
+    if (rawLinkStatus === 'active' || rawStatus === 'active' || rawStatus === 'normal' || rawStatus === 'approved') {
       return 'active';
     }
 
     // issued cards stay as 'issued' — activation must be done by admin or pin activation
-    const isIssued = (cardStatus === 'issued' || cardStatusFromWasabi === 'issued') && rawLinkStatus !== 'active';
+    const isIssued = (rawStatus === 'issued' || rawLinkStatus === 'issued');
     if (isIssued) {
       return 'issued';
     }
 
-    const isIssuing = ['application_review', 'applied', 'deposit_received', 'creating', 'shipping'].includes(cardStatusFromWasabi)
-                   || ['application_review', 'applied', 'deposit_received', 'creating', 'shipping'].includes(cardStatus);
+    const isIssuing = ['application_review', 'applied', 'deposit_received', 'creating', 'shipping'].includes(rawStatus)
+                   || ['application_review', 'applied', 'deposit_received', 'creating', 'shipping'].includes(rawLinkStatus);
     if (isPhysical && isIssuing) {
-      return cardStatusFromWasabi || cardStatus;
+      return rawStatus || rawLinkStatus;
     }
 
-    if (cardInfo && (cardNo || cardInfo.cardTypeId || cardInfo.status)) {
-      if (isPhysical) {
-        return cardStatusFromWasabi || cardStatus;
+    if (cardInfo && (cardNo || cardInfo.cardTypeId || cardInfo.status || cardInfo.linkStatus)) {
+      if (isPhysical && rawStatus) {
+        return rawStatus;
       }
-      return cardStatusFromWasabi || cardStatus || 'active';
-    }
-    if (cardStatus === 'active') {
-      return 'active';
-    }
-    if (cardStatus === 'issued') {
-      return 'issued';
+      return rawStatus || rawLinkStatus || 'active';
     }
   }
 
+  let cardStatus = mapCardStatus(session.cardStatus);
   const issuanceUi = ['application_review', 'applied', 'deposit_received', 'creating'];
   if (issuanceUi.includes(cardStatus)) return cardStatus;
 
@@ -260,9 +254,9 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
       }
 
       const cardStatusFromWasabi = String(cardInfo?.status || '').toLowerCase();
-      const cardFrozen = cardStatusFromWasabi === 'frozen' || cardInfo?.blocked === true;
-      const rawLinkStatus = cardInfo.linkStatus || session.cardStatus;
-      const cardStatus = resolveCardStatusForUi(session, { ...cardInfo, status: rawLinkStatus });
+      const rawLinkStatus = String(cardInfo?.linkStatus || '').toLowerCase();
+      const cardFrozen = cardStatusFromWasabi === 'frozen' || rawLinkStatus === 'frozen' || cardInfo?.blocked === true;
+      const cardStatus = cardFrozen ? 'frozen' : resolveCardStatusForUi(session, cardInfo);
 
       const wasabiCardId = cardInfo?.wasabiCardId || cardInfo?.cardNo || cardInfo?.id || '';
       return {
@@ -272,16 +266,23 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
         cardNo: wasabiCardId,
         balance: cardBalanceLabel,
         balanceUsdt: cardBalanceUsdt,
-        status: cardFrozen || cardStatus === 'frozen' ? 'frozen' : cardStatus,
+        status: cardFrozen ? 'frozen' : cardStatus,
         isPrimary: idx === 0,
         holderName: name,
       };
     });
   }
 
-  const primaryCardInfo = list[0] || null;
-  const cardStatus = primaryCardInfo 
-    ? resolveCardStatusForUi(session, { ...primaryCardInfo, status: primaryCardInfo.linkStatus || session.cardStatus })
+  // Determine account-level cardStatus from best active card: active > shipping > issued > frozen
+  const bestCard = userCards.find((c) => c.status === 'active')
+    || userCards.find((c) => c.status === 'shipping')
+    || userCards.find((c) => c.status === 'issued')
+    || userCards.find((c) => c.status === 'frozen')
+    || userCards[0]
+    || null;
+
+  const cardStatus = bestCard 
+    ? bestCard.status
     : mapCardStatus(session.cardStatus);
 
   const needsActivation = false;
@@ -1229,7 +1230,7 @@ export async function freezeCard(cardId = null) {
 
   const query = cardId ? `?cardId=${encodeURIComponent(cardId)}` : '';
   const res = await apiPost(`/cards/${encodeURIComponent(session.userId)}/freeze${query}`);
-  patchHttpSession({ cardStatus: 'frozen' });
+  await refreshSessionFromUser(session.userId);
   return { ok: true, data: res };
 }
 
@@ -1240,7 +1241,7 @@ export async function unfreezeCard(cardId = null) {
 
   const query = cardId ? `?cardId=${encodeURIComponent(cardId)}` : '';
   const res = await apiPost(`/cards/${encodeURIComponent(session.userId)}/unfreeze${query}`);
-  patchHttpSession({ cardStatus: 'active' });
+  await refreshSessionFromUser(session.userId);
   return { ok: true, data: res };
 }
 

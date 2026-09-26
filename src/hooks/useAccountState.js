@@ -540,9 +540,11 @@ export function useAccountState() {
   const cardMaskedOnCard = cardHasNumber && currentCard
     ? A.cardMaskFor(currentCard, accountState.cardStatus)
     : null;
-  const cardTabBadge = currentCard && cardIsActive && currentCard.status === 'active'
+  const cardTabBadge = currentCard && currentCard.status === 'active'
     ? { label: 'Active', dot: '#7DE0AC', text: '#38A169' }
-    : { label: cardStatusDef.cardSubline || cardStatusDef.label, dot: '#F6C77A', text: '#C2860E' };
+    : (currentCard && currentCard.status === 'frozen')
+      ? { label: 'Frozen', dot: '#EB5757', text: '#EB5757' }
+      : { label: cardStatusDef.cardSubline || cardStatusDef.label, dot: '#F6C77A', text: '#C2860E' };
 
   return {
     // Navigation

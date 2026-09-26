@@ -299,7 +299,7 @@ function DashboardCardSection({ s }) {
         onClick={(card) => s.openCardDetails?.(card)}
         dashboard
         dimmed={displayCard.status === 'shipping'}
-        showBalance={(s.cardIsActive || displayCard.status === 'frozen') && (displayCard.status === 'active' || displayCard.status === 'frozen')}
+        showBalance={displayCard.status === 'active' || displayCard.status === 'frozen'}
         showFooter={s.cardHasNumber}
       />
     );

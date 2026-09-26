@@ -313,7 +313,7 @@ function CardSlide({
         dashboard={dashboard}
         dimmed={dimmed || ['creating', 'issued', 'shipping', 'frozen'].includes(card.status)}
         shimmer={shimmer || ['creating', 'issued'].includes(card.status)}
-        showBalance={(s.cardIsActive || card.status === 'frozen') && (card.status === 'active' || card.status === 'frozen')}
+        showBalance={card.status === 'active' || card.status === 'frozen'}
         showFooter={s.cardHasNumber && card.status !== 'creating' && !!card.last4}
       />
     );
@@ -1249,7 +1249,7 @@ export function AccountMyCards({ s }) {
   }
 
   const selectedCard = userCards[selectedCardIndex] ?? s.currentCard;
-  const showWalletActions = selectedCard?.status === 'active' && s.cardIsActive;
+  const showWalletActions = selectedCard?.status === 'active';
 
   return (
     <div className="portal-page portal-page--unified portal-mycards portal-mycards--v10">
@@ -1262,7 +1262,7 @@ export function AccountMyCards({ s }) {
           slideHeadHint={walletAllFull ? `Maximum ${A.MAX_CARDS_PER_USER} cards issued` : undefined}
         />
 
-        {!s.cardIsActive && s.accountState.cardStatus !== 'active' && s.accountState.cardStatus !== 'issued' && (
+        {!s.hasActiveCard && s.accountState.cardStatus !== 'active' && s.accountState.cardStatus !== 'issued' && (
           <AccountDashStatusInline s={s} />
         )}
 
