@@ -7,6 +7,7 @@ import { CardsPage } from './pages/CardsPage.jsx';
 import { CardsReportPage } from './pages/reports/cards.jsx';
 import { CardTransfersReportPage } from './pages/reports/transfers.jsx';
 import { FeesReportPage } from './pages/reports/fees.jsx';
+import { EmailLogsReportPage } from './pages/reports/emails.jsx';
 import { WalletsPage } from './pages/WalletsPage.jsx';
 import { TransactionsPage } from './pages/TransactionsPage.jsx';
 import { ReferralPage } from './pages/ReferralPage.jsx';
@@ -32,6 +33,7 @@ export function AdminApp() {
         <Route path="reports/cards" element={<CardsReportPage />} />
         <Route path="reports/transfers" element={<CardTransfersReportPage />} />
         <Route path="reports/fees" element={<FeesReportPage />} />
+        <Route path="reports/emails" element={<EmailLogsReportPage />} />
         <Route path="wallets" element={<WalletsPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="referral" element={<ReferralPage />} />

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { NavLink, useSearchParams } from 'react-router-dom';
 import { AdminDataTable } from '../../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../../components/AdminFilterBar.jsx';
+import { ReportsTabs } from './ReportsTabs.jsx';
 
 import {
   AdminDetailPanel,
@@ -222,26 +223,7 @@ export function CardsReportPage() {
   return (
     <div className="admin-page admin-fees-report">
       {/* Reports Navigation Sub-Tabs */}
-      <div className="admin-fees-tabs">
-        <NavLink
-          to="/admin/reports/cards"
-          className={({ isActive }) => `admin-fees-tab-link${isActive ? ' is-active' : ''}`}
-        >
-          💳 Card Application Status
-        </NavLink>
-        <NavLink
-          to="/admin/reports/transfers"
-          className={({ isActive }) => `admin-fees-tab-link${isActive ? ' is-active' : ''}`}
-        >
-          🔁 Card Transfer Ledger
-        </NavLink>
-        <NavLink
-          to="/admin/reports/fees"
-          className={({ isActive }) => `admin-fees-tab-link${isActive ? ' is-active' : ''}`}
-        >
-          💰 Fee Analysis Report
-        </NavLink>
-      </div>
+      <ReportsTabs />
 
       {/* Top Header & Buttons */}
       <div className="admin-cards-header">

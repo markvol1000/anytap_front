@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { AdminDataTable } from '../../components/AdminDataTable.jsx';
 import { AdminPageHeader, AdminPanel, AdminTableWrap } from '../../components/AdminFilterBar.jsx';
+import { ReportsTabs } from './ReportsTabs.jsx';
 import {
   AdminDetailPanel,
   AdminDetailRow,
@@ -344,26 +345,7 @@ export function CardTransfersReportPage() {
   return (
     <div className="admin-page admin-fees-report">
       {/* Reports Navigation Sub-Tabs */}
-      <div className="admin-fees-tabs">
-        <NavLink
-          to="/admin/reports/cards"
-          className={({ isActive }) => `admin-fees-tab-link${isActive ? ' is-active' : ''}`}
-        >
-          💳 Card Application Status
-        </NavLink>
-        <NavLink
-          to="/admin/reports/transfers"
-          className={({ isActive }) => `admin-fees-tab-link${isActive ? ' is-active' : ''}`}
-        >
-          🔁 Card Transfer Ledger
-        </NavLink>
-        <NavLink
-          to="/admin/reports/fees"
-          className={({ isActive }) => `admin-fees-tab-link${isActive ? ' is-active' : ''}`}
-        >
-          💰 Fee Analysis Report
-        </NavLink>
-      </div>
+      <ReportsTabs />
 
       {/* Page Header */}
       <div className="admin-cards-header" style={{ marginBottom: '16px' }}>

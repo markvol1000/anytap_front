@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { getFeesReport } from '../../services/api/adminApiService.js';
+import { ReportsTabs } from './ReportsTabs.jsx';
 
 export function FeesReportPage() {
   const [loading, setLoading] = useState(true);
@@ -268,26 +269,7 @@ export function FeesReportPage() {
   return (
     <div className="admin-page admin-fees-report">
       {/* Reports Navigation Sub-Tabs */}
-      <div className="admin-fees-tabs">
-        <NavLink
-          to="/admin/reports/cards"
-          className={({ isActive }) => `admin-fees-tab-link${isActive ? ' is-active' : ''}`}
-        >
-          💳 Card Application Status
-        </NavLink>
-        <NavLink
-          to="/admin/reports/transfers"
-          className={({ isActive }) => `admin-fees-tab-link${isActive ? ' is-active' : ''}`}
-        >
-          🔁 Card Transfer Ledger
-        </NavLink>
-        <NavLink
-          to="/admin/reports/fees"
-          className={({ isActive }) => `admin-fees-tab-link${isActive ? ' is-active' : ''}`}
-        >
-          💰 Fee Analysis Report
-        </NavLink>
-      </div>
+      <ReportsTabs />
 
       {/* Page Title Header */}
       <div className="admin-fees-header">

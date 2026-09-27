@@ -1352,17 +1352,56 @@ export async function getAdminLogs(params = {}) {
 }
 
 export async function getEmailLogs(params = {}) {
-  const rawList = asArray(await apiGet('/admin/email-logs'));
-  const mapped = rawList.map(l => ({
-    id: String(l.id),
-    recipient: l.recipient || '-',
-    subject: l.subject || '-',
-    status: l.status || '-',
-    ipAddress: l.ipAddress || '-',
-    apiResponseCode: l.apiResponseCode != null ? l.apiResponseCode : '-',
-    at: l.createdAt || '-'
-  }));
-  return paginateLocal(mapped, params, ['recipient', 'subject', 'status']);
+  const query = new URLSearchParams();
+  if (params.page != null) query.set('page', Math.max(0, (Number(params.page) || 1) - 1));
+  if (params.pageSize != null) query.set('size', params.pageSize);
+  const searchVal = (params.search || params.recipient || '').trim();
+  if (searchVal) query.set('recipient', searchVal);
+  if (params.status && params.status !== 'ALL') query.set('status', params.status);
+  if (params.startDate) query.set('startDate', params.startDate);
+  if (params.endDate) query.set('endDate', params.endDate);
+
+  try {
+    const res = await apiGet(`/admin/email-logs?${query.toString()}`);
+    if (res && res.items) {
+      const mapped = res.items.map(l => ({
+        id: String(l.id || l.emailLogId || ''),
+        recipient: l.recipient || '-',
+        subject: l.subject || '-',
+        body: l.body || '',
+        status: l.status || '-',
+        ipAddress: l.ipAddress || '-',
+        apiResponseCode: l.apiResponseCode != null ? l.apiResponseCode : '-',
+        errorMessage: l.errorMessage || '-',
+        createdAt: l.createdAt || '-',
+        at: l.createdAt || '-'
+      }));
+      return {
+        items: mapped,
+        total: res.total ?? mapped.length,
+        page: (res.page ?? 0) + 1,
+        pageSize: res.size ?? params.pageSize ?? 10,
+        totalPages: res.totalPages ?? Math.ceil((res.total || mapped.length) / (params.pageSize || 10))
+      };
+    }
+    const rawList = asArray(res);
+    const mapped = rawList.map(l => ({
+      id: String(l.id || l.emailLogId || ''),
+      recipient: l.recipient || '-',
+      subject: l.subject || '-',
+      body: l.body || '',
+      status: l.status || '-',
+      ipAddress: l.ipAddress || '-',
+      apiResponseCode: l.apiResponseCode != null ? l.apiResponseCode : '-',
+      errorMessage: l.errorMessage || '-',
+      createdAt: l.createdAt || '-',
+      at: l.createdAt || '-'
+    }));
+    return paginateLocal(mapped, params, ['recipient', 'subject', 'status']);
+  } catch (err) {
+    console.error('Failed to fetch email logs:', err);
+    return { items: [], total: 0, page: 1, pageSize: params.pageSize || 10, totalPages: 1 };
+  }
 }
 
 export async function getEventLogs(params = {}) {
