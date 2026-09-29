@@ -1338,8 +1338,22 @@ export async function getLoginLogs(params = {}) {
 
 export async function getAdminLogs(params = {}) {
   const rawList = asArray(await apiGet('/admin/logs'));
+  const excludedActions = new Set([
+    'CARD_SPEND',
+    'CARD_REFUND',
+    'CARD_REVERSAL',
+    'CARD_FEE_DEDUCTION',
+    'USDT_DEPOSIT',
+    'CARD_CHARGE',
+    'CARD_CHARGE_FEE',
+    'WALLET_SEND',
+    'TRON_GAS_FEE_LOG',
+    'WASABI_SUBSIDY_LOG',
+    'ACCOUNT_LOCKED_10_FAILS',
+  ]);
   const filtered = rawList.filter(l => {
-    if (l.eventType === 'LOGIN') {
+    if (l.eventType && excludedActions.has(l.eventType)) return false;
+    if (l.eventType === 'LOGIN' || l.eventType === 'LOGOUT') {
       if (l.role && l.role.toLowerCase() !== 'admin') return false;
     }
     return true;
