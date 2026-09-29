@@ -1338,7 +1338,13 @@ export async function getLoginLogs(params = {}) {
 
 export async function getAdminLogs(params = {}) {
   const rawList = asArray(await apiGet('/admin/logs'));
-  const mapped = rawList.map(l => ({
+  const filtered = rawList.filter(l => {
+    if (l.eventType === 'LOGIN') {
+      if (l.role && l.role.toLowerCase() !== 'admin') return false;
+    }
+    return true;
+  });
+  const mapped = filtered.map(l => ({
     id: String(l.id),
     adminName: l.loginId || 'System',
     adminId: l.userId || 'system',
