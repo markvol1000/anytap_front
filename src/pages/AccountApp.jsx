@@ -281,8 +281,15 @@ export function AccountApp() {
     setGate(hasMemberSession() ? 'in' : 'out');
   }, [demoSlug, location.key]);
 
+  const [expiredReason, setExpiredReason] = useState(null);
+
   useEffect(() => {
-    const handleSessionChange = () => {
+    const handleExpired = (e) => {
+      const reason = e?.detail?.reason || 'inactivity';
+      setExpiredReason(reason);
+      setGate('out');
+    };
+    const handleMemberSession = () => {
       if (!hasMemberSession()) {
         setGate('out');
       } else {
@@ -290,12 +297,12 @@ export function AccountApp() {
       }
     };
 
-    window.addEventListener('anytap-session-expired', handleSessionChange);
-    window.addEventListener('anytap-member-session', handleSessionChange);
+    window.addEventListener('anytap-session-expired', handleExpired);
+    window.addEventListener('anytap-member-session', handleMemberSession);
 
     return () => {
-      window.removeEventListener('anytap-session-expired', handleSessionChange);
-      window.removeEventListener('anytap-member-session', handleSessionChange);
+      window.removeEventListener('anytap-session-expired', handleExpired);
+      window.removeEventListener('anytap-member-session', handleMemberSession);
     };
   }, []);
 
@@ -317,7 +324,10 @@ export function AccountApp() {
   }
 
   if (gate === 'out') {
-    return <Navigate to="/login" replace state={{ from: normalizedPath }} />;
+    const loginUrl = expiredReason
+      ? `/login?expired=1&reason=${encodeURIComponent(expiredReason)}`
+      : '/login';
+    return <Navigate to={loginUrl} replace state={{ from: normalizedPath }} />;
   }
 
   return <AccountPortal />;

@@ -52,7 +52,7 @@ function checkExpired(session) {
   if (now > session.expiresAt) {
     console.warn('[SessionTimeout] Session has expired due to inactivity.');
     clearHttpSession();
-    window.dispatchEvent(new Event('anytap-session-expired'));
+    window.dispatchEvent(new CustomEvent('anytap-session-expired', { detail: { reason: 'inactivity' } }));
     return null;
   }
   return session;
@@ -87,6 +87,12 @@ export function touchHttpSession() {
 
   const current = readJson(sessionStorage, HTTP_SESSION_KEY) || readJson(localStorage, HTTP_SESSION_KEY);
   if (!current?.userId) return;
+
+  // Don't touch expired sessions
+  if (current.expiresAt && now > current.expiresAt) {
+    checkExpired(current);
+    return;
+  }
 
   const updated = {
     ...current,
@@ -131,6 +137,10 @@ export function clearHttpSession() {
   removeKey(sessionStorage, HTTP_SESSION_KEY);
   removeKey(localStorage, HTTP_SESSION_KEY);
   removeKey(localStorage, DEMO_SESSION_KEY);
+  try {
+    sessionStorage.removeItem('anytap_admin_session');
+    localStorage.removeItem('anytap_admin_session');
+  } catch { /* noop */ }
   window.dispatchEvent(new Event('anytap-member-session'));
 }
 
@@ -164,6 +174,16 @@ export function initSessionActivityListener() {
   const activityEvents = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'];
   activityEvents.forEach((ev) => {
     window.addEventListener(ev, handleUserActivity, { passive: true });
+  });
+
+  // When user returns to tab after inactivity or sleep, check immediately
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      getHttpSession();
+    }
+  });
+  window.addEventListener('focus', () => {
+    getHttpSession();
   });
 
   // Periodic expiration checker loop (every 10 seconds)

@@ -5,6 +5,7 @@ import { AdminTopbar } from './AdminTopbar.jsx';
 import { AdminConfirmProvider } from './AdminConfirmModal.jsx';
 import { getCurrentAdmin } from '../services/adminService.js';
 import {
+  clearAdminSession,
   hasAdminSession,
   hasMemberSession,
   hasMockSession,
@@ -13,7 +14,7 @@ import {
   establishLoginSession,
 } from '../../lib/services/authService.js';
 import { hasDemoAdminAccess } from '../../lib/demo-session.js';
-import { getHttpSession } from '../../lib/api/httpSession.js';
+import { clearHttpSession, getHttpSession } from '../../lib/api/httpSession.js';
 
 export function AdminLayout() {
   const [admin, setAdmin] = useState(null);
@@ -61,6 +62,8 @@ export function AdminLayout() {
       } else {
         window.alert('Login session has expired due to 30 minutes of inactivity. Please log in again.');
       }
+      clearHttpSession();
+      clearAdminSession();
       setAdmin(null);
       setAuthChecked(true);
       navigate(`/login?expired=1&reason=${encodeURIComponent(reason || 'expired')}`, {

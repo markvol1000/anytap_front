@@ -170,7 +170,13 @@ function LoginPage() {
     const reason = params.get('reason');
     if ((expired || reason) && !hasShownToastRef.current) {
       hasShownToastRef.current = true;
-      showToast('System is under maintenance. Please try again later.');
+      if (reason === 'inactivity' || reason === 'expired' || (expired && !reason)) {
+        showToast('Login session has expired due to 30 minutes of inactivity. Please log in again.');
+      } else if (reason === 'unauthorized') {
+        showToast('Your session has expired or is unauthorized. Please log in again.');
+      } else {
+        showToast('System is under maintenance. Please try again later.');
+      }
 
       // 주소창에서 쿼리스트링(?expired=1...)을 즉시 정리하여 리렌더링 시 중복 토스트 재발 방지
       try {
