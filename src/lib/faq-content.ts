@@ -440,7 +440,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         id: "Q85",
         question: "What is the settlement cycle and payment method for income?",
-        answer: "Settlement reference date: last day of each month. Payout currency: USDT. Payment within 15 U.S. business days of the following month. Card issuance commission settles the following month after KYC and issuance. Top-up fee commission accrued during the month is settled the following month. Minimum settlement: $1 USDT.",
+        answer: "Settlement: paid once in the following month. The payout schedule may later vary by partner. Payout currency: USDT. Card issuance commission settles the following month after KYC and issuance. Top-up fee commission accrued during the month is settled the following month. Minimum settlement: $1 USDT.",
       },
       {
         id: "Q86",

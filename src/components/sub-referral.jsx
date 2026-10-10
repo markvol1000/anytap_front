@@ -114,7 +114,7 @@ function ReferralEarn() {
         <DataTable
           headers={["Item", "Detail"]}
           rows={[
-            ["Settlement date", "Last day of each month"],
+            ["Settlement date", "Paid once in the following month. May change later by partner."],
             ["Payout currency", { v: "USDT", kind: "em" }],
             ["Payout method", "Request withdrawal from the referral dashboard → reviewed → paid"],
             ["Sign-up commission", "Settled the following month after KYC + card issuance complete"],

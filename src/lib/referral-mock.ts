@@ -109,7 +109,7 @@ export const REFERRAL_FAQ: ReferralFaqItem[] = [
   },
   {
     question: 'When are rewards paid?',
-    answer: 'Rewards are finalized at month-end and paid out within 2 days of the following month.',
+    answer: 'Rewards are paid once in the following month. The payout schedule may later vary by partner.',
   },
   {
     question: 'How do withdrawals work?',
