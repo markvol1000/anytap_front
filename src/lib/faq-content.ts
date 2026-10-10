@@ -414,28 +414,28 @@ export const FAQ_SECTIONS: FaqSection[] = [
       },
       {
         id: "Q80",
-        question: "What is the referral tier structure?",
-        answer: "There are two tiers: Silver and Premium. Silver is entered after application and admin approval. Premium is applied either by direct company designation or automatically once the Silver upgrade conditions are met.",
+        question: "What is the referral program structure?",
+        answer: "Anytap operates a single referral program: Referral Partner. You can become a Referral Partner by submitting an application, which is then reviewed and approved by our admin team.",
       },
       {
         id: "Q81",
         question: "What is the card issuance commission?",
-        answer: "The commission is confirmed once the referred member's KYC is approved and card issuance is complete, and is settled the following month.\n\nIssuance commission: Silver $10 USDT \u00b7 Premium $20 USDT per card.",
+        answer: "The commission is confirmed once the referred member's KYC is approved and card issuance is complete, and is settled the following month.\n\nIssuance commission: $10 USDT per card.",
       },
       {
         id: "Q82",
         question: "How is the top-up fee commission calculated?",
-        answer: "Each time a recruited member tops up, a portion of the top-up fee revenue is automatically accrued as commission. This income continues to accrue for as long as the member keeps topping up their card.",
+        answer: "Each time a recruited member tops up, 0.2% of the top-up amount is automatically accrued as commission. This income continues to accrue for as long as the member keeps topping up their card.",
       },
       {
         id: "Q83",
-        question: "Can you give me income scenarios? (Based on the highest Premium tier)",
-        answer: "These figures are examples based on the highest tier and are not guaranteed income.\n\nExample scenarios (highest Premium tier, not guaranteed):\n\u2022 10 members \u00d7 $1,000 monthly top-up \u2192 up to $40 USDT/month\n\u2022 50 members \u00d7 $1,000 \u2192 up to $200 USDT/month\n\u2022 100 members \u00d7 $1,000 \u2192 up to $400 USDT/month",
+        question: "Can you give me income scenarios?",
+        answer: "The figures below are examples based on a 0.2% top-up commission and are not guaranteed income.\n\u2022 10 members \u00d7 $1,000 monthly top-up \u2192 up to $20 USDT/month\n\u2022 50 members \u00d7 $1,000 \u2192 up to $100 USDT/month\n\u2022 100 members \u00d7 $1,000 \u2192 up to $200 USDT/month",
       },
       {
         id: "Q84",
-        question: "How do I upgrade to Premium?",
-        answer: "If both of the following conditions are met at the same time, Premium is automatically applied starting the 1st of the following month.\n\u2022  Condition 1: 50 or more cumulative recruited members\n\u2022  Condition 2: total top-up amount of recruited members of $7,200 USDT or more",
+        question: "Can offline businesses or corporate members become referral partners?",
+        answer: "Yes. Offline businesses and corporate members are welcome to inquire. Please email us at support@anytap.io with your business details, and our team will contact you.",
       },
       {
         id: "Q85",
@@ -450,7 +450,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         id: "Q87",
         question: "Can I check whether a referred member entered my referral code?",
-        answer: "You can view the number of recruited members, cumulative income, this month's income, and tier status in real time in the Referral tab of the referrer dashboard.",
+        answer: "You can view the number of recruited members, cumulative income, and this month's income in real time in the Referral tab of the referrer dashboard.",
       },
       {
         id: "Q88",

@@ -50,7 +50,7 @@ export const HOME_FAQ: HomeFaqItem[] = [
   {
     question: 'How does the referral program work?',
     answer:
-      'The Anytap referral program pays a portion of card issuance and top-up fees to referrers when referred members issue cards and top up. Silver and Premium tiers are available, with higher rewards at Premium. Commissions are settled monthly in USDT, with a minimum payout of $1.',
+      'The Anytap referral program pays Referral Partners a card issuance bonus of $10 USDT per card and 0.2% of every top-up when referred members issue cards and top up. Commissions are settled monthly in USDT, with a minimum payout of $1.',
   },
   {
     question: 'Which countries are restricted?',
