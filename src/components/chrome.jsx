@@ -196,11 +196,6 @@ function SiteHeader({
           </nav>
 
                     <div className="topbar__cta">
-            {showAdminPortal && (
-              <Link to="/admin" className="btn btn--ghost btn--sm topbar__admin" onClick={closeNav}>
-                Admin
-              </Link>
-            )}
 
             {member ? (
               <>
@@ -324,11 +319,6 @@ function SiteHeader({
           </nav>
 
                     <div className="mobnav__foot">
-            {!member && !isLoggedIn && showAdminPortal && (
-              <Link to="/admin" className="btn btn--outline mobnav__admin" onClick={closeNav}>
-                Admin portal
-              </Link>
-            )}
 
             {member ? (
               <button

@@ -100,8 +100,7 @@ export function getAdminSessionEmail() {
 }
 
 export function showAdminPortalLink() {
-  if (!hasMockSession()) return false;
-  return isAdminEmail(getMockSessionEmail());
+  return false;
 }
 
 export function establishLoginSession(email) {

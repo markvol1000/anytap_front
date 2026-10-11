@@ -270,10 +270,7 @@ export function establishLoginSession() {
 }
 
 export function showAdminPortalLink() {
-  const session = getHttpSession();
-  if (!session) return false;
-  const role = String(session.role).trim().toLowerCase();
-  return role === 'admin';
+  return false;
 }
 
 export function setAdminSession() {}
