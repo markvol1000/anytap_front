@@ -82,6 +82,8 @@ function normalizeAuthProfile(data, loginId) {
     trackingNumber: data.trackingNumber || data.tracking_number || '',
     carrier: data.carrier || '',
     role: data.role || '',
+    referralCode: data.referralCode || data.referral_code || '',
+    ownReferralCode: data.ownReferralCode || data.own_referral_code || data.referralCode || data.referral_code || '',
   };
 }
 
