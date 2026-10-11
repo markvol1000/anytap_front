@@ -19,12 +19,12 @@ function ReferralWhy() {
         <Split media={
           <div className="ref-card">
             <div className="ref-card__head"><span>Referral earnings</span><span className="ref-card__live"><span className="dot"></span> Live</span></div>
-            <div className="ref-card__amount">$4,820<span>.50</span></div>
+            <div className="ref-card__amount">$2,410<span>.25</span></div>
             <div className="ref-card__sub">This month · paid in USDT</div>
             <div className="ref-card__bars">{[42,58,50,72,64,88,100].map((h,i)=><span key={i} style={{height:`${h}%`}}></span>)}</div>
             <div className="ref-card__row">
               <div><div className="ref-card__row-k">Active referrals</div><div className="ref-card__row-v">312</div></div>
-              <div><div className="ref-card__row-k">Commission tier</div><div className="ref-card__row-v">0.4%</div></div>
+              <div><div className="ref-card__row-k">Commission tier</div><div className="ref-card__row-v">0.2%</div></div>
             </div>
           </div>
         }>
@@ -39,14 +39,14 @@ function ReferralWhy() {
       </Band>
 
       <Band tone="subtle">
-        <SectionHead eyebrow="Cumulative earnings" title="Earn More Scenarios (Premium — Top Tier)" />
+        <SectionHead eyebrow="Cumulative earnings" title="Earn More Scenarios" />
         <DataTable
           highlightCol={1}
           headers={["Scenario", "Estimated monthly earnings"]}
           rows={[
-            ["10 referred members × $1,000 top-up / month", { v: "Up to $40 USDT / month", kind: "em" }],
-            ["50 referred members × $1,000 top-up / month", { v: "Up to $200 USDT / month", kind: "em" }],
-            ["100 referred members × $1,000 top-up / month", { v: "Up to $400 USDT / month", kind: "em" }],
+            ["10 referred members × $1,000 top-up / month", { v: "Up to $20 USDT / month", kind: "em" }],
+            ["50 referred members × $1,000 top-up / month", { v: "Up to $100 USDT / month", kind: "em" }],
+            ["100 referred members × $1,000 top-up / month", { v: "Up to $200 USDT / month", kind: "em" }],
           ]} />
       </Band>
     </>
@@ -59,19 +59,19 @@ function ReferralEarn() {
     <>
       <SubHero
         variant="gradient"
-        title={<>Two tiers. One goal: maximize your <span className="subhero__accent">earnings</span>.</>}
-        sub="Start at Silver and grow into Premium."
+        title={<>One program. One goal: maximize your <span className="subhero__accent">earnings</span>.</>}
+        sub="Become an Anytap Referral Partner and start earning."
         primary={{ label: "Become a Referral", href: "/referral-apply" }} />
 
       <Band>
-        <SectionHead eyebrow="Tiers" title="Commission Comparison by Tier" />
+        <SectionHead eyebrow="Commission" title="Referral Partner Commission" />
         <DataTable
-          highlightCol={2}
-          headers={["Category", "Silver", "Premium"]}
+          highlightCol={1}
+          headers={["Item", "Referral Partner"]}
           rows={[
-            ["Card issuance bonus", "$10 USDT per card", "$20 USDT per card"],
-            ["Top-up fee income", "Partial share of top-up fee", { v: "Maximum share of top-up fee", kind: "em" }],
-            ["How to join", "Apply → Admin approval", "Direct appointment or Silver upgrade"],
+            ["Card issuance bonus", "$10 USDT per card"],
+            ["Top-up fee income", "0.2% of every top-up"],
+            ["How to join", "Apply → Admin approval"],
           ]} />
       </Band>
 
@@ -100,30 +100,13 @@ function ReferralEarn() {
       <Band tone="subtle">
         <SectionHead eyebrow="Simulation" title="Monthly earnings simulation" lede="Top-up commission recurs every month for as long as your members stay active." />
         <DataTable
-          headers={["Member monthly top-up", "Silver (0.2%)", "Premium (0.4%)"]}
+          highlightCol={1}
+          headers={["Member monthly top-up", "Referral Partner (0.2%)"]}
           rows={[
-            ["$1,000 USDT", "$2 USDT", { v: "$4 USDT", kind: "em" }],
-            ["$10,000 USDT", "$20 USDT", { v: "$40 USDT", kind: "em" }],
-            ["$100,000 USDT", "$200 USDT", { v: "$400 USDT", kind: "em" }],
+            ["$1,000 USDT", { v: "$2 USDT", kind: "em" }],
+            ["$10,000 USDT", { v: "$20 USDT", kind: "em" }],
+            ["$100,000 USDT", { v: "$200 USDT", kind: "em" }],
           ]} />
-      </Band>
-
-      <Band>
-        <Split media={
-          <div className="upgrade-card">
-            <div className="upgrade-card__badge"><Icon name="gift" size={26} /></div>
-            <div className="upgrade-card__title">Premium</div>
-            <div className="upgrade-card__rate">0.4%</div>
-            <div className="upgrade-card__cond"><span><Icon name="checkCircle" size={16} /> 50+ referred members</span><span><Icon name="checkCircle" size={16} /> $7,200+ total top-ups</span></div>
-          </div>
-        }>
-          <SectionHead eyebrow="Upgrade" title="How to reach Premium" />
-          <p className="prose">Meet both conditions at the same time and Premium commission will be applied automatically from the 1st of the following month.</p>
-          <CheckList items={[
-            "Condition 1 — 50+ cumulative referred members",
-            "Condition 2 — $7,200+ USDT total top-ups by your members",
-          ]} />
-        </Split>
       </Band>
 
       <Band tone="subtle">
@@ -131,7 +114,7 @@ function ReferralEarn() {
         <DataTable
           headers={["Item", "Detail"]}
           rows={[
-            ["Settlement date", "Last day of each month"],
+            ["Settlement date", "Paid once in the following month. May change later by partner."],
             ["Payout currency", { v: "USDT", kind: "em" }],
             ["Payout method", "Request withdrawal from the referral dashboard → reviewed → paid"],
             ["Sign-up commission", "Settled the following month after KYC + card issuance complete"],

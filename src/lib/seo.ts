@@ -146,7 +146,7 @@ export const SEO_PAGES: PageSeo[] = [
   {
     path: '/referral-earn',
     title: `Earn more with ${BRAND} referral`,
-    description: 'Referral tiers and commissions — earn more when your network tops up.',
+    description: 'Referral Partner commissions — earn more when your network tops up.',
   },
   {
     path: '/referral-apply',

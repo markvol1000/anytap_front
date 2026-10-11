@@ -33,7 +33,7 @@ export const NAV = [
     href: '/referral-why',
     items: [
       { label: 'Why Referral', href: '/referral-why', desc: 'Earn while you sleep' },
-      { label: 'Earn More', href: '/referral-earn', desc: 'Tiers & commission' },
+      { label: 'Earn More', href: '/referral-earn', desc: 'Partner commission' },
       { label: 'Apply Now', href: '/referral-apply', desc: 'Join the program' },
     ],
   },
