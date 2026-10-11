@@ -14,18 +14,7 @@ import { hasDemoAdminAccess } from '../lib/demo-session.js';
 import { getHttpSession } from '../lib/api/httpSession.js';
 
 const STORAGE_KEY_HISTORY = 'anytap_sysops_console_history_v1';
-const STORAGE_KEY_MODEL = 'anytap_sysops_model_v1';
 
-export const GEMINI_3X_MODELS = [
-  { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash (최신 기본)', tag: 'Latest Default' },
-  { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash', tag: 'High-Speed' },
-  { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', tag: 'Stable' },
-  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', tag: 'Fast' },
-  { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', tag: 'Light' },
-  { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro Preview', tag: 'Deep Reasoning' },
-  { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash Lite', tag: 'Compact' },
-  { id: 'gemini-3-flash-preview', name: 'Gemini 3.0 Flash Preview', tag: 'Preview' },
-];
 
 const QUICK_PROMPTS = [
   { label: '전체 시스템 진단', query: '전체 시스템 가동 상태 및 헬스체크 현황 알려줘' },
@@ -79,14 +68,6 @@ export function SysDiagnosticPage() {
       }
     } catch { /* noop */ }
     return [INITIAL_WELCOME_REPORT];
-  });
-
-  const [selectedModel, setSelectedModel] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_MODEL);
-      if (saved && GEMINI_3X_MODELS.some((m) => m.id === saved)) return saved;
-    } catch { /* noop */ }
-    return 'gemini-3.8-flash';
   });
 
   const [input, setInput] = useState('');
@@ -279,68 +260,17 @@ export function SysDiagnosticPage() {
       let responseText = '';
       try {
         const res = await apiPost('/admin/ai/chat', { 
-          message: promptWithContext,
-          model: selectedModel 
+          message: promptWithContext 
         });
         const answer = res?.answer || res?.data?.answer;
         if (answer && answer.trim().length > 0) {
           responseText = answer;
         }
       } catch (err) {
-        console.warn('Backend diagnostic engine endpoint failed, falling back to direct 3.x engine:', err);
+        console.warn('Backend diagnostic endpoint failed, falling back to local diagnostic:', err);
       }
 
-      // If backend was not available or gave empty response, call Gemini 3.x directly from client
-      if (!responseText) {
-        try {
-          const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-          const candidateModels = [
-            selectedModel,
-            ...GEMINI_3X_MODELS.map((m) => m.id).filter((id) => id !== selectedModel),
-          ];
-
-          for (const modelId of candidateModels) {
-            try {
-              const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${GEMINI_API_KEY}`;
-              const directRes = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  contents: [{ role: 'user', parts: [{ text: promptWithContext }] }],
-                  system_instruction: {
-                    parts: [{
-                      text: `당신은 AnyTap 글로벌 결제 및 카드 관리 시스템의 실시간 자동 운영 진단 관제 터미널(AnyTap System Operations & Diagnostic Terminal)입니다.
-운영자의 질문에 대해 리눅스 CLI 관제 콘솔 스타일의 정확하고 체계적인 기술 리포트를 제공하세요.
-
-핵심 지침:
-1. [동문서답 방지 / 직접 답변]: 사용자의 질문 의도(특정 리눅스 명령어, 포트 관리, 데이터 조회, 서버 트러블슈팅, 수수료, 연동 규정, 일반 질의 등)에 가장 명쾌하고 직접적인 답변을 최우선으로 출력하세요. 질문과 무관한 일반 시스템 상태를 임의로 늘어놓지 마세요.
-2. [CLI 스타일 포맷]: 명령어, 쿼리, 설정 등은 실제 복사해 바로 실행할 수 있도록 쉘 코드 블록(\`\`\`bash)으로 일목요연하게 제공하세요.
-3. [용어 규칙]: 답변에서 AI, 챗봇, LLM, Gemini 등 인공지능 관련 단어를 절대 언급하지 마세요. 자체 시스템 운영 진단 터미널의 실시간 분석 결과물로 작성하세요.`
-                    }]
-                  }
-                })
-              });
-
-              if (directRes.ok) {
-                const data = await directRes.json();
-                const partText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (partText && partText.trim()) {
-                  responseText = partText;
-                  break;
-                }
-              } else {
-                console.warn(`Model ${modelId} returned HTTP ${directRes.status}, cascading to next 3.x model...`);
-              }
-            } catch (errOne) {
-              console.warn(`Model ${modelId} fetch failed:`, errOne);
-            }
-          }
-        } catch (clientDirectErr) {
-          console.warn('Client direct 3.x cascade call failed:', clientDirectErr);
-        }
-      }
-
-      // If both backend and direct 3.x API were unavailable, run local diagnostic
+      // If backend was not available or gave empty response, run local diagnostic
       if (!responseText) {
         responseText = await runLocalDiagnostic(query);
       }
@@ -466,33 +396,6 @@ export function SysDiagnosticPage() {
 
         {/* Console Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {/* Gemini 3.x Diagnostic Model Selector */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600' }}>Model:</span>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              title="진단 분석 엔진 선택 (Gemini 3.x Series)"
-              style={{
-                backgroundColor: '#1e293b',
-                border: '1px solid #3b82f6',
-                color: '#38bdf8',
-                borderRadius: '6px',
-                padding: '5px 10px',
-                fontSize: '12px',
-                fontWeight: '700',
-                outline: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              {GEMINI_3X_MODELS.map((m) => (
-                <option key={m.id} value={m.id} style={{ backgroundColor: '#0f172a', color: '#f8fafc' }}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <button
             type="button"
             onClick={handleExportLogs}
@@ -772,13 +675,13 @@ export function SysDiagnosticPage() {
                 boxShadow: loading ? 'none' : '0 2px 8px rgba(37, 99, 235, 0.4)',
                 transition: 'background-color 0.2s ease',
               }}>
-              <span>{loading ? '진단 중...' : '진단 실행'}</span>
+              <span>{loading ? 'Analyzing...' : 'Run Diagnostic'}</span>
               <Icon name="arrowRight" size={14} />
             </button>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#64748b' }}>
-            <span>진단 분석 엔진: <strong style={{ color: '#38bdf8' }}>{GEMINI_3X_MODELS.find((m) => m.id === selectedModel)?.name || selectedModel}</strong></span>
-            <span>빈 칸 상태에서 [진단 실행] 시 실시간 시스템 종합 헬스체크 리포트가 생성됩니다.</span>
+            <span>Diagnostic Engine: <strong style={{ color: '#38bdf8' }}>Real-time System Operations Daemon</strong></span>
+            <span>Leaving input empty will generate a comprehensive system health report.</span>
           </div>
         </div>
       </div>
