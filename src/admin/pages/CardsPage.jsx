@@ -20,13 +20,10 @@ import {
   getCardById,
   getCardTransactions,
   rejectCard,
-  simulateCardTransaction,
   terminateCard,
-  triggerMockCardSpend,
   unfreezeCard,
 } from '../services/api/adminApiService.js';
 
-const isDevEnv = (import.meta.env.DEV || import.meta.env.MODE === 'development' || import.meta.env.MODE === 'dev' || (typeof window !== 'undefined' && (['localhost', '127.0.0.1'].includes(window.location.hostname) || window.location.hostname.includes('dev') || window.location.port === '5173'))) && !(typeof window !== 'undefined' && (window.location.hostname.endsWith('anytap.io') && !window.location.hostname.includes('dev')));
 
 const fetchRegisteredCards = (params) => getCardApplications({ ...params, onlyRegistered: true });
 const fetchCardDetail = (id) => getCardById(id);
@@ -85,18 +82,6 @@ function CopyableTxId({ txId, color = '#b45309' }) {
   );
 }
 
-const SIM_CURRENCIES = [
-  { code: 'KRW', label: '₩ KRW', name: 'South Korean Won', symbol: '₩', defaultAmt: '15000', defaultMerch: 'Starbucks Gangnam' },
-  { code: 'USD', label: '$ USD', name: 'US Dollar', symbol: '$', defaultAmt: '10.00', defaultMerch: 'Starbucks Coffee' },
-  { code: 'EUR', label: '€ EUR', name: 'Euro', symbol: '€', defaultAmt: '10.00', defaultMerch: 'Paris Bistro' },
-  { code: 'SGD', label: 'S$ SGD', name: 'Singapore Dollar', symbol: 'S$', defaultAmt: '15.00', defaultMerch: 'Marina Bay Merchant' },
-  { code: 'HKD', label: 'HK$ HKD', name: 'Hong Kong Dollar', symbol: 'HK$', defaultAmt: '80.00', defaultMerch: 'Central Cafe HK' },
-  { code: 'CNY', label: '¥ CNY', name: 'Chinese Yuan', symbol: '¥', defaultAmt: '70.00', defaultMerch: 'Shanghai Mart' },
-  { code: 'PHP', label: '₱ PHP', name: 'Philippine Peso', symbol: '₱', defaultAmt: '500.00', defaultMerch: 'Manila Store' },
-  { code: 'IDR', label: 'Rp IDR', name: 'Indonesian Rupiah', symbol: 'Rp', defaultAmt: '150000', defaultMerch: 'Jakarta Cafe' },
-  { code: 'USDT', label: '₮ USDT', name: 'Tether USD', symbol: '₮', defaultAmt: '10.00', defaultMerch: 'Online Crypto Store' },
-];
-
 export function CardsPage() {
   const confirm = useAdminConfirm();
   const [searchParams] = useSearchParams();
@@ -119,16 +104,7 @@ export function CardsPage() {
   const [depositPage, setDepositPage] = useState(1);
   const [txSectionPage, setTxSectionPage] = useState(1);
 
-  const [showSimModal, setShowSimModal] = useState(false);
   const [selectedAuthTx, setSelectedAuthTx] = useState(null);
-  const [simCurrency, setSimCurrency] = useState('KRW');
-  const [simType, setSimType] = useState('auth');
-  const [simAmount, setSimAmount] = useState('15000');
-  const [simMerchant, setSimMerchant] = useState('Starbucks Gangnam');
-  const [simDescription, setSimDescription] = useState('Test Card Payment Auth');
-  const [simScenario, setSimScenario] = useState('APPROVED');
-  const [simAutoFreeze, setSimAutoFreeze] = useState(true);
-  const [simLoading, setSimLoading] = useState(false);
   const [cardActionLoading, setCardActionLoading] = useState(false);
 
   const loadTxs = useCallback(async (p = 1) => {
@@ -144,87 +120,6 @@ export function CardsPage() {
       setTxLoading(false);
     }
   }, [selectedId, detail?.memberId, detail?.wasabiCardId]);
-
-  const handleRunSimulation = useCallback(async (e) => {
-    if (e) e.preventDefault();
-    if (!detail) return;
-    setSimLoading(true);
-    try {
-      const cardId = detail.wasabiCardId || detail.id;
-      const memberId = detail.memberId || detail.userId;
-
-      if (simScenario === 'PIN_BLOCKED') {
-        const pinMerchant = simMerchant.includes('PIN') ? simMerchant : `${simMerchant} (PIN Blocked)`;
-        const finalDesc = simDescription && simDescription.includes('PIN') ? simDescription : `${pinMerchant} - Incorrect PIN (Card Blocked)`;
-        await triggerMockCardSpend({
-          userId: memberId,
-          cardNo: cardId,
-          amount: Number(simAmount),
-          currency: simCurrency,
-          merchantName: pinMerchant,
-          status: 'FAILED',
-          description: finalDesc,
-          declineReason: 'Incorrect PIN (Card Blocked)'
-        });
-
-        if (simAutoFreeze) {
-          try {
-            await freezeCard(selectedId);
-            const refreshed = await fetchCardDetail(selectedId);
-            setDetail(refreshed);
-            await list.refresh();
-          } catch (freezeErr) {
-            console.warn('[CardsPage] Note on auto-freezing card:', freezeErr);
-          }
-        }
-
-        window.alert(`[${simCurrency}] PIN Error / Card Blocked simulation successfully executed.`);
-      } else if (simScenario === 'INSUFFICIENT_FUNDS') {
-        const finalDesc = simDescription || `${simMerchant} - Insufficient Funds`;
-        await triggerMockCardSpend({
-          userId: memberId,
-          cardNo: cardId,
-          amount: Number(simAmount),
-          currency: simCurrency,
-          merchantName: simMerchant,
-          status: 'DECLINED',
-          description: finalDesc,
-          declineReason: 'Insufficient Funds'
-        });
-        window.alert(`[${simCurrency}] Insufficient Funds transaction simulation successfully executed.`);
-      } else {
-        // Standard APPROVED
-        try {
-          await simulateCardTransaction(cardId, {
-            amount: Number(simAmount),
-            currency: simCurrency,
-            type: simType,
-            merchantName: simMerchant,
-            description: simDescription || simMerchant,
-          });
-        } catch (simErr) {
-          // If Wasabi simulate endpoint fails in dev, record via mock webhook
-          await triggerMockCardSpend({
-            userId: memberId,
-            cardNo: cardId,
-            amount: Number(simAmount),
-            currency: simCurrency,
-            merchantName: simMerchant,
-            status: 'SUCCESS',
-            description: simDescription || simMerchant
-          });
-        }
-        window.alert(`[${simCurrency}] ${Number(simAmount).toLocaleString()} ${simCurrency} payment simulation successfully executed.`);
-      }
-
-      setShowSimModal(false);
-      loadTxs(1);
-    } catch (err) {
-      window.alert(err.message || 'Failed to create payment simulation.');
-    } finally {
-      setSimLoading(false);
-    }
-  }, [detail, simScenario, simAmount, simCurrency, simType, simMerchant, simDescription, simAutoFreeze, selectedId, setDetail, list, loadTxs]);
 
   const handleUnfreezeCard = useCallback(async () => {
     if (!detail) return;
@@ -1082,261 +977,12 @@ export function CardsPage() {
                   </div>
                 </AdminDetailSection>
 
-                {/* Dev-Only Simulated Transaction Panel */}
-                {isDevEnv && (
-                  <AdminDetailSection title="🧪 Test Transaction Simulator (Dev)">
-                    <div style={{ padding: '4px' }}>
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn--sm admin-btn--secondary"
-                        style={{ fontSize: '11px', padding: '4px 10px', width: 'fit-content' }}
-                        onClick={() => setShowSimModal(true)}
-                      >
-                        💳 Simulate Test Payment Approval
-                      </button>
-                    </div>
-                  </AdminDetailSection>
-                )}
               </>
             )}
           </AdminDetailPanel>
         )}
       />
 
-      {/* Test Transaction Simulation Modal Popup */}
-      {showSimModal && detail && (
-        <div className="admin-modal-backdrop" onClick={() => setShowSimModal(false)}>
-          <div className="admin-modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
-            <div className="admin-modal__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1e293b' }}>
-                💳 Card Payment Approval Simulator (Test Payment)
-              </h3>
-              <button
-                type="button"
-                className="admin-modal__close"
-                onClick={() => setShowSimModal(false)}
-                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}
-              >
-                ×
-              </button>
-            </div>
-
-            <form onSubmit={handleRunSimulation} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {/* 1. Currency Selection */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '8px' }}>
-                  1. Select Payment Currency
-                </label>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '8px'
-                }}>
-                  {SIM_CURRENCIES.map((cur) => {
-                    const isSelected = simCurrency === cur.code;
-                    return (
-                      <button
-                        key={cur.code}
-                        type="button"
-                        onClick={() => {
-                          setSimCurrency(cur.code);
-                          setSimAmount(cur.defaultAmt);
-                          if (simScenario === 'PIN_BLOCKED') {
-                            setSimMerchant('ATM / POS Terminal');
-                          } else if (simScenario === 'INSUFFICIENT_FUNDS') {
-                            setSimMerchant('Online Merchant');
-                          } else {
-                            setSimMerchant(cur.defaultMerch);
-                          }
-                        }}
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: '8px 6px',
-                          borderRadius: '8px',
-                          border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                          backgroundColor: isSelected ? '#eff6ff' : '#f8fafc',
-                          color: isSelected ? '#1d4ed8' : '#334155',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontWeight: '800', fontSize: '13px' }}>{cur.label}</span>
-                        </div>
-                        <span style={{ fontSize: '10px', color: isSelected ? '#2563eb' : '#64748b', marginTop: '2px' }}>
-                          {cur.name}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 2. Simulation Scenario Selector */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '8px' }}>
-                  2. Simulation Scenario
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                  {[
-                    { id: 'APPROVED', label: '✓ Approved', desc: 'Normal approval' },
-                    { id: 'PIN_BLOCKED', label: '🚫 PIN Blocked', desc: 'Wrong PIN retry limit' },
-                    { id: 'INSUFFICIENT_FUNDS', label: '✕ Low Funds', desc: 'Insufficient balance' },
-                  ].map((sc) => {
-                    const isSelected = simScenario === sc.id;
-                    return (
-                      <button
-                        key={sc.id}
-                        type="button"
-                        onClick={() => {
-                          setSimScenario(sc.id);
-                          if (sc.id === 'PIN_BLOCKED') {
-                            setSimMerchant('ATM / POS Terminal');
-                            setSimDescription('POS Terminal - Incorrect PIN (Card Blocked)');
-                          } else if (sc.id === 'INSUFFICIENT_FUNDS') {
-                            setSimMerchant('Online Merchant');
-                            setSimDescription('Online Merchant - Insufficient Funds');
-                          } else {
-                            setSimMerchant('Starbucks Gangnam');
-                            setSimDescription('Test Card Payment Auth');
-                          }
-                        }}
-                        style={{
-                          padding: '8px 6px',
-                          borderRadius: '8px',
-                          border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                          backgroundColor: isSelected ? '#eff6ff' : '#f8fafc',
-                          color: isSelected ? '#1d4ed8' : '#334155',
-                          cursor: 'pointer',
-                          textAlign: 'center',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <div style={{ fontWeight: '700', fontSize: '12px' }}>{sc.label}</div>
-                        <div style={{ fontSize: '10px', color: isSelected ? '#2563eb' : '#64748b', marginTop: '2px', lineHeight: 1.2 }}>
-                          {sc.desc}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {simScenario === 'PIN_BLOCKED' && (
-                <div style={{
-                  padding: '10px 12px',
-                  backgroundColor: '#fef2f2',
-                  border: '1px solid #fecaca',
-                  borderRadius: '6px',
-                  fontSize: '11.5px',
-                  color: '#991b1b'
-                }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: '600' }}>
-                    <input
-                      type="checkbox"
-                      checked={simAutoFreeze}
-                      onChange={(e) => setSimAutoFreeze(e.target.checked)}
-                      style={{ cursor: 'pointer' }}
-                    />
-                    <span>Automatically freeze card in DB (Simulate Security Block)</span>
-                  </label>
-                  <div style={{ fontSize: '10.5px', color: '#b91c1c', marginTop: '4px', paddingLeft: '22px' }}>
-                    Card status will become <strong>Frozen</strong> and can be tested with the Unfreeze action.
-                  </div>
-                </div>
-              )}
-
-              {/* 3. Amount & Type */}
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
-                    3. Payment Amount ({simCurrency})
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    required
-                    className="admin-input"
-                    value={simAmount}
-                    onChange={(e) => setSimAmount(e.target.value)}
-                    placeholder={simCurrency === 'KRW' ? '15000' : '10.00'}
-                    style={{ width: '100%', padding: '8px 10px', fontSize: '13px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                  />
-                </div>
-
-                <div style={{ width: '130px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
-                    Payment Type
-                  </label>
-                  <select
-                    value={simType}
-                    onChange={(e) => setSimType(e.target.value)}
-                    style={{ width: '100%', padding: '8px 6px', fontSize: '12px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#ffffff' }}
-                  >
-                    <option value="auth">Auth</option>
-                    <option value="refund">Refund</option>
-                    <option value="reversal">Reversal</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* 4. Merchant Name */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
-                  4. Merchant Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="admin-input"
-                  value={simMerchant}
-                  onChange={(e) => setSimMerchant(e.target.value)}
-                  placeholder="e.g. Starbucks Gangnam, GS25"
-                  style={{ width: '100%', padding: '8px 10px', fontSize: '13px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                />
-              </div>
-
-              {/* 5. Description */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '4px' }}>
-                  5. Description
-                </label>
-                <input
-                  type="text"
-                  className="admin-input"
-                  value={simDescription}
-                  onChange={(e) => setSimDescription(e.target.value)}
-                  placeholder="Test simulation description"
-                  style={{ width: '100%', padding: '8px 10px', fontSize: '13px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                />
-              </div>
-
-              {/* Actions */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e2e8f0' }}>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn--ghost"
-                  onClick={() => setShowSimModal(false)}
-                  disabled={simLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="admin-btn admin-btn--primary"
-                  disabled={simLoading}
-                  style={{ fontWeight: '600', padding: '8px 16px' }}
-                >
-                  {simLoading ? 'Processing...' : '💳 Execute Payment Simulation'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Authorization Transaction Detail Modal Popup */}
       {selectedAuthTx && (

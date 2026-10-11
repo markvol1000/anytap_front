@@ -217,12 +217,6 @@ export async function triggerFeePayout(userId) {
   return apiPost(`/admin/settlement/payout/${encodeURIComponent(userId)}`);
 }
 
-export async function simulateWasabiKycWebhook(userId, status = 'APPROVED', reason = '') {
-  return apiPost(`/admin/members/${encodeURIComponent(userId)}/simulate-kyc-webhook`, {
-    status,
-    reason,
-  });
-}
 
 export async function getMemberCards(userId) {
   if (!userId) return [];
@@ -548,24 +542,7 @@ export async function getCardTransactions(userId, cardNo = '') {
   };
 }
 
-export async function simulateCardTransaction(cardNo, params = {}) {
-  const payload = {
-    type: params.type || 'auth',
-    amount: params.amount,
-    currency: params.currency || '',
-    merchantName: params.merchantName || 'Simulated Merchant',
-    merchantData: params.merchantData || { name: params.merchantName || 'Simulated Merchant', country: 'KR', city: 'SEOUL' },
-    description: params.description || 'Admin Simulated Transaction',
-    ...params,
-  };
-  const data = await apiPost(`/admin/cards/${encodeURIComponent(cardNo)}/simulate-transaction`, payload);
-  return data;
-}
 
-export async function triggerMockCardSpend(payload = {}) {
-  const data = await apiPost('/admin/mock-webhook/card-spend', payload);
-  return data;
-}
 
 function mapWalletRow(u) {
   return {
@@ -1704,17 +1681,8 @@ export async function clearOperationsIssues() {
   return apiPost('/admin/operations/issues/clear');
 }
 
-export async function triggerMockDepositWebhook(payload) {
-  return apiPost('/admin/mock-webhook/deposit', payload);
-}
 
-export async function triggerMockCardSpendWebhook(payload) {
-  return apiPost('/admin/mock-webhook/card-spend', payload);
-}
 
-export async function triggerMockKycWebhook(payload) {
-  return apiPost('/admin/mock-webhook/kyc', payload);
-}
 
 export async function getFeesReport(params = {}) {
   const query = new URLSearchParams();

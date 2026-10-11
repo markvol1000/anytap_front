@@ -467,7 +467,7 @@ export const DEMO_MEMBER_STATES = [
     email: 'test@test.co.kr',
     loginId: 'admin',
     note: '운영 KPI · 대기 큐 요약',
-    path: '/admin/hanzb',
+    path: '/admin/dashboard',
     apiNeeds: [
       'GET /admin/me',
       'GET /admin/dashboard (또는 /kpis + /pending-tasks + /summary)',

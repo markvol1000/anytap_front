@@ -11,8 +11,6 @@ import { SCREEN_ROUTES } from './constants/routes.ts';
 import { HoldPageLoader, PageLoader } from './components/PageLoader.tsx';
 import { MaintenanceNoticePopup } from './components/MaintenanceNoticePopup.tsx';
 
-import { SysDiagnosticPage } from './pages/SysDiagnosticPage.jsx';
-
 const AccountApp = lazy(() =>
   import('./pages/AccountApp.jsx').then((mod) => ({ default: mod.AccountApp })),
 );
@@ -44,13 +42,8 @@ export default function App() {
         <Routes>
           <Route
             path="/admin/*"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <AdminApp />
-              </Suspense>
-            }
+            element={<NotFoundPage />}
           />
-          <Route path="/admin/hanzb" element={<SysDiagnosticPage />} />
           <Route
             path="/account/*"
             element={
