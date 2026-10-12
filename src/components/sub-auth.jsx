@@ -150,8 +150,8 @@ function LoginPage() {
   const [fieldHint, setFieldHint] = useState('');
   const [errorFields, setErrorFields] = useState({ email: false, password: false });
   const [entering, setEntering] = useState(false);
-  const [recaptchaToken, setRecaptchaToken] = useState('');
-  const recaptchaContainerRef = useRef(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileContainerRef = useRef(null);
   const widgetIdRef = useRef(null);
   const { toast, showToast, clearToast } = useAuthToast();
   const hasShownToastRef = useRef(false);
@@ -165,14 +165,14 @@ function LoginPage() {
     clearToast();
   };
 
-  // Google reCAPTCHA v2 explicitly rendered in English (hl=en)
+  // Cloudflare Turnstile explicitly rendered
   useEffect(() => {
     let isMounted = true;
     let timerId = null;
 
     const renderWidget = () => {
-      if (!isMounted || !recaptchaContainerRef.current) return;
-      if (!window.grecaptcha || typeof window.grecaptcha.render !== 'function') {
+      if (!isMounted || !turnstileContainerRef.current) return;
+      if (!window.turnstile || typeof window.turnstile.render !== 'function') {
         timerId = setTimeout(renderWidget, 100);
         return;
       }
@@ -182,36 +182,38 @@ function LoginPage() {
       }
 
       try {
-        recaptchaContainerRef.current.innerHTML = '';
-        widgetIdRef.current = window.grecaptcha.render(recaptchaContainerRef.current, {
-          sitekey: '6LeI4OotAAAAAKw3hkBGxkHIpzLdkx9JN_zbAliQ',
+        turnstileContainerRef.current.innerHTML = '';
+        widgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+          sitekey: '0x4AAAAAAFUPnXqUuCvXL0UY',
           callback: (token) => {
-            if (isMounted) setRecaptchaToken(token);
+            if (isMounted) setTurnstileToken(token);
           },
           'expired-callback': () => {
-            if (isMounted) setRecaptchaToken('');
+            if (isMounted) setTurnstileToken('');
           },
           'error-callback': () => {
-            if (isMounted) setRecaptchaToken('');
+            if (isMounted) setTurnstileToken('');
           },
+          theme: 'light',
         });
       } catch (err) {
         if (isMounted && widgetIdRef.current === null) {
           timerId = setTimeout(() => {
-            if (!isMounted || !recaptchaContainerRef.current) return;
+            if (!isMounted || !turnstileContainerRef.current) return;
             try {
-              recaptchaContainerRef.current.innerHTML = '';
-              widgetIdRef.current = window.grecaptcha.render(recaptchaContainerRef.current, {
-                sitekey: '6LeI4OotAAAAAKw3hkBGxkHIpzLdkx9JN_zbAliQ',
+              turnstileContainerRef.current.innerHTML = '';
+              widgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+                sitekey: '0x4AAAAAAFUPnXqUuCvXL0UY',
                 callback: (token) => {
-                  if (isMounted) setRecaptchaToken(token);
+                  if (isMounted) setTurnstileToken(token);
                 },
                 'expired-callback': () => {
-                  if (isMounted) setRecaptchaToken('');
+                  if (isMounted) setTurnstileToken('');
                 },
                 'error-callback': () => {
-                  if (isMounted) setRecaptchaToken('');
+                  if (isMounted) setTurnstileToken('');
                 },
+                theme: 'light',
               });
             } catch { /* noop */ }
           }, 150);
@@ -221,12 +223,12 @@ function LoginPage() {
 
     timerId = setTimeout(renderWidget, 50);
 
-    if (!window.grecaptcha) {
-      window.onAnytapRecaptchaLoad = renderWidget;
-      if (!document.getElementById('google-recaptcha-script')) {
+    if (!window.turnstile) {
+      window.onAnytapTurnstileLoad = renderWidget;
+      if (!document.getElementById('cloudflare-turnstile-script')) {
         const script = document.createElement('script');
-        script.id = 'google-recaptcha-script';
-        script.src = 'https://www.google.com/recaptcha/api.js?onload=onAnytapRecaptchaLoad&render=explicit&hl=en';
+        script.id = 'cloudflare-turnstile-script';
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onAnytapTurnstileLoad&render=explicit';
         script.async = true;
         script.defer = true;
         document.body.appendChild(script);
@@ -238,13 +240,13 @@ function LoginPage() {
       if (timerId) clearTimeout(timerId);
       if (widgetIdRef.current !== null) {
         try {
-          if (window.grecaptcha && typeof window.grecaptcha.reset === 'function') {
-            window.grecaptcha.reset(widgetIdRef.current);
+          if (window.turnstile && typeof window.turnstile.remove === 'function') {
+            window.turnstile.remove(widgetIdRef.current);
           }
         } catch { /* noop */ }
         widgetIdRef.current = null;
       }
-      setRecaptchaToken('');
+      setTurnstileToken('');
     };
   }, [location.key]);
 
@@ -288,21 +290,21 @@ function LoginPage() {
   const onLogin = async () => {
     if (entering) return;
 
-    let token = recaptchaToken;
-    if (!token && typeof window !== 'undefined' && window.grecaptcha) {
+    let token = turnstileToken;
+    if (!token && typeof window !== 'undefined' && window.turnstile) {
       try {
         const directToken = (widgetIdRef.current !== null)
-          ? window.grecaptcha.getResponse(widgetIdRef.current)
-          : window.grecaptcha.getResponse();
+          ? window.turnstile.getResponse(widgetIdRef.current)
+          : window.turnstile.getResponse();
         if (directToken) {
           token = directToken;
-          setRecaptchaToken(directToken);
+          setTurnstileToken(directToken);
         }
       } catch { /* noop */ }
     }
 
     if (!token) {
-      showToast('Please complete the CAPTCHA verification.');
+      showToast('Please complete the verification.');
       return;
     }
 
@@ -331,11 +333,11 @@ function LoginPage() {
     }
     setEntering(false);
 
-    // Reset reCAPTCHA on failed login attempt
-    if (window.grecaptcha && widgetIdRef.current !== null) {
+    // Reset Turnstile on failed login attempt
+    if (window.turnstile && widgetIdRef.current !== null) {
       try {
-        window.grecaptcha.reset(widgetIdRef.current);
-        setRecaptchaToken('');
+        window.turnstile.reset(widgetIdRef.current);
+        setTurnstileToken('');
       } catch { /* noop */ }
     }
 
@@ -396,7 +398,7 @@ function LoginPage() {
             )}
           </div>
           <div className="login-screen__recaptcha-wrap" style={{ margin: '14px 0 10px', display: 'flex', justifyContent: 'center' }}>
-            <div ref={recaptchaContainerRef} />
+            <div ref={turnstileContainerRef} />
           </div>
           <Link to="/forgot-password" className="login-screen__forgot">Forgot password?</Link>
           <button type="submit" className="btn btn--primary btn--lg login-screen__submit" disabled={entering}>
