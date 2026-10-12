@@ -22,12 +22,10 @@ import { getHttpSession } from '../lib/api/httpSession.js';
 import { ensureDemoPreviewSession, getActiveDemoSlug } from '../lib/demo-session.js';
 
 function checkIsAdmin(s) {
-  if (hasAdminSession()) return true;
-  if (getAdminSessionEmail()) return true;
   const session = getHttpSession();
-  if (session?.role === 'admin' || session?.isAdmin || session?.role === 'ADMIN') return true;
-  if (session?.email && (isAdminEmail(session.email) || session.email.toLowerCase().includes('admin'))) return true;
-  if (s?.accountState?.role === 'admin' || s?.accountState?.isAdmin) return true;
+  const role = String(session?.role || s?.accountState?.role || '').trim().toUpperCase();
+  if (role === 'ADMIN' || role === 'SUPER_ADMIN') return true;
+  if (hasAdminSession()) return true;
   return false;
 }
 
@@ -305,6 +303,11 @@ export function AccountApp() {
       window.removeEventListener('anytap-member-session', handleMemberSession);
     };
   }, []);
+
+  const session = getHttpSession();
+  if (session && String(session.role).toUpperCase() === 'ADMIN') {
+    return <Navigate to="/admin" replace />;
+  }
 
   if (normalizedPath === '/account/history') {
     return <Navigate to={`/account/transactions?type=topup${location.search ? `&${location.search.slice(1)}` : ''}`} replace />;

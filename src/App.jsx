@@ -42,7 +42,11 @@ export default function App() {
         <Routes>
           <Route
             path="/admin/*"
-            element={<NotFoundPage />}
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <AdminApp />
+              </Suspense>
+            }
           />
           <Route
             path="/account/*"

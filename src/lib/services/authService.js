@@ -7,7 +7,7 @@
  */
 
 import { isHttpApi } from '../api/config.js';
-import { hasHttpSession } from '../api/httpSession.js';
+import { getHttpSession, hasHttpSession } from '../api/httpSession.js';
 import * as mock from '../auth.js';
 import * as api from './auth/authApi.js';
 
@@ -27,13 +27,39 @@ export const SIGNUP_CODE_TTL_MS = auth.SIGNUP_CODE_TTL_MS;
 export const attemptLogin = auth.attemptLogin;
 export const attemptSignUp = auth.attemptSignUp;
 export const attemptAdminLogin = auth.attemptAdminLogin;
-export const isAdminEmail = auth.isAdminEmail;
+export function isAdminRole(role) {
+  const norm = String(role || '').trim().toUpperCase();
+  return norm === 'ADMIN' || norm === 'SUPER_ADMIN';
+}
+
+export function hasAdminSession() {
+  const session = getHttpSession();
+  if (session && isAdminRole(session.role)) {
+    return true;
+  }
+  return auth.hasAdminSession ? auth.hasAdminSession() : false;
+}
+
+export function showAdminPortalLink() {
+  const session = getHttpSession();
+  return !!(session && isAdminRole(session.role));
+}
+
+export function refreshAdminPortalLink() {
+  return Promise.resolve(showAdminPortalLink());
+}
+
+export function isAdminEmail() {
+  const session = getHttpSession();
+  if (session && isAdminRole(session.role)) {
+    return true;
+  }
+  return false;
+}
+
 export const setAdminSession = auth.setAdminSession;
 export const establishLoginSession = auth.establishLoginSession;
-export const showAdminPortalLink = auth.showAdminPortalLink;
-export const refreshAdminPortalLink = auth.refreshAdminPortalLink;
 export const clearAdminSession = auth.clearAdminSession;
-export const hasAdminSession = auth.hasAdminSession;
 export const getAdminSessionEmail = auth.getAdminSessionEmail;
 export const verifyLogin = auth.verifyLogin;
 export const setMockSession = auth.setMockSession;

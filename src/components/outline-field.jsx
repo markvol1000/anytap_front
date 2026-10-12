@@ -54,10 +54,11 @@ function OutlinePasswordInput({
   toggleClass = 'password-wrap__toggle',
   autoComplete = 'current-password',
   ToggleIcon,
+  filled: propFilled,
   ...props
 }) {
   const id = useId();
-  const filled = value.length > 0;
+  const filled = propFilled !== undefined ? Boolean(propFilled) : Boolean(value && value.length > 0);
   const isVis = visible || showPw || false;
   const handleToggle = onToggle || onTogglePw;
   const inputType = toggleable && isVis ? 'text' : 'password';

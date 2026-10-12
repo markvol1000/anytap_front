@@ -648,6 +648,27 @@ export function MembersPage() {
                       ) : null}
                     </select>
                   )} />
+                  <AdminDetailRow label="Role / Privileges" value={(
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        backgroundColor: String(detail.role || '').toUpperCase().includes('ADMIN') ? '#fef3c7' : '#f1f5f9',
+                        color: String(detail.role || '').toUpperCase().includes('ADMIN') ? '#b45309' : '#475569',
+                        border: '1px solid #cbd5e1',
+                      }}
+                    >
+                      {String(detail.role || 'MEMBER').toUpperCase() === 'SUPER_ADMIN'
+                        ? '👑 Super Admin'
+                        : String(detail.role || 'MEMBER').toUpperCase() === 'ADMIN'
+                        ? '🛡️ Admin'
+                        : '👤 Member'}
+                    </span>
+                  )} />
                 </AdminDetailSection>
 
                 <AdminDetailSection title="Referrer Assignment & Matching">
@@ -705,24 +726,6 @@ export function MembersPage() {
                   <AdminDetailRow label="USDT Deposit Address" value={(
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '12px' }}>
                       <span>{hasNoWallet ? 'Not allocated' : walletAddr}</span>
-                      {hasNoWallet ? (
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn--ghost admin-btn--sm"
-                          disabled={retryLoading}
-                          onClick={() => handleAction('retryWallet')}
-                          style={{
-                            padding: '2px 8px',
-                            fontSize: '11px',
-                            fontWeight: 'bold',
-                            color: '#3b82f6',
-                            borderColor: 'rgba(59, 130, 246, 0.3)',
-                            cursor: retryLoading ? 'not-allowed' : 'pointer'
-                          }}
-                        >
-                          {retryLoading ? '⏳ Generating...' : '⚡ Generate Wallet'}
-                        </button>
-                      ) : null}
                     </div>
                   )} />
                 </AdminDetailSection>
@@ -1050,36 +1053,13 @@ export function MembersPage() {
                   </button>
                 </AdminDetailSection>
 
-                <AdminActionStack className="admin-detail-full-width">
-                  {hasNoWallet ? (
-                    <button 
-                      type="button" 
-                      className="admin-btn admin-btn--primary" 
-                      disabled={retryLoading}
-                      style={{ 
-                        backgroundColor: retryLoading ? '#94a3b8' : '#3b82f6', 
-                        color: '#fff', 
-                        fontWeight: 'bold',
-                        cursor: retryLoading ? 'not-allowed' : 'pointer'
-                      }} 
-                      onClick={() => handleAction('retryWallet')}
-                    >
-                      {retryLoading ? '⏳ Generating Wallet...' : '⚡ Generate Wallet'}
-                    </button>
-                  ) : null}
-
-                  {detail.accountStatus === 'suspended' ? (
+                {detail.accountStatus === 'suspended' ? (
+                  <AdminActionStack className="admin-detail-full-width">
                     <button type="button" className="admin-btn admin-btn--primary" onClick={() => handleAction('activate')}>
                       Reactivate member
                     </button>
-                  ) : (
-                    detail.accountStatus !== 'pending_wallet' && (
-                      <button type="button" className="admin-btn admin-btn--warning" onClick={() => handleAction('suspend')}>
-                        Suspend member
-                      </button>
-                    )
-                  )}
-                </AdminActionStack>
+                  </AdminActionStack>
+                ) : null}
               </>
             ) : null}
           </AdminDetailPanel>

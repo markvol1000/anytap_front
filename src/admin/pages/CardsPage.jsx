@@ -14,14 +14,9 @@ import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
 import {
-  activateCard,
-  freezeCard,
   getCardApplications,
   getCardById,
   getCardTransactions,
-  rejectCard,
-  terminateCard,
-  unfreezeCard,
 } from '../services/api/adminApiService.js';
 
 
@@ -105,7 +100,7 @@ export function CardsPage() {
   const [txSectionPage, setTxSectionPage] = useState(1);
 
   const [selectedAuthTx, setSelectedAuthTx] = useState(null);
-  const [cardActionLoading, setCardActionLoading] = useState(false);
+
 
   const loadTxs = useCallback(async (p = 1) => {
     if (!selectedId) return;
@@ -121,98 +116,12 @@ export function CardsPage() {
     }
   }, [selectedId, detail?.memberId, detail?.wasabiCardId]);
 
-  const handleUnfreezeCard = useCallback(async () => {
-    if (!detail) return;
-    const cardId = detail.wasabiCardId || detail.id;
-    const ok = await runConfirm(confirm, {
-      title: 'Unfreeze Card',
-      message: `Are you sure you want to unfreeze card ${cardId}? The card will be restored to active operational status.`,
-      confirmLabel: 'Unfreeze Card',
-      danger: false,
-    });
-    if (!ok) return;
-
-    setCardActionLoading(true);
-    try {
-      await unfreezeCard(selectedId);
-      await list.refresh();
-      const refreshed = await fetchCardDetail(selectedId);
-      setDetail(refreshed);
-      window.alert('Card has been successfully unfrozen and restored to active status.');
-    } catch (err) {
-      window.alert(err?.message || 'Failed to unfreeze card.');
-    } finally {
-      setCardActionLoading(false);
-    }
-  }, [confirm, detail, list, selectedId, setDetail]);
-
-  const handleFreezeCard = useCallback(async () => {
-    if (!detail) return;
-    const cardId = detail.wasabiCardId || detail.id;
-    const ok = await runConfirm(confirm, {
-      title: 'Freeze Card',
-      message: `Are you sure you want to freeze card ${cardId}? The card will be blocked from making payments.`,
-      confirmLabel: 'Freeze Card',
-      danger: true,
-    });
-    if (!ok) return;
-
-    setCardActionLoading(true);
-    try {
-      await freezeCard(selectedId);
-      await list.refresh();
-      const refreshed = await fetchCardDetail(selectedId);
-      setDetail(refreshed);
-      window.alert('Card has been frozen and blocked.');
-    } catch (err) {
-      window.alert(err?.message || 'Failed to freeze card.');
-    } finally {
-      setCardActionLoading(false);
-    }
-  }, [confirm, detail, list, selectedId, setDetail]);
-
   useEffect(() => {
     setTxPage(1);
     setDepositPage(1);
     setTxSectionPage(1);
     loadTxs(1);
   }, [selectedId, detail?.memberId, detail?.wasabiCardId, loadTxs]);
-
-  const runCardAction = useCallback(async (label, fn, options = {}) => {
-    if (!detail) return;
-    const ok = await runConfirm(confirm, {
-      title: label,
-      message: options.message ?? `${label} for ${detail.memberName}?`,
-      confirmLabel: label,
-      danger: options.danger,
-      showInput: options.showInput,
-      inputPlaceholder: options.inputPlaceholder,
-    });
-    if (options.showInput) {
-      if (ok == null) return;
-      const inputVal = String(ok).trim();
-      if (label.includes('Activate') && !/^\d{6}$/.test(inputVal)) {
-        window.alert('PIN code must be a 6-digit number.');
-        return;
-      }
-      try {
-        const updated = await fn(detail.id, inputVal);
-        setDetail(updated);
-        list.reload();
-      } catch (err) {
-        window.alert(err.message);
-      }
-      return;
-    }
-    if (!ok) return;
-    try {
-      const updated = await fn(detail.id);
-      setDetail(updated);
-      list.reload();
-    } catch (err) {
-      window.alert(err.message);
-    }
-  }, [confirm, detail, list, setDetail]);
 
   const items = list.items || [];
   const activeCount = items.filter(c => c.cardStatus === 'active' || c.status === 'active').length;
@@ -438,32 +347,7 @@ export function CardsPage() {
                   <AdminDetailRow label="Card Type" value={detail.cardType || 'Physical'} />
                   <AdminDetailRow 
                     label="Status" 
-                    value={
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <AdminStatusBadge status={detail.cardStatus || detail.status} />
-                        {(String(detail.cardStatus || detail.status).toLowerCase() === 'frozen' || String(detail.cardStatus || detail.status).toLowerCase() === 'blocked') ? (
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn--primary admin-btn--sm"
-                            style={{ fontSize: '11px', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
-                            onClick={handleUnfreezeCard}
-                            disabled={cardActionLoading}
-                          >
-                            🔓 Unfreeze Card
-                          </button>
-                        ) : String(detail.cardStatus || detail.status).toLowerCase() === 'active' ? (
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn--ghost admin-btn--sm"
-                            style={{ fontSize: '11px', padding: '3px 8px', color: '#dc2626', borderColor: '#fca5a5' }}
-                            onClick={handleFreezeCard}
-                            disabled={cardActionLoading}
-                          >
-                            🔒 Freeze Card
-                          </button>
-                        ) : null}
-                      </div>
-                    } 
+                    value={<AdminStatusBadge status={detail.cardStatus || detail.status} />} 
                   />
                 </AdminDetailSection>
 
@@ -932,51 +816,6 @@ export function CardsPage() {
                   })()}
                 </AdminDetailSection>
 
-                <AdminDetailSection title="Card Actions (Quick Actions)">
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {(detail.cardStatus === 'frozen' || detail.status === 'frozen') ? (
-                      <button
-                        type="button"
-                        style={{ padding: '6px 12px', fontSize: '12px', fontWeight: '600', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#334155', cursor: 'pointer' }}
-                        onClick={() => runCardAction('Unfreeze Card', unfreezeCard)}
-                      >
-                        Unfreeze Card
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        style={{ padding: '6px 12px', fontSize: '12px', fontWeight: '600', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#dc2626', cursor: 'pointer' }}
-                        onClick={() => runCardAction('Freeze Card', freezeCard)}
-                      >
-                        Freeze Card
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      style={{
-                        padding: '6px 12px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        borderRadius: '6px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#ffffff',
-                        color: '#334155',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                      }}
-                      onClick={() => runCardAction('Activate Card', activateCard, {
-                        showInput: true,
-                        inputPlaceholder: '6-digit PIN code',
-                        message: 'Please enter a 6-digit PIN code to activate the card.',
-                      })}
-                    >
-                      🔑 Set PIN & Activate
-                    </button>
-                  </div>
-                </AdminDetailSection>
-
               </>
             )}
           </AdminDetailPanel>
@@ -1130,22 +969,6 @@ export function CardsPage() {
                                 : 'The transaction could not be processed and was declined by the card network.'
                           )}
                         </div>
-                        {(isPinBlocked || isJustBlocked || (detail && (String(detail.cardStatus || detail.status).toLowerCase() === 'frozen' || String(detail.cardStatus || detail.status).toLowerCase() === 'blocked'))) && (
-                          <div style={{ marginTop: '10px' }}>
-                            <button
-                              type="button"
-                              className="admin-btn admin-btn--primary admin-btn--sm"
-                              style={{ fontSize: '11px', padding: '4px 12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                              onClick={async () => {
-                                setSelectedAuthTx(null);
-                                await handleUnfreezeCard();
-                              }}
-                              disabled={cardActionLoading}
-                            >
-                              🔓 Unfreeze Card Now
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}

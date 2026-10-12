@@ -160,7 +160,13 @@ export async function getMemberById(id) {
   }
   const userId = resolveUserId(id);
   try {
-    const userDetail = mapUserDetail(await apiGet(`/users/${encodeURIComponent(userId)}`));
+    let rawDetail = null;
+    try {
+      rawDetail = await apiGet(`/users/${encodeURIComponent(userId)}`);
+    } catch {
+      rawDetail = await apiGet(`/admin/members/${encodeURIComponent(userId)}`);
+    }
+    const userDetail = mapUserDetail(rawDetail);
     if (memberInList) {
       return {
         ...memberInList,
@@ -502,6 +508,26 @@ export async function shipCard(id) {
 
 export async function terminateCard() {
   apiNotImplemented(SVC, 'terminateCard', 'Use card status update or backend terminate endpoint when available.');
+}
+
+export async function updateRegisteredCardStatus(id, newStatus) {
+  const card = await getCardById(id);
+  const userId = resolveUserId(card?.memberId || card?.userId || id);
+  const cardNo = card?.wasabiCardId || (String(id).startsWith('W') ? id : null);
+
+  try {
+    await updateCardStatus(userId, { cardStatus: newStatus, cardNo }, id);
+  } catch (err) {
+    console.warn('updateCardStatus error, attempting fallback updateMember:', err);
+  }
+
+  try {
+    await updateMember(userId, { cardStatus: newStatus });
+  } catch (err) {
+    console.warn('updateMember cardStatus fallback error:', err);
+  }
+
+  return getCardById(id);
 }
 
 export async function getCardTransactions(userId, cardNo = '') {

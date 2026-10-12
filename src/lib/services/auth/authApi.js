@@ -44,6 +44,9 @@ function mapLoginError(err) {
     };
   }
 
+  if (msg.includes('captcha')) {
+    return { ok: false, code: 'CAPTCHA_REQUIRED', message: message || 'Please complete the CAPTCHA verification.' };
+  }
   if (msg.includes('locked')) {
     return { ok: false, code: 'LOCKED', message: 'Account locked due to 10 failed login attempts. Please reset your password.' };
   }
@@ -147,6 +150,15 @@ function establishSessionFromLoginData(data, { loginId = '', emailHint = '' } = 
       issuanceDepositAddress: previous.issuanceDepositAddress || profile.issuanceDepositAddress,
     } : {}),
   });
+
+  const roleUpper = String(sessionUser.role || '').trim().toUpperCase();
+  if (roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN') {
+    try {
+      sessionStorage.setItem('anytap_admin_session', sessionUser.email || sessionUser.loginId || 'ADMIN');
+      window.dispatchEvent(new Event('anytap-admin-session'));
+    } catch { /* noop */ }
+  }
+
   return { ok: true, user: sessionUser };
 }
 
@@ -158,7 +170,7 @@ async function loginWithLoginId(loginId, password, { emailHint } = {}) {
 /**
  * Customer login is strictly email + password.
  */
-export async function attemptLogin(emailInput, password, { emailHint } = {}) {
+export async function attemptLogin(emailInput, password, { emailHint, recaptchaToken } = {}) {
   const raw = String(emailInput || '').trim();
   if (!raw || !password) return { ok: false, code: 'MISSING' };
 
@@ -167,7 +179,7 @@ export async function attemptLogin(emailInput, password, { emailHint } = {}) {
   const email = raw.toLowerCase();
 
   try {
-    const data = await apiPost('/auth/login', { email, password });
+    const data = await apiPost('/auth/login', { email, password, recaptchaToken });
     return establishSessionFromLoginData(data, {
       loginId: data?.loginId || data?.login_id || '',
       emailHint: email,
@@ -260,7 +272,7 @@ export function attemptAdminLogin() {
 }
 
 export function isAdminEmail(email) {
-  return String(email || '').trim().toLowerCase() === 'test206@206.c0m';
+  return false;
 }
 
 export function refreshAdminPortalLink() {
@@ -272,7 +284,10 @@ export function establishLoginSession() {
 }
 
 export function showAdminPortalLink() {
-  return false;
+  const session = getHttpSession();
+  if (!session) return false;
+  const role = String(session.role || '').trim().toLowerCase();
+  return role === 'admin' || role === 'super_admin';
 }
 
 export function setAdminSession() {}
@@ -282,11 +297,15 @@ export function clearAdminSession() {
 }
 
 export function hasAdminSession() {
-  return false;
+  const session = getHttpSession();
+  if (!session) return false;
+  const role = String(session.role || '').trim().toLowerCase();
+  const email = String(session.email || '').trim().toLowerCase();
+  return role === 'admin' || role === 'super_admin' || isAdminEmail(email);
 }
 
 export function getAdminSessionEmail() {
-  return '';
+  return getHttpSession()?.email || '';
 }
 
 export function setMockSession() {}

@@ -9,7 +9,6 @@ import {
   hasAdminSession,
   hasMemberSession,
   hasMockSession,
-  isAdminEmail,
   getMockSessionEmail,
   establishLoginSession,
 } from '../../lib/services/authService.js';
@@ -26,24 +25,22 @@ export function AdminLayout() {
     let cancelled = false;
 
     async function check() {
-      const email = getMockSessionEmail();
-      if (isAdminEmail(email)) {
-        establishLoginSession(email);
-      }
       if (!cancelled) setAuthChecked(true);
 
-      const demoAdmin = hasDemoAdminAccess();
-      if (!hasMemberSession() && !demoAdmin) return;
+      if (!hasMemberSession()) return;
 
       getCurrentAdmin()
         .then((a) => { if (!cancelled) setAdmin(a); })
         .catch(() => {
           if (!cancelled) {
-            setAdmin({
-              name: demoAdmin ? 'Demo Admin' : (email?.split('@')[0] || 'Admin'),
-              email: email || 'demo-admin@anytap.io',
-              role: demoAdmin ? 'demo_preview' : 'temporary_access',
-            });
+            const s = getHttpSession();
+            if (s && (String(s.role).toUpperCase() === 'ADMIN' || String(s.role).toUpperCase() === 'SUPER_ADMIN')) {
+              setAdmin({
+                name: s?.loginId || s?.email?.split('@')[0] || 'Admin',
+                email: s?.email || '',
+                role: s?.role || 'ADMIN',
+              });
+            }
           }
         });
     }
@@ -58,6 +55,12 @@ export function AdminLayout() {
       if (reason === 'server_unreachable') {
         // 서버 점검/무응답 시 차단 팝업 없이 로그인 페이지의 영문 토스트로 일관되게 처리
       } else if (reason === 'unauthorized') {
+        const curSession = getHttpSession();
+        const roleUpper = String(curSession?.role || '').trim().toUpperCase();
+        if (roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN') {
+          // Do not kick out admin on sub-resource unauthorized
+          return;
+        }
         window.alert('Admin session unauthorized or expired. Please sign in again.');
       } else {
         window.alert('Login session has expired due to 30 minutes of inactivity. Please log in again.');
@@ -80,14 +83,13 @@ export function AdminLayout() {
   }
 
   const session = getHttpSession();
-  const isMemberAdmin = hasMemberSession() && session && String(session.role).toUpperCase() === 'ADMIN';
+  const roleUpper = String(session?.role || '').trim().toUpperCase();
+  const isAdmin = hasMemberSession() && session && (roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN');
 
-  const canAccessAdmin = hasDemoAdminAccess()
-    || isMemberAdmin
-    || hasAdminSession()
-    || (hasMockSession() && isAdminEmail(getMockSessionEmail()));
-
-  if (!canAccessAdmin) {
+  if (!isAdmin) {
+    if (hasMemberSession()) {
+      return <Navigate to="/account" replace />;
+    }
     return (
       <Navigate
         to="/login"

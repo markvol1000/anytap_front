@@ -4,6 +4,7 @@
  */
 
 import { API_BASE_URL, assertApiBaseUrl } from './config.js';
+import { getHttpSession } from './httpSession.js';
 import { sanitizeToastMessage } from '../../utils/toast-sanitizer.js';
 
 const TOKEN_KEY = 'anytap_access_token';
@@ -106,17 +107,31 @@ export async function apiRequest(path, options = {}) {
   const { json, headers: extraHeaders, timeout = 12000, ...init } = options;
   const headers = new Headers(extraHeaders);
 
-  const isAdminReq = path && String(path).includes('/admin');
+  const session = getHttpSession();
+  const isAdminRole = session && (String(session.role).toUpperCase() === 'ADMIN' || String(session.role).toUpperCase() === 'SUPER_ADMIN');
+  const isAdminPath = path && String(path).includes('/admin');
+  const isAdminContext = Boolean(isAdminPath || isAdminRole || (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')));
   const isLoginEndpoint = path && String(path).includes('/auth/login');
 
   const token = getAccessToken();
-  if (token && !isAdminReq) {
+  if (token && !isAdminContext) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  if (isAdminReq) {
-    headers.set('X-User-Role', 'ADMIN');
-    headers.set('X-User-Id', 'admin@anytap.io');
+  if (session?.userId || session?.email) {
+    headers.set('X-User-Id', session.userId || session.email);
+    if (session.role) {
+      headers.set('X-User-Role', String(session.role).toUpperCase());
+    }
+  }
+
+  if (isAdminContext) {
+    const role = session?.role ? String(session.role).toUpperCase() : 'ADMIN';
+    headers.set('X-User-Role', role);
+    const adminIdentifier = session?.userId || session?.email || '';
+    if (adminIdentifier) {
+      headers.set('X-User-Id', adminIdentifier);
+    }
     if (token) {
       headers.set('X-Admin-Token', token);
     }
@@ -178,16 +193,26 @@ export async function apiRequest(path, options = {}) {
   const isEnvelope = data && typeof data === 'object' && !Array.isArray(data) && 'result' in data;
 
   if (!res.ok || (isEnvelope && data.result === false)) {
-    if ((res.status === 401 || res.status === 403) && !isAdminReq && !isLoginEndpoint) {
+    const rawMsg = data?.message || data?.error || res.statusText || 'System is under maintenance. Please try again later.';
+    const isBlacklisted = res.status === 403 && (
+      String(rawMsg).toLowerCase().includes('blacklisted') ||
+      String(rawMsg).toLowerCase().includes('banned') ||
+      String(rawMsg).toLowerCase().includes('repeated unauthorized')
+    );
+
+    if (isBlacklisted) {
+      forceLogoutAndRedirect('ip_blacklisted');
+    } else if ((res.status === 401 || res.status === 403) && !isAdminContext && !isLoginEndpoint) {
       clearAccessToken();
       try {
         sessionStorage.removeItem('anytap_http_session');
         localStorage.removeItem('anytap_http_session');
         localStorage.removeItem('anytap_demo_http_session');
+        sessionStorage.removeItem('anytap_admin_session');
+        localStorage.removeItem('anytap_admin_session');
       } catch { /* noop */ }
       window.dispatchEvent(new CustomEvent('anytap-session-expired', { detail: { reason: 'unauthorized', status: res.status } }));
     }
-    const rawMsg = data?.message || data?.error || res.statusText || 'System is under maintenance. Please try again later.';
     const message = sanitizeToastMessage(rawMsg);
     const err = new Error(message);
     err.status = res.ok ? 400 : res.status;

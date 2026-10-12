@@ -13,6 +13,7 @@ import { useAuthToast } from '../hooks/useAuthToast.js';
 import { sanitizeToastMessage } from '../utils/toast-sanitizer.js';
 import { englishFormProps, englishFieldProps, handleEnglishSubmit } from '../utils/formValidation.js';
 import { checkPasswordRules, passwordPolicyOk } from '../lib/password-policy.ts';
+import { getHttpSession, hasHttpSession } from '../lib/api/httpSession.js';
 
 const AUTH_PW_ICON = 22;
 
@@ -149,6 +150,9 @@ function LoginPage() {
   const [fieldHint, setFieldHint] = useState('');
   const [errorFields, setErrorFields] = useState({ email: false, password: false });
   const [entering, setEntering] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState('');
+  const recaptchaContainerRef = useRef(null);
+  const widgetIdRef = useRef(null);
   const { toast, showToast, clearToast } = useAuthToast();
   const hasShownToastRef = useRef(false);
 
@@ -161,6 +165,89 @@ function LoginPage() {
     clearToast();
   };
 
+  // Google reCAPTCHA v2 explicitly rendered in English (hl=en)
+  useEffect(() => {
+    let isMounted = true;
+    let timerId = null;
+
+    const renderWidget = () => {
+      if (!isMounted || !recaptchaContainerRef.current) return;
+      if (!window.grecaptcha || typeof window.grecaptcha.render !== 'function') {
+        timerId = setTimeout(renderWidget, 100);
+        return;
+      }
+
+      if (widgetIdRef.current !== null) {
+        return;
+      }
+
+      try {
+        recaptchaContainerRef.current.innerHTML = '';
+        widgetIdRef.current = window.grecaptcha.render(recaptchaContainerRef.current, {
+          sitekey: '6LeI4OotAAAAAKw3hkBGxkHIpzLdkx9JN_zbAliQ',
+          callback: (token) => {
+            if (isMounted) setRecaptchaToken(token);
+          },
+          'expired-callback': () => {
+            if (isMounted) setRecaptchaToken('');
+          },
+          'error-callback': () => {
+            if (isMounted) setRecaptchaToken('');
+          },
+        });
+      } catch (err) {
+        if (isMounted && widgetIdRef.current === null) {
+          timerId = setTimeout(() => {
+            if (!isMounted || !recaptchaContainerRef.current) return;
+            try {
+              recaptchaContainerRef.current.innerHTML = '';
+              widgetIdRef.current = window.grecaptcha.render(recaptchaContainerRef.current, {
+                sitekey: '6LeI4OotAAAAAKw3hkBGxkHIpzLdkx9JN_zbAliQ',
+                callback: (token) => {
+                  if (isMounted) setRecaptchaToken(token);
+                },
+                'expired-callback': () => {
+                  if (isMounted) setRecaptchaToken('');
+                },
+                'error-callback': () => {
+                  if (isMounted) setRecaptchaToken('');
+                },
+              });
+            } catch { /* noop */ }
+          }, 150);
+        }
+      }
+    };
+
+    timerId = setTimeout(renderWidget, 50);
+
+    if (!window.grecaptcha) {
+      window.onAnytapRecaptchaLoad = renderWidget;
+      if (!document.getElementById('google-recaptcha-script')) {
+        const script = document.createElement('script');
+        script.id = 'google-recaptcha-script';
+        script.src = 'https://www.google.com/recaptcha/api.js?onload=onAnytapRecaptchaLoad&render=explicit&hl=en';
+        script.async = true;
+        script.defer = true;
+        document.body.appendChild(script);
+      }
+    }
+
+    return () => {
+      isMounted = false;
+      if (timerId) clearTimeout(timerId);
+      if (widgetIdRef.current !== null) {
+        try {
+          if (window.grecaptcha && typeof window.grecaptcha.reset === 'function') {
+            window.grecaptcha.reset(widgetIdRef.current);
+          }
+        } catch { /* noop */ }
+        widgetIdRef.current = null;
+      }
+      setRecaptchaToken('');
+    };
+  }, [location.key]);
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const prefill = String(params.get('email') || '').trim();
@@ -170,7 +257,9 @@ function LoginPage() {
     const reason = params.get('reason');
     if ((expired || reason) && !hasShownToastRef.current) {
       hasShownToastRef.current = true;
-      if (reason === 'inactivity' || reason === 'expired' || (expired && !reason)) {
+      if (reason === 'ip_blacklisted') {
+        showToast('Access denied. Your IP address has been blacklisted by administrator.');
+      } else if (reason === 'inactivity' || reason === 'expired' || (expired && !reason)) {
         showToast('Login session has expired due to 30 minutes of inactivity. Please log in again.');
       } else if (reason === 'unauthorized') {
         showToast('Your session has expired or is unauthorized. Please log in again.');
@@ -187,15 +276,39 @@ function LoginPage() {
 
   useEffect(() => {
     if (hasMemberSession()) {
-      navigate('/account', { replace: true });
+      const session = getHttpSession();
+      if (session && String(session.role).toUpperCase() === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/account', { replace: true });
+      }
     }
   }, [navigate]);
 
   const onLogin = async () => {
     if (entering) return;
+
+    let token = recaptchaToken;
+    if (!token && typeof window !== 'undefined' && window.grecaptcha) {
+      try {
+        const directToken = (widgetIdRef.current !== null)
+          ? window.grecaptcha.getResponse(widgetIdRef.current)
+          : window.grecaptcha.getResponse();
+        if (directToken) {
+          token = directToken;
+          setRecaptchaToken(directToken);
+        }
+      } catch { /* noop */ }
+    }
+
+    if (!token) {
+      showToast('Please complete the CAPTCHA verification.');
+      return;
+    }
+
     const startedAt = Date.now();
     setEntering(true);
-    const result = await Promise.resolve(attemptLogin(email, password));
+    const result = await Promise.resolve(attemptLogin(email, password, { recaptchaToken: token }));
     if (result.ok) {
       clearErrors();
       establishLoginSession(email);
@@ -205,11 +318,27 @@ function LoginPage() {
         return;
       }
       await holdAtLeast(startedAt);
+      const session = getHttpSession();
+      const isAdmin = session && String(session.role).toUpperCase() === 'ADMIN';
       const from = location.state?.from;
-      navigate(typeof from === 'string' && from.startsWith('/account') ? from : '/account', { replace: true });
+
+      if (isAdmin) {
+        navigate(typeof from === 'string' && from.startsWith('/admin') ? from : '/admin', { replace: true });
+      } else {
+        navigate(typeof from === 'string' && from.startsWith('/account') ? from : '/account', { replace: true });
+      }
       return;
     }
     setEntering(false);
+
+    // Reset reCAPTCHA on failed login attempt
+    if (window.grecaptcha && widgetIdRef.current !== null) {
+      try {
+        window.grecaptcha.reset(widgetIdRef.current);
+        setRecaptchaToken('');
+      } catch { /* noop */ }
+    }
+
     applyAuthError(result, { showToast, setFieldHint, setErrorFields });
   };
 
@@ -265,6 +394,9 @@ function LoginPage() {
             {showPasswordHint && (
               <p className="login-screen__hint">{fieldHint}</p>
             )}
+          </div>
+          <div className="login-screen__recaptcha-wrap" style={{ margin: '14px 0 10px', display: 'flex', justifyContent: 'center' }}>
+            <div ref={recaptchaContainerRef} />
           </div>
           <Link to="/forgot-password" className="login-screen__forgot">Forgot password?</Link>
           <button type="submit" className="btn btn--primary btn--lg login-screen__submit" disabled={entering}>
@@ -947,7 +1079,6 @@ function ForgotPasswordPage() {
               <OutlinePasswordInputAuth
                 label="New Password"
                 value={newPassword}
-                filled={newPassword.length > 0}
                 visible={showPw}
                 onToggle={() => setShowPw((v) => !v)}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -957,7 +1088,6 @@ function ForgotPasswordPage() {
               <OutlinePasswordInputAuth
                 label="Confirm New Password"
                 value={confirmPassword}
-                filled={confirmPassword.length > 0}
                 visible={showPw}
                 onToggle={() => setShowPw((v) => !v)}
                 onChange={(e) => setConfirmPassword(e.target.value)}
