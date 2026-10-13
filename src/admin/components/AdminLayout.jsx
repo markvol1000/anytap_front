@@ -31,40 +31,34 @@ export function AdminLayout() {
 
       getCurrentAdmin()
         .then((a) => { if (!cancelled) setAdmin(a); })
-        .catch(() => {
-          if (!cancelled) {
-            const s = getHttpSession();
-            if (s && (String(s.role).toUpperCase() === 'ADMIN' || String(s.role).toUpperCase() === 'SUPER_ADMIN')) {
+        .catch((err) => {
+          console.warn('[AdminLayout] getCurrentAdmin error:', err);
+          const localSession = getHttpSession();
+          const roleUpper = String(localSession?.role || '').trim().toUpperCase();
+          if (localSession && (roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN')) {
+            if (!cancelled) {
               setAdmin({
-                name: s?.loginId || s?.email?.split('@')[0] || 'Admin',
-                email: s?.email || '',
-                role: s?.role || 'ADMIN',
+                name: localSession.name || localSession.loginId || localSession.email || 'Admin',
+                email: localSession.email || '',
+                role: roleUpper,
               });
             }
+          } else if (!cancelled) {
+            clearHttpSession();
+            clearAdminSession();
+            setAdmin(null);
+            navigate('/login?expired=1&reason=forbidden', { replace: true });
           }
         });
     }
 
     check();
     return () => { cancelled = true; };
-  }, [location.pathname]);
+  }, [location.pathname, navigate]);
 
   useEffect(() => {
     const handleExpired = (e) => {
       const reason = e?.detail?.reason;
-      if (reason === 'server_unreachable') {
-        // 서버 점검/무응답 시 차단 팝업 없이 로그인 페이지의 영문 토스트로 일관되게 처리
-      } else if (reason === 'unauthorized') {
-        const curSession = getHttpSession();
-        const roleUpper = String(curSession?.role || '').trim().toUpperCase();
-        if (roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN') {
-          // Do not kick out admin on sub-resource unauthorized
-          return;
-        }
-        window.alert('Admin session unauthorized or expired. Please sign in again.');
-      } else {
-        window.alert('Login session has expired due to 30 minutes of inactivity. Please log in again.');
-      }
       clearHttpSession();
       clearAdminSession();
       setAdmin(null);

@@ -100,8 +100,19 @@ export function resolveMemberDisplayName(source = {}) {
  * My page itself is always open — it does not use this helper for navigation.
  */
 export function hasCompletedKycProfile(accountState = {}) {
-  const status = String(accountState.kycStatus || accountState.status || '').toLowerCase();
-  return ['approved', 'completed', 'active', 'pending_wallet'].includes(status);
+  const kycStatus = String(accountState.kycStatus || '').toLowerCase();
+  const isApproved = ['approved', 'completed', 'active', 'pass_audit', 'pending_wallet'].includes(kycStatus);
+  if (!isApproved) return false;
+
+  const hasName = Boolean(
+    String(accountState.name || '').trim() ||
+    (String(accountState.firstName || '').trim() && String(accountState.lastName || '').trim())
+  );
+  const hasHolder = Boolean(
+    accountState.wasabiHolderId &&
+    !String(accountState.wasabiHolderId).startsWith('HOLDER_')
+  );
+  return hasName || hasHolder;
 }
 
 export function resolveMemberCountry(source = {}) {

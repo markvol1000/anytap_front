@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { AdminDataTable, AdminMiniTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
 import {
-  AdminActionStack,
   AdminDetailPanel,
   AdminDetailRow,
   AdminDetailSection,
@@ -12,7 +11,7 @@ import { AdminStatusBadge, formatAmountWithCurrency, formatUsdt, shortenAddress 
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
-import { getWalletById, getWallets, lockWallet, unlockWallet, getCregisDepositList, syncUserCregisDeposits, triggerFeePayout } from '../services/adminService.js';
+import { getWalletById, getWallets, getCregisDepositList, syncUserCregisDeposits, triggerFeePayout } from '../services/adminService.js';
 import { fetchLocalTransactions } from '../../lib/services/account/accountApi.js';
 
 
@@ -137,21 +136,6 @@ export function WalletsPage() {
     }
   }, [confirm, detail, list, setDetail]);
 
-  const toggleLock = useCallback(async (lock) => {
-    if (!detail) return;
-    const label = lock ? 'Wallet Lock' : 'Wallet Unlock';
-    const ok = await runConfirm(confirm, {
-      title: label,
-      message: `${lock ? 'Lock' : 'Unlock'} wallet for ${detail.memberName}?`,
-      confirmLabel: lock ? 'Lock' : 'Unlock',
-      danger: lock,
-    });
-    if (!ok) return;
-    const updated = lock ? await lockWallet(detail.id) : await unlockWallet(detail.id);
-    setDetail(updated);
-    list.reload();
-  }, [confirm, detail, list, setDetail]);
-
 
   return (
     <div className="admin-page">
@@ -238,16 +222,6 @@ export function WalletsPage() {
             {!detailLoading && detail ? (
               <>
                 <AdminDetailSection title="Wallet detail">
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '10px' }}>
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn--ghost admin-btn--sm"
-                      onClick={() => fetchDepositList(detail.memberId || detail.id, 1)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}
-                    >
-                      🔄 Refresh Cregis Deposits
-                    </button>
-                  </div>
                   <AdminDetailRow label="Wallet ID" value={detail.id} />
                   <AdminDetailRow label="Address" value={detail.address} />
                   <AdminDetailRow label="Network" value={detail.network} />
@@ -326,18 +300,6 @@ export function WalletsPage() {
                     rows={localTxs ?? []}
                   />
                 </AdminDetailSection>
-
-                <AdminActionStack>
-                  {detail.status === 'locked' ? (
-                    <button type="button" className="admin-btn admin-btn--primary" onClick={() => toggleLock(false)}>
-                      Unlock wallet
-                    </button>
-                  ) : (
-                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => toggleLock(true)}>
-                      Lock wallet
-                    </button>
-                  )}
-                </AdminActionStack>
               </>
             ) : null}
           </AdminDetailPanel>

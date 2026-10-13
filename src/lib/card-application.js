@@ -126,10 +126,19 @@ export function generateApplicationNumber() {
 export function mapKycApplyStatus(kycStatus) {
   const s = String(kycStatus || '').toLowerCase();
   const map = {
-    pending: 'pending',
+    pending: 'not_started',
+    not_started: 'not_started',
+    none: 'not_started',
+    unverified: 'not_started',
+    wait_audit: 'under_review',
     under_review: 'under_review',
     approved: 'approved',
+    active: 'approved',
+    completed: 'approved',
+    pass_audit: 'approved',
     rejected: 'rejected',
+    fail: 'rejected',
+    failed: 'rejected',
     pending_wallet: 'approved',
   };
   return map[s] ?? 'not_started';

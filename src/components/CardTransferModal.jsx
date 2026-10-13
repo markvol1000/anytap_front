@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Icon } from './ui.jsx';
 import { CardThumb } from './account-wallet.jsx';
 import { isHttpApi } from '../lib/api/config.js';
+import { apiGet, apiPost } from '../lib/api/httpClient.js';
+import { getHttpSession } from '../lib/api/httpSession.js';
 import * as A from '../lib/account-data.js';
 
 function TransferOtpInput({ value, onChange, length = 6 }) {
@@ -131,7 +133,8 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
       s?.showToast?.('Please enter recipient email or ID.');
       return;
     }
-    const userId = s?.accountState?.userId;
+    const httpSession = getHttpSession();
+    const userId = s?.accountState?.userId || httpSession?.userId;
     if (!userId) {
       s?.showToast?.('User ID not found. Please log in again.');
       return;
@@ -141,66 +144,40 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
     setSelectedDestCard('');
 
     try {
-      if (isHttpApi) {
-        // 1. Fetch recipient cards by target email or ID
-        const checkRes = await fetch(`/api/v1/card/transfer/target-check?email=${encodeURIComponent(trimmedInput)}&identifier=${encodeURIComponent(trimmedInput)}`);
-        const checkJson = await checkRes.json();
-        if (checkJson?.result && checkJson?.data) {
-          const userData = checkJson.data;
-          setTargetUser(userData);
-          if (userData.feeRate != null) {
-            setFeeRate(Number(userData.feeRate));
-          }
-          // Set first available card or destination card
-          const cards = userData.cards || [];
-          const sourceCardId = sourceCard?.cardId || sourceCard?.id || sourceCard?.wasabiCardId || sourceCard?.cardNo;
-          const otherCards = cards.filter((c) => c.cardNo !== sourceCardId);
-          const defaultCard = otherCards.length > 0 ? otherCards[0] : cards[0];
-          if (defaultCard) {
-            setSelectedDestCard(defaultCard.cardNo);
-          } else {
-            s?.showToast?.('No destination cards available for this recipient.');
-            return;
-          }
+      // 1. Fetch recipient cards by target email or ID
+      const userData = await apiGet(`/card/transfer/target-check?email=${encodeURIComponent(trimmedInput)}&identifier=${encodeURIComponent(trimmedInput)}`);
+      if (userData) {
+        setTargetUser(userData);
+        if (userData.feeRate != null) {
+          setFeeRate(Number(userData.feeRate));
+        }
+        // Set first available card or destination card
+        const cards = userData.cards || [];
+        const sourceCardId = sourceCard?.cardId || sourceCard?.id || sourceCard?.wasabiCardId || sourceCard?.cardNo;
+        const otherCards = cards.filter((c) => c.cardNo !== sourceCardId);
+        const defaultCard = otherCards.length > 0 ? otherCards[0] : cards[0];
+        if (defaultCard) {
+          setSelectedDestCard(defaultCard.cardNo);
         } else {
-          s?.showToast?.(checkJson?.message || 'Recipient card lookup failed.');
+          s?.showToast?.('No destination cards available for this recipient.');
           return;
         }
-
-        // 2. Automatically send email verification code
-        try {
-          const codeRes = await fetch(`/api/v1/card/transfer/send-code/${userId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          });
-          const codeJson = await codeRes.json();
-          if (codeJson?.result) {
-            s?.showToast?.('Verification code sent to your registered email.');
-            setCodeCountdown(60);
-          } else {
-            s?.showToast?.(codeJson?.message || 'Failed to send verification code.');
-          }
-        } catch (codeErr) {
-          console.warn('Failed to send verification code:', codeErr);
-        }
-
-        setStep(2);
       } else {
-        // Mock fallback
-        setTargetUser({
-          userId: userId || 'US523674',
-          emailMasked: targetEmail ? (targetEmail.substring(0, 3) + '***@' + targetEmail.split('@')[1]) : 'test***@example.com',
-          feeRate: 0.0050,
-          cards: [
-            { cardNo: 'WC20260806208534530555222222', cardMasked: 'VISA **** 2222', cardType: 'virtual', status: 'active' }
-          ]
-        });
-        setFeeRate(0.0050);
-        setSelectedDestCard('WC20260806208534530555222222');
-        setCodeCountdown(60);
-        s?.showToast?.('Verification code sent to your registered email.');
-        setStep(2);
+        s?.showToast?.('Recipient card lookup failed.');
+        return;
       }
+
+      // 2. Automatically send email verification code
+      try {
+        await apiPost(`/card/transfer/send-code/${encodeURIComponent(userId)}`);
+        s?.showToast?.('Verification code sent to your registered email.');
+        setCodeCountdown(60);
+      } catch (codeErr) {
+        console.warn('Failed to send verification code:', codeErr);
+        s?.showToast?.(codeErr?.message || 'Failed to send verification code.');
+      }
+
+      setStep(2);
     } catch (err) {
       s?.showToast?.('Failed to proceed: ' + (err.message || 'Error'));
     } finally {
@@ -241,31 +218,19 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
   const isAmountValid = grossVal >= minTransferGross && totalVal <= currentBalance && !isBalanceTooLowForAnyTransfer;
 
   const handleSendVerificationCode = useCallback(async () => {
-    const userId = s?.accountState?.userId;
+    const httpSession = getHttpSession();
+    const userId = s?.accountState?.userId || httpSession?.userId;
     if (!userId) {
       s?.showToast?.('User ID not found. Please log in again.');
       return;
     }
     setSendingCode(true);
     try {
-      if (isHttpApi) {
-        const res = await fetch(`/api/v1/card/transfer/send-code/${userId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        const json = await res.json();
-        if (json?.status === 'SUCCESS' || json?.code === 200 || !json?.error) {
-          s?.showToast?.('Verification code sent to your registered email.');
-          setCodeCountdown(60);
-        } else {
-          s?.showToast?.(json?.message || 'Failed to send verification code.');
-        }
-      } else {
-        s?.showToast?.('Mock: Verification code sent to your email.');
-        setCodeCountdown(60);
-      }
+      await apiPost(`/card/transfer/send-code/${encodeURIComponent(userId)}`);
+      s?.showToast?.('Verification code sent to your registered email.');
+      setCodeCountdown(60);
     } catch (err) {
-      s?.showToast?.('Failed to send code: ' + (err.message || 'Error'));
+      s?.showToast?.(err.message || 'Failed to send verification code.');
     } finally {
       setSendingCode(false);
     }
@@ -299,8 +264,13 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
 
     setLoading(true);
     try {
+      const sourceCardId = sourceCard?.cardId || sourceCard?.id || sourceCard?.wasabiCardId || sourceCard?.cardNo;
+      if (!sourceCardId) {
+        s?.showToast?.('Source card ID not found.');
+        return;
+      }
       const payload = {
-        sourceCardNo: sourceCard?.cardId || sourceCard?.id || sourceCard?.wasabiCardId || 'WC20260806208534530555111111',
+        sourceCardNo: sourceCardId,
         destinationCardNo: selectedDestCard,
         destinationEmail: targetEmail,
         grossAmount: grossVal,
@@ -308,48 +278,16 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
         verificationCode: verificationCode.trim()
       };
 
-      if (isHttpApi) {
-        const userId = s?.accountState?.userId || 'US523674';
-        const res = await fetch(`/api/v1/card/transfer/${userId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const json = await res.json();
-        if (json?.data) {
-          setReceipt(json.data);
-          setStep(3);
-          const primaryKey = sourceCard?.id || sourceCard?.wasabiCardId || sourceCard?.cardNo || sourceCard?.last4;
-          if (primaryKey) {
-            s?.deductCardBalance?.(primaryKey, totalVal);
-          }
-          s?.triggerCardTxRefresh?.();
-          s?.refresh?.();
-          s?.showToast?.('Card transfer completed successfully!');
-        } else {
-          const rawMsg = json?.message || '';
-          const isTechError = !rawMsg || rawMsg.includes('failed: Card') || rawMsg.includes('abnormal') || rawMsg.includes('500') || rawMsg.includes('Error');
-          const friendlyMsg = isTechError
-            ? 'Your transfer could not be processed. Please contact AnyTap support.'
-            : rawMsg;
-          s?.showToast?.(friendlyMsg);
-        }
-      } else {
-        // Mock fallback
-        setReceipt({
-          merchantOrderNo: 'TRANSFER_' + Date.now(),
-          sourceCardNo: 'VISA **** ' + (sourceCard?.last4 || '1111'),
-          destinationEmail: targetEmail,
-          destinationEmailMasked: targetEmail,
-          destinationCardNo: 'VISA **** 2222',
-          grossAmount: grossVal,
-          feeRate: 0.0050,
-          feeAmount: feeVal,
-          netAmount: totalVal,
-          currency: 'USD',
-          status: 'SUCCESS',
-          completedAt: new Date().toISOString()
-        });
+      const httpSession = getHttpSession();
+      const userId = s?.accountState?.userId || httpSession?.userId;
+      if (!userId) {
+        s?.showToast?.('User ID not found. Please log in again.');
+        return;
+      }
+
+      const receiptData = await apiPost(`/card/transfer/${encodeURIComponent(userId)}`, payload);
+      if (receiptData) {
+        setReceipt(receiptData);
         setStep(3);
         const primaryKey = sourceCard?.id || sourceCard?.wasabiCardId || sourceCard?.cardNo || sourceCard?.last4;
         if (primaryKey) {
@@ -358,9 +296,16 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
         s?.triggerCardTxRefresh?.();
         s?.refresh?.();
         s?.showToast?.('Card transfer completed successfully!');
+      } else {
+        s?.showToast?.('Your transfer could not be processed. Please contact AnyTap support.');
       }
     } catch (err) {
-      s?.showToast?.('Your transfer could not be processed. Please contact AnyTap support.');
+      const rawMsg = err?.message || '';
+      const isTechError = !rawMsg || rawMsg.includes('failed: Card') || rawMsg.includes('abnormal') || rawMsg.includes('500') || rawMsg.includes('Error');
+      const friendlyMsg = isTechError
+        ? (rawMsg && !rawMsg.includes('500') ? rawMsg : 'Your transfer could not be processed. Please contact AnyTap support.')
+        : rawMsg;
+      s?.showToast?.(friendlyMsg);
     } finally {
       setLoading(false);
     }

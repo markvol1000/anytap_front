@@ -141,7 +141,7 @@ export function AccountKyc({ s }) {
 
   const blocked = kycApplyStatus === 'under_review';
   const rejected = kycApplyStatus === 'rejected' && !kycRetryOpen;
-  const verified = s.profileReady || kycApplyStatus === 'approved';
+  const verified = Boolean(s.profileReady && kycApplyStatus === 'approved');
   const showForm = !blocked && !rejected && !verified;
 
   const setKyc = (key, val) => {
@@ -360,13 +360,35 @@ export function AccountKyc({ s }) {
     try {
       if (isHttpApi) {
         await s.submitKycApplication(kycForm);
-        await s.reloadAccount?.();
+
+        // Poll for Wasabi & Cregis webhook completion (up to 4 attempts)
+        let verifiedNow = false;
+        for (let i = 0; i < 4; i++) {
+          if (i > 0) {
+            await new Promise((r) => setTimeout(r, 1000));
+          }
+          const reloaded = await s.reloadAccount?.();
+          const curKyc = String(reloaded?.accountState?.kycStatus || reloaded?.accountState?.status || '').toLowerCase();
+          if (curKyc === 'approved' || curKyc === 'active' || curKyc === 'completed' || curKyc === 'pass_audit') {
+            verifiedNow = true;
+            break;
+          }
+        }
+
+        if (verifiedNow) {
+          s.showToast('Identity verified successfully');
+          s.go('home');
+          return;
+        }
+
+        setKycAwaitingReview(true);
       } else {
         profilePatchFromKycForm(kycForm);
         setKycAwaitingReview(true);
       }
       setKycRetryOpen(false);
       s.showToast('Identity submitted for verification');
+      s.go('home');
     } catch (err) {
       const fallbackMsg = 'Verification failed. Please check your input fields and try again.';
       const errMsg = err?.message || err?.response?.data?.message || fallbackMsg;
@@ -408,10 +430,10 @@ export function AccountKyc({ s }) {
         </div>
         <StickyFoot
           secondaryLabel="Back to Home"
-          primaryLabel="Register Card"
+          primaryLabel="Go to Dashboard"
           primaryDisabled={false}
           onSecondary={goHome}
-          onPrimary={goRegister}
+          onPrimary={goHome}
         />
       </div>
     );

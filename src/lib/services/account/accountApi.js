@@ -27,10 +27,9 @@ import { getEmailForLoginId } from '../auth/loginId.js';
 function mapKycStatus(status) {
   const s = String(status || '').toUpperCase();
   if (s === 'PENDING_WALLET') return 'pending_wallet';
-  // ALB Wasabi webhook sets Users.kycStatus / status to ACTIVE on approve.
-  if (s === 'COMPLETED' || s === 'APPROVED' || s === 'ACTIVE') return 'approved';
+  if (s === 'COMPLETED' || s === 'APPROVED' || s === 'PASS_AUDIT') return 'approved';
   if (s === 'FAILED' || s === 'REJECTED') return 'rejected';
-  if (s === 'UNDER_REVIEW') return 'under_review';
+  if (s === 'UNDER_REVIEW' || s === 'WAIT_AUDIT') return 'under_review';
   return 'pending';
 }
 
@@ -185,22 +184,47 @@ function parseWasabiCardBalance(cardInfo) {
   return Number.isFinite(n) ? n : null;
 }
 
+let cregisBalanceInFlight = null;
+let cregisBalanceLastFetched = 0;
+let cregisBalanceCachedValue = null;
+
 async function fetchCregisWalletBalance(userId) {
   if (!userId) return null;
-  try {
-    const data = await apiGet(`/cregis/user/sub-address-balance/${encodeURIComponent(userId)}`);
-    return parseCregisAvailableBalance(data);
-  } catch (err) {
-    if (err?.status !== 400 && err?.status !== 404) {
-      console.warn('[accountApi] cregis balance', err);
-    }
-    return null;
+  const now = Date.now();
+  if (cregisBalanceCachedValue !== null && (now - cregisBalanceLastFetched) < 5000) {
+    return cregisBalanceCachedValue;
   }
+  if (cregisBalanceInFlight) {
+    return cregisBalanceInFlight;
+  }
+  cregisBalanceInFlight = (async () => {
+    try {
+      const data = await apiGet(`/cregis/user/sub-address-balance/${encodeURIComponent(userId)}`);
+      const parsed = parseCregisAvailableBalance(data);
+      cregisBalanceCachedValue = parsed;
+      cregisBalanceLastFetched = Date.now();
+      return parsed;
+    } catch (err) {
+      if (err?.status !== 400 && err?.status !== 404) {
+        console.warn('[accountApi] cregis balance', err);
+      }
+      return null;
+    } finally {
+      cregisBalanceInFlight = null;
+    }
+  })();
+  return cregisBalanceInFlight;
 }
 
 function buildContextFromSession(session, cardInfoList = [], activityItems = [], cregisBalance = null) {
   const demoLocked = false;
-  const kycStatus = mapKycStatus(session.kycStatus || session.status);
+  const hasRealHolder = Boolean(session.wasabiHolderId && !String(session.wasabiHolderId).startsWith('HOLDER_'));
+  const rawKyc = String(session.kycStatus || '').trim().toUpperCase();
+  const kycStatus = mapKycStatus(
+    rawKyc && rawKyc !== 'ACTIVE'
+      ? rawKyc
+      : (hasRealHolder ? 'APPROVED' : 'PENDING')
+  );
   const kycApproved = kycStatus === 'approved' || kycStatus === 'pending_wallet';
   const email = session.email || getEmailForLoginId(session.loginId) || '';
   // Show KYC fields once submitted (approved or under review); hide while still pending.
@@ -833,10 +857,24 @@ function isMissingWasabiCardError(err) {
   return /card does not exist/i.test(msg);
 }
 
+let refreshUserInFlight = new Map();
+let refreshUserLastFetched = new Map();
+
 async function refreshSessionFromUser(userId) {
-  try {
-    const user = await apiGet(`/users/${encodeURIComponent(userId)}`);
-    if (!user || typeof user !== 'object') return null;
+  if (!userId) return null;
+  const now = Date.now();
+  const lastTime = refreshUserLastFetched.get(userId) || 0;
+  if (now - lastTime < 1500) {
+    return getHttpSession();
+  }
+  if (refreshUserInFlight.has(userId)) {
+    return refreshUserInFlight.get(userId);
+  }
+  const promise = (async () => {
+    try {
+      const user = await apiGet(`/users/${encodeURIComponent(userId)}`);
+      refreshUserLastFetched.set(userId, Date.now());
+      if (!user || typeof user !== 'object') return null;
     const current = getHttpSession() || {};
     const backendCardStatus = mapCardStatus(user.cardStatus);
     const mergedCardStatus = preferCardStatus(current.cardStatus, user.cardStatus);
@@ -875,10 +913,15 @@ async function refreshSessionFromUser(userId) {
       ...(user.phoneCountryCode ? { phoneCountryCode: user.phoneCountryCode } : {}),
       ...(user.phoneNumber ? { phoneNumber: user.phoneNumber } : {}),
     }, { notify: false });
-  } catch (err) {
-    console.warn('[accountApi] refresh user', err);
-    return null;
-  }
+    } catch (err) {
+      console.warn('[accountApi] refresh user', err);
+      return null;
+    } finally {
+      refreshUserInFlight.delete(userId);
+    }
+  })();
+  refreshUserInFlight.set(userId, promise);
+  return promise;
 }
 
 /**
@@ -1016,7 +1059,8 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
   }
 
   let kycStatus = mapKycStatus(session.kycStatus);
-  if (kycStatus !== 'approved' && kycForm) {
+  const hasKycDocData = Boolean(kycForm?.idDocNumber || kycForm?.idFrontFile || kycForm?.idFrontId);
+  if (kycStatus !== 'approved' && kycForm && hasKycDocData) {
     await submitKycApplication(kycForm);
     kycStatus = mapKycStatus(getHttpSession()?.kycStatus);
   }

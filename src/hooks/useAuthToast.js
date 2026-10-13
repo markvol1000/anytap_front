@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sanitizeToastMessage } from '../utils/toast-sanitizer.js';
 
-export function useAuthToast(duration = 6000) {
+export function useAuthToast(duration = 7000) {
   const [toast, setToast] = useState('');
   const timer = useRef(null);
 

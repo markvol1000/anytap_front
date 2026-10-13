@@ -11,7 +11,10 @@ const TOKEN_KEY = 'anytap_access_token';
 
 export function getAccessToken() {
   try {
-    return sessionStorage.getItem(TOKEN_KEY) || '';
+    const direct = sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+    if (direct) return direct;
+    const session = getHttpSession();
+    return session?.token || '';
   } catch {
     return '';
   }
@@ -19,8 +22,13 @@ export function getAccessToken() {
 
 export function setAccessToken(token) {
   try {
-    if (token) sessionStorage.setItem(TOKEN_KEY, token);
-    else sessionStorage.removeItem(TOKEN_KEY);
+    if (token) {
+      sessionStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      sessionStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+    }
   } catch { /* noop */ }
 }
 
@@ -62,8 +70,6 @@ export function forceLogoutAndRedirect(reason = 'server_unreachable') {
     localStorage.removeItem('anytap_demo_http_session');
     sessionStorage.removeItem('anytap_mock_session');
     localStorage.removeItem('anytap_mock_session');
-    sessionStorage.removeItem('anytap_admin_session');
-    localStorage.removeItem('anytap_admin_session');
   } catch { /* noop */ }
 
   try {
@@ -114,12 +120,15 @@ export async function apiRequest(path, options = {}) {
   const isLoginEndpoint = path && String(path).includes('/auth/login');
 
   const token = getAccessToken();
-  if (token && !isAdminContext) {
+  if (token) {
     headers.set('Authorization', `Bearer ${token}`);
+    headers.set('X-Session-Token', token);
   }
 
-  if (session?.userId || session?.email) {
-    headers.set('X-User-Id', session.userId || session.email);
+  const adminIdentifier = session?.userId || session?.email || session?.loginId || '';
+
+  if (session?.userId || session?.email || session?.loginId) {
+    headers.set('X-User-Id', session.userId || session.email || session.loginId);
     if (session.role) {
       headers.set('X-User-Role', String(session.role).toUpperCase());
     }
@@ -128,7 +137,6 @@ export async function apiRequest(path, options = {}) {
   if (isAdminContext) {
     const role = session?.role ? String(session.role).toUpperCase() : 'ADMIN';
     headers.set('X-User-Role', role);
-    const adminIdentifier = session?.userId || session?.email || '';
     if (adminIdentifier) {
       headers.set('X-User-Id', adminIdentifier);
     }
@@ -153,7 +161,7 @@ export async function apiRequest(path, options = {}) {
 
   let res;
   try {
-    res = await fetch(requestUrl, { ...init, headers, body, signal: controller.signal });
+    res = await fetch(requestUrl, { credentials: 'include', ...init, headers, body, signal: controller.signal });
   } catch (fetchErr) {
     clearTimeout(timeoutId);
     const isTimeout = fetchErr.name === 'AbortError';
@@ -202,14 +210,12 @@ export async function apiRequest(path, options = {}) {
 
     if (isBlacklisted) {
       forceLogoutAndRedirect('ip_blacklisted');
-    } else if ((res.status === 401 || res.status === 403) && !isAdminContext && !isLoginEndpoint) {
+    } else if (res.status === 401 && !isLoginEndpoint) {
       clearAccessToken();
       try {
         sessionStorage.removeItem('anytap_http_session');
         localStorage.removeItem('anytap_http_session');
         localStorage.removeItem('anytap_demo_http_session');
-        sessionStorage.removeItem('anytap_admin_session');
-        localStorage.removeItem('anytap_admin_session');
       } catch { /* noop */ }
       window.dispatchEvent(new CustomEvent('anytap-session-expired', { detail: { reason: 'unauthorized', status: res.status } }));
     }

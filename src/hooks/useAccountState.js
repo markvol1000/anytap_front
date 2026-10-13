@@ -138,7 +138,7 @@ export function useAccountState() {
   }, []);
 
   const reloadAccount = useCallback(async () => {
-    if (!isHttpApi || !hasHttpSession()) return;
+    if (!isHttpApi || !hasHttpSession()) return null;
     setRemoteLoading(true);
     try {
       const [accountCtx, referralCtx, policyRes] = await Promise.all([
@@ -149,10 +149,12 @@ export function useAccountState() {
       setRemoteContext(accountCtx);
       setRemoteReferral(referralCtx);
       if (policyRes) setFeePolicy(policyRes);
+      return accountCtx;
     } catch (err) {
       if (err?.message !== 'Not authenticated') {
         console.error('[account] remote context reload failed', err);
       }
+      return null;
     } finally {
       setRemoteLoading(false);
     }
@@ -298,11 +300,16 @@ export function useAccountState() {
   }, [mockContext.activityItems, selectedCardTxs]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+  const clearToast = useCallback(() => {
+    clearTimeout(timers.current.toast);
+    setToast('');
+  }, []);
+
   const showToast = useCallback((m) => {
     const cleanMsg = sanitizeToastMessage(m);
     setToast(cleanMsg);
     clearTimeout(timers.current.toast);
-    timers.current.toast = setTimeout(() => setToast(''), 6000);
+    timers.current.toast = setTimeout(() => setToast(''), 7000);
   }, []);
 
   const copy = useCallback((text, msg) => {
@@ -553,7 +560,7 @@ export function useAccountState() {
     // Page meta
     pageTitle, pageSub,
     // Toast
-    toast, showToast, copy,
+    toast, showToast, clearToast, copy,
     // Dev/mock
     scenarioKey, setScenarioKey,
     referralStateKey, setReferralStateKey,

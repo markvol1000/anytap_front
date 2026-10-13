@@ -492,6 +492,93 @@ function SignUpPage() {
   const [hints, setHints] = useState({ email: '', password: '', passwordConfirm: '', agree: '' });
   const [errors, setErrors] = useState({ email: false, password: false, passwordConfirm: false, agree: false });
   const { toast, showToast, clearToast } = useAuthToast();
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileContainerRef = useRef(null);
+  const widgetIdRef = useRef(null);
+
+  // Cloudflare Turnstile explicitly rendered for SignUp
+  useEffect(() => {
+    let isMounted = true;
+    let timerId = null;
+
+    const renderWidget = () => {
+      if (!isMounted || !turnstileContainerRef.current) return;
+      if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+        timerId = setTimeout(renderWidget, 100);
+        return;
+      }
+
+      if (widgetIdRef.current !== null) {
+        return;
+      }
+
+      try {
+        turnstileContainerRef.current.innerHTML = '';
+        widgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+          sitekey: '0x4AAAAAAFUPnXqUuCvXL0UY',
+          callback: (token) => {
+            if (isMounted) setTurnstileToken(token);
+          },
+          'expired-callback': () => {
+            if (isMounted) setTurnstileToken('');
+          },
+          'error-callback': () => {
+            if (isMounted) setTurnstileToken('');
+          },
+          theme: 'light',
+        });
+      } catch (err) {
+        if (isMounted && widgetIdRef.current === null) {
+          timerId = setTimeout(() => {
+            if (!isMounted || !turnstileContainerRef.current) return;
+            try {
+              turnstileContainerRef.current.innerHTML = '';
+              widgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+                sitekey: '0x4AAAAAAFUPnXqUuCvXL0UY',
+                callback: (token) => {
+                  if (isMounted) setTurnstileToken(token);
+                },
+                'expired-callback': () => {
+                  if (isMounted) setTurnstileToken('');
+                },
+                'error-callback': () => {
+                  if (isMounted) setTurnstileToken('');
+                },
+                theme: 'light',
+              });
+            } catch { /* noop */ }
+          }, 150);
+        }
+      }
+    };
+
+    timerId = setTimeout(renderWidget, 50);
+
+    if (!window.turnstile) {
+      window.onAnytapTurnstileLoad = renderWidget;
+      if (!document.getElementById('cloudflare-turnstile-script')) {
+        const script = document.createElement('script');
+        script.id = 'cloudflare-turnstile-script';
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onAnytapTurnstileLoad&render=explicit';
+        script.async = true;
+        script.defer = true;
+        document.body.appendChild(script);
+      }
+    }
+
+    return () => {
+      isMounted = false;
+      if (timerId) clearTimeout(timerId);
+      if (widgetIdRef.current !== null) {
+        try {
+          if (window.turnstile && typeof window.turnstile.remove === 'function') {
+            window.turnstile.remove(widgetIdRef.current);
+          }
+        } catch { /* noop */ }
+        widgetIdRef.current = null;
+      }
+    };
+  }, []);
 
   const emailLiveInvalid = email.length > 0 && !emailOk(email);
   const pwLiveMismatch = password2.length > 0 && password !== password2;
@@ -572,6 +659,26 @@ function SignUpPage() {
     clearSignupErrors();
     const finalReferral = ignoreReferral ? '' : result.referralVal;
 
+    let token = turnstileToken;
+    if (!token && typeof window !== 'undefined' && window.turnstile) {
+      try {
+        const directToken = widgetIdRef.current !== null
+          ? window.turnstile.getResponse(widgetIdRef.current)
+          : window.turnstile.getResponse();
+        if (directToken) {
+          token = directToken;
+          setTurnstileToken(directToken);
+        }
+      } catch (e) {
+        console.warn('Failed to read Turnstile response directly:', e);
+      }
+    }
+
+    if (isHttpApi && !token) {
+      showToast('Please complete the Cloudflare security verification.');
+      return;
+    }
+
     if (isHttpApi) {
       const loginIdVal = result.emailVal;
       saveEmailLoginId(result.emailVal, loginIdVal);
@@ -580,8 +687,15 @@ function SignUpPage() {
         password: result.passwordVal,
         loginId: loginIdVal,
         referral: finalReferral,
+        recaptchaToken: token,
       });
       if (!sent.ok) {
+        if (window.turnstile && widgetIdRef.current !== null) {
+          try {
+            window.turnstile.reset(widgetIdRef.current);
+          } catch { /* noop */ }
+          setTurnstileToken('');
+        }
         applySignupError(sent, { showToast, setHints, setErrors });
         return;
       }
@@ -590,6 +704,7 @@ function SignUpPage() {
         password: result.passwordVal,
         loginId: loginIdVal,
         referral: finalReferral,
+        recaptchaToken: token,
       });
       showToast(SIGNUP_VERIFY.CODE_SENT);
       navigate('/sign-up/verify', { state: { signupPending: payload } });
@@ -621,6 +736,26 @@ function SignUpPage() {
               showToast(SIGNUP_ERRORS.INCOMPLETE.toast);
               return;
             }
+            let token = turnstileToken;
+            if (!token && typeof window !== 'undefined' && window.turnstile) {
+              try {
+                const directToken = widgetIdRef.current !== null
+                  ? window.turnstile.getResponse(widgetIdRef.current)
+                  : window.turnstile.getResponse();
+                if (directToken) {
+                  token = directToken;
+                  setTurnstileToken(directToken);
+                }
+              } catch (e) {
+                console.warn('Failed to read Turnstile response directly:', e);
+              }
+            }
+
+            if (isHttpApi && !token) {
+              showToast('Please complete the Cloudflare security verification.');
+              return;
+            }
+
             const referralCode = String(referral || result.referralVal || '').trim().toUpperCase();
             if (referralCode) {
               const exists = await checkReferralCode(referralCode);
@@ -715,6 +850,9 @@ function SignUpPage() {
             {errors.agree && hints.agree && (
               <p className="login-screen__hint">{hints.agree}</p>
             )}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0 16px 0', minHeight: '65px' }}>
+            <div ref={turnstileContainerRef} />
           </div>
           <button type="submit" className="btn btn--accent btn--lg login-screen__submit">
             Create Account
@@ -824,10 +962,29 @@ function SignUpVerifyPage() {
 
   const handleResend = async () => {
     if (resendSec > 0 || verifying) return;
-    const sent = await Promise.resolve(sendMockEmailVerification(pending.email));
-    if (isHttpApi && sent?.ok === false) {
-      showToast('Could not resend verification email.');
-      return;
+    if (isHttpApi) {
+      if (!pending?.email) {
+        showToast('Sign-up session expired. Please start again.');
+        navigate('/sign-up', { replace: true });
+        return;
+      }
+      const sent = await sendVerificationEmail({
+        email: pending.email,
+        password: pending.password,
+        loginId: pending.loginId || pending.email,
+        referral: pending.referral,
+        recaptchaToken: '',
+      });
+      if (!sent.ok) {
+        showToast(sent?.message || 'Could not resend verification email.');
+        return;
+      }
+    } else {
+      const sent = await Promise.resolve(sendMockEmailVerification(pending.email));
+      if (sent?.ok === false) {
+        showToast('Could not resend verification email.');
+        return;
+      }
     }
     const next = refreshSignupExpiry();
     if (next) setPending(next);

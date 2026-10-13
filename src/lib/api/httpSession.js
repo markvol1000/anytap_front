@@ -137,10 +137,6 @@ export function clearHttpSession() {
   removeKey(sessionStorage, HTTP_SESSION_KEY);
   removeKey(localStorage, HTTP_SESSION_KEY);
   removeKey(localStorage, DEMO_SESSION_KEY);
-  try {
-    sessionStorage.removeItem('anytap_admin_session');
-    localStorage.removeItem('anytap_admin_session');
-  } catch { /* noop */ }
   window.dispatchEvent(new Event('anytap-member-session'));
 }
 

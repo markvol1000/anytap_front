@@ -2,7 +2,7 @@
  * AnyTap Spring Boot auth — /api/v1/auth/*
  */
 
-import { apiGet, apiPost } from '../../api/httpClient.js';
+import { apiGet, apiPost, setAccessToken, clearAccessToken } from '../../api/httpClient.js';
 import { MERCHANT_ID } from '../../api/config.js';
 import {
   clearHttpSession,
@@ -71,23 +71,24 @@ function normalizeAuthProfile(data, loginId) {
   const walletExists = data.walletExists === true
     || data.wallet_exists === true
     || !!walletAddr;
-  return {
+  const profile = {
     userId: data.userId || data.user_id || '',
     email: data.email || '',
     loginId: loginId || data.loginId || data.login_id || '',
     merchantId: data.merchantId || data.merchant_id || MERCHANT_ID,
-    cregisWalletAddress: walletAddr,
     kycStatus: data.kycStatus || data.kyc_status || 'PENDING',
     cardStatus: data.cardStatus || data.card_status || 'not_issued',
-    walletExists,
-    needsActivation: data.needsActivation === true || data.needs_activation === true,
     status: data.status || '',
-    trackingNumber: data.trackingNumber || data.tracking_number || '',
-    carrier: data.carrier || '',
-    role: data.role || '',
-    referralCode: data.referralCode || data.referral_code || '',
-    ownReferralCode: data.ownReferralCode || data.own_referral_code || data.referralCode || data.referral_code || '',
+    role: data.role || 'MEMBER',
   };
+  if (walletAddr) profile.cregisWalletAddress = walletAddr;
+  if (walletExists) profile.walletExists = true;
+  if (data.needsActivation) profile.needsActivation = true;
+  if (data.trackingNumber) profile.trackingNumber = data.trackingNumber;
+  if (data.carrier) profile.carrier = data.carrier;
+  if (data.referralCode) profile.referralCode = data.referralCode;
+  if (data.ownReferralCode) profile.ownReferralCode = data.ownReferralCode;
+  return profile;
 }
 
 function establishSessionFromLoginData(data, { loginId = '', emailHint = '' } = {}) {
@@ -138,7 +139,8 @@ function establishSessionFromLoginData(data, { loginId = '', emailHint = '' } = 
       cardStatus = previous.cardStatus;
     }
   }
-  const sessionUser = { ...profile, email, loginId: resolvedLoginId || profile.loginId };
+  const sessionToken = data?.token || profile?.token || '';
+  const sessionUser = { ...profile, email, loginId: resolvedLoginId || profile.loginId, token: sessionToken };
   setHttpSession({
     ...sessionUser,
     ...(keepIssuance ? {
@@ -152,11 +154,8 @@ function establishSessionFromLoginData(data, { loginId = '', emailHint = '' } = 
   });
 
   const roleUpper = String(sessionUser.role || '').trim().toUpperCase();
-  if (roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN') {
-    try {
-      sessionStorage.setItem('anytap_admin_session', sessionUser.email || sessionUser.loginId || 'ADMIN');
-      window.dispatchEvent(new Event('anytap-admin-session'));
-    } catch { /* noop */ }
+  if (data?.token) {
+    setAccessToken(data.token);
   }
 
   return { ok: true, user: sessionUser };
@@ -226,7 +225,7 @@ export async function checkReferralCode(code) {
   }
 }
 
-export async function sendVerificationEmail({ email, password, loginId, referral, merchantId = MERCHANT_ID }) {
+export async function sendVerificationEmail({ email, password, loginId, referral, merchantId = MERCHANT_ID, recaptchaToken }) {
   const normalizedEmail = email.trim().toLowerCase();
   const id = String(loginId || '').trim();
   if (!normalizedEmail || !password || !id) return { ok: false, code: 'MISSING' };
@@ -240,6 +239,7 @@ export async function sendVerificationEmail({ email, password, loginId, referral
       loginId: id,
       merchantId,
       ...(referral ? { referralCode: String(referral).trim().toUpperCase() } : {}),
+      ...(recaptchaToken ? { recaptchaToken } : {}),
     });
     return { ok: true };
   } catch (err) {
@@ -444,6 +444,7 @@ export async function attemptLogout() {
   } catch (err) {
     console.error("Failed to log logout to backend", err);
   } finally {
+    clearAccessToken();
     clearHttpSession();
     clearMemberProfile();
   }

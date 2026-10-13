@@ -5,17 +5,27 @@ export function AccountToast({ msg, onClear }) {
   const [visible, setVisible] = useState(false);
   const [text, setText] = useState('');
   const timerRef = useRef(null);
+  const fadeTimerRef = useRef(null);
   const isHoveredRef = useRef(false);
 
-  const startTimer = (duration = 6000) => {
-    clearTimeout(timerRef.current);
+  const clearAllTimers = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+  };
+
+  const dismiss = () => {
+    setVisible(false);
+    fadeTimerRef.current = setTimeout(() => {
+      setText('');
+      if (onClear) onClear();
+    }, 400);
+  };
+
+  const startTimer = (duration = 7000) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       if (!isHoveredRef.current) {
-        setVisible(false);
-        setTimeout(() => {
-          setText('');
-          if (onClear) onClear();
-        }, 400);
+        dismiss();
       }
     }, duration);
   };
@@ -25,13 +35,17 @@ export function AccountToast({ msg, onClear }) {
       const cleanMsg = sanitizeToastMessage(msg);
       setText(cleanMsg);
       setVisible(true);
-      startTimer(6000);
+      startTimer(7000);
+    } else {
+      setVisible(false);
+      setText('');
     }
+    return () => clearAllTimers();
   }, [msg]);
 
   const handleMouseEnter = () => {
     isHoveredRef.current = true;
-    clearTimeout(timerRef.current);
+    if (timerRef.current) clearTimeout(timerRef.current);
     setVisible(true);
   };
 
@@ -47,6 +61,7 @@ export function AccountToast({ msg, onClear }) {
       className="portal-toast"
       role="status"
       tabIndex={0}
+      onClick={dismiss}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onFocus={handleMouseEnter}

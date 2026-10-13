@@ -238,7 +238,7 @@ function AccountPortal() {
         }}
       />
 
-      <AccountToast msg={s.toast} />
+      <AccountToast msg={s.toast} onClear={s.clearToast} />
       <ReceiveSheet s={s} open={s.receiveOpen} onClose={s.closeReceive} />
       <CardTopUpSelectSheet
         s={s}
