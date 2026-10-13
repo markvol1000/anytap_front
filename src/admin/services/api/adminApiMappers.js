@@ -43,11 +43,14 @@ export function mapAdminProfile(data) {
 }
 
 export function mapMemberRow(row) {
+  const isTemp = row?.isTemp === true || !row?.userId || row?.userId === '-' || String(row?.status || '').toUpperCase() === 'PENDING';
   const userId = row?.userId && row.userId !== '-' ? row.userId : (row?.user_id && row.user_id !== '-' ? row.user_id : '');
-  const id = userId || (row?.loginId ? `temp-${row.loginId}` : '');
+  const id = (!isTemp && userId) ? userId : (row?.loginId ? `temp-${row.loginId}` : (userId || ''));
   return {
     id,
-    userId: userId || null,
+    isTemp,
+    memberId: isTemp ? '-' : (userId || '-'),
+    userId: isTemp ? null : (userId || null),
     loginId: row?.loginId || '',
     name: displayName(row),
     email: row?.email || '',
@@ -384,19 +387,25 @@ export function paginateLocal(items, {
       if (av == null) return 1;
       if (bv == null) return -1;
       if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
+      // Date comparison if valid date strings
+      const aTime = new Date(av).getTime();
+      const bTime = new Date(bv).getTime();
+      if (!Number.isNaN(aTime) && !Number.isNaN(bTime)) {
+        return (aTime - bTime) * dir;
+      }
       return String(av).localeCompare(String(bv)) * dir;
     }
 
     // Default multi-key sort: 1) updateDate desc, 2) createDate desc, 3) name asc
     const getUpdateTs = (row) => {
-      const raw = row.updatedAt || row.updateDate || row.updated || row.at || row.date || row.createdAt || row.createDate || row.created || row.joinDate;
+      const raw = row.bannedAt || row.updatedAt || row.updateDate || row.updated || row.at || row.date || row.createdAt || row.createDate || row.created || row.joinDate;
       if (!raw) return 0;
       const t = new Date(raw).getTime();
       return Number.isNaN(t) ? 0 : t;
     };
 
     const getCreateTs = (row) => {
-      const raw = row.createdAt || row.createDate || row.created || row.joinDate || row.submittedAt || row.at || row.date;
+      const raw = row.bannedAt || row.createdAt || row.createDate || row.created || row.joinDate || row.submittedAt || row.at || row.date;
       if (!raw) return 0;
       const t = new Date(raw).getTime();
       return Number.isNaN(t) ? 0 : t;

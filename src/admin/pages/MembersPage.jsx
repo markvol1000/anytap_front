@@ -382,9 +382,15 @@ export function MembersPage() {
             <AdminTableWrap loading={list.loading} error={list.error} hasData={(list.items || []).length > 0}>
               <AdminDataTable
                 columns={[
-                  { key: 'id', label: 'Member ID', render: (r) => (
-                    <span style={{ fontFamily: 'monospace', fontWeight: '700', fontSize: '12px' }}>{r.id}</span>
-                  ) },
+                  { key: 'id', label: 'Member ID', render: (r) => {
+                    const isTemporary = r.isTemp === true || !r.userId || String(r.id || '').startsWith('temp-') || String(r.accountStatus || r.status || '').toUpperCase() === 'PENDING';
+                    const displayId = isTemporary ? '-' : (r.userId || r.id);
+                    return (
+                      <span style={{ fontFamily: 'monospace', fontWeight: '700', fontSize: '12px', color: isTemporary ? '#64748b' : 'inherit' }}>
+                        {displayId}
+                      </span>
+                    );
+                  } },
                   { 
                     key: 'name', 
                     label: 'Member',
@@ -558,7 +564,14 @@ export function MembersPage() {
             {!detailLoading && detail ? (
               <>
                 <AdminDetailSection title="Member info">
-                  <AdminDetailRow label="Member ID" value={detail.id} />
+                  <AdminDetailRow
+                    label="Member ID"
+                    value={
+                      detail.isTemp || !detail.userId || String(detail.id || '').startsWith('temp-') || String(detail.accountStatus || detail.status || '').toUpperCase() === 'PENDING'
+                        ? '-'
+                        : (detail.userId || detail.id)
+                    }
+                  />
                   <AdminDetailRow label="Email" value={detail.email} />
                   {detail.phone && detail.phone !== '—' && detail.phone !== '-' ? (
                     <AdminDetailRow label="Phone" value={detail.phone} />

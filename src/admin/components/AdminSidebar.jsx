@@ -17,6 +17,7 @@ const OPS_NAV = [
 const SYSTEM_NAV = [
   { to: '/admin/notifications', label: 'Notifications', icon: 'bell' },
   { to: '/admin/login-logs', label: 'Login Logs', icon: 'lock' },
+  { to: '/admin/blacklist', label: 'IP Blacklist', icon: 'shield' },
   { to: '/admin/logs', label: 'Admin Logs', icon: 'clock' },
 ];
 

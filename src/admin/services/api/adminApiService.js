@@ -1743,3 +1743,45 @@ export async function getCardTransfersReport(params = {}) {
 }
 
 export const MAX_CARDS_PER_MEMBER = 999;
+
+export async function getBannedIps(params = {}) {
+  try {
+    const raw = asArray(await apiGet('/admin/security/banned-ips'));
+    const mapped = raw.map((item) => ({
+      id: String(item.id || item.ipAddress),
+      ipAddress: item.ipAddress || '',
+      reason: item.reason || '—',
+      attemptedAccount: item.attemptedAccount || '—',
+      bannedBy: item.bannedBy || 'ADMIN',
+      isActive: item.isActive !== false,
+      status: item.isActive !== false ? 'ACTIVE' : 'INACTIVE',
+      bannedAt: item.bannedAt || '',
+      expiresAt: item.expiresAt || null,
+      createdAt: item.createdAt || item.bannedAt || '',
+    }));
+
+    const statusFilter = (params.status || 'all').toUpperCase();
+    const filtered = statusFilter === 'ALL'
+      ? mapped
+      : mapped.filter((r) => r.status === statusFilter);
+
+    return paginateLocal(filtered, {
+      ...params,
+      searchKeys: ['ipAddress', 'reason', 'attemptedAccount', 'bannedBy'],
+    });
+  } catch (e) {
+    console.error('[adminApiService] Failed to fetch banned IPs:', e);
+    return paginateLocal([], params);
+  }
+}
+
+export async function banIpAddress(ip, reason = '') {
+  const query = new URLSearchParams({ ip: ip.trim() });
+  if (reason && reason.trim()) query.append('reason', reason.trim());
+  return apiPost(`/admin/security/ban?${query.toString()}`);
+}
+
+export async function unbanIpAddress(ip) {
+  const query = new URLSearchParams({ ip: ip.trim() });
+  return apiPost(`/admin/security/unban?${query.toString()}`);
+}

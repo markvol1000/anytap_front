@@ -32,6 +32,9 @@ export function useAdminList(fetcher, initialFilters = {}, options = {}) {
     return pickUrlFilters(searchParams, keys);
   }, [searchParams, urlKeysSig]);
 
+  const defaultSortKey = options.initialSortKey ?? options.sortKey ?? initialFilters?.sortKey ?? '';
+  const defaultSortDir = options.initialSortDir ?? options.sortDir ?? initialFilters?.sortDir ?? 'asc';
+
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -39,8 +42,8 @@ export function useAdminList(fetcher, initialFilters = {}, options = {}) {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState(() => mergeFilters(initialFilters, urlFilters));
-  const [sortKey, setSortKey] = useState('');
-  const [sortDir, setSortDir] = useState('asc');
+  const [sortKey, setSortKey] = useState(defaultSortKey);
+  const [sortDir, setSortDir] = useState(defaultSortDir);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
