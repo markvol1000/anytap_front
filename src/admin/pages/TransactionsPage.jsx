@@ -550,6 +550,60 @@ export function TransactionsPage() {
                 totalPages={list.totalPages}
                 total={list.total}
                 onPageChange={list.setPage}
+                renderMobileCard={(r) => {
+                  const isInflow = r.isInflow ?? (
+                    r.action === 'deposit' ||
+                    r.action === 'topup' ||
+                    r.action === 'refund' ||
+                    r.action === 'transfer_in'
+                  );
+                  const sign = isInflow ? '+' : '-';
+                  const color = isInflow ? '#16a34a' : '#dc2626';
+                  const bg = isInflow ? '#f0fdf4' : '#fef2f2';
+                  const border = isInflow ? '#bbf7d0' : '#fecaca';
+                  const desc = r.description || r.reference || '—';
+
+                  return (
+                    <>
+                      <div className="admin-mobile-card__row1">
+                        <div className="admin-mobile-card__left">
+                          <span className="admin-mobile-card__title" style={{ fontFamily: 'monospace' }}>
+                            {r.id ? `${r.id.slice(0, 8)}...` : 'Tx'}
+                          </span>
+                          <ActionBadge action={r.action} label={r.actionLabel} />
+                          <ChannelBadge channel={r.channel} />
+                        </div>
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          backgroundColor: bg,
+                          border: `1px solid ${border}`,
+                          fontWeight: '800',
+                          fontSize: '11px',
+                          color: color,
+                          fontFamily: 'monospace',
+                          flexShrink: 0,
+                        }}>
+                          <CurrencyBadge currency={r.currency || r.originalCurrency || r.transCurrency} />
+                          <span>{sign}{formatAmountWithCurrency(Math.abs(Number(r.transAmount ?? r.amount) || 0), r.currency || r.originalCurrency || r.transCurrency || '')}</span>
+                        </div>
+                      </div>
+                      <div className="admin-mobile-card__row2">
+                        <span className="admin-mobile-card__detail" title={desc}>
+                          {desc}
+                        </span>
+                        <AdminStatusBadge status={r.status} />
+                        <span style={{ color: '#cbd5e1' }}>•</span>
+                        <span className="admin-mobile-card__date">
+                          {formatAdminDate(r.at)}
+                        </span>
+                      </div>
+                    </>
+                  );
+                }}
               />
             </AdminTableWrap>
           </AdminPanel>

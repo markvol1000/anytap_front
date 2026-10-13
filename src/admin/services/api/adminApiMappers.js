@@ -43,14 +43,20 @@ export function mapAdminProfile(data) {
 }
 
 export function mapMemberRow(row) {
-  const isTemp = row?.isTemp === true || !row?.userId || row?.userId === '-' || String(row?.status || '').toUpperCase() === 'PENDING';
-  const userId = row?.userId && row.userId !== '-' ? row.userId : (row?.user_id && row.user_id !== '-' ? row.user_id : '');
-  const id = (!isTemp && userId) ? userId : (row?.loginId ? `temp-${row.loginId}` : (userId || ''));
+  const hasCardStatusLabel = row?.cardStatusLabel != null && row?.cardStatusLabel !== '';
+  const isTempStructural = !hasCardStatusLabel && (row?.cardStatusText === 'no_cards' || row?.cregisWalletAddress === '-');
+  const isTemp = row?.isTemp === true || 
+                 row?.is_temp === true || 
+                 Boolean(row?.userId && String(row.userId).startsWith('temp-')) || 
+                 Boolean(row?.id && String(row.id).startsWith('temp-')) ||
+                 Boolean(isTempStructural);
+  const rawUserId = row?.userId && row.userId !== '-' ? row.userId : (row?.user_id && row.user_id !== '-' ? row.user_id : '');
+  const id = rawUserId || (row?.loginId ? `temp-${row.loginId}` : (row?.email || ''));
   return {
     id,
-    isTemp,
-    memberId: isTemp ? '-' : (userId || '-'),
-    userId: isTemp ? null : (userId || null),
+    isTemp: Boolean(isTemp),
+    memberId: rawUserId || '-',
+    userId: rawUserId || null,
     loginId: row?.loginId || '',
     name: displayName(row),
     email: row?.email || '',
@@ -81,6 +87,7 @@ export function mapMemberRow(row) {
     failureHistory: Array.isArray(row?.failureHistory) ? row.failureHistory : [],
     failureReason: row?.failureReason || row?.rejectReason || row?.rejectionReason || '',
     rejectReason: row?.rejectReason || row?.failureReason || '',
+    lastIp: row?.lastIp || row?.last_ip || null,
   };
 }
 

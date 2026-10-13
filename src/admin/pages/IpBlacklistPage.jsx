@@ -132,12 +132,18 @@ export function IpBlacklistPage() {
               search={list.search}
               onSearchChange={list.setSearch}
               searchPlaceholder="Search IP address, reason, account…"
-              status={list.status}
-              onStatusChange={list.setStatus}
-              statusOptions={[
-                { value: 'all', label: 'All Statuses' },
-                { value: 'ACTIVE', label: 'Active (Banned)' },
-                { value: 'INACTIVE', label: 'Inactive (Unbanned)' },
+              filters={[
+                {
+                  key: 'status',
+                  label: 'Status',
+                  value: list.filters?.status ?? 'all',
+                  onChange: (val) => list.setFilter('status', val),
+                  options: [
+                    { value: 'all', label: 'All Statuses' },
+                    { value: 'ACTIVE', label: 'Active (Banned)' },
+                    { value: 'INACTIVE', label: 'Inactive (Unbanned)' },
+                  ],
+                },
               ]}
             />
             <AdminTableWrap loading={list.loading} error={list.error} hasData={list.items.length > 0}>
@@ -178,14 +184,17 @@ export function IpBlacklistPage() {
                     sortable: true,
                     render: (r) => (
                       <span
+                        title={r.reason || '—'}
                         style={{
-                          fontSize: '13px',
-                          fontWeight: 600,
+                          fontSize: '12px',
+                          fontWeight: 500,
                           color: '#1e293b',
-                          maxWidth: '240px',
+                          maxWidth: '220px',
                           display: 'inline-block',
-                          whiteSpace: 'normal',
-                          wordBreak: 'break-word',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          verticalAlign: 'middle',
                         }}
                       >
                         {r.reason || '—'}
@@ -198,10 +207,17 @@ export function IpBlacklistPage() {
                     sortable: true,
                     render: (r) => (
                       <span
+                        title={r.attemptedAccount || '—'}
                         style={{
-                          fontSize: '13px',
+                          fontSize: '12px',
                           fontWeight: 600,
                           color: r.attemptedAccount && r.attemptedAccount !== '—' ? '#b45309' : '#64748b',
+                          maxWidth: '140px',
+                          display: 'inline-block',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          verticalAlign: 'middle',
                         }}
                       >
                         {r.attemptedAccount || '—'}
@@ -214,18 +230,21 @@ export function IpBlacklistPage() {
                     sortable: true,
                     render: (r) => (
                       <span
+                        title={r.bannedBy || 'ADMIN'}
                         style={{
-                          fontSize: '11px',
+                          fontSize: '10px',
                           fontWeight: 700,
-                          padding: '3px 8px',
-                          borderRadius: '4px',
+                          padding: '1px 5px',
+                          borderRadius: '3px',
                           backgroundColor: r.bannedBy === 'AUTO_DETECTION' ? '#fee2e2' : '#e0f2fe',
                           color: r.bannedBy === 'AUTO_DETECTION' ? '#991b1b' : '#0369a1',
                           border: `1px solid ${r.bannedBy === 'AUTO_DETECTION' ? '#fca5a5' : '#bae6fd'}`,
-                          letterSpacing: '0.03em',
+                          letterSpacing: '0.02em',
+                          lineHeight: 1.2,
+                          display: 'inline-block',
                         }}
                       >
-                        {r.bannedBy || 'ADMIN'}
+                        {r.bannedBy === 'AUTO_DETECTION' ? 'AUTO' : (r.bannedBy || 'ADMIN')}
                       </span>
                     ),
                   },
@@ -234,7 +253,7 @@ export function IpBlacklistPage() {
                     label: 'Banned At',
                     sortable: true,
                     render: (r) => (
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 500, color: '#334155', whiteSpace: 'nowrap' }}>
                         {formatAdminDate(r.bannedAt || r.createdAt)}
                       </span>
                     ),
@@ -248,8 +267,8 @@ export function IpBlacklistPage() {
                           type="button"
                           className="admin-btn admin-btn--secondary"
                           style={{
-                            padding: '4px 10px',
-                            fontSize: '12px',
+                            padding: '3px 8px',
+                            fontSize: '11px',
                             fontWeight: 600,
                             color: '#0f172a',
                             borderColor: '#cbd5e1',
@@ -266,8 +285,8 @@ export function IpBlacklistPage() {
                           type="button"
                           className="admin-btn admin-btn--secondary"
                           style={{
-                            padding: '4px 10px',
-                            fontSize: '12px',
+                            padding: '3px 8px',
+                            fontSize: '11px',
                             fontWeight: 700,
                             color: '#b91c1c',
                             borderColor: '#fca5a5',
@@ -294,6 +313,94 @@ export function IpBlacklistPage() {
                 totalPages={list.totalPages}
                 total={list.total}
                 onPageChange={list.setPage}
+                renderMobileCard={(r) => (
+                  <>
+                    <div className="admin-mobile-card__row1">
+                      <div className="admin-mobile-card__left">
+                        <span className="admin-mobile-card__title" style={{ fontFamily: 'monospace' }}>{r.ipAddress}</span>
+                        <AdminStatusBadge
+                          status={r.isActive ? 'suspended' : 'active'}
+                          label={r.isActive ? 'BANNED' : 'UNBANNED'}
+                        />
+                        <span
+                          title={r.bannedBy || 'ADMIN'}
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            padding: '1px 5px',
+                            borderRadius: '3px',
+                            backgroundColor: r.bannedBy === 'AUTO_DETECTION' ? '#fee2e2' : '#e0f2fe',
+                            color: r.bannedBy === 'AUTO_DETECTION' ? '#991b1b' : '#0369a1',
+                            border: `1px solid ${r.bannedBy === 'AUTO_DETECTION' ? '#fca5a5' : '#bae6fd'}`,
+                            letterSpacing: '0.02em',
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {r.bannedBy === 'AUTO_DETECTION' ? 'AUTO' : (r.bannedBy || 'ADMIN')}
+                        </span>
+                      </div>
+
+                      <div style={{ flexShrink: 0 }}>
+                        {r.isActive ? (
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn--secondary"
+                            style={{
+                              padding: '3px 8px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              color: '#0f172a',
+                              borderColor: '#cbd5e1',
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setUnbanTarget(r);
+                            }}
+                          >
+                            Unban
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn--secondary"
+                            style={{
+                              padding: '3px 8px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              color: '#b91c1c',
+                              borderColor: '#fca5a5',
+                              backgroundColor: '#fef2f2',
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleQuickReban(r.ipAddress, r.reason);
+                            }}
+                          >
+                            Re-ban
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="admin-mobile-card__row2">
+                      <span className="admin-mobile-card__detail" title={r.reason || ''}>
+                        {r.reason || '—'}
+                      </span>
+                      {r.attemptedAccount && r.attemptedAccount !== '—' && (
+                        <>
+                          <span style={{ color: '#cbd5e1' }}>•</span>
+                          <span className="admin-mobile-card__meta" title={r.attemptedAccount}>
+                            {r.attemptedAccount}
+                          </span>
+                        </>
+                      )}
+                      <span style={{ color: '#cbd5e1' }}>•</span>
+                      <span className="admin-mobile-card__date">
+                        {formatAdminDate(r.bannedAt || r.createdAt)}
+                      </span>
+                    </div>
+                  </>
+                )}
               />
             </AdminTableWrap>
           </AdminPanel>

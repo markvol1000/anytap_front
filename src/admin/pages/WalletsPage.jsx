@@ -7,7 +7,7 @@ import {
   AdminDetailSection,
   AdminSplitLayout,
 } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge, formatAmountWithCurrency, formatUsdt, shortenAddress } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAdminDate, formatAmountWithCurrency, formatUsdt, shortenAddress } from '../components/AdminStatusBadge.jsx';
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
@@ -170,8 +170,37 @@ export function WalletsPage() {
             <AdminTableWrap loading={list.loading} error={list.error} hasData={list.items.length > 0}>
               <AdminDataTable
                 columns={[
-                  { key: 'memberName', label: 'Member' },
-                  { key: 'address', label: 'Address', render: (r) => shortenAddress(r.address, 8, 6) },
+                  {
+                    key: 'memberName',
+                    label: 'Member',
+                    render: (r) => (
+                      <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                        {r.memberName || '—'}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'address',
+                    label: 'Address',
+                    render: (r) => (
+                      <span
+                        title={r.address}
+                        style={{
+                          fontFamily: 'monospace',
+                          fontSize: '11px',
+                          color: '#0284c7',
+                          backgroundColor: '#f0f9ff',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          border: '1px solid #bae6fd',
+                          display: 'inline-block',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {shortenAddress(r.address, 8, 6)}
+                      </span>
+                    ),
+                  },
                   {
                     key: 'balance',
                     label: 'Balance (Actual) / Unpaid Fee',
@@ -200,7 +229,15 @@ export function WalletsPage() {
                     },
                   },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
-                  { key: 'created', label: 'Created' },
+                  {
+                    key: 'created',
+                    label: 'Created',
+                    render: (r) => (
+                      <span style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                        {formatAdminDate(r.created || r.createdAt)}
+                      </span>
+                    ),
+                  },
                 ]}
                 rows={list.items}
                 selectedId={selectedId}
@@ -212,6 +249,38 @@ export function WalletsPage() {
                 totalPages={list.totalPages}
                 total={list.total}
                 onPageChange={list.setPage}
+                renderMobileCard={(r) => {
+                  const avail = (Number(r.balance) || 0).toFixed(2);
+                  const actual = (Number(r.cregisActualBalance ?? r.balance) || 0).toFixed(2);
+                  return (
+                    <>
+                      <div className="admin-mobile-card__row1">
+                        <div className="admin-mobile-card__left">
+                          <span className="admin-mobile-card__title">
+                            {r.memberName || 'Wallet'}
+                          </span>
+                          <AdminStatusBadge status={r.status} />
+                        </div>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '11px', color: '#047857', flexShrink: 0 }}>
+                          {avail} USDT
+                        </span>
+                      </div>
+                      <div className="admin-mobile-card__row2">
+                        <span className="admin-mobile-card__detail" style={{ fontFamily: 'monospace', color: '#0284c7' }} title={r.address || ''}>
+                          {shortenAddress(r.address, 8, 6)}
+                        </span>
+                        <span style={{ color: '#cbd5e1' }}>•</span>
+                        <span className="admin-mobile-card__meta" style={{ color: '#64748b' }}>
+                          Act: {actual}
+                        </span>
+                        <span style={{ color: '#cbd5e1' }}>•</span>
+                        <span className="admin-mobile-card__date">
+                          {formatAdminDate(r.created || r.createdAt)}
+                        </span>
+                      </div>
+                    </>
+                  );
+                }}
               />
             </AdminTableWrap>
           </AdminPanel>

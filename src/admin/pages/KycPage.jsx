@@ -315,6 +315,68 @@ export function KycPage() {
                 totalPages={list.totalPages}
                 total={list.total}
                 onPageChange={list.setPage}
+                renderMobileCard={(r) => {
+                  const hasDistinctName = r.memberName && r.memberName !== r.memberEmail && r.memberName !== r.id && r.memberName !== '—';
+                  const title = hasDistinctName ? r.memberName : (r.memberEmail || r.id);
+                  let resultText = 'Pending Review';
+                  let resultColor = '#d97706';
+                  if (r.status === 'approved') {
+                    resultText = 'Approved';
+                    resultColor = '#166534';
+                  } else if (r.status === 'rejected') {
+                    resultText = r.rejectReason ? `Rejected: ${r.rejectReason}` : 'Rejected';
+                    resultColor = '#dc2626';
+                  }
+
+                  return (
+                    <>
+                      <div className="admin-mobile-card__row1">
+                        <div className="admin-mobile-card__left">
+                          <span className="admin-mobile-card__title">
+                            {title}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              padding: '1px 5px',
+                              borderRadius: '3px',
+                              backgroundColor: '#f1f5f9',
+                              color: '#334155',
+                              border: '1px solid #cbd5e1',
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {r.documentType || 'ID'}
+                          </span>
+                          <AdminStatusBadge status={r.status} />
+                        </div>
+                        {(r.id || r.memberId) && (
+                          <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#64748b', flexShrink: 0 }}>
+                            {r.memberId || r.id}
+                          </span>
+                        )}
+                      </div>
+                      <div className="admin-mobile-card__row2">
+                        <span className="admin-mobile-card__detail" style={{ color: resultColor, fontWeight: 600 }} title={resultText}>
+                          {resultText}
+                        </span>
+                        {r.country && r.country !== '-' && (
+                          <>
+                            <span style={{ color: '#cbd5e1' }}>•</span>
+                            <span className="admin-mobile-card__meta">
+                              {r.country}
+                            </span>
+                          </>
+                        )}
+                        <span style={{ color: '#cbd5e1' }}>•</span>
+                        <span className="admin-mobile-card__date">
+                          {formatAdminDate(r.submittedAt)}
+                        </span>
+                      </div>
+                    </>
+                  );
+                }}
               />
             </AdminTableWrap>
           </AdminPanel>

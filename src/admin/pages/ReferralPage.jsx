@@ -578,6 +578,59 @@ export function ReferralPage() {
                   totalPages={partnerList.totalPages}
                   total={partnerList.total}
                   onPageChange={partnerList.setPage}
+                  renderMobileCard={(r) => {
+                    const code = r.referralCode || '—';
+                    const owner = r.memberName || r.userEmail || r.userId || '—';
+                    const rate = r.commissionRate != null ? `${r.commissionRate}%` : '5%';
+                    return (
+                      <>
+                        <div className="admin-mobile-card__row1">
+                          <div className="admin-mobile-card__left">
+                            <span className="admin-mobile-card__title" style={{ fontFamily: 'monospace', color: '#0284c7' }}>
+                              {code}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                padding: '1px 5px',
+                                borderRadius: '3px',
+                                backgroundColor: '#f0fdf4',
+                                color: '#15803d',
+                                border: '1px solid #bbf7d0',
+                                lineHeight: 1.2,
+                              }}
+                            >
+                              {rate}
+                            </span>
+                            <AdminStatusBadge status={r.status || 'active'} />
+                          </div>
+                          {r.totalReferredDeposit != null && (
+                            <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '11px', color: '#059669', flexShrink: 0 }}>
+                              {formatUsdt(r.totalReferredDeposit)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="admin-mobile-card__row2">
+                          <span className="admin-mobile-card__detail" title={owner}>
+                            {owner}
+                          </span>
+                          {r.referredMemberCount != null && (
+                            <>
+                              <span style={{ color: '#cbd5e1' }}>•</span>
+                              <span className="admin-mobile-card__meta">
+                                {r.referredMemberCount} users
+                              </span>
+                            </>
+                          )}
+                          <span style={{ color: '#cbd5e1' }}>•</span>
+                          <span className="admin-mobile-card__date">
+                            {formatAdminDate(r.createdAt)}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  }}
                 />
               </AdminTableWrap>
             </AdminPanel>

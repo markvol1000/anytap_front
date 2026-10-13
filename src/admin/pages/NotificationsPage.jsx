@@ -66,10 +66,58 @@ export function NotificationsPage() {
             <AdminTableWrap loading={list.loading} error={list.error} hasData={list.items.length > 0}>
               <AdminDataTable
                 columns={[
-                  { key: 'type', label: 'Channel' },
-                  { key: 'title', label: 'Title' },
+                  {
+                    key: 'type',
+                    label: 'Channel',
+                    render: (r) => (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          borderRadius: '3px',
+                          backgroundColor: '#f1f5f9',
+                          color: '#334155',
+                          border: '1px solid #cbd5e1',
+                          lineHeight: 1.2,
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {r.type || 'all'}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'title',
+                    label: 'Title',
+                    render: (r) => (
+                      <span
+                        title={r.title}
+                        style={{
+                          fontWeight: 600,
+                          color: '#0f172a',
+                          maxWidth: '260px',
+                          display: 'inline-block',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          verticalAlign: 'middle',
+                        }}
+                      >
+                        {r.title || '—'}
+                      </span>
+                    ),
+                  },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
-                  { key: 'scheduledAt', label: 'Scheduled', render: (r) => formatAdminDate(r.scheduledAt) },
+                  {
+                    key: 'scheduledAt',
+                    label: 'Scheduled',
+                    render: (r) => (
+                      <span style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                        {formatAdminDate(r.scheduledAt)}
+                      </span>
+                    ),
+                  },
                 ]}
                 rows={rows}
                 selectedId={selectedId}
@@ -78,6 +126,38 @@ export function NotificationsPage() {
                 totalPages={list.totalPages}
                 total={list.total}
                 onPageChange={list.setPage}
+                renderMobileCard={(r) => (
+                  <>
+                    <div className="admin-mobile-card__row1">
+                      <div className="admin-mobile-card__left">
+                        <span className="admin-mobile-card__title" title={r.title}>
+                          {r.title || 'Notification'}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            padding: '1px 5px',
+                            borderRadius: '3px',
+                            backgroundColor: '#f1f5f9',
+                            color: '#334155',
+                            border: '1px solid #cbd5e1',
+                            lineHeight: 1.2,
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {r.type || 'all'}
+                        </span>
+                        <AdminStatusBadge status={r.status} />
+                      </div>
+                    </div>
+                    <div className="admin-mobile-card__row2">
+                      <span className="admin-mobile-card__date" style={{ marginLeft: 0 }}>
+                        Scheduled: {formatAdminDate(r.scheduledAt)}
+                      </span>
+                    </div>
+                  </>
+                )}
               />
             </AdminTableWrap>
           </AdminPanel>

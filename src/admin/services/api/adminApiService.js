@@ -48,8 +48,8 @@ async function fetchCardsRaw(params = {}) {
 
 function resolveUserId(id) {
   const raw = String(id || '').replace(/\.+$/, '');
-  if (!raw || raw.startsWith('temp-')) {
-    const err = new Error('This member has no userId yet (pending signup).');
+  if (!raw) {
+    const err = new Error('Member identifier is missing.');
     err.code = 'NO_USER_ID';
     throw err;
   }
@@ -146,7 +146,7 @@ export async function getMembers(params = {}) {
   const members = await fetchMembersRaw();
   return paginateLocal(members, {
     ...params,
-    searchKeys: ['id', 'name', 'email', 'loginId', 'cregisWalletAddress', 'walletAddress', 'wallet', 'address'],
+    searchKeys: ['id', 'memberId', 'userId', 'name', 'email', 'loginId', 'cregisWalletAddress', 'walletAddress', 'wallet', 'address'],
   });
 }
 
@@ -168,9 +168,11 @@ export async function getMemberById(id) {
     }
     const userDetail = mapUserDetail(rawDetail);
     if (memberInList) {
+      const isTemporary = Boolean(memberInList.isTemp || userDetail?.isTemp);
       return {
         ...memberInList,
         ...userDetail,
+        isTemp: isTemporary,
         referralCode: userDetail?.referralCode || memberInList.referralCode || null,
         referrerName: userDetail?.referrerName || memberInList.referrerName || null,
         failureHistory: (userDetail?.failureHistory?.length > 0 ? userDetail.failureHistory : memberInList.failureHistory) || [],
@@ -1308,7 +1310,7 @@ export async function getLoginLogs(params = {}) {
 
   if (res) {
     const rawData = res.items || res.data?.items || (Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []));
-    if (Array.isArray(rawData) && rawData.length > 0) {
+    if (Array.isArray(rawData)) {
       const mapped = rawData.map((l) => ({
         id: String(l.id || l.log_id),
         email: l.email || '—',
@@ -1318,10 +1320,14 @@ export async function getLoginLogs(params = {}) {
         ipAddress: l.ipAddress || l.ip_address || '—',
         userAgent: l.userAgent || l.user_agent || '—',
         createdAt: l.createdAt || l.created_at || '',
+        userExists: l.userExists != null ? Boolean(l.userExists) : null,
+        resolvedUserId: l.resolvedUserId || null,
+        userStatus: l.userStatus || null,
+        isTemp: Boolean(l.isTemp),
       }));
       return {
         items: mapped,
-        total: res.total || res.data?.total || mapped.length,
+        total: res.total != null ? res.total : (res.data?.total != null ? res.data.total : mapped.length),
         page: (res.page != null ? res.page : pageNum) + 1,
         pageSize: res.size || res.data?.size || pageSize,
         totalPages: res.totalPages || res.data?.totalPages || 1,
@@ -1329,14 +1335,13 @@ export async function getLoginLogs(params = {}) {
     }
   }
 
-  const fallbackList = [
-    { id: '1', email: 'test226@226.com', userId: 'US062416', status: 'SUCCESS', reason: 'Normal Login', ipAddress: '121.133.45.12', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', createdAt: '2026-08-01T17:17:44.000Z' },
-    { id: '2', email: 'test225@225.com', userId: 'US019885', status: 'SUCCESS', reason: 'Normal Login', ipAddress: '211.202.18.90', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', createdAt: '2026-08-01T17:18:41.000Z' },
-    { id: '3', email: 'user102@anytap.io', userId: 'US884102', status: 'FAILURE', reason: 'Invalid password', ipAddress: '110.45.22.101', userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS)', createdAt: '2026-08-01T18:05:12.000Z' },
-    { id: '4', email: 'test227@227.com', userId: 'US417499', status: 'SUCCESS', reason: 'Normal Login', ipAddress: '59.12.98.34', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', createdAt: '2026-08-01T19:40:51.000Z' },
-    { id: '5', email: 'test226@226.com', userId: 'US062416', status: 'SUCCESS', reason: 'Normal Login', ipAddress: '121.133.45.12', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', createdAt: '2026-08-01T19:41:01.000Z' },
-  ];
-  return paginateLocal(fallbackList, params, ['email', 'userId', 'ipAddress', 'status']);
+  return {
+    items: [],
+    total: 0,
+    page: pageNum + 1,
+    pageSize,
+    totalPages: 1,
+  };
 }
 
 export async function getAdminLogs(params = {}) {

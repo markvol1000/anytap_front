@@ -9,7 +9,7 @@ import {
   AdminDetailSection,
   AdminSplitLayout,
 } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge, formatAdminDate, formatAmountWithCurrency, shortenAddress } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAdminDate, formatAmountWithCurrency, formatUsdt, shortenAddress } from '../components/AdminStatusBadge.jsx';
 import { runConfirm, useAdminConfirm } from '../components/AdminConfirmModal.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { useAdminDetail } from '../hooks/useAdminDetail.js';
@@ -325,6 +325,70 @@ export function CardsPage() {
                   totalPages: list.totalPages,
                   onPageChange: list.setPage,
                   onPageSizeChange: list.setPageSize,
+                }}
+                renderMobileCard={(r) => {
+                  let last4Str = r.last4 && r.last4 !== '—' && r.last4 !== '-' ? r.last4 : '';
+                  if (!last4Str && r.wasabiCardId && r.wasabiCardId !== '—' && r.wasabiCardId.length >= 4) {
+                    last4Str = r.wasabiCardId.slice(-4);
+                  }
+                  return (
+                    <>
+                      <div className="admin-mobile-card__row1">
+                        <div className="admin-mobile-card__left">
+                          <span
+                            className="admin-mobile-card__title"
+                            style={{
+                              fontFamily: 'monospace',
+                              backgroundColor: last4Str ? '#f1f5f9' : 'transparent',
+                              padding: last4Str ? '1px 5px' : '0',
+                              borderRadius: '3px',
+                              border: last4Str ? '1px solid #cbd5e1' : 'none',
+                              fontSize: '12px',
+                            }}
+                          >
+                            {last4Str ? `•••• ${last4Str}` : (r.wasabiCardId || 'Card')}
+                          </span>
+                          <span
+                            style={{
+                              padding: '1px 5px',
+                              borderRadius: '3px',
+                              fontSize: '10px',
+                              fontWeight: '700',
+                              backgroundColor: r.cardType === 'physical' ? '#eff6ff' : '#f3f4f6',
+                              color: r.cardType === 'physical' ? '#1d4ed8' : '#4b5563',
+                              border: r.cardType === 'physical' ? '1px solid #bfdbfe' : '1px solid #e5e7eb',
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {r.cardType === 'physical' ? 'Physical' : 'Virtual'}
+                          </span>
+                          <AdminStatusBadge status={r.cardStatus || r.status} />
+                        </div>
+                        {r.balance != null && (
+                          <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '11px', color: '#059669', flexShrink: 0 }}>
+                            {formatUsdt(r.balance)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="admin-mobile-card__row2">
+                        <span className="admin-mobile-card__detail" title={r.memberEmail || r.memberName || ''}>
+                          {r.memberName || r.memberEmail || '—'}
+                        </span>
+                        {r.memberEmail && r.memberName && (
+                          <>
+                            <span style={{ color: '#cbd5e1' }}>•</span>
+                            <span className="admin-mobile-card__meta" style={{ color: '#64748b' }}>
+                              {r.memberEmail}
+                            </span>
+                          </>
+                        )}
+                        <span style={{ color: '#cbd5e1' }}>•</span>
+                        <span className="admin-mobile-card__date">
+                          {formatAdminDate(r.createdAt || r.created)}
+                        </span>
+                      </div>
+                    </>
+                  );
                 }}
               />
             </AdminTableWrap>

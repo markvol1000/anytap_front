@@ -92,12 +92,68 @@ export function WithdrawalsPage() {
             <AdminTableWrap loading={list.loading} error={list.error} hasData={(list.items || []).length > 0}>
               <AdminDataTable
                 columns={[
-                  { key: 'memberName', label: 'Member' },
-                  { key: 'amount', label: 'Amount', render: (r) => formatUsdt(r.amount) },
-                  { key: 'toWallet', label: 'To Wallet', render: (r) => r.toWallet || r.wallet || '—' },
-                  { key: 'targetMember', label: 'Target Member', render: (r) => r.targetMember || '—' },
+                  {
+                    key: 'memberName',
+                    label: 'Member',
+                    render: (r) => (
+                      <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                        {r.memberName || '—'}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'amount',
+                    label: 'Amount',
+                    render: (r) => (
+                      <span style={{ fontWeight: 700, fontFamily: 'monospace', color: '#059669' }}>
+                        {formatUsdt(r.amount)}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'toWallet',
+                    label: 'To Wallet',
+                    render: (r) => {
+                      const w = r.toWallet || r.wallet || '—';
+                      return (
+                        <span
+                          title={w}
+                          style={{
+                            fontFamily: 'monospace',
+                            fontSize: '11px',
+                            color: '#0284c7',
+                            maxWidth: '160px',
+                            display: 'inline-block',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            verticalAlign: 'middle',
+                          }}
+                        >
+                          {w}
+                        </span>
+                      );
+                    },
+                  },
+                  {
+                    key: 'targetMember',
+                    label: 'Target Member',
+                    render: (r) => (
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {r.targetMember || '—'}
+                      </span>
+                    ),
+                  },
                   { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },
-                  { key: 'date', label: 'Date', render: (r) => formatAdminDate(r.date) },
+                  {
+                    key: 'date',
+                    label: 'Date',
+                    render: (r) => (
+                      <span style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                        {formatAdminDate(r.date)}
+                      </span>
+                    ),
+                  },
                 ]}
                 rows={list.items || []}
                 selectedId={selectedId}
@@ -109,6 +165,38 @@ export function WithdrawalsPage() {
                 totalPages={list.totalPages}
                 total={list.total}
                 onPageChange={list.setPage}
+                renderMobileCard={(r) => (
+                  <>
+                    <div className="admin-mobile-card__row1">
+                      <div className="admin-mobile-card__left">
+                        <span className="admin-mobile-card__title">
+                          {r.memberName || 'Member'}
+                        </span>
+                        <AdminStatusBadge status={r.status} />
+                      </div>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '12px', color: '#059669', flexShrink: 0 }}>
+                        {formatUsdt(r.amount)}
+                      </span>
+                    </div>
+                    <div className="admin-mobile-card__row2">
+                      <span className="admin-mobile-card__detail" style={{ fontFamily: 'monospace' }} title={r.toWallet || r.wallet || ''}>
+                        {r.toWallet || r.wallet || '—'}
+                      </span>
+                      {r.targetMember && r.targetMember !== '—' && (
+                        <>
+                          <span style={{ color: '#cbd5e1' }}>•</span>
+                          <span className="admin-mobile-card__meta">
+                            {r.targetMember}
+                          </span>
+                        </>
+                      )}
+                      <span style={{ color: '#cbd5e1' }}>•</span>
+                      <span className="admin-mobile-card__date">
+                        {formatAdminDate(r.date)}
+                      </span>
+                    </div>
+                  </>
+                )}
               />
             </AdminTableWrap>
           </AdminPanel>

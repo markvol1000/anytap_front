@@ -115,6 +115,20 @@ function CurrencyBadgeMini({ currency }) {
   );
 }
 
+function isTemporaryMember(r) {
+  if (!r) return false;
+  if (r.isTemp === true || r.is_temp === true) return true;
+  if (String(r.id || '').startsWith('temp-') || String(r.userId || '').startsWith('temp-')) return true;
+  const hasCardLabel = Boolean(r.cardStatusLabel);
+  const isNoCard = r.cardStatusText === 'no_cards' || r.cardStatus === 'not_issued';
+  const isNoWallet = !r.cregisWalletAddress || r.cregisWalletAddress === '-' || r.cregisWalletAddress === 'Not allocated';
+  const isPendingStatus = r.accountStatus === 'pending' || r.accountStatus === 'card_transfer' || r.status === 'PENDING' || r.status === 'CARD_TRANSFER' || r.status === 'PASSWORD_RESET';
+  if (!hasCardLabel && isNoCard && isNoWallet && isPendingStatus) {
+    return true;
+  }
+  return false;
+}
+
 export function MembersPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -374,6 +388,7 @@ export function MembersPage() {
                   options: [
                     { value: 'all', label: 'All statuses' },
                     { value: 'active', label: 'Active' },
+                    { value: 'pending', label: 'Pending' },
                     { value: 'suspended', label: 'Suspended' },
                   ],
                 },
@@ -383,10 +398,19 @@ export function MembersPage() {
               <AdminDataTable
                 columns={[
                   { key: 'id', label: 'Member ID', render: (r) => {
-                    const isTemporary = r.isTemp === true || !r.userId || String(r.id || '').startsWith('temp-') || String(r.accountStatus || r.status || '').toUpperCase() === 'PENDING';
-                    const displayId = isTemporary ? '-' : (r.userId || r.id);
+                    const isTemporary = isTemporaryMember(r);
+                    const displayId = r.userId || (r.memberId && r.memberId !== '-' ? r.memberId : (String(r.id || '').startsWith('temp-') ? '-' : r.id)) || '-';
                     return (
-                      <span style={{ fontFamily: 'monospace', fontWeight: '700', fontSize: '12px', color: isTemporary ? '#64748b' : 'inherit' }}>
+                      <span
+                        style={{
+                          fontFamily: 'monospace',
+                          fontSize: '12px',
+                          fontWeight: isTemporary ? '500' : '700',
+                          color: isTemporary ? '#94a3b8' : 'var(--ink, #0f172a)',
+                          opacity: isTemporary ? 0.6 : 1,
+                        }}
+                        title={isTemporary ? 'Temporary User (Pending Completion)' : undefined}
+                      >
                         {displayId}
                       </span>
                     );
@@ -444,6 +468,22 @@ export function MembersPage() {
                         </span>
                       );
                     },
+                  },
+                  {
+                    key: 'lastIp',
+                    label: 'Last IP',
+                    render: (r) => (
+                      <span
+                        style={{
+                          fontFamily: 'monospace',
+                          fontSize: '11px',
+                          color: '#475569',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {r.lastIp || '—'}
+                      </span>
+                    ),
                   },
                   { key: 'joinDate', label: 'Join Date', render: (r) => formatAdminDate(r.joinDate) },
                   { key: 'kycStatus', label: 'KYC', render: (r) => <AdminStatusBadge status={r.kycStatus} /> },
@@ -551,6 +591,79 @@ export function MembersPage() {
                 totalPages={list.totalPages}
                 total={list.total}
                 onPageChange={list.setPage}
+                renderMobileCard={(r) => {
+                  const isTemporary = isTemporaryMember(r);
+                  const displayId = r.userId || (r.memberId && r.memberId !== '-' ? r.memberId : (String(r.id || '').startsWith('temp-') ? '-' : r.id)) || '-';
+                  const hasDistinctName = r.name && r.name !== r.email && r.name !== r.id && r.name !== '—';
+                  const title = hasDistinctName ? r.name : (r.email || displayId);
+                  const avail = (Number(r.walletBalance) || 0).toFixed(2);
+                  const st = isTemporary 
+                    ? (String(r.accountStatus || r.status || '').toLowerCase() === 'suspended' ? 'suspended' : 'pending')
+                    : String(r.accountStatus || r.status || 'active').toLowerCase();
+
+                  return (
+                    <>
+                      <div className="admin-mobile-card__row1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span
+                            className="admin-mobile-card__title"
+                            style={{
+                              fontFamily: 'monospace',
+                              fontSize: '12px',
+                              fontWeight: isTemporary ? '500' : '700',
+                              color: isTemporary ? '#94a3b8' : 'var(--ink, #0f172a)',
+                              opacity: isTemporary ? 0.6 : 1,
+                            }}
+                          >
+                            {displayId}
+                          </span>
+                        </div>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '11px', color: '#047857', flexShrink: 0 }}>
+                          {avail} USDT
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '6px', marginBottom: '4px' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px' }}>
+                          <span style={{ color: '#64748b', fontWeight: '700', fontSize: '9px', textTransform: 'uppercase' }}>Status</span>
+                          <AdminStatusBadge status={st} />
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px' }}>
+                          <span style={{ color: '#64748b', fontWeight: '700', fontSize: '9px', textTransform: 'uppercase' }}>KYC</span>
+                          <AdminStatusBadge status={r.kycStatus} />
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px' }}>
+                          <span style={{ color: '#64748b', fontWeight: '700', fontSize: '9px', textTransform: 'uppercase' }}>Card</span>
+                          <AdminStatusBadge status={r.cardStatus} />
+                        </span>
+                      </div>
+                      <div className="admin-mobile-card__row2">
+                        <span className="admin-mobile-card__detail" title={title}>
+                          {title}
+                        </span>
+                        {r.email && hasDistinctName && (
+                          <>
+                            <span style={{ color: '#cbd5e1' }}>•</span>
+                            <span className="admin-mobile-card__meta" style={{ color: '#64748b' }}>
+                              {r.email}
+                            </span>
+                          </>
+                        )}
+                        {r.lastIp && (
+                          <>
+                            <span style={{ color: '#cbd5e1' }}>•</span>
+                            <span className="admin-mobile-card__meta" style={{ fontFamily: 'monospace', color: '#475569' }}>
+                              {r.lastIp}
+                            </span>
+                          </>
+                        )}
+                        <span style={{ color: '#cbd5e1' }}>•</span>
+                        <span className="admin-mobile-card__date">
+                          {formatAdminDate(r.joinDate)}
+                        </span>
+                      </div>
+                    </>
+                  );
+                }}
               />
             </AdminTableWrap>
           </AdminPanel>
@@ -566,13 +679,34 @@ export function MembersPage() {
                 <AdminDetailSection title="Member info">
                   <AdminDetailRow
                     label="Member ID"
-                    value={
-                      detail.isTemp || !detail.userId || String(detail.id || '').startsWith('temp-') || String(detail.accountStatus || detail.status || '').toUpperCase() === 'PENDING'
-                        ? '-'
-                        : (detail.userId || detail.id)
-                    }
+                    value={(
+                      (() => {
+                        const isTemporary = isTemporaryMember(detail);
+                        const displayId = detail.userId || (detail.memberId && detail.memberId !== '-' ? detail.memberId : (String(detail.id || '').startsWith('temp-') ? '-' : detail.id)) || '-';
+                        return (
+                          <span
+                            style={{
+                              fontFamily: 'monospace',
+                              fontWeight: isTemporary ? '500' : '700',
+                              color: isTemporary ? '#94a3b8' : 'var(--ink, #0f172a)',
+                              opacity: isTemporary ? 0.6 : 1,
+                            }}
+                          >
+                            {displayId}
+                          </span>
+                        );
+                      })()
+                    )}
                   />
                   <AdminDetailRow label="Email" value={detail.email} />
+                  <AdminDetailRow
+                    label="Last Login IP"
+                    value={detail.lastIp ? (
+                      <span style={{ fontFamily: 'monospace', fontSize: '12px', color: '#334155' }}>
+                        {detail.lastIp}
+                      </span>
+                    ) : '—'}
+                  />
                   {detail.phone && detail.phone !== '—' && detail.phone !== '-' ? (
                     <AdminDetailRow label="Phone" value={detail.phone} />
                   ) : null}
@@ -625,41 +759,60 @@ export function MembersPage() {
                     </div>
                   )} />
                   <AdminDetailRow label="Account Status" value={(
-                    <select
-                      id="detail-member-status"
-                      name="accountStatus"
-                      aria-label="Update member status"
-                      value={String(detail.accountStatus || detail.status || 'active').toLowerCase()}
-                      onChange={async (e) => {
-                        const nextSt = e.target.value;
-                        try {
-                          const updated = await updateMember(detail.id, { status: nextSt });
-                          setDetail(updated);
-                          list.reload();
-                        } catch (err) {
-                          window.alert(`Failed to update status: ${err.message}`);
-                        }
-                      }}
-                      style={{
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        backgroundColor: String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'active' ? '#ecfdf5' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'suspended' ? '#fef2f2' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'locked' ? '#fff7ed' : '#f1f5f9',
-                        color: String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'active' ? '#047857' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'suspended' ? '#dc2626' : String(detail.accountStatus || detail.status || 'active').toLowerCase() === 'locked' ? '#c2410c' : '#475569',
-                        border: '1px solid #cbd5e1',
-                        outline: 'none',
-                      }}
-                    >
-                      <option value="active">🟢 Active</option>
-                      <option value="suspended">🔴 Suspended</option>
-                      <option value="locked">🟠 Locked</option>
-                      <option value="pending">⚪ Pending</option>
-                      {String(detail.accountStatus || detail.status || '').toLowerCase() === 'rejected' ? (
-                        <option value="rejected">❌ Rejected</option>
-                      ) : null}
-                    </select>
+                    (() => {
+                      const isTemporary = isTemporaryMember(detail);
+                      const rawSt = String(detail.accountStatus || detail.status || 'pending').toLowerCase();
+                      const currentVal = isTemporary 
+                        ? (rawSt === 'suspended' ? 'suspended' : 'pending')
+                        : (rawSt || 'active');
+                      return (
+                        <select
+                          id="detail-member-status"
+                          name="accountStatus"
+                          aria-label="Update member status"
+                          value={currentVal}
+                          onChange={async (e) => {
+                            const nextSt = e.target.value;
+                            try {
+                              const targetId = detail.userId || detail.id;
+                              const updated = await updateMember(targetId, { status: nextSt });
+                              setDetail(updated);
+                              list.reload();
+                            } catch (err) {
+                              window.alert(`Failed to update status: ${err.message}`);
+                            }
+                          }}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            backgroundColor: currentVal === 'active' ? '#ecfdf5' : currentVal === 'suspended' ? '#fef2f2' : currentVal === 'locked' ? '#fff7ed' : '#f1f5f9',
+                            color: currentVal === 'active' ? '#047857' : currentVal === 'suspended' ? '#dc2626' : currentVal === 'locked' ? '#c2410c' : '#475569',
+                            border: '1px solid #cbd5e1',
+                            outline: 'none',
+                          }}
+                        >
+                          {isTemporary ? (
+                            <>
+                              <option value="pending">⚪ Pending</option>
+                              <option value="suspended">🔴 Suspended</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="active">🟢 Active</option>
+                              <option value="suspended">🔴 Suspended</option>
+                              <option value="locked">🟠 Locked</option>
+                              <option value="pending">⚪ Pending</option>
+                              {rawSt === 'rejected' ? (
+                                <option value="rejected">❌ Rejected</option>
+                              ) : null}
+                            </>
+                          )}
+                        </select>
+                      );
+                    })()
                   )} />
                   <AdminDetailRow label="Role / Privileges" value={(
                     <span

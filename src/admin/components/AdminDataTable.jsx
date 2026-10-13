@@ -17,6 +17,7 @@ export function AdminDataTable({
   onPageChange: onPageChangeProp,
   pagination,
   emptyMessage = 'No records found',
+  renderMobileCard,
 }) {
   const page = pagination?.page ?? pageProp;
   const totalPages = pagination?.totalPages ?? totalPagesProp;
@@ -25,65 +26,182 @@ export function AdminDataTable({
   const onPageChange = pagination?.onPageChange ?? onPageChangeProp;
   const onPageSizeChange = pagination?.onPageSizeChange;
 
+  const defaultRenderMobileCard = (row) => {
+    // Pick first column for title/identifier
+    const firstCol = columns[0];
+    const firstVal = firstCol?.render ? firstCol.render(row) : row[firstCol?.key];
+
+    // Find any status/badge column
+    const statusCol = columns.find((c) => {
+      const k = String(c.key || '').toLowerCase();
+      return (
+        k.includes('status') ||
+        k.includes('role') ||
+        k.includes('channel') ||
+        k.includes('type') ||
+        k === 'origin' ||
+        k === 'bannedby'
+      );
+    });
+    const statusVal = statusCol && statusCol !== firstCol ? (statusCol.render ? statusCol.render(row) : row[statusCol.key]) : null;
+
+    // Find any action column
+    const actionCol = columns.find((c) => c.key === 'actions' || c.key === 'action');
+    const actionVal = actionCol && actionCol !== firstCol && actionCol !== statusCol ? (actionCol.render ? actionCol.render(row) : row[actionCol.key]) : null;
+
+    // Find date/time column
+    const dateCol = columns.find((c) => {
+      const k = String(c.key || '').toLowerCase();
+      return k.includes('date') || k.includes('at') || k.includes('time') || k.includes('created');
+    });
+    const dateVal = dateCol && dateCol !== firstCol ? (dateCol.render ? dateCol.render(row) : row[dateCol.key]) : null;
+
+    // Find secondary descriptive/note column
+    const detailCol = columns.find((c) => {
+      if (c === firstCol || c === statusCol || c === actionCol || c === dateCol) return false;
+      const k = String(c.key || '').toLowerCase();
+      return (
+        k.includes('reason') ||
+        k.includes('note') ||
+        k.includes('desc') ||
+        k.includes('target') ||
+        k.includes('email') ||
+        k.includes('name') ||
+        k.includes('amount') ||
+        k.includes('ip') ||
+        k.includes('address') ||
+        k.includes('subject')
+      );
+    });
+    const detailVal = detailCol ? (detailCol.render ? detailCol.render(row) : row[detailCol.key]) : null;
+
+    // Find meta column if available
+    const metaCol = columns.find((c) => (
+      c !== firstCol &&
+      c !== statusCol &&
+      c !== actionCol &&
+      c !== dateCol &&
+      c !== detailCol
+    ));
+    const metaVal = metaCol ? (metaCol.render ? metaCol.render(row) : row[metaCol.key]) : null;
+
+    return (
+      <>
+        <div className="admin-mobile-card__row1">
+          <div className="admin-mobile-card__left">
+            <span className="admin-mobile-card__title">{firstVal}</span>
+            {statusVal}
+          </div>
+          {actionVal && <div style={{ flexShrink: 0 }}>{actionVal}</div>}
+        </div>
+        <div className="admin-mobile-card__row2">
+          {detailVal && <span className="admin-mobile-card__detail">{detailVal}</span>}
+          {metaVal && (
+            <>
+              {detailVal && <span style={{ color: '#cbd5e1' }}>•</span>}
+              <span className="admin-mobile-card__meta">{metaVal}</span>
+            </>
+          )}
+          {dateVal && (
+            <>
+              {(detailVal || metaVal) && <span style={{ color: '#cbd5e1' }}>•</span>}
+              <span className="admin-mobile-card__date">{dateVal}</span>
+            </>
+          )}
+        </div>
+      </>
+    );
+  };
+
+  const cardRenderer = renderMobileCard || defaultRenderMobileCard;
+
   return (
     <>
-      <div className="admin-table-scroll">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              {columns.map((col) => (
-                <th key={col.key} scope="col">
-                  {col.sortable !== false && onSort ? (
-                    <button
-                      type="button"
-                      className={`admin-table__sort${sortKey === col.key ? ' is-active' : ''}`}
-                      onClick={() => onSort(col.key)}>
-                      {col.label}
-                      {sortKey === col.key ? (
-                        <span className="admin-table__sort-dir" aria-hidden="true">
-                          {sortDir === 'asc' ? '↑' : '↓'}
-                        </span>
-                      ) : null}
-                    </button>
-                  ) : (
-                    col.label
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
+      {/* Desktop Table View */}
+      <div className="admin-table-desktop-view">
+        <div className="admin-table-scroll">
+          <table className="admin-table">
+            <thead>
               <tr>
-                <td colSpan={columns.length} className="admin-table__empty">{emptyMessage}</td>
+                {columns.map((col) => (
+                  <th key={col.key} scope="col">
+                    {col.sortable !== false && onSort ? (
+                      <button
+                        type="button"
+                        className={`admin-table__sort${sortKey === col.key ? ' is-active' : ''}`}
+                        onClick={() => onSort(col.key)}>
+                        {col.label}
+                        {sortKey === col.key ? (
+                          <span className="admin-table__sort-dir" aria-hidden="true">
+                            {sortDir === 'asc' ? '↑' : '↓'}
+                          </span>
+                        ) : null}
+                      </button>
+                    ) : (
+                      col.label
+                    )}
+                  </th>
+                ))}
               </tr>
-            ) : rows.map((row) => {
-              const id = row[rowKey];
-              const active = selectedId === id;
-              return (
-                <tr
-                  key={id}
-                  className={active ? 'is-selected' : ''}
-                  onClick={() => onSelectRow?.(row)}
-                  onDoubleClick={() => (onDoubleClickRow ? onDoubleClickRow(row) : onSelectRow?.(row))}
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      onSelectRow?.(row);
-                    }
-                  }}>
-                  {columns.map((col) => (
-                    <td key={col.key}>
-                      {col.render ? col.render(row) : row[col.key]}
-                    </td>
-                  ))}
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length} className="admin-table__empty">{emptyMessage}</td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ) : rows.map((row) => {
+                const id = row[rowKey];
+                const active = selectedId === id;
+                return (
+                  <tr
+                    key={id}
+                    className={active ? 'is-selected' : ''}
+                    onClick={() => onSelectRow?.(row)}
+                    onDoubleClick={() => (onDoubleClickRow ? onDoubleClickRow(row) : onSelectRow?.(row))}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSelectRow?.(row);
+                      }
+                    }}>
+                    {columns.map((col) => (
+                      <td key={col.key}>
+                        {col.render ? col.render(row) : row[col.key]}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {/* Mobile 2-Line Responsive View */}
+      <div className="admin-table-mobile-view">
+        {rows.length === 0 ? (
+          <div className="admin-table__empty" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+            {emptyMessage}
+          </div>
+        ) : (
+          rows.map((row) => {
+            const id = row[rowKey];
+            const active = selectedId === id;
+            return (
+              <div
+                key={id}
+                className={`admin-mobile-card${active ? ' is-selected' : ''}`}
+                onClick={() => onSelectRow?.(row)}
+                onDoubleClick={() => (onDoubleClickRow ? onDoubleClickRow(row) : onSelectRow?.(row))}
+              >
+                {cardRenderer(row, active)}
+              </div>
+            );
+          })
+        )}
+      </div>
+
       {onPageChange ? (
         <AdminPagination
           page={page}
