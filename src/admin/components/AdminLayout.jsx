@@ -11,9 +11,12 @@ import {
   hasMockSession,
   getMockSessionEmail,
   establishLoginSession,
+  attemptLogout,
 } from '../../lib/services/authService.js';
 import { hasDemoAdminAccess } from '../../lib/demo-session.js';
 import { clearHttpSession, getHttpSession } from '../../lib/api/httpSession.js';
+import { clearAccessToken } from '../../lib/api/httpClient.js';
+import { Icon } from '../../components/ui.jsx';
 
 export function AdminLayout() {
   const [admin, setAdmin] = useState(null);
@@ -93,16 +96,37 @@ export function AdminLayout() {
     );
   }
 
+  const handleLogout = async () => {
+    try {
+      await attemptLogout();
+    } catch { /* noop */ }
+    clearHttpSession();
+    clearAdminSession();
+    clearAccessToken();
+    navigate('/login', { replace: true });
+  };
+
   return (
     <AdminConfirmProvider>
       <div className="admin-shell">
-        <AdminSidebar admin={admin} />
+        <AdminSidebar admin={admin} onLogout={handleLogout} />
         <div className="admin-shell__body">
-          <AdminTopbar />
+          <AdminTopbar onLogout={handleLogout} />
           <main className="admin-main">
             <Outlet />
           </main>
         </div>
+
+        {/* Mobile floating bottom-left logout button */}
+        <button
+          type="button"
+          className="admin-mobile-floating-logout"
+          onClick={handleLogout}
+          aria-label="Log Out"
+        >
+          <Icon name="logOut" size={15} stroke={1.75} />
+          <span>Log Out</span>
+        </button>
       </div>
     </AdminConfirmProvider>
   );

@@ -1,14 +1,23 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/ui.jsx';
-import { clearAdminSession } from '../../lib/services/authService.js';
+import { clearAdminSession, attemptLogout } from '../../lib/services/authService.js';
 import { clearHttpSession } from '../../lib/api/httpSession.js';
+import { clearAccessToken } from '../../lib/api/httpClient.js';
 
-export function AdminTopbar() {
+export function AdminTopbar({ onLogout }) {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (onLogout) {
+      await onLogout();
+      return;
+    }
+    try {
+      await attemptLogout();
+    } catch { /* noop */ }
     clearHttpSession();
     clearAdminSession();
+    clearAccessToken();
     navigate('/login', { replace: true });
   };
 

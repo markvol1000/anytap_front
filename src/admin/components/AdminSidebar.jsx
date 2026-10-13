@@ -59,7 +59,7 @@ function NavItems({ items, onItemClick }) {
   ));
 }
 
-export function AdminSidebar({ admin }) {
+export function AdminSidebar({ admin, onLogout }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const currentPath = location.pathname;
@@ -132,6 +132,17 @@ export function AdminSidebar({ admin }) {
               <div className="admin-sidebar__user">{admin?.name || admin?.email?.split('@')[0] || 'Admin'}</div>
               <div className="admin-sidebar__role">{formatRole(admin?.role)}</div>
             </div>
+            {onLogout && (
+              <button
+                type="button"
+                className="admin-sidebar__logout-icon-btn"
+                onClick={onLogout}
+                title="Log Out"
+                aria-label="Log Out"
+              >
+                <Icon name="logOut" size={16} stroke={1.75} />
+              </button>
+            )}
           </div>
         </div>
       </aside>
@@ -214,6 +225,21 @@ export function AdminSidebar({ admin }) {
               <Icon name="home" size={17} stroke={1.75} />
               <span>Go to Homepage</span>
             </Link>
+
+            {onLogout && (
+              <button
+                type="button"
+                className="admin-sidebar__link admin-mobile-drawer__homelink"
+                style={{ color: '#fca5a5', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+                onClick={() => {
+                  setMobileOpen(false);
+                  onLogout();
+                }}
+              >
+                <Icon name="logOut" size={17} stroke={1.75} />
+                <span>Log Out</span>
+              </button>
+            )}
           </nav>
 
           <div className="admin-sidebar__foot" style={{ marginTop: 'auto', paddingTop: '16px' }}>
@@ -225,7 +251,35 @@ export function AdminSidebar({ admin }) {
                 <div className="admin-sidebar__user">{admin?.name || admin?.email?.split('@')[0] || 'Admin'}</div>
                 <div className="admin-sidebar__role">{formatRole(admin?.role)}</div>
               </div>
+              {onLogout && (
+                <button
+                  type="button"
+                  className="admin-sidebar__logout-icon-btn"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    onLogout();
+                  }}
+                  title="Log Out"
+                  aria-label="Log Out"
+                >
+                  <Icon name="logOut" size={16} stroke={1.75} />
+                </button>
+              )}
             </div>
+
+            {onLogout && (
+              <button
+                type="button"
+                className="admin-sidebar__mobile-logout-full"
+                onClick={() => {
+                  setMobileOpen(false);
+                  onLogout();
+                }}
+              >
+                <Icon name="logOut" size={15} stroke={1.75} />
+                <span>Log Out</span>
+              </button>
+            )}
           </div>
         </aside>
       </div>
