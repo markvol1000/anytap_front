@@ -43,13 +43,10 @@ export function mapAdminProfile(data) {
 }
 
 export function mapMemberRow(row) {
-  const hasCardStatusLabel = row?.cardStatusLabel != null && row?.cardStatusLabel !== '';
-  const isTempStructural = !hasCardStatusLabel && (row?.cardStatusText === 'no_cards' || row?.cregisWalletAddress === '-');
   const isTemp = row?.isTemp === true || 
                  row?.is_temp === true || 
                  Boolean(row?.userId && String(row.userId).startsWith('temp-')) || 
-                 Boolean(row?.id && String(row.id).startsWith('temp-')) ||
-                 Boolean(isTempStructural);
+                 Boolean(row?.id && String(row.id).startsWith('temp-'));
   const rawUserId = row?.userId && row.userId !== '-' ? row.userId : (row?.user_id && row.user_id !== '-' ? row.user_id : '');
   const id = rawUserId || (row?.loginId ? `temp-${row.loginId}` : (row?.email || ''));
   return {

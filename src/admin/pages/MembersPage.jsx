@@ -117,16 +117,12 @@ function CurrencyBadgeMini({ currency }) {
 
 function isTemporaryMember(r) {
   if (!r) return false;
-  if (r.isTemp === true || r.is_temp === true) return true;
-  if (String(r.id || '').startsWith('temp-') || String(r.userId || '').startsWith('temp-')) return true;
-  const hasCardLabel = Boolean(r.cardStatusLabel);
-  const isNoCard = r.cardStatusText === 'no_cards' || r.cardStatus === 'not_issued';
-  const isNoWallet = !r.cregisWalletAddress || r.cregisWalletAddress === '-' || r.cregisWalletAddress === 'Not allocated';
-  const isPendingStatus = r.accountStatus === 'pending' || r.accountStatus === 'card_transfer' || r.status === 'PENDING' || r.status === 'CARD_TRANSFER' || r.status === 'PASSWORD_RESET';
-  if (!hasCardLabel && isNoCard && isNoWallet && isPendingStatus) {
-    return true;
-  }
-  return false;
+  return Boolean(
+    r.isTemp === true ||
+    r.is_temp === true ||
+    String(r.id || '').startsWith('temp-') ||
+    String(r.userId || '').startsWith('temp-')
+  );
 }
 
 export function MembersPage() {

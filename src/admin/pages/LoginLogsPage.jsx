@@ -11,6 +11,49 @@ import { AdminStatusBadge, formatAdminDate } from '../components/AdminStatusBadg
 import { useAdminList } from '../hooks/useAdminList.js';
 import { getLoginLogs, getMemberById, updateMember } from '../services/adminService.js';
 
+const STATUS_STYLES = {
+  active: {
+    bg: '#ecfdf5',
+    color: '#047857',
+    border: '#a7f3d0',
+    dot: '#10b981',
+    ball: '🟢',
+    label: 'Active',
+  },
+  suspended: {
+    bg: '#fef2f2',
+    color: '#dc2626',
+    border: '#fca5a5',
+    dot: '#ef4444',
+    ball: '🔴',
+    label: 'Suspended',
+  },
+  locked: {
+    bg: '#fff7ed',
+    color: '#c2410c',
+    border: '#fed7aa',
+    dot: '#f97316',
+    ball: '🟠',
+    label: 'Locked',
+  },
+  pending: {
+    bg: '#f1f5f9',
+    color: '#475569',
+    border: '#cbd5e1',
+    dot: '#94a3b8',
+    ball: '⚪',
+    label: 'Pending',
+  },
+  rejected: {
+    bg: '#fef2f2',
+    color: '#991b1b',
+    border: '#fecaca',
+    dot: '#ef4444',
+    ball: '❌',
+    label: 'Rejected',
+  },
+};
+
 const fetchLoginLogs = (params) => getLoginLogs(params);
 
 export function LoginLogsPage() {
@@ -152,47 +195,28 @@ export function LoginLogsPage() {
                   },
                   {
                     key: 'userExists',
-                    label: 'User Account',
+                    label: 'Status',
                     render: (r) => {
                       const overridden = statusOverrides[r.id];
-                      const st = overridden || r.userStatus;
-                      if (r.userExists === true) {
+                      const rawSt = String(overridden || r.userStatus || 'active').toLowerCase();
+                      const effectiveId = r.resolvedUserId || (r.userId && r.userId !== '—' && r.userId !== '-' ? r.userId : r.email);
+                      const isExisting = r.userExists === true || (r.userExists == null && Boolean(r.userId && r.userId !== '—' && r.userId !== '-'));
+
+                      if (!isExisting) {
                         return (
                           <span
                             style={{
                               fontSize: '11px',
-                              fontWeight: '600',
-                              color: '#047857',
-                              background: '#ecfdf5',
-                              padding: '2px 7px',
-                              borderRadius: '4px',
-                              border: '1px solid #a7f3d0',
-                              whiteSpace: 'nowrap',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                            {st ? `${st}` : 'Existing'}
-                          </span>
-                        );
-                      }
-                      if (r.userExists === false) {
-                        return (
-                          <span
-                            style={{
-                              fontSize: '11px',
-                              fontWeight: '600',
+                              fontWeight: '700',
                               color: '#b91c1c',
                               background: '#fef2f2',
-                              padding: '2px 7px',
-                              borderRadius: '4px',
+                              padding: '3px 8px',
+                              borderRadius: '6px',
                               border: '1px solid #fecaca',
                               whiteSpace: 'nowrap',
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '4px',
+                              gap: '5px',
                             }}
                           >
                             <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
@@ -200,7 +224,28 @@ export function LoginLogsPage() {
                           </span>
                         );
                       }
-                      return <span style={{ color: '#94a3b8', fontSize: '11px' }}>—</span>;
+
+                      const theme = STATUS_STYLES[rawSt] || STATUS_STYLES.active;
+
+                      return (
+                        <span
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontWeight: '700',
+                            backgroundColor: theme.bg,
+                            color: theme.color,
+                            border: `1px solid ${theme.border}`,
+                            whiteSpace: 'nowrap',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                          }}
+                        >
+                          {theme.ball} {theme.label}
+                        </span>
+                      );
                     },
                   },
                   {
@@ -285,14 +330,22 @@ export function LoginLogsPage() {
                             label={r.status}
                           />
                           {r.userExists === false ? (
-                            <span style={{ fontSize: '10px', color: '#b91c1c', background: '#fef2f2', padding: '1px 5px', borderRadius: '4px', border: '1px solid #fecaca', fontWeight: 600 }}>
+                            <span style={{ fontSize: '10px', color: '#b91c1c', background: '#fef2f2', padding: '1px 6px', borderRadius: '4px', border: '1px solid #fecaca', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
                               Non-existent
                             </span>
-                          ) : r.userExists === true ? (
-                            <span style={{ fontSize: '10px', color: '#047857', background: '#ecfdf5', padding: '1px 5px', borderRadius: '4px', border: '1px solid #a7f3d0', fontWeight: 600 }}>
-                              {st || 'Existing'}
-                            </span>
-                          ) : null}
+                          ) : (
+                            (() => {
+                              const rawSt = String(st || 'active').toLowerCase();
+                              const theme = STATUS_STYLES[rawSt] || STATUS_STYLES.active;
+                              return (
+                                <span style={{ fontSize: '10px', color: theme.color, background: theme.bg, padding: '1px 6px', borderRadius: '4px', border: `1px solid ${theme.border}`, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: theme.dot }} />
+                                  {theme.label}
+                                </span>
+                              );
+                            })()
+                          )}
                         </div>
                         {r.userId && (
                           <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#64748b', flexShrink: 0 }}>
@@ -383,62 +436,77 @@ export function LoginLogsPage() {
                         )}
                       />
                       <AdminDetailRow
-                        label="Account Status Control"
+                        label="Status"
                         value={(
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            <select
-                              id={`user-status-select-${detail.id}`}
-                              name="accountStatus"
-                              aria-label="Update account status"
-                              value={String(currentStatus).toUpperCase()}
-                              disabled={updatingStatus}
-                              onChange={async (e) => {
-                                const nextStatus = e.target.value;
-                                if (!effectiveUserId) return;
-                                setUpdatingStatus(true);
-                                setStatusFeedback(null);
-                                try {
-                                  await updateMember(effectiveUserId, { status: nextStatus });
-                                  setStatusOverrides((prev) => ({
-                                    ...prev,
-                                    [detail.id]: nextStatus,
-                                  }));
-                                  setStatusFeedback({
-                                    type: 'success',
-                                    message: `Successfully changed status to ${nextStatus}`,
-                                  });
-                                  list.reload();
-                                } catch (err) {
-                                  setStatusFeedback({
-                                    type: 'error',
-                                    message: err.message || 'Failed to update account status.',
-                                  });
-                                } finally {
-                                  setUpdatingStatus(false);
-                                }
-                              }}
-                              style={{
-                                padding: '5px 10px',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                fontWeight: '700',
-                                cursor: updatingStatus ? 'not-allowed' : 'pointer',
-                                backgroundColor: '#ffffff',
-                                color: '#0f172a',
-                                border: '1px solid #cbd5e1',
-                                outline: 'none',
-                              }}
-                            >
-                              <option value="ACTIVE">🟢 ACTIVE</option>
-                              <option value="SUSPENDED">🔴 SUSPENDED</option>
-                              <option value="LOCKED">🟠 LOCKED</option>
-                              <option value="PENDING">⚪ PENDING</option>
-                            </select>
-                            <AdminStatusBadge status={String(currentStatus).toLowerCase()} />
-                            {updatingStatus && (
-                              <span style={{ fontSize: '11px', color: '#64748b' }}>Saving…</span>
-                            )}
-                          </div>
+                          (() => {
+                            const rawSt = String(currentStatus || 'active').toLowerCase();
+                            const theme = STATUS_STYLES[rawSt] || STATUS_STYLES.active;
+                            const isTemp = Boolean(detail.isTemp || (detail.userId && String(detail.userId).startsWith('temp-')));
+                            return (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                <select
+                                  id={`user-status-select-${detail.id}`}
+                                  name="accountStatus"
+                                  aria-label="Update account status"
+                                  value={rawSt}
+                                  disabled={updatingStatus}
+                                  onChange={async (e) => {
+                                    const nextStatus = e.target.value;
+                                    if (!effectiveUserId) return;
+                                    setUpdatingStatus(true);
+                                    setStatusFeedback(null);
+                                    try {
+                                      await updateMember(effectiveUserId, { status: nextStatus.toUpperCase() });
+                                      setStatusOverrides((prev) => ({
+                                        ...prev,
+                                        [detail.id]: nextStatus.toUpperCase(),
+                                      }));
+                                      setStatusFeedback({
+                                        type: 'success',
+                                        message: `Successfully changed status to ${nextStatus.toUpperCase()}`,
+                                      });
+                                      list.reload();
+                                    } catch (err) {
+                                      setStatusFeedback({
+                                        type: 'error',
+                                        message: err.message || 'Failed to update account status.',
+                                      });
+                                    } finally {
+                                      setUpdatingStatus(false);
+                                    }
+                                  }}
+                                  style={{
+                                    padding: '5px 10px',
+                                    borderRadius: '6px',
+                                    fontSize: '12px',
+                                    fontWeight: '700',
+                                    cursor: updatingStatus ? 'not-allowed' : 'pointer',
+                                    backgroundColor: theme.bg,
+                                    color: theme.color,
+                                    border: `1px solid ${theme.border}`,
+                                    outline: 'none',
+                                  }}
+                                >
+                                  {isTemp ? (
+                                    <>
+                                      <option value="pending">⚪ Pending</option>
+                                      <option value="suspended">🔴 Suspended</option>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <option value="active">🟢 Active</option>
+                                      <option value="suspended">🔴 Suspended</option>
+                                      <option value="locked">🟠 Locked</option>
+                                      <option value="pending">⚪ Pending</option>
+                                    </>
+                                  )}
+                                </select>
+                                {updatingStatus && (
+                                  <span style={{ fontSize: '11px', color: '#64748b' }}>Saving…</span>
+                                )}
+                              </div>
+                            );
+                          })()
                         )}
                       />
 
