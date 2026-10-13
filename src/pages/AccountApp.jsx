@@ -305,7 +305,8 @@ export function AccountApp() {
   }, []);
 
   const session = getHttpSession();
-  if (session && String(session.role).toUpperCase() === 'ADMIN') {
+  const roleUpper = String(session?.role || '').trim().toUpperCase();
+  if (session && (roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN')) {
     return <Navigate to="/admin" replace />;
   }
 

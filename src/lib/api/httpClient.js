@@ -210,7 +210,7 @@ export async function apiRequest(path, options = {}) {
 
     if (isBlacklisted) {
       forceLogoutAndRedirect('ip_blacklisted');
-    } else if (res.status === 401 && !isLoginEndpoint) {
+    } else if ((res.status === 401 || res.status === 403) && !isLoginEndpoint) {
       clearAccessToken();
       try {
         sessionStorage.removeItem('anytap_http_session');
