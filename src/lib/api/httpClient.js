@@ -164,19 +164,21 @@ export async function apiRequest(path, options = {}) {
     res = await fetch(requestUrl, { credentials: 'include', ...init, headers, body, signal: controller.signal });
   } catch (fetchErr) {
     clearTimeout(timeoutId);
-    const isTimeout = fetchErr.name === 'AbortError';
-    const isNetworkError = fetchErr instanceof TypeError || isTimeout || String(fetchErr).includes('Failed to fetch') || String(fetchErr).includes('NetworkError');
+    const isAbort = fetchErr.name === 'AbortError' || (init.signal && init.signal.aborted);
+    const isTimeout = isAbort && !init.signal?.aborted;
+    const isNetworkError = !isAbort && (fetchErr instanceof TypeError || String(fetchErr).includes('Failed to fetch') || String(fetchErr).includes('NetworkError'));
 
     console.error(`[API Network Error] ${requestUrl}:`, fetchErr);
 
-    // 로그인 엔드포인트 자체를 제외하고, 서버 무응답/다운 시 즉시 로그인으로 탈출
+    // 사용자의 페이지 새로고침/이탈(Abort) 시에는 세션을 파기하거나 로그아웃시키지 않음
     if (!isLoginEndpoint && isNetworkError) {
-      forceLogoutAndRedirect('server_unreachable');
+      console.warn(`[API Network Error] Server unreachable on ${requestUrl}. Retaining session tokens.`);
     }
 
-    const err = new Error('System is under maintenance. Please try again later.');
+    const err = new Error(isAbort ? 'Request cancelled.' : 'System is under maintenance. Please try again later.');
     err.status = isTimeout ? 504 : 0;
-    err.isNetworkError = true;
+    err.isNetworkError = isNetworkError;
+    err.isAbort = isAbort;
     throw err;
   } finally {
     clearTimeout(timeoutId);
@@ -285,10 +287,11 @@ export async function apiUpload(path, file, options = {}) {
     res = await fetch(url, { method: 'POST', headers, body, signal: controller.signal });
   } catch (fetchErr) {
     clearTimeout(timeoutId);
-    const isTimeout = fetchErr.name === 'AbortError';
-    const isNetworkError = fetchErr instanceof TypeError || isTimeout || String(fetchErr).includes('Failed to fetch') || String(fetchErr).includes('NetworkError');
+    const isAbort = fetchErr.name === 'AbortError';
+    const isTimeout = isAbort;
+    const isNetworkError = !isAbort && (fetchErr instanceof TypeError || String(fetchErr).includes('Failed to fetch') || String(fetchErr).includes('NetworkError'));
     if (isNetworkError) {
-      forceLogoutAndRedirect('server_unreachable');
+      console.warn(`[Upload Network Error] Server unreachable on ${url}. Retaining session tokens.`);
     }
     const err = new Error(isTimeout ? 'Upload timed out.' : 'System is under maintenance. Please try again later.');
     err.status = isTimeout ? 504 : 0;
