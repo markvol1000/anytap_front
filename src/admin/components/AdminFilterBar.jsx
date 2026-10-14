@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/ui.jsx';
 import { useAdminRefresh } from '../context/AdminRefreshContext.jsx';
 
@@ -43,8 +44,10 @@ export function AdminFilterBar({
   );
 }
 
-export function AdminPageHeader({ title, description, actions, onRefresh, refreshing }) {
+export function AdminPageHeader({ title, description, actions, onRefresh, refreshing, showBack = true }) {
   const { registerRefresh, unregisterRefresh } = useAdminRefresh();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (onRefresh) {
@@ -55,10 +58,30 @@ export function AdminPageHeader({ title, description, actions, onRefresh, refres
     }
   }, [onRefresh, refreshing, registerRefresh, unregisterRefresh]);
 
+  const isDashboard = location.pathname === '/admin' || location.pathname === '/admin/' || location.pathname === '/admin/dashboard';
+  const shouldShowBack = showBack && !isDashboard;
+
+  const handleBack = () => {
+    navigate('/admin');
+  };
+
   return (
     <header className="admin-page-head">
-      <div>
-        <h1 className="admin-page-head__title">{title}</h1>
+      <div className="admin-page-head__lead">
+        <div className="admin-page-head__title-row">
+          {shouldShowBack ? (
+            <button
+              type="button"
+              className="admin-page-head__back-btn"
+              onClick={handleBack}
+              aria-label="Back to Dashboard"
+              title="Back to Dashboard"
+            >
+              <Icon name="chevronLeft" size={18} stroke={2.2} />
+            </button>
+          ) : null}
+          <h1 className="admin-page-head__title">{title}</h1>
+        </div>
         {description ? <p className="admin-page-head__desc">{description}</p> : null}
       </div>
       <div className="admin-page-head__actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -72,10 +95,11 @@ export function AdminPageHeader({ title, description, actions, onRefresh, refres
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '38px',
-              height: '38px',
+              width: '32px',
+              height: '32px',
               padding: 0,
               flexShrink: 0,
+              borderRadius: '7px',
             }}
             aria-label="Refresh data"
             title="Refresh latest data">

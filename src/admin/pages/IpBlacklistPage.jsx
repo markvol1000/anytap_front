@@ -325,7 +325,7 @@ export function IpBlacklistPage() {
 
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {/* Row 1: IP (Left) & Reason Badge / Status (Right) */}
+                      {/* 1줄: IP (왼쪽) 와 Ban 상태 뱃지 (오른쪽) */}
                       <div className="admin-mobile-card__row1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                         <span
                           className="admin-mobile-card__title"
@@ -338,32 +338,13 @@ export function IpBlacklistPage() {
                         >
                           {r.ipAddress}
                         </span>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-                          <span
-                            title={r.reason || ''}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '2px 8px',
-                              borderRadius: '12px',
-                              backgroundColor: '#fee2e2',
-                              color: '#991b1b',
-                              border: '1px solid #fca5a5',
-                              fontSize: '10px',
-                              fontWeight: '700',
-                              letterSpacing: '0.02em',
-                              maxWidth: '150px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {reasonText}
-                          </span>
-                        </div>
+                        <AdminStatusBadge
+                          status={r.isActive ? 'suspended' : 'active'}
+                          label={r.isActive ? 'BANNED' : 'UNBANNED'}
+                        />
                       </div>
 
-                      {/* Row 2: Date & Time (Bold) / Account ID (e.g. US...) */}
+                      {/* 2줄: 왼쪽은 날짜시간 (진하게) / 오른쪽은 Target Account */}
                       <div
                         className="admin-mobile-card__row2"
                         style={{
@@ -372,6 +353,7 @@ export function IpBlacklistPage() {
                           justifyContent: 'space-between',
                           gap: '8px',
                           fontSize: '11px',
+                          marginTop: '2px',
                         }}
                       >
                         <span
@@ -383,37 +365,83 @@ export function IpBlacklistPage() {
                         >
                           {dateStr}
                         </span>
-                        <span
-                          title={account || ''}
-                          style={{
-                            fontFamily: 'monospace',
-                            fontWeight: '600',
-                            color: account ? '#b45309' : '#94a3b8',
-                            backgroundColor: account ? '#fef3c7' : 'transparent',
-                            padding: account ? '1px 6px' : '0',
-                            borderRadius: '4px',
-                            fontSize: '11px',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {shortAccount}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                          <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Target:</span>
+                          <span
+                            title={account || ''}
+                            style={{
+                              fontFamily: 'monospace',
+                              fontWeight: '600',
+                              color: account ? '#b45309' : '#94a3b8',
+                              backgroundColor: account ? '#fef3c7' : 'transparent',
+                              padding: account ? '1px 6px' : '0',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {shortAccount}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Row 3: Reason description */}
+                      {/* 3줄: Reason (사유) */}
                       <div
                         style={{
                           fontSize: '11px',
-                          color: '#64748b',
+                          color: '#475569',
                           fontWeight: '500',
                           lineHeight: '1.4',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
+                          marginTop: '2px',
                         }}
                         title={reasonText}
                       >
+                        <span style={{ color: '#94a3b8', fontWeight: 600, fontSize: '10px', textTransform: 'uppercase', marginRight: '5px' }}>Reason:</span>
                         {reasonText}
+                      </div>
+
+                      {/* 4줄: Banned By (Origin) 배치 배지 정보 */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                          fontSize: '11px',
+                          marginTop: '2px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Origin:</span>
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              backgroundColor: r.bannedBy === 'AUTO_DETECTION' ? '#fee2e2' : '#e0f2fe',
+                              color: r.bannedBy === 'AUTO_DETECTION' ? '#991b1b' : '#0369a1',
+                              border: `1px solid ${r.bannedBy === 'AUTO_DETECTION' ? '#fca5a5' : '#bae6fd'}`,
+                              letterSpacing: '0.02em',
+                              lineHeight: 1.2,
+                              display: 'inline-block',
+                            }}
+                          >
+                            {r.bannedBy === 'AUTO_DETECTION' ? 'AUTO' : (r.bannedBy || 'ADMIN')}
+                          </span>
+                        </div>
+                        {r.expiresAt ? (
+                          <span style={{ color: '#94a3b8', fontSize: '10px', whiteSpace: 'nowrap' }}>
+                            Exp: {formatAdminDate(r.expiresAt)}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: '10px', whiteSpace: 'nowrap' }}>
+                            Permanent
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
