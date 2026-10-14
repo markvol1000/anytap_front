@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminDataTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
 import { AdminDetailPanel, AdminDetailRow, AdminSplitLayout } from '../components/AdminSplitLayout.jsx';
@@ -262,43 +262,18 @@ function ChannelBadge({ channel }) {
   );
 }
 
-function ActionBadge({ action, label }) {
+function ActionBadge({ action, label, isInflow }) {
   const act = String(action || '').toLowerCase();
   const text = label || (act ? act.charAt(0).toUpperCase() + act.slice(1) : 'Other');
 
-  let bg = '#f1f5f9';
-  let color = '#334155';
-  let border = '#cbd5e1';
+  // + (inflow) is green, - (outflow) is red
+  const resolvedInflow = isInflow !== undefined ? Boolean(isInflow) : (
+    act === 'deposit' || act === 'topup' || act === 'refund' || act === 'transfer_in' || act === 'in'
+  );
 
-  if (act === 'payment') {
-    bg = '#fffbeb';
-    color = '#b45309';
-    border = '#fde68a';
-  } else if (act === 'topup') {
-    bg = '#f0fdf4';
-    color = '#15803d';
-    border = '#bbf7d0';
-  } else if (act === 'deposit') {
-    bg = '#eff6ff';
-    color = '#1d4ed8';
-    border = '#bfdbfe';
-  } else if (act === 'withdraw') {
-    bg = '#fef2f2';
-    color = '#b91c1c';
-    border = '#fecaca';
-  } else if (act === 'refund') {
-    bg = '#faf5ff';
-    color = '#7e22ce';
-    border = '#e9d5ff';
-  } else if (act === 'transfer_in' || act === 'transfer_out') {
-    bg = '#f0fdfa';
-    color = '#0f766e';
-    border = '#99f6e4';
-  } else if (act === 'fee_sweep') {
-    bg = '#f8fafc';
-    color = '#475569';
-    border = '#cbd5e1';
-  }
+  const bg = resolvedInflow ? '#f0fdf4' : '#fef2f2';
+  const color = resolvedInflow ? '#15803d' : '#dc2626';
+  const border = resolvedInflow ? '#bbf7d0' : '#fecaca';
 
   return (
     <span style={{
@@ -310,7 +285,7 @@ function ActionBadge({ action, label }) {
       color: color,
       border: `1px solid ${border}`,
       fontSize: '11px',
-      fontWeight: '600',
+      fontWeight: '700',
       whiteSpace: 'nowrap'
     }}>
       {text}
@@ -475,7 +450,7 @@ export function TransactionsPage() {
                   { 
                     key: 'action', 
                     label: 'Action',
-                    render: (r) => <ActionBadge action={r.action} label={r.actionLabel} />
+                    render: (r) => <ActionBadge action={r.action} label={r.actionLabel} isInflow={r.isInflow} />
                   },
                   { 
                     key: 'description', 
@@ -561,18 +536,28 @@ export function TransactionsPage() {
                   const color = isInflow ? '#16a34a' : '#dc2626';
                   const bg = isInflow ? '#f0fdf4' : '#fef2f2';
                   const border = isInflow ? '#bbf7d0' : '#fecaca';
-                  const desc = r.description || r.reference || '—';
+                  const desc = r.description || r.reference || r.merchantName || '—';
+                  const email = r.memberEmail || r.email || r.userId || r.memberId || '—';
 
                   return (
                     <>
-                      <div className="admin-mobile-card__row1">
-                        <div className="admin-mobile-card__left">
-                          <span className="admin-mobile-card__title" style={{ fontFamily: 'monospace' }}>
-                            {r.id ? `${r.id.slice(0, 8)}...` : 'Tx'}
-                          </span>
-                          <ActionBadge action={r.action} label={r.actionLabel} />
-                          <ChannelBadge channel={r.channel} />
-                        </div>
+                      {/* Line 1: Email (Left) / Amount (Right) */}
+                      <div className="admin-mobile-card__row1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <span
+                          style={{
+                            fontWeight: '700',
+                            fontSize: '12px',
+                            color: '#1e293b',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            minWidth: 0,
+                            flex: 1,
+                          }}
+                          title={email}
+                        >
+                          {email}
+                        </span>
                         <div style={{
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -591,15 +576,49 @@ export function TransactionsPage() {
                           <span>{sign}{formatAmountWithCurrency(Math.abs(Number(r.transAmount ?? r.amount) || 0), r.currency || r.originalCurrency || r.transCurrency || '')}</span>
                         </div>
                       </div>
-                      <div className="admin-mobile-card__row2">
-                        <span className="admin-mobile-card__detail" title={desc}>
-                          {desc}
-                        </span>
-                        <AdminStatusBadge status={r.status} />
-                        <span style={{ color: '#cbd5e1' }}>•</span>
-                        <span className="admin-mobile-card__date">
+
+                      {/* Line 2: Channel & In-Out Action Badge (Left) / Bold Date & Time (Right) */}
+                      <div
+                        className="admin-mobile-card__row2"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                          marginTop: '4px',
+                          marginBottom: '2px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <ChannelBadge channel={r.channel} />
+                          <ActionBadge action={r.action} label={r.actionLabel} isInflow={isInflow} />
+                        </div>
+                        <span style={{ color: '#334155', fontSize: '11px', fontWeight: '700', whiteSpace: 'nowrap', flexShrink: 0 }}>
                           {formatAdminDate(r.at)}
                         </span>
+                      </div>
+
+                      {/* Line 3: Description/Merchant & Status */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginTop: '4px' }}>
+                        <span
+                          className="admin-mobile-card__detail"
+                          style={{
+                            fontSize: '11px',
+                            color: '#475569',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            minWidth: 0,
+                            flex: 1,
+                          }}
+                          title={desc}
+                        >
+                          {r.action === 'payment' && <span style={{ marginRight: '3px', opacity: 0.8 }}>🏪</span>}
+                          {desc}
+                        </span>
+                        <div style={{ flexShrink: 0 }}>
+                          <AdminStatusBadge status={r.status} />
+                        </div>
                       </div>
                     </>
                   );
@@ -618,7 +637,7 @@ export function TransactionsPage() {
           );
 
           return (
-            <AdminDetailPanel 
+            <AdminDetailPanel
               title={isTransfer ? "Transaction Detail — Transfer" : `Transaction Detail — ${selected.actionLabel || selected.action || 'Detail'}`}
               onClose={() => { setSelectedId(null); setRetryMsg(null); }}
             >
@@ -650,7 +669,7 @@ export function TransactionsPage() {
               />
               <AdminDetailRow 
                 label="Action" 
-                value={<ActionBadge action={selected.action} label={selected.actionLabel} />} 
+                value={<ActionBadge action={selected.action} label={selected.actionLabel} isInflow={selected.isInflow} />} 
               />
               <AdminDetailRow 
                 label="Description / Merchant" 
@@ -736,35 +755,35 @@ export function TransactionsPage() {
               />
 
               <AdminDetailRow label="Status" value={<AdminStatusBadge status={selected.status} />} />
-            <AdminDetailRow label="Date" value={formatAdminDate(selected.at)} />
-            <AdminDetailRow 
-              label="Reference" 
-              value={<span style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '12px' }}>{selected.reference}</span>} 
-            />
+              <AdminDetailRow label="Date" value={formatAdminDate(selected.at)} />
+              <AdminDetailRow 
+                label="Reference" 
+                value={<span style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '12px' }}>{selected.reference}</span>} 
+              />
 
-            {isSelectedPending && (
-              <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn--primary"
-                  onClick={() => handleRetry(selected.id)}
-                  disabled={retrying}
-                  style={{ width: '100%' }}
-                >
-                  {retrying ? 'Retrying...' : '🔄 Retry Transaction'}
-                </button>
-                {retryMsg && (
-                  <p style={{
-                    marginTop: '8px',
-                    fontSize: '12px',
-                    color: retryMsg.type === 'success' ? '#16a34a' : '#dc2626',
-                    fontWeight: '500'
-                  }}>
-                    {retryMsg.text}
-                  </p>
-                )}
-              </div>
-            )}
+              {isSelectedPending && (
+                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--primary"
+                    onClick={() => handleRetry(selected.id)}
+                    disabled={retrying}
+                    style={{ width: '100%' }}
+                  >
+                    {retrying ? 'Retrying...' : '🔄 Retry Transaction'}
+                  </button>
+                  {retryMsg && (
+                    <p style={{
+                      marginTop: '8px',
+                      fontSize: '12px',
+                      color: retryMsg.type === 'success' ? '#16a34a' : '#dc2626',
+                      fontWeight: '500'
+                    }}>
+                      {retryMsg.text}
+                    </p>
+                  )}
+                </div>
+              )}
             </AdminDetailPanel>
           );
         })() : null}

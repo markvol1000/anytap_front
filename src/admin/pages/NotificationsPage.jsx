@@ -37,6 +37,8 @@ export function NotificationsPage() {
       <AdminPageHeader
         title="Notifications"
         description="Announcements, push, email, banners, and scheduled sends."
+        onRefresh={list.reload}
+        refreshing={list.loading}
         actions={(
           <button type="button" className="admin-btn admin-btn--primary">New notification</button>
         )}
@@ -162,8 +164,12 @@ export function NotificationsPage() {
             </AdminTableWrap>
           </AdminPanel>
         )}
-        right={(
-          <AdminDetailPanel title={detail?.title ?? null}>
+        right={selectedId && detail ? (
+          <AdminDetailPanel
+            title={detail?.title || 'Notification Details'}
+            hasData={Boolean(detail)}
+            onClose={() => setSelectedId(null)}
+          >
             {detail ? (
               <>
                 <AdminDetailSection title="Details">
@@ -179,7 +185,7 @@ export function NotificationsPage() {
               </>
             ) : null}
           </AdminDetailPanel>
-        )}
+        ) : null}
       />
     </div>
   );

@@ -584,6 +584,14 @@ export function ContentPage() {
       <AdminPageHeader
         title="Content Management"
         description="Manage automated email notification templates, event trigger rules, dynamic variable mappings, and legal pages."
+        onRefresh={() => {
+          if (primaryTab === 'email') {
+            loadEmailTemplatesAndRules();
+          } else {
+            loadContentPages();
+          }
+        }}
+        refreshing={primaryTab === 'email' ? templatesLoading : contentLoading}
       />
 
       {/* Primary Navigation Tabs (Matching Admin Console standard styling) */}

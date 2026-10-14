@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from '../../components/ui.jsx';
+import { useAdminRefresh } from '../context/AdminRefreshContext.jsx';
 
 const OPS_NAV = [
   { to: '/admin', end: true, label: 'Dashboard', icon: 'chart' },
@@ -62,6 +63,7 @@ function NavItems({ items, onItemClick }) {
 
 export function AdminSidebar({ admin, onLogout }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { refreshHandler, isRefreshing } = useAdminRefresh();
   const location = useLocation();
   const currentPath = location.pathname;
 
@@ -160,15 +162,44 @@ export function AdminSidebar({ admin, onLogout }) {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="admin-mobile-header__burger"
-          onClick={() => setMobileOpen((prev) => !prev)}
-          aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
-          aria-expanded={mobileOpen}
-        >
-          <Icon name={mobileOpen ? 'close' : 'menu'} size={22} />
-        </button>
+        <div className="admin-mobile-header__actions">
+          <button
+            type="button"
+            className="admin-mobile-header__refresh"
+            onClick={() => {
+              if (typeof refreshHandler === 'function') {
+                refreshHandler();
+              } else {
+                window.location.reload();
+              }
+            }}
+            disabled={isRefreshing}
+            aria-label="Refresh latest data"
+            title="Refresh latest data"
+          >
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transform: isRefreshing ? 'rotate(360deg)' : 'none',
+                transition: 'transform 0.6s ease',
+              }}
+            >
+              <Icon name="refresh" size={17} stroke={2} />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className="admin-mobile-header__burger"
+            onClick={() => setMobileOpen((prev) => !prev)}
+            aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={mobileOpen}
+          >
+            <Icon name={mobileOpen ? 'close' : 'menu'} size={22} />
+          </button>
+        </div>
       </header>
 
       {/* ── Mobile Slide-Over Drawer with Blurred Backdrop ── */}

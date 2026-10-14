@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AdminSidebar } from './AdminSidebar.jsx';
 import { AdminTopbar } from './AdminTopbar.jsx';
 import { AdminConfirmProvider } from './AdminConfirmModal.jsx';
+import { AdminRefreshProvider } from '../context/AdminRefreshContext.jsx';
 import { getCurrentAdmin } from '../services/adminService.js';
 import {
   clearAdminSession,
@@ -108,26 +109,28 @@ export function AdminLayout() {
 
   return (
     <AdminConfirmProvider>
-      <div className="admin-shell">
-        <AdminSidebar admin={admin} onLogout={handleLogout} />
-        <div className="admin-shell__body">
-          <AdminTopbar onLogout={handleLogout} />
-          <main className="admin-main">
-            <Outlet />
-          </main>
-        </div>
+      <AdminRefreshProvider>
+        <div className="admin-shell">
+          <AdminSidebar admin={admin} onLogout={handleLogout} />
+          <div className="admin-shell__body">
+            <AdminTopbar onLogout={handleLogout} />
+            <main className="admin-main">
+              <Outlet />
+            </main>
+          </div>
 
-        {/* Mobile floating bottom-left logout button */}
-        <button
-          type="button"
-          className="admin-mobile-floating-logout"
-          onClick={handleLogout}
-          aria-label="Log Out"
-        >
-          <Icon name="logOut" size={15} stroke={1.75} />
-          <span>Log Out</span>
-        </button>
-      </div>
+          {/* Mobile floating bottom-left logout button */}
+          <button
+            type="button"
+            className="admin-mobile-floating-logout"
+            onClick={handleLogout}
+            aria-label="Log Out"
+          >
+            <Icon name="logOut" size={15} stroke={1.75} />
+            <span>Log Out</span>
+          </button>
+        </div>
+      </AdminRefreshProvider>
     </AdminConfirmProvider>
   );
 }

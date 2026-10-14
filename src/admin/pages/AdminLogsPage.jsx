@@ -23,6 +23,8 @@ export function AdminLogsPage() {
       <AdminPageHeader
         title="Admin Logs"
         description="Audit trail — who changed what and when."
+        onRefresh={list.reload}
+        refreshing={list.loading}
       />
 
       <AdminSplitLayout
@@ -155,8 +157,12 @@ export function AdminLogsPage() {
             </AdminTableWrap>
           </AdminPanel>
         )}
-        right={(
-          <AdminDetailPanel title="Log detail">
+        right={selectedId && detail ? (
+          <AdminDetailPanel
+            title="Log Detail"
+            hasData={Boolean(detail)}
+            onClose={() => setSelectedId(null)}
+          >
             {detail ? (
               <AdminDetailSection title="Event">
                 <AdminDetailRow label="Admin" value={detail.adminName} />
@@ -167,7 +173,7 @@ export function AdminLogsPage() {
               </AdminDetailSection>
             ) : null}
           </AdminDetailPanel>
-        )}
+        ) : null}
       />
     </div>
   );

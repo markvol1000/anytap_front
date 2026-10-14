@@ -23,6 +23,8 @@ export function EmailLogsPage() {
       <AdminPageHeader
         title="Email Audit Logs"
         description="View email transmission history and status logs."
+        onRefresh={list.reload}
+        refreshing={list.loading}
       />
 
       <AdminSplitLayout
@@ -196,8 +198,12 @@ export function EmailLogsPage() {
             </AdminTableWrap>
           </AdminPanel>
         )}
-        right={(
-          <AdminDetailPanel title="Email Details">
+        right={selectedId && detail ? (
+          <AdminDetailPanel
+            title="Email Details"
+            hasData={Boolean(detail)}
+            onClose={() => setSelectedId(null)}
+          >
             {detail ? (
               <AdminDetailSection title="Email Info">
                 <AdminDetailRow label="Recipient" value={detail.recipient} />
@@ -209,7 +215,7 @@ export function EmailLogsPage() {
               </AdminDetailSection>
             ) : null}
           </AdminDetailPanel>
-        )}
+        ) : null}
       />
     </div>
   );

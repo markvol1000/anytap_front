@@ -1,5 +1,6 @@
 import { useCallback, useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Icon } from '../../components/ui.jsx';
 import { AdminKpiCard, AdminKpiGrid } from '../components/AdminKpiCard.jsx';
 import { AdminDataTable, AdminMiniTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
@@ -343,9 +344,21 @@ export function ReferralPage() {
         actions={(
           <button
             type="button"
-            className="admin-btn admin-btn--primary"
-            onClick={() => setShowCreateModal(true)}>
-            + New Referral Code
+            className="admin-btn admin-btn--primary admin-btn--sm"
+            onClick={() => setShowCreateModal(true)}
+            style={{
+              padding: '6px 14px',
+              fontSize: '12.5px',
+              height: '34px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: '600',
+              borderRadius: '8px',
+            }}
+          >
+            <Icon name="plus" size={14} stroke={2.5} />
+            <span>New Referral Code</span>
           </button>
         )}
       />
@@ -418,43 +431,55 @@ export function ReferralPage() {
             value={endDate}
             onChange={(e) => { setEndDate(e.target.value); setDatePreset('custom'); }}
           />
-          <input
-            type="search"
-            id="admin-referral-quick-search"
-            name="searchQuery"
-            aria-label="Search Referral Codes and Members"
-            placeholder="Search code, user ID, email..."
-            value={partnerList.search}
-            onChange={(e) => {
-              partnerList.setSearch(e.target.value);
-              memberList.setSearch(e.target.value);
-            }}
-            className="admin-input admin-input--search"
-            style={{ width: '220px' }}
-          />
           <button
             type="button"
-            className="admin-btn admin-btn--primary admin-btn--sm admin-chart-search-btn"
+            className="admin-btn admin-btn--primary admin-btn--sm"
+            style={{
+              padding: '5px 14px',
+              fontSize: '12px',
+              height: '32px',
+              borderRadius: '6px',
+              fontWeight: '600',
+              whiteSpace: 'nowrap',
+            }}
             onClick={handleApplyFilter}
           >
-            Search
+            Filter
           </button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+      {/* Boxed Folder Tabs (1-row rectangular tabs wrapping list) */}
+      <div className="admin-boxed-tabs" role="tablist">
         <button
           type="button"
-          className={`admin-btn ${activeTab === 'partners' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
-          onClick={() => setActiveTab('partners')}>
-          Referral List & Member Networks
+          role="tab"
+          aria-selected={activeTab === 'partners'}
+          className={`admin-boxed-tab${activeTab === 'partners' ? ' is-active' : ''}`}
+          onClick={() => setActiveTab('partners')}
+          title="Referral List & Member Networks"
+        >
+          <span className="admin-boxed-tab__label">Referral List & Member Networks</span>
+          {partnerList.total != null && (
+            <span className="admin-boxed-tab__badge">
+              {partnerList.total}
+            </span>
+          )}
         </button>
         <button
           type="button"
-          className={`admin-btn ${activeTab === 'ledger' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
-          onClick={() => setActiveTab('ledger')}>
-          Commission Payout Ledger
+          role="tab"
+          aria-selected={activeTab === 'ledger'}
+          className={`admin-boxed-tab${activeTab === 'ledger' ? ' is-active' : ''}`}
+          onClick={() => setActiveTab('ledger')}
+          title="Commission Payout Ledger"
+        >
+          <span className="admin-boxed-tab__label">Commission Payout Ledger</span>
+          {ledgerList.total != null && (
+            <span className="admin-boxed-tab__badge">
+              {ledgerList.total}
+            </span>
+          )}
         </button>
       </div>
 
@@ -726,30 +751,46 @@ export function ReferralPage() {
                   </AdminDetailSection>
 
                   <AdminActionStack>
-                    <button type="button" className="admin-btn admin-btn--primary" onClick={() => handleOpenEdit(detail)}>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--primary admin-btn--sm"
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                      onClick={() => handleOpenEdit(detail)}
+                    >
                       ✏️ Edit Referral Code
                     </button>
-                    <button type="button" className="admin-btn admin-btn--secondary" onClick={handleAdjust}>
-                      Reward adjustment
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--secondary admin-btn--sm"
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                      onClick={handleAdjust}
+                    >
+                      Reward Adjustment
                     </button>
                   </AdminActionStack>
 
                   {/* ── LOWER SECTION: Sub-tabs (Referred Members & Member Card Charge History) ── */}
                   <AdminDetailSection title={`Network Analytics for '${detail.referralCode}'`} className="admin-detail-full-width">
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                    <div className="admin-tabs" style={{ marginBottom: '14px' }}>
                       <button
                         type="button"
-                        className={`admin-btn ${partnerDetailTab === 'members' ? 'admin-btn--primary' : 'admin-btn--secondary'} admin-btn--sm`}
+                        className={`admin-tabs__btn${partnerDetailTab === 'members' ? ' is-active' : ''}`}
                         onClick={() => setPartnerDetailTab('members')}
                       >
-                        👥 Referred Members ({memberList.total || memberList.items.length})
+                        <span>👥 Referred Members</span>
+                        <span className="admin-tab-count">
+                          {memberList.total || memberList.items.length}
+                        </span>
                       </button>
                       <button
                         type="button"
-                        className={`admin-btn ${partnerDetailTab === 'charges' ? 'admin-btn--primary' : 'admin-btn--secondary'} admin-btn--sm`}
+                        className={`admin-tabs__btn${partnerDetailTab === 'charges' ? ' is-active' : ''}`}
                         onClick={() => setPartnerDetailTab('charges')}
                       >
-                        💳 Member Card Charge History ({dailyDeposits.length})
+                        <span>💳 Member Card Charge History</span>
+                        <span className="admin-tab-count">
+                          {dailyDeposits.length}
+                        </span>
                       </button>
                     </div>
 

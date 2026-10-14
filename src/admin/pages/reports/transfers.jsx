@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { AdminDataTable } from '../../components/AdminDataTable.jsx';
 import { AdminPageHeader, AdminPanel, AdminTableWrap } from '../../components/AdminFilterBar.jsx';
@@ -11,6 +11,7 @@ import {
 } from '../../components/AdminSplitLayout.jsx';
 import { AdminStatusBadge, formatAdminDate, shortenAddress } from '../../components/AdminStatusBadge.jsx';
 import { useAdminList } from '../../hooks/useAdminList.js';
+import { useAdminRefresh } from '../../context/AdminRefreshContext.jsx';
 import { getCardTransfersReport } from '../../services/api/adminApiService.js';
 
 function CopyableTxId({ txId, color = '#333333', bgColor = '#FFEB3B' }) {
@@ -92,6 +93,13 @@ export function CardTransfersReportPage() {
   const list = useAdminList(getCardTransfersReport, {}, {
     urlKeys: ['search', 'page'],
   });
+
+  const { registerRefresh, unregisterRefresh } = useAdminRefresh();
+
+  useEffect(() => {
+    registerRefresh(list.reload, list.loading);
+    return () => unregisterRefresh();
+  }, [list.reload, list.loading, registerRefresh, unregisterRefresh]);
 
   const handlePresetChange = (preset) => {
     setDatePreset(preset);
@@ -352,7 +360,7 @@ export function CardTransfersReportPage() {
         <div>
           <h1 className="admin-cards-header__title">Card-to-Card Transfer Ledger</h1>
           <p className="admin-cards-header__sub">
-            카드간 이체 원장 내역 조회 및 상태 관리 (출금 CW / 입금 CD 단계별 모니터링)
+            Audit trail of card-to-card transfer ledger entries with multi-step CW and CD status tracking.
           </p>
         </div>
         <div className="admin-cards-header__actions" style={{ display: 'flex', gap: '8px' }}>

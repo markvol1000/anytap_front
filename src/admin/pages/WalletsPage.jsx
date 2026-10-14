@@ -285,8 +285,15 @@ export function WalletsPage() {
             </AdminTableWrap>
           </AdminPanel>
         )}
-        right={(
-          <AdminDetailPanel title={detail ? `Wallet — ${detail.memberName}` : null}>
+        right={selectedId && detail ? (
+          <AdminDetailPanel
+            title={`Wallet — ${detail.memberName || detail.email || detail.id}`}
+            hasData={Boolean(detail)}
+            onClose={() => {
+              setSelectedId(null);
+              setDetail(null);
+            }}
+          >
             {detailLoading && !detail ? <p className="admin-loading admin-loading--inline">Loading…</p> : null}
             {!detailLoading && detail ? (
               <>
@@ -372,7 +379,7 @@ export function WalletsPage() {
               </>
             ) : null}
           </AdminDetailPanel>
-        )}
+        ) : null}
       />
     </div>
   );

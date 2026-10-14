@@ -9,26 +9,26 @@ export function AdminPendingTaskCard({ label, count, icon, tone = 'orange', to, 
   const className = `admin-pending-task admin-pending-task--${resolvedTone}`;
 
   const body = (
-    <>
-      <span className="admin-pending-task__icon" aria-hidden="true">
-        <Icon name={icon} size={18} stroke={1.75} />
-      </span>
-      <span className="admin-pending-task__body">
-        <span className="admin-pending-task__label">{label}</span>
-        <span className="admin-pending-task__count">{count}</span>
-      </span>
-    </>
+    <div className="admin-pending-task__content">
+      <span className="admin-pending-task__label" title={label}>{label}</span>
+      <div className="admin-pending-task__val-row">
+        <span className="admin-pending-task__icon" aria-hidden="true">
+          <Icon name={icon} size={15} stroke={1.75} />
+        </span>
+        <span className="admin-pending-task__count" title={String(count)}>{count}</span>
+      </div>
+    </div>
   );
 
   if (to) {
     return (
-      <Link to={to} className={`${className} admin-pending-task--link`}>
+      <Link to={to} className={`${className} admin-pending-task--link`} title={label}>
         {body}
       </Link>
     );
   }
 
-  return <article className={className}>{body}</article>;
+  return <article className={className} title={label}>{body}</article>;
 }
 
 export function AdminPendingTaskGrid({ children }) {
@@ -181,9 +181,25 @@ export function AdminRequestDistributionChart({ kycCount = 0, cardCount = 0, wit
         <span className="admin-chart-card__badge">{totalCount} Total Requests</span>
       </div>
 
-      <div className="admin-donut-layout">
-        <div className="admin-donut-wrap">
-          <svg width="220" height="220" viewBox="0 0 220 220" className="admin-donut-svg">
+      <div
+        className="admin-donut-layout"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+          alignItems: 'center',
+          gap: '20px',
+          width: '100%',
+          boxSizing: 'border-box',
+        }}>
+        <div
+          className="admin-donut-wrap"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+          }}>
+          <svg width="200" height="200" viewBox="0 0 220 220" className="admin-donut-svg">
             {/* Background ring */}
             <circle cx="110" cy="110" r="75" fill="none" stroke="#e2e8f0" strokeWidth="28" />
             
@@ -239,27 +255,65 @@ export function AdminRequestDistributionChart({ kycCount = 0, cardCount = 0, wit
           </svg>
         </div>
 
-        <div className="admin-donut-legend">
-          <Link to="/admin/kyc" className="admin-chart-legend-item">
-            <span className="admin-chart-legend-item__dot" style={{ background: '#2563eb', width: '14px', height: '14px' }} />
-            <div className="admin-chart-legend-item__info">
-              <span className="admin-chart-legend-item__label">KYC Requests</span>
-              <span className="admin-chart-legend-item__val" style={{ color: '#2563eb', fontSize: '18px' }}>{kycCount} <span className="admin-chart-legend-item__sub">({kycPct}%)</span></span>
+        <div
+          className="admin-donut-legend"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            width: '100%',
+            minWidth: 0,
+            boxSizing: 'border-box',
+          }}>
+          <Link
+            to="/admin/kyc"
+            className="admin-donut-card admin-donut-card--blue"
+            style={{ width: '100%', boxSizing: 'border-box' }}>
+            <span className="admin-donut-card__icon" aria-hidden="true">
+              <Icon name="shield" size={18} stroke={1.75} />
+            </span>
+            <div className="admin-donut-card__body">
+              <span className="admin-donut-card__label">KYC Requests</span>
+              <div className="admin-donut-card__val-row">
+                <span className="admin-donut-card__count">{kycCount}</span>
+                <span className="admin-donut-card__pct">{kycPct}%</span>
+              </div>
             </div>
+            <span className="admin-donut-card__arrow" aria-hidden="true">➔</span>
           </Link>
-          <Link to="/admin/cards" className="admin-chart-legend-item">
-            <span className="admin-chart-legend-item__dot" style={{ background: '#10b981', width: '14px', height: '14px' }} />
-            <div className="admin-chart-legend-item__info">
-              <span className="admin-chart-legend-item__label">Card Applications</span>
-              <span className="admin-chart-legend-item__val" style={{ color: '#10b981', fontSize: '18px' }}>{cardCount} <span className="admin-chart-legend-item__sub">({cardPct}%)</span></span>
+
+          <Link
+            to="/admin/cards"
+            className="admin-donut-card admin-donut-card--green"
+            style={{ width: '100%', boxSizing: 'border-box' }}>
+            <span className="admin-donut-card__icon" aria-hidden="true">
+              <Icon name="creditCard" size={18} stroke={1.75} />
+            </span>
+            <div className="admin-donut-card__body">
+              <span className="admin-donut-card__label">Card Applications</span>
+              <div className="admin-donut-card__val-row">
+                <span className="admin-donut-card__count">{cardCount}</span>
+                <span className="admin-donut-card__pct">{cardPct}%</span>
+              </div>
             </div>
+            <span className="admin-donut-card__arrow" aria-hidden="true">➔</span>
           </Link>
-          <Link to="/admin/withdrawals" className="admin-chart-legend-item">
-            <span className="admin-chart-legend-item__dot" style={{ background: '#ff5500', width: '14px', height: '14px' }} />
-            <div className="admin-chart-legend-item__info">
-              <span className="admin-chart-legend-item__label">Withdrawal Requests</span>
-              <span className="admin-chart-legend-item__val" style={{ color: '#ff5500', fontSize: '18px' }}>{withdrawalCount} <span className="admin-chart-legend-item__sub">({withdrawalPct}%)</span></span>
+
+          <Link
+            to="/admin/withdrawals"
+            className="admin-donut-card admin-donut-card--orange"
+            style={{ width: '100%', boxSizing: 'border-box' }}>
+            <span className="admin-donut-card__icon" aria-hidden="true">
+              <Icon name="arrowUpRight" size={18} stroke={1.75} />
+            </span>
+            <div className="admin-donut-card__body">
+              <span className="admin-donut-card__label">Withdrawal Requests</span>
+              <div className="admin-donut-card__val-row">
+                <span className="admin-donut-card__count">{withdrawalCount}</span>
+                <span className="admin-donut-card__pct">{withdrawalPct}%</span>
+              </div>
             </div>
+            <span className="admin-donut-card__arrow" aria-hidden="true">➔</span>
           </Link>
         </div>
       </div>
@@ -340,28 +394,29 @@ export function AdminTxVolumeChart({
         <h3 className="admin-chart-card__title">Transaction & Activity Breakdown</h3>
         <span className="admin-chart-card__badge" style={{ background: '#eff6ff', color: '#1d4ed8', fontWeight: 700 }}>Live Activity</span>
       </div>
-      <div className="admin-tx-bar-chart">
+
+      <div className="admin-tx-hbar-list">
         {items.map((item) => (
-          <Link key={item.label} to={item.route} className="admin-tx-bar-col" title={`Click to open ${item.label} menu`}>
-            <div className="admin-tx-bar-col__top">
-              <span className="admin-tx-bar-col__amount">{item.amount}</span>
-              {item.count > 0 && <span className="admin-tx-bar-col__cnt">{item.count} txs</span>}
+          <Link
+            key={item.label}
+            to={item.route}
+            className="admin-tx-hbar-row"
+            title={`Click to open ${item.label} menu`}>
+            <div className="admin-tx-hbar-meta">
+              <span className="admin-tx-hbar-dot" style={{ background: item.color }} />
+              <span className="admin-tx-hbar-label">{item.label}</span>
             </div>
-            <div
-              className="admin-tx-bar-col__fill"
-              style={{ height: `${item.heightPct}%`, background: item.gradient }}
-            />
-            <span className="admin-tx-bar-col__label">{item.label}</span>
-          </Link>
-        ))}
-      </div>
-      <div className="admin-chart-legend-grid admin-chart-legend-grid--2x2">
-        {items.map((item) => (
-          <Link key={item.label} to={item.route} className="admin-chart-legend-item">
-            <span className="admin-chart-legend-item__dot" style={{ background: item.color, width: '14px', height: '14px' }} />
-            <div className="admin-chart-legend-item__info">
-              <span className="admin-chart-legend-item__label">{item.label}</span>
-              <span className="admin-chart-legend-item__val" style={{ color: item.color, fontSize: '16px' }}>{item.amount}</span>
+
+            <div className="admin-tx-hbar-track">
+              <div
+                className="admin-tx-hbar-fill"
+                style={{ width: `${item.heightPct}%`, background: item.gradient }}
+              />
+            </div>
+
+            <div className="admin-tx-hbar-stat">
+              <span className="admin-tx-hbar-amount">{item.amount}</span>
+              {item.count > 0 && <span className="admin-tx-hbar-cnt">{item.count} txs</span>}
             </div>
           </Link>
         ))}

@@ -13,6 +13,7 @@ import {
 import { AdminStatusBadge, formatAdminDate, shortenAddress } from '../../components/AdminStatusBadge.jsx';
 import { useAdminList } from '../../hooks/useAdminList.js';
 import { useAdminDetail } from '../../hooks/useAdminDetail.js';
+import { useAdminRefresh } from '../../context/AdminRefreshContext.jsx';
 import {
   getCardApplications,
   getCardById,
@@ -92,6 +93,12 @@ export function CardsReportPage() {
 
   const list = useAdminList(fetchCardApplicationsReport, { onlyRegistered: false }, { urlKeys: ['status', 'delivered', 'cardType', 'startDate', 'endDate'] });
   const { detail, loading: detailLoading } = useAdminDetail(fetchCardDetail, selectedId);
+  const { registerRefresh, unregisterRefresh } = useAdminRefresh();
+
+  useEffect(() => {
+    registerRefresh(list.reload, list.loading);
+    return () => unregisterRefresh();
+  }, [list.reload, list.loading, registerRefresh, unregisterRefresh]);
 
   const [datePreset, setDatePreset] = useState('all');
   const [startDate, setStartDate] = useState('');
@@ -760,12 +767,13 @@ export function CardsReportPage() {
             </div>
           </AdminPanel>
         )}
-        right={(
+        right={selectedId && detail ? (
           <AdminDetailPanel
             title="Card Application Details"
             loading={detailLoading}
             hasData={Boolean(detail)}
             emptyText="Please select a card application record from the list."
+            onClose={() => setSelectedId(null)}
           >
             {detail && (
               <>
@@ -814,7 +822,7 @@ export function CardsReportPage() {
               </>
             )}
           </AdminDetailPanel>
-        )}
+        ) : null}
       />
 
       {/* Add Applicant Modal */}

@@ -129,6 +129,14 @@ export function CardsPage() {
   const virtualCount = items.filter(c => c.cardType === 'virtual').length;
   const physicalCount = items.filter(c => c.cardType === 'physical').length;
 
+  let detailLast4 = detail?.last4 && detail?.last4 !== '—' && detail?.last4 !== '-' ? detail.last4 : '';
+  if (!detailLast4 && detail?.wasabiCardId && detail?.wasabiCardId !== '—' && detail.wasabiCardId.length >= 4) {
+    detailLast4 = detail.wasabiCardId.slice(-4);
+  }
+  if (!detailLast4 && detail?.id && String(detail.id).length >= 4) {
+    detailLast4 = String(detail.id).slice(-4);
+  }
+
   return (
     <div className="admin-page">
       <AdminPageHeader
@@ -141,28 +149,23 @@ export function CardsPage() {
         refreshing={list.loading}
       />
 
-      {/* Cards KPI Summary */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '16px',
-        marginBottom: '16px'
-      }}>
-        <div style={{ padding: '16px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
-          <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '600' }}>💳 Active Cards</span>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#15803d', marginTop: '4px' }}>{activeCount}</div>
+      {/* Cards KPI Summary (1-row responsive) */}
+      <div className="cards-kpi-grid">
+        <div className="cards-kpi-card cards-kpi-card--active">
+          <span className="cards-kpi-label">💳 Active</span>
+          <div className="cards-kpi-value">{activeCount}</div>
         </div>
-        <div style={{ padding: '16px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
-          <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: '600' }}>📱 Virtual Cards</span>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#1d4ed8', marginTop: '4px' }}>{virtualCount}</div>
+        <div className="cards-kpi-card cards-kpi-card--virtual">
+          <span className="cards-kpi-label">📱 Virtual</span>
+          <div className="cards-kpi-value">{virtualCount}</div>
         </div>
-        <div style={{ padding: '16px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
-          <span style={{ fontSize: '12px', color: '#475569', fontWeight: '600' }}>📦 Physical Cards</span>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#1e293b', marginTop: '4px' }}>{physicalCount}</div>
+        <div className="cards-kpi-card cards-kpi-card--physical">
+          <span className="cards-kpi-label">📦 Physical</span>
+          <div className="cards-kpi-value">{physicalCount}</div>
         </div>
-        <div style={{ padding: '16px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
-          <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: '600' }}>❄️ Frozen Cards</span>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#b91c1c', marginTop: '4px' }}>{frozenCount}</div>
+        <div className="cards-kpi-card cards-kpi-card--frozen">
+          <span className="cards-kpi-label">❄️ Frozen</span>
+          <div className="cards-kpi-value">{frozenCount}</div>
         </div>
       </div>
 
@@ -400,11 +403,36 @@ export function CardsPage() {
             loading={detailLoading}
             hasData={Boolean(detail)}
             emptyText="Please select a card from the list."
+            onClose={() => {
+              setSelectedId(null);
+              setDetail(null);
+            }}
           >
             {detail && (
               <>
                 <AdminDetailSection title="Card Basic Info">
                   <AdminDetailRow label="Card Number" value={detail.wasabiCardId || detail.id} copyable />
+                  <AdminDetailRow 
+                    label="Card Last 4 Digits" 
+                    value={
+                      detailLast4 ? (
+                        <span style={{
+                          fontFamily: 'monospace',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          color: '#0f172a',
+                          backgroundColor: '#f1f5f9',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          border: '1px solid #cbd5e1',
+                          display: 'inline-block',
+                        }}>
+                          {detailLast4}
+                        </span>
+                      ) : '—'
+                    } 
+                    copyable={Boolean(detailLast4 && detailLast4 !== '—')} 
+                  />
                   <AdminDetailRow label="Holder ID" value={detail.wasabiHolderId || '—'} copyable />
                   <AdminDetailRow label="Member ID" value={detail.memberId || detail.userId || '—'} copyable />
                   <AdminDetailRow label="Email" value={detail.memberEmail || detail.email || '—'} copyable />
@@ -1122,6 +1150,12 @@ export function CardsPage() {
                     <div>
                       <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Card Number</div>
                       <div style={{ fontWeight: '600', color: '#1e293b' }}>{cardMasked}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Card Last 4 Digits</div>
+                      <div style={{ fontWeight: '700', color: '#0f172a', fontFamily: 'monospace' }}>
+                        {t.last4 || (cardMasked && cardMasked !== '—' && cardMasked.length >= 4 ? cardMasked.slice(-4) : '—')}
+                      </div>
                     </div>
                     <div>
                       <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Merchant Category (MCC)</div>

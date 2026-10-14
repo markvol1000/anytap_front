@@ -201,8 +201,15 @@ export function WithdrawalsPage() {
             </AdminTableWrap>
           </AdminPanel>
         )}
-        right={(
-          <AdminDetailPanel title={detail ? `Withdrawal — ${detail.memberName}` : null}>
+        right={selectedId && detail ? (
+          <AdminDetailPanel
+            title={`Withdrawal — ${detail.memberName || detail.id}`}
+            hasData={Boolean(detail)}
+            onClose={() => {
+              setSelectedId(null);
+              setDetail(null);
+            }}
+          >
             {detailLoading && !detail ? <p className="admin-loading admin-loading--inline">Loading…</p> : null}
             {!detailLoading && detail ? (
               <>
@@ -241,7 +248,7 @@ export function WithdrawalsPage() {
               </>
             ) : null}
           </AdminDetailPanel>
-        )}
+        ) : null}
       />
     </div>
   );

@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Icon } from '../../components/ui.jsx';
+import { useAdminRefresh } from '../context/AdminRefreshContext.jsx';
 
 export function AdminFilterBar({
   search,
@@ -42,6 +44,17 @@ export function AdminFilterBar({
 }
 
 export function AdminPageHeader({ title, description, actions, onRefresh, refreshing }) {
+  const { registerRefresh, unregisterRefresh } = useAdminRefresh();
+
+  useEffect(() => {
+    if (onRefresh) {
+      registerRefresh(onRefresh, refreshing);
+      return () => {
+        unregisterRefresh();
+      };
+    }
+  }, [onRefresh, refreshing, registerRefresh, unregisterRefresh]);
+
   return (
     <header className="admin-page-head">
       <div>
@@ -52,15 +65,30 @@ export function AdminPageHeader({ title, description, actions, onRefresh, refres
         {onRefresh ? (
           <button
             type="button"
-            className="admin-btn admin-btn--secondary"
+            className="admin-btn admin-btn--secondary admin-page-head__refresh-btn"
             onClick={onRefresh}
             disabled={refreshing}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', height: '38px', padding: '0 12px' }}
-            title="Reload latest data without refreshing page">
-            <span style={{ display: 'inline-flex', transform: refreshing ? 'rotate(360deg)' : 'none', transition: 'transform 0.6s ease' }}>
-              <Icon name="refresh" size={15} stroke={2} />
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '38px',
+              height: '38px',
+              padding: 0,
+              flexShrink: 0,
+            }}
+            aria-label="Refresh data"
+            title="Refresh latest data">
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transform: refreshing ? 'rotate(360deg)' : 'none',
+                transition: 'transform 0.6s ease',
+              }}>
+              <Icon name="refresh" size={16} stroke={2} />
             </span>
-            <span>{refreshing ? 'Refreshing…' : 'Refresh'}</span>
           </button>
         ) : null}
         {actions}

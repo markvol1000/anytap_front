@@ -24,6 +24,8 @@ export function UsageHistoryPage() {
       <AdminPageHeader
         title="Usage Audit History"
         description="View admin audit logs including IP addresses and API response codes."
+        onRefresh={list.reload}
+        refreshing={list.loading}
       />
 
       <AdminSplitLayout
@@ -153,8 +155,12 @@ export function UsageHistoryPage() {
             </AdminTableWrap>
           </AdminPanel>
         )}
-        right={(
-          <AdminDetailPanel title="Log Details">
+        right={selectedId && detail ? (
+          <AdminDetailPanel
+            title="Log Details"
+            hasData={Boolean(detail)}
+            onClose={() => setSelectedId(null)}
+          >
             {detail ? (
               <AdminDetailSection title="Detailed Info">
                 <AdminDetailRow label="Admin" value={detail.adminName} />
@@ -166,7 +172,7 @@ export function UsageHistoryPage() {
               </AdminDetailSection>
             ) : null}
           </AdminDetailPanel>
-        )}
+        ) : null}
       />
     </div>
   );

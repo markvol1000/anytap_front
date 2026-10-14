@@ -377,9 +377,13 @@ export function LoginLogsPage() {
             </AdminTableWrap>
           </AdminPanel>
         )}
-        right={(
-          <AdminDetailPanel title="Login Attempt Detail" onClose={() => setSelectedId(null)}>
-            {detail ? (
+        right={selectedId && detail ? (
+          <AdminDetailPanel
+            title="Login Attempt Detail"
+            hasData={Boolean(detail)}
+            onClose={() => setSelectedId(null)}
+          >
+            {detail && (
               <>
                 <AdminDetailSection title="Account Existence & Status">
                   <AdminDetailRow
@@ -550,13 +554,9 @@ export function LoginLogsPage() {
                   <AdminDetailRow label="Timestamp" value={formatAdminDate(detail.createdAt)} />
                 </AdminDetailSection>
               </>
-            ) : (
-              <p style={{ padding: '16px', color: 'var(--admin-text-muted, #94a3b8)', fontSize: '13px' }}>
-                Select a login record to view detailed authentication parameters and member status.
-              </p>
             )}
           </AdminDetailPanel>
-        )}
+        ) : null}
       />
     </div>
   );

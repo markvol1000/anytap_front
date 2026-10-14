@@ -225,6 +225,7 @@ export function AdminMiniTable({
   page: controlledPage,
   onPageChange: controlledOnPageChange,
   emptyMessage = 'No records found',
+  renderMobileCard,
 }) {
   const [internalPage, setInternalPage] = useState(1);
 
@@ -255,35 +256,124 @@ export function AdminMiniTable({
     ? rows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
     : rows;
 
-  return (
-    <div className="admin-table-scroll admin-table-scroll--compact">
-      <table className="admin-table admin-table--compact">
-        <thead>
-          <tr>
-            {columns.map((col) => <th key={col.key}>{col.label}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr>
-              <td colSpan={columns.length} className="admin-table__empty">{emptyMessage}</td>
-            </tr>
-          ) : (
-            pagedRows.map((row, rIdx) => {
-              const globalIndex = isPaged ? (currentPage - 1) * pageSize + rIdx : rIdx;
-              return (
-                <tr key={row[rowKey] || globalIndex}>
-                  {columns.map((col) => (
-                    <td key={col.key}>
-                      {col.render ? col.render(row, globalIndex) : row[col.key]}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })
+  const defaultRenderCard = (row) => {
+    const firstCol = columns[0];
+    const firstVal = firstCol?.render ? firstCol.render(row) : row[firstCol?.key];
+
+    const statusCol = columns.find((c) => {
+      const k = String(c.key || '').toLowerCase();
+      return (
+        k.includes('status') ||
+        k.includes('role') ||
+        k.includes('channel') ||
+        k.includes('type')
+      );
+    });
+    const statusVal = statusCol && statusCol !== firstCol ? (statusCol.render ? statusCol.render(row) : row[statusCol.key]) : null;
+
+    const actionCol = columns.find((c) => c.key === 'actions' || c.key === 'action');
+    const actionVal = actionCol && actionCol !== firstCol && actionCol !== statusCol ? (actionCol.render ? actionCol.render(row) : row[actionCol.key]) : null;
+
+    const dateCol = columns.find((c) => {
+      const k = String(c.key || '').toLowerCase();
+      return k.includes('date') || k.includes('at') || k.includes('time') || k.includes('created');
+    });
+    const dateVal = dateCol && dateCol !== firstCol ? (dateCol.render ? dateCol.render(row) : row[dateCol.key]) : null;
+
+    const detailCol = columns.find((c) => {
+      if (c === firstCol || c === statusCol || c === actionCol || c === dateCol) return false;
+      const k = String(c.key || '').toLowerCase();
+      return (
+        k.includes('reason') ||
+        k.includes('note') ||
+        k.includes('desc') ||
+        k.includes('meta') ||
+        k.includes('detail') ||
+        k.includes('target') ||
+        k.includes('email') ||
+        k.includes('name') ||
+        k.includes('amount') ||
+        k.includes('ip') ||
+        k.includes('address')
+      );
+    });
+    const detailVal = detailCol ? (detailCol.render ? detailCol.render(row) : row[detailCol.key]) : null;
+
+    return (
+      <>
+        <div className="admin-mobile-card__row1">
+          <div className="admin-mobile-card__left">
+            <span className="admin-mobile-card__title">{firstVal}</span>
+            {statusVal}
+          </div>
+          {actionVal && <div style={{ flexShrink: 0 }}>{actionVal}</div>}
+        </div>
+        <div className="admin-mobile-card__row2">
+          {detailVal && <span className="admin-mobile-card__detail">{detailVal}</span>}
+          {dateVal && (
+            <>
+              {detailVal && <span style={{ color: '#cbd5e1' }}>•</span>}
+              <span className="admin-mobile-card__date">{dateVal}</span>
+            </>
           )}
-        </tbody>
-      </table>
+        </div>
+      </>
+    );
+  };
+
+  const cardRenderer = renderMobileCard || defaultRenderCard;
+
+  return (
+    <>
+      <div className="admin-table-desktop-view">
+        <div className="admin-table-scroll admin-table-scroll--compact">
+          <table className="admin-table admin-table--compact">
+            <thead>
+              <tr>
+                {columns.map((col) => <th key={col.key}>{col.label}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length} className="admin-table__empty">{emptyMessage}</td>
+                </tr>
+              ) : (
+                pagedRows.map((row, rIdx) => {
+                  const globalIndex = isPaged ? (currentPage - 1) * pageSize + rIdx : rIdx;
+                  return (
+                    <tr key={row[rowKey] || globalIndex}>
+                      {columns.map((col) => (
+                        <td key={col.key}>
+                          {col.render ? col.render(row, globalIndex) : row[col.key]}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="admin-table-mobile-view" style={{ padding: '8px' }}>
+        {rows.length === 0 ? (
+          <div className="admin-table__empty" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+            {emptyMessage}
+          </div>
+        ) : (
+          pagedRows.map((row, rIdx) => {
+            const globalIndex = isPaged ? (currentPage - 1) * pageSize + rIdx : rIdx;
+            const id = row[rowKey] || globalIndex;
+            return (
+              <div key={id} className="admin-mobile-card">
+                {cardRenderer(row)}
+              </div>
+            );
+          })
+        )}
+      </div>
 
       {isPaged && totalPages > 1 && (
         <div style={{
@@ -324,7 +414,7 @@ export function AdminMiniTable({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

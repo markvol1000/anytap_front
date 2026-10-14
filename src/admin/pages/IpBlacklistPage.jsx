@@ -7,7 +7,7 @@ import {
   AdminDetailSection,
   AdminSplitLayout,
 } from '../components/AdminSplitLayout.jsx';
-import { AdminStatusBadge, formatAdminDate } from '../components/AdminStatusBadge.jsx';
+import { AdminStatusBadge, formatAdminDate, shortenAddress } from '../components/AdminStatusBadge.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
 import { getBannedIps, banIpAddress, unbanIpAddress } from '../services/adminService.js';
 import { Icon } from '../../components/ui.jsx';
@@ -86,6 +86,8 @@ export function IpBlacklistPage() {
       <AdminPageHeader
         title="IP Blacklist & Access Control"
         description="Audit trail of blocked and auto-banned IP addresses. Enforce real-time perimeter defense."
+        onRefresh={list.reload}
+        refreshing={list.loading}
         actions={(
           <button
             type="button"
@@ -313,100 +315,119 @@ export function IpBlacklistPage() {
                 totalPages={list.totalPages}
                 total={list.total}
                 onPageChange={list.setPage}
-                renderMobileCard={(r) => (
-                  <>
-                    <div className="admin-mobile-card__row1">
-                      <div className="admin-mobile-card__left">
-                        <span className="admin-mobile-card__title" style={{ fontFamily: 'monospace' }}>{r.ipAddress}</span>
-                        <AdminStatusBadge
-                          status={r.isActive ? 'suspended' : 'active'}
-                          label={r.isActive ? 'BANNED' : 'UNBANNED'}
-                        />
+                renderMobileCard={(r) => {
+                  const account = r.attemptedAccount && r.attemptedAccount !== '—' ? r.attemptedAccount : null;
+                  const shortAccount = account
+                    ? (account.length > 14 ? shortenAddress(account, 6, 4) : account)
+                    : '—';
+                  const dateStr = formatAdminDate(r.bannedAt || r.createdAt);
+                  const reasonText = r.reason || '—';
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {/* Row 1: IP (Left) & Reason Badge / Status (Right) */}
+                      <div className="admin-mobile-card__row1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                         <span
-                          title={r.bannedBy || 'ADMIN'}
+                          className="admin-mobile-card__title"
                           style={{
-                            fontSize: '10px',
-                            fontWeight: 700,
-                            padding: '1px 5px',
-                            borderRadius: '3px',
-                            backgroundColor: r.bannedBy === 'AUTO_DETECTION' ? '#fee2e2' : '#e0f2fe',
-                            color: r.bannedBy === 'AUTO_DETECTION' ? '#991b1b' : '#0369a1',
-                            border: `1px solid ${r.bannedBy === 'AUTO_DETECTION' ? '#fca5a5' : '#bae6fd'}`,
-                            letterSpacing: '0.02em',
-                            lineHeight: 1.2,
+                            fontFamily: 'monospace',
+                            fontSize: '13px',
+                            fontWeight: '700',
+                            color: '#0f172a',
                           }}
                         >
-                          {r.bannedBy === 'AUTO_DETECTION' ? 'AUTO' : (r.bannedBy || 'ADMIN')}
+                          {r.ipAddress}
+                        </span>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+                          <span
+                            title={r.reason || ''}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              backgroundColor: '#fee2e2',
+                              color: '#991b1b',
+                              border: '1px solid #fca5a5',
+                              fontSize: '10px',
+                              fontWeight: '700',
+                              letterSpacing: '0.02em',
+                              maxWidth: '150px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {reasonText}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Row 2: Date & Time (Bold) / Account ID (e.g. US...) */}
+                      <div
+                        className="admin-mobile-card__row2"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                          fontSize: '11px',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontWeight: '700',
+                            color: '#1e293b',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {dateStr}
+                        </span>
+                        <span
+                          title={account || ''}
+                          style={{
+                            fontFamily: 'monospace',
+                            fontWeight: '600',
+                            color: account ? '#b45309' : '#94a3b8',
+                            backgroundColor: account ? '#fef3c7' : 'transparent',
+                            padding: account ? '1px 6px' : '0',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {shortAccount}
                         </span>
                       </div>
 
-                      <div style={{ flexShrink: 0 }}>
-                        {r.isActive ? (
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn--secondary"
-                            style={{
-                              padding: '3px 8px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              color: '#0f172a',
-                              borderColor: '#cbd5e1',
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setUnbanTarget(r);
-                            }}
-                          >
-                            Unban
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn--secondary"
-                            style={{
-                              padding: '3px 8px',
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              color: '#b91c1c',
-                              borderColor: '#fca5a5',
-                              backgroundColor: '#fef2f2',
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleQuickReban(r.ipAddress, r.reason);
-                            }}
-                          >
-                            Re-ban
-                          </button>
-                        )}
+                      {/* Row 3: Reason description */}
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          lineHeight: '1.4',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                        title={reasonText}
+                      >
+                        {reasonText}
                       </div>
                     </div>
-
-                    <div className="admin-mobile-card__row2">
-                      <span className="admin-mobile-card__detail" title={r.reason || ''}>
-                        {r.reason || '—'}
-                      </span>
-                      {r.attemptedAccount && r.attemptedAccount !== '—' && (
-                        <>
-                          <span style={{ color: '#cbd5e1' }}>•</span>
-                          <span className="admin-mobile-card__meta" title={r.attemptedAccount}>
-                            {r.attemptedAccount}
-                          </span>
-                        </>
-                      )}
-                      <span style={{ color: '#cbd5e1' }}>•</span>
-                      <span className="admin-mobile-card__date">
-                        {formatAdminDate(r.bannedAt || r.createdAt)}
-                      </span>
-                    </div>
-                  </>
-                )}
+                  );
+                }}
               />
             </AdminTableWrap>
           </AdminPanel>
         )}
-        right={(
-          <AdminDetailPanel title="IP Blacklist Detail">
+        right={selectedId && detail ? (
+          <AdminDetailPanel
+            title="IP Blacklist Detail"
+            hasData={Boolean(detail)}
+            onClose={() => setSelectedId(null)}
+          >
             {detail ? (
               <>
                 <AdminDetailSection title="Security Perimeter Info">
@@ -519,7 +540,7 @@ export function IpBlacklistPage() {
               </>
             ) : null}
           </AdminDetailPanel>
-        )}
+        ) : null}
       />
 
       {/* Manual Ban Modal */}

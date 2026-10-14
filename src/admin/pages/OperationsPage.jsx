@@ -11,6 +11,7 @@ import {
 } from '../services/adminService.js';
 import { DbBackupsSection } from './DbBackupsPage.jsx';
 import { sanitizeToastMessage } from '../../utils/toast-sanitizer.js';
+import { useAdminRefresh } from '../context/AdminRefreshContext.jsx';
 
 // ─────────────── Gradient Donut Chart Component (Light Theme) ───────────────
 function GradientDonutChart({ primaryPct = 65, secondaryPct = 35, primaryLabel = 'Node-01', secondaryLabel = 'Node-02' }) {
@@ -362,9 +363,16 @@ export function OperationsPage() {
     }
   }, []);
 
+  const { registerRefresh, unregisterRefresh } = useAdminRefresh();
+
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    registerRefresh(loadData, loading);
+    return () => unregisterRefresh();
+  }, [loadData, loading, registerRefresh, unregisterRefresh]);
 
   const handleUpdateIssueStatus = async (issueId, newStatus) => {
     try {

@@ -23,6 +23,8 @@ export function EventLogsPage() {
       <AdminPageHeader
         title="System Event Logs"
         description="Track system events and user activity audit trail."
+        onRefresh={list.reload}
+        refreshing={list.loading}
       />
 
       <AdminSplitLayout
@@ -185,8 +187,12 @@ export function EventLogsPage() {
             </AdminTableWrap>
           </AdminPanel>
         )}
-        right={(
-          <AdminDetailPanel title="Event Details">
+        right={selectedId && detail ? (
+          <AdminDetailPanel
+            title="Event Details"
+            hasData={Boolean(detail)}
+            onClose={() => setSelectedId(null)}
+          >
             {detail ? (
               <AdminDetailSection title="Event Info">
                 <AdminDetailRow label="User ID" value={detail.userId} />
@@ -197,7 +203,7 @@ export function EventLogsPage() {
               </AdminDetailSection>
             ) : null}
           </AdminDetailPanel>
-        )}
+        ) : null}
       />
     </div>
   );
