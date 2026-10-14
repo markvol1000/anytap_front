@@ -590,8 +590,8 @@ export function MembersPage() {
                 renderMobileCard={(r) => {
                   const isTemporary = isTemporaryMember(r);
                   const displayId = r.userId || (r.memberId && r.memberId !== '-' ? r.memberId : (String(r.id || '').startsWith('temp-') ? '-' : r.id)) || '-';
+                  const emailOrName = r.email || r.name || displayId;
                   const hasDistinctName = r.name && r.name !== r.email && r.name !== r.id && r.name !== '—';
-                  const title = hasDistinctName ? r.name : (r.email || displayId);
                   const avail = (Number(r.walletBalance) || 0).toFixed(2);
                   const st = isTemporary 
                     ? (String(r.accountStatus || r.status || '').toLowerCase() === 'suspended' ? 'suspended' : 'pending')
@@ -599,25 +599,31 @@ export function MembersPage() {
 
                   return (
                     <>
+                      {/* Row 1: Bold Email ID on left, Available USDT on right */}
                       <div className="admin-mobile-card__row1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden' }}>
                           <span
                             className="admin-mobile-card__title"
                             style={{
-                              fontFamily: 'monospace',
-                              fontSize: '12px',
-                              fontWeight: isTemporary ? '500' : '700',
-                              color: isTemporary ? '#94a3b8' : 'var(--ink, #0f172a)',
-                              opacity: isTemporary ? 0.6 : 1,
+                              fontSize: '13px',
+                              fontWeight: '800',
+                              color: 'var(--ink, #0f172a)',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: '220px',
                             }}
+                            title={emailOrName}
                           >
-                            {displayId}
+                            {emailOrName}
                           </span>
                         </div>
                         <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '11px', color: '#047857', flexShrink: 0 }}>
                           {avail} USDT
                         </span>
                       </div>
+
+                      {/* Row 2: Status badges */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '6px', marginBottom: '4px' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px' }}>
                           <span style={{ color: '#64748b', fontWeight: '700', fontSize: '9px', textTransform: 'uppercase' }}>Status</span>
@@ -632,15 +638,27 @@ export function MembersPage() {
                           <AdminStatusBadge status={r.cardStatus} />
                         </span>
                       </div>
-                      <div className="admin-mobile-card__row2">
-                        <span className="admin-mobile-card__detail" title={title}>
-                          {title}
+
+                      {/* Row 3 (Bottom): Member ID (US...), Distinct Name (if any), Last IP, and Join Date */}
+                      <div className="admin-mobile-card__row2" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span
+                          className="admin-mobile-card__meta"
+                          style={{
+                            fontFamily: 'monospace',
+                            fontSize: '11px',
+                            fontWeight: isTemporary ? '500' : '700',
+                            color: isTemporary ? '#94a3b8' : '#2563eb',
+                            opacity: isTemporary ? 0.7 : 1,
+                          }}
+                          title={`Member ID: ${displayId}`}
+                        >
+                          {displayId}
                         </span>
-                        {r.email && hasDistinctName && (
+                        {hasDistinctName && (
                           <>
                             <span style={{ color: '#cbd5e1' }}>•</span>
-                            <span className="admin-mobile-card__meta" style={{ color: '#64748b' }}>
-                              {r.email}
+                            <span className="admin-mobile-card__detail" style={{ color: '#64748b' }}>
+                              {r.name}
                             </span>
                           </>
                         )}

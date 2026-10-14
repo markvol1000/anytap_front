@@ -3452,13 +3452,13 @@
 }
 
 .admin-boxed-tab {
-  flex: 1 1 50%;
+  flex: 1 1 0;
   min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 11px 14px;
+  padding: 10px 12px;
   border-radius: 6px 6px 0 0;
   border: 1px solid #cbd5e1;
   border-bottom: none;

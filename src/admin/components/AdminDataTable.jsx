@@ -220,6 +220,9 @@ export function AdminMiniTable({
   columns,
   rows = [],
   rowKey = 'id',
+  selectedId,
+  onSelectRow,
+  onDoubleClickRow,
   pageSize = 10,
   pagination = true,
   page: controlledPage,
@@ -341,8 +344,16 @@ export function AdminMiniTable({
               ) : (
                 pagedRows.map((row, rIdx) => {
                   const globalIndex = isPaged ? (currentPage - 1) * pageSize + rIdx : rIdx;
+                  const id = row[rowKey] || globalIndex;
+                  const active = selectedId === id || selectedId === row.id;
                   return (
-                    <tr key={row[rowKey] || globalIndex}>
+                    <tr
+                      key={id}
+                      className={active ? 'is-selected' : ''}
+                      style={{ cursor: onSelectRow ? 'pointer' : 'default' }}
+                      onClick={() => onSelectRow?.(row)}
+                      onDoubleClick={() => (onDoubleClickRow ? onDoubleClickRow(row) : onSelectRow?.(row))}
+                    >
                       {columns.map((col) => (
                         <td key={col.key}>
                           {col.render ? col.render(row, globalIndex) : row[col.key]}
@@ -366,8 +377,15 @@ export function AdminMiniTable({
           pagedRows.map((row, rIdx) => {
             const globalIndex = isPaged ? (currentPage - 1) * pageSize + rIdx : rIdx;
             const id = row[rowKey] || globalIndex;
+            const active = selectedId === id || selectedId === row.id;
             return (
-              <div key={id} className="admin-mobile-card">
+              <div
+                key={id}
+                className={`admin-mobile-card${active ? ' is-selected' : ''}`}
+                style={{ cursor: onSelectRow ? 'pointer' : 'default' }}
+                onClick={() => onSelectRow?.(row)}
+                onDoubleClick={() => (onDoubleClickRow ? onDoubleClickRow(row) : onSelectRow?.(row))}
+              >
                 {cardRenderer(row)}
               </div>
             );

@@ -49,18 +49,20 @@ export function AdminDashSection({ title, action, children, className = '' }) {
 
 export function AdminDashTabs({ tabs, active, onChange }) {
   return (
-    <div className="admin-dash-tabs" role="tablist">
+    <div className="admin-boxed-tabs" role="tablist">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           type="button"
           role="tab"
           aria-selected={active === tab.id}
-          className={`admin-dash-tabs__btn${active === tab.id ? ' is-active' : ''}`}
-          onClick={() => onChange(tab.id)}>
-          {tab.label}
+          className={`admin-boxed-tab${active === tab.id ? ' is-active' : ''}`}
+          onClick={() => onChange(tab.id)}
+          title={tab.label}
+        >
+          <span className="admin-boxed-tab__label">{tab.label}</span>
           {tab.count != null ? (
-            <span className="admin-dash-tabs__count">{tab.count}</span>
+            <span className="admin-boxed-tab__badge">{tab.count}</span>
           ) : null}
         </button>
       ))}

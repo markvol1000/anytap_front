@@ -320,11 +320,21 @@ export function LoginLogsPage() {
                   const st = overridden || r.userStatus;
                   return (
                     <>
-                      <div className="admin-mobile-card__row1">
-                        <div className="admin-mobile-card__left">
-                          <span className="admin-mobile-card__title" title={r.email}>
-                            {r.email || r.userId || '—'}
+                      {/* 1줄: 이메일 (왼쪽) / User ID (오른쪽 정렬) */}
+                      <div className="admin-mobile-card__row1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <span className="admin-mobile-card__title" title={r.email} style={{ fontWeight: 800, fontSize: '13px', color: 'var(--ink, #0f172a)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {r.email || r.userId || '—'}
+                        </span>
+                        {r.userId && (
+                          <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: '#2563eb', flexShrink: 0, textAlign: 'right', marginLeft: 'auto' }}>
+                            {r.userId}
                           </span>
+                        )}
+                      </div>
+
+                      {/* 2줄: Result & Status 뱃지 (왼쪽) / 날짜시간 (오른쪽 정렬) */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginTop: '6px', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', minWidth: 0 }}>
                           <AdminStatusBadge
                             status={r.status === 'SUCCESS' ? 'active' : 'suspended'}
                             label={r.status}
@@ -347,27 +357,23 @@ export function LoginLogsPage() {
                             })()
                           )}
                         </div>
-                        {r.userId && (
-                          <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#64748b', flexShrink: 0 }}>
-                            {r.userId}
-                          </span>
-                        )}
-                      </div>
-                      <div className="admin-mobile-card__row2">
-                        <span className="admin-mobile-card__detail" title={note}>
-                          {note}
-                        </span>
-                        {r.ipAddress && (
-                          <>
-                            <span style={{ color: '#cbd5e1' }}>•</span>
-                            <span className="admin-mobile-card__meta" style={{ fontFamily: 'monospace', color: '#475569' }}>
-                              {r.ipAddress}
-                            </span>
-                          </>
-                        )}
-                        <span style={{ color: '#cbd5e1' }}>•</span>
-                        <span className="admin-mobile-card__date">
+                        <span className="admin-mobile-card__date" style={{ fontWeight: 700, color: '#475569', fontSize: '11px', whiteSpace: 'nowrap', flexShrink: 0, textAlign: 'right', marginLeft: 'auto' }}>
                           {formatAdminDate(r.createdAt)}
+                        </span>
+                      </div>
+
+                      {/* 3줄: IP 주소 */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', fontSize: '11px' }}>
+                        <span style={{ color: '#94a3b8', fontWeight: 600, fontSize: '10px', textTransform: 'uppercase' }}>IP</span>
+                        <span style={{ fontFamily: 'monospace', color: '#334155', fontWeight: 600 }}>
+                          {r.ipAddress || '—'}
+                        </span>
+                      </div>
+
+                      {/* 4줄: Description (사유) */}
+                      <div style={{ marginTop: '3px', fontSize: '11px', color: '#64748b' }}>
+                        <span title={note} style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>
+                          {note}
                         </span>
                       </div>
                     </>
