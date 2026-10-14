@@ -257,21 +257,6 @@ export function AdminSidebar({ admin, onLogout }) {
               <Icon name="home" size={17} stroke={1.75} />
               <span>Go to Homepage</span>
             </Link>
-
-            {onLogout && (
-              <button
-                type="button"
-                className="admin-sidebar__link admin-mobile-drawer__homelink"
-                style={{ color: '#fca5a5', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
-                onClick={() => {
-                  setMobileOpen(false);
-                  onLogout();
-                }}
-              >
-                <Icon name="logOut" size={17} stroke={1.75} />
-                <span>Log Out</span>
-              </button>
-            )}
           </nav>
 
           <div className="admin-sidebar__foot" style={{ marginTop: 'auto', paddingTop: '16px' }}>
@@ -298,20 +283,6 @@ export function AdminSidebar({ admin, onLogout }) {
                 </button>
               )}
             </div>
-
-            {onLogout && (
-              <button
-                type="button"
-                className="admin-sidebar__mobile-logout-full"
-                onClick={() => {
-                  setMobileOpen(false);
-                  onLogout();
-                }}
-              >
-                <Icon name="logOut" size={15} stroke={1.75} />
-                <span>Log Out</span>
-              </button>
-            )}
           </div>
         </aside>
       </div>

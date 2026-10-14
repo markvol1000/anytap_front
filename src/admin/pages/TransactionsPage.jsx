@@ -207,57 +207,72 @@ function ChannelBadge({ channel }) {
   const ch = String(channel || 'wallet').toLowerCase();
   if (ch === 'card') {
     return (
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        padding: '2px 8px',
-        borderRadius: '12px',
-        backgroundColor: '#eef2ff',
-        color: '#4338ca',
-        border: '1px solid #c7d2fe',
-        fontSize: '11px',
-        fontWeight: '700',
-        letterSpacing: '0.02em',
-      }}>
-        💳 CARD
+      <span
+        title="Card Channel"
+        aria-label="Card"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '24px',
+          height: '24px',
+          borderRadius: '50%',
+          backgroundColor: '#eef2ff',
+          color: '#4338ca',
+          border: '1px solid #c7d2fe',
+          fontSize: '13px',
+          lineHeight: 1,
+          flexShrink: 0,
+        }}
+      >
+        💳
       </span>
     );
   }
   if (ch === 'wallet') {
     return (
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        padding: '2px 8px',
-        borderRadius: '12px',
-        backgroundColor: '#ecfdf5',
-        color: '#065f46',
-        border: '1px solid #a7f3d0',
-        fontSize: '11px',
-        fontWeight: '700',
-        letterSpacing: '0.02em',
-      }}>
-        🪙 WALLET
+      <span
+        title="Wallet Channel"
+        aria-label="Wallet"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '24px',
+          height: '24px',
+          borderRadius: '50%',
+          backgroundColor: '#ecfdf5',
+          color: '#065f46',
+          border: '1px solid #a7f3d0',
+          fontSize: '13px',
+          lineHeight: 1,
+          flexShrink: 0,
+        }}
+      >
+        🪙
       </span>
     );
   }
   return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '4px',
-      padding: '2px 8px',
-      borderRadius: '12px',
-      backgroundColor: '#f1f5f9',
-      color: '#475569',
-      border: '1px solid #cbd5e1',
-      fontSize: '11px',
-      fontWeight: '700',
-      letterSpacing: '0.02em',
-    }}>
-      ⚙️ SYSTEM
+    <span
+      title="System Channel"
+      aria-label="System"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '24px',
+        height: '24px',
+        borderRadius: '50%',
+        backgroundColor: '#f1f5f9',
+        color: '#475569',
+        border: '1px solid #cbd5e1',
+        fontSize: '13px',
+        lineHeight: 1,
+        flexShrink: 0,
+      }}
+    >
+      ⚙️
     </span>
   );
 }

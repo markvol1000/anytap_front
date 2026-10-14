@@ -282,19 +282,7 @@ export function FeesReportPage() {
         <button
           type="button"
           onClick={handleExportCsv}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#10B981',
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
+          className="admin-btn admin-btn--secondary"
         >
           📥 Export Fee CSV ({viewMode === 'byUser' ? 'By User' : 'By Item'})
         </button>

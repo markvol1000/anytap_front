@@ -240,46 +240,18 @@ export function CardsReportPage() {
             Admin Dashboard for Card Applications and Shipping Details Management
           </p>
         </div>
-        <div className="admin-cards-header__actions">
+        <div className="admin-cards-header__actions" style={{ display: 'flex', gap: '8px' }}>
           <button
             type="button"
-            className="btn-primary"
+            className="admin-btn admin-btn--primary"
             onClick={() => setShowAddModal(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              fontSize: '13px',
-              fontWeight: '600',
-              backgroundColor: '#007BFF',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(0,123,255,0.25)',
-            }}
           >
             + Add Applicant
           </button>
           <button
             type="button"
-            className="btn-secondary"
+            className="admin-btn admin-btn--secondary"
             onClick={handleExportCsv}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              fontSize: '13px',
-              fontWeight: '600',
-              backgroundColor: '#ffffff',
-              color: '#333333',
-              border: '1px solid #E0E0E0',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-            }}
           >
             Export Data
           </button>

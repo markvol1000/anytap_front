@@ -368,18 +368,6 @@ export function CardTransfersReportPage() {
             type="button"
             onClick={handleExportCsv}
             className="admin-btn admin-btn--secondary"
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#10B981',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
           >
             📥 Export CSV
           </button>
@@ -388,11 +376,6 @@ export function CardTransfersReportPage() {
             onClick={() => list.reload()}
             className="admin-btn admin-btn--primary"
             disabled={list.loading}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '6px',
-              fontWeight: '500',
-            }}
           >
             {list.loading ? 'Refreshing…' : '🔄 Refresh'}
           </button>
