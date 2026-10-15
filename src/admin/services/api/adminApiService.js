@@ -927,19 +927,19 @@ export async function getReferrals(params = {}) {
         (r.email && m.email === r.email) ||
         (r.code && m.ownReferralCode === r.code)
       ));
-      const joinVal = r.joinDate || r.join_date || r.created_at || r.createdAt || r.joinedAt || matchedMem?.joinDate || matchedMem?.createdAt || (i === 0 ? '2026-08-01T15:00:00.000Z' : '2026-08-03T06:37:28.104Z');
-      const totalDeposit = r.totalDeposit != null ? Number(r.totalDeposit) : (matchedMem?.cregisActualBalance || (i === 0 ? 155.00 : 0));
+      const joinVal = r.joinDate || r.join_date || r.created_at || r.createdAt || r.joinedAt || matchedMem?.joinDate || matchedMem?.createdAt || null;
+      const totalDeposit = r.totalDeposit != null ? Number(r.totalDeposit) : (matchedMem?.cregisActualBalance || 0);
 
       return {
-        id: String(r.code || r.referralCode || r.id || `REF_${i + 1}`),
-        referralCode: r.code || r.referralCode || (i === 0 ? 'AT001' : i === 1 ? 'AT002' : `AT00${i + 1}`),
-        userId: matchedMem?.id || matchedMem?.userId || r.userId || r.user_id || (i === 0 ? 'US512799' : '—'),
-        userEmail: matchedMem?.email || r.email || r.userEmail || (i === 0 ? 'test217@217.com' : '—'),
-        memberName: matchedMem?.name || r.name || r.memberName || r.referrerName || r.description || r.userId || (r.code || r.referralCode),
+        id: String(r.code || r.referralCode || r.id || ''),
+        referralCode: r.code || r.referralCode || '—',
+        userId: r.userId || r.user_id || matchedMem?.id || matchedMem?.userId || '—',
+        userEmail: r.userEmail || matchedMem?.email || r.email || '—',
+        memberName: matchedMem?.name || r.name || r.memberName || r.referrerName || r.description || r.userId || (r.code || r.referralCode) || '—',
         rewardBalance: r.rewardBalance !== undefined ? r.rewardBalance : (r.rewardAmount || 0),
         available: r.available !== undefined ? r.available : (r.rewardAmount || 0),
         pending: r.pending || 0,
-        members: r.members || (i === 0 ? 1 : 0),
+        members: r.members != null ? r.members : 0,
         totalDeposit: totalDeposit,
         status: r.status || 'active',
         createdAt: joinVal,
@@ -947,10 +947,7 @@ export async function getReferrals(params = {}) {
       };
     });
   } else {
-    rows = [
-      { id: 'AT001', referralCode: 'AT001', userId: 'US512799', userEmail: 'test217@217.com', memberName: 'yours', rewardBalance: 0, available: 0, pending: 0, members: 1, totalDeposit: 155.00, status: 'active', createdAt: '2026-08-01T15:00:00.000Z', joinDate: '2026-08-01T15:00:00.000Z' },
-      { id: 'AT002', referralCode: 'AT002', userId: 'US937033', userEmail: 'partner@anytap.app', memberName: 'Partner AT002', rewardBalance: 0, available: 0, pending: 0, members: 0, totalDeposit: 0.00, status: 'active', createdAt: '2026-08-03T06:37:28.104Z', joinDate: '2026-08-03T06:37:28.104Z' },
-    ];
+    rows = [];
   }
   return paginateLocal(rows, params, ['referralCode', 'userId', 'userEmail', 'memberName', 'id']);
 }

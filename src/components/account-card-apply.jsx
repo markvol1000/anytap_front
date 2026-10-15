@@ -51,8 +51,8 @@ function PhoneCountryCodeSelect({ value, onChange }) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label="Country code">
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      {options.map((opt, idx) => (
+        <option key={opt.key || `${opt.value}-${idx}`} value={opt.value}>{opt.label}</option>
       ))}
     </select>
   );

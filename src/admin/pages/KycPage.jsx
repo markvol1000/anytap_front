@@ -205,6 +205,7 @@ export function KycPage() {
                     { value: 'pending', label: 'Pending' },
                     { value: 'approved', label: 'Approved' },
                     { value: 'rejected', label: 'Rejected' },
+                    { value: 'suspended', label: 'Suspended' },
                   ],
                 },
               ]}
@@ -282,6 +283,9 @@ export function KycPage() {
                       if (r.status === 'approved') {
                         return <span style={{ color: '#166534', fontWeight: '600', fontSize: '12px' }}>✓ Approved</span>;
                       }
+                      if (r.status === 'suspended') {
+                        return <span style={{ color: '#dc2626', fontWeight: '600', fontSize: '12px' }}>⛔ Account Suspended</span>;
+                      }
                       if (r.status === 'rejected') {
                         return (
                           <span
@@ -298,6 +302,25 @@ export function KycPage() {
                             }}
                           >
                             {r.rejectReason || 'Rejected'}
+                          </span>
+                        );
+                      }
+                      if (r.rejectReason) {
+                        return (
+                          <span
+                            title={r.rejectReason}
+                            style={{
+                              color: '#d97706',
+                              fontSize: '12px',
+                              fontWeight: '500',
+                              display: 'inline-block',
+                              maxWidth: '180px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            ⚠️ {r.rejectReason}
                           </span>
                         );
                       }
@@ -323,9 +346,15 @@ export function KycPage() {
                   if (r.status === 'approved') {
                     resultText = 'Approved';
                     resultColor = '#166534';
+                  } else if (r.status === 'suspended') {
+                    resultText = 'Account Suspended';
+                    resultColor = '#dc2626';
                   } else if (r.status === 'rejected') {
                     resultText = r.rejectReason ? `Rejected: ${r.rejectReason}` : 'Rejected';
                     resultColor = '#dc2626';
+                  } else if (r.rejectReason) {
+                    resultText = `Failed: ${r.rejectReason}`;
+                    resultColor = '#d97706';
                   }
 
                   return (
@@ -416,10 +445,21 @@ export function KycPage() {
                       <span style={{ fontWeight: '600' }}>{detail.rejectReason || 'Identity verification document was rejected by admin.'}</span>
                     </div>
                   )}
+                  {detail.status === 'suspended' && (
+                    <div style={{ padding: '14px 16px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#991b1b', fontSize: '13px', lineHeight: '1.5' }}>
+                      <strong style={{ display: 'block', fontSize: '14px', marginBottom: '4px', color: '#dc2626' }}>⛔ Member Account Suspended</strong>
+                      <span>This user account is currently suspended by an administrator. KYC and wallet actions are restricted.</span>
+                    </div>
+                  )}
                   {detail.status === 'pending' && (
                     <div style={{ padding: '14px 16px', backgroundColor: '#fefce8', border: '1px solid #fef08a', borderRadius: '8px', color: '#854d0e', fontSize: '13px', lineHeight: '1.5' }}>
                       <strong style={{ display: 'block', fontSize: '14px', marginBottom: '4px', color: '#ca8a04' }}>⏳ Pending Review</strong>
                       <span>Verification request is currently pending admin review. Review submitted details and take action below.</span>
+                      {detail.rejectReason && (
+                        <div style={{ marginTop: '8px', padding: '8px 10px', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #fde047', color: '#b45309', fontSize: '12px' }}>
+                          <strong>Last Attempt Issue:</strong> {detail.rejectReason}
+                        </div>
+                      )}
                     </div>
                   )}
                 </AdminDetailSection>
