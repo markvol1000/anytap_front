@@ -303,10 +303,11 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
     });
   }
 
-  // Determine account-level cardStatus from best active card: active > shipping > issued > frozen
+  // Determine account-level cardStatus from best active card: active > pending_activation > issued > shipping > frozen
   const bestCard = userCards.find((c) => c.status === 'active')
-    || userCards.find((c) => c.status === 'shipping')
+    || userCards.find((c) => c.status === 'pending_activation')
     || userCards.find((c) => c.status === 'issued')
+    || userCards.find((c) => c.status === 'shipping')
     || userCards.find((c) => c.status === 'frozen')
     || userCards[0]
     || null;

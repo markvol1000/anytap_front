@@ -200,7 +200,7 @@ export function deriveAccountFlags(accountState) {
   // UI "verified" = KYC approved + legal name on file (not BE auto-APPROVED alone).
   const kycApproved = hasCompletedKycProfile(accountState);
   const cardHasNumber = kycApproved
-    && ['issued', 'active', 'shipping', 'frozen'].includes(cardStatus);
+    && ['issued', 'active', 'shipping', 'frozen', 'pending_activation'].includes(cardStatus);
   const cardIsActive = cardStatus === 'active';
   const preIssue = ['not_issued', 'deposit_received', 'creating'].includes(cardStatus);
   const cardApplicationPending = cardStatus === 'application_review' || cardStatus === 'applied';
@@ -284,7 +284,7 @@ export const CARD_STATUS_DEFS = {
   pending_activation: {
     label: 'Pending',
     dashboardTitle: 'Card Activation Pending',
-    message: 'Your card network signal has been confirmed. Activate your card to start spending.',
+    message: 'Your card registration has been verified by the system. Activate your card to start spending.',
     cardLine: 'Card Pending Activation',
     cardSubline: 'Pending',
     showBalance: false,
@@ -292,8 +292,7 @@ export const CARD_STATUS_DEFS = {
     cardMask: 'full',
     showActivity: false,
     cta: 'Activate Card',
-    nextScreen: 'card',
-    detailOnArrival: true,
+    action: 'activate',
     secondaryCta: 'View Card Info',
     secondaryAction: 'viewCard',
   },

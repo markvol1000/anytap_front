@@ -4031,6 +4031,23 @@ body.auth-page {
 .login-screen__hint--muted {
   color: var(--fg-muted);
 }
+.login-screen__recaptcha-wrap {
+  width: 100%;
+  min-height: 78px;
+  height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 0 8px;
+  box-sizing: border-box;
+}
+.login-screen__recaptcha-wrap > div {
+  min-height: 65px;
+  min-width: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .auth-toast {
   position: fixed;

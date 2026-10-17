@@ -25,7 +25,7 @@ const QUICK_ACTIONS = {
     QA('Learn About Card Benefits', 'globe', { href: '/card-benefits' }),
   ],
   activate: [
-    QA('Activate Card', 'creditCard', { nextScreen: 'card', accent: true }),
+    QA('Activate Card', 'creditCard', { action: 'activate', accent: true }),
     QA('Contact Support', 'mail', { nextScreen: 'support' }),
   ],
 };
@@ -166,7 +166,8 @@ export function runDashboardCta(s, cta) {
   }
   if (cta.action === 'activate') {
     if (typeof s.openActivePhysical === 'function') {
-      s.openActivePhysical(s.currentCard);
+      const targetCard = s.userCards?.find((c) => c?.status === 'pending_activation' || c?.status === 'issued') || s.currentCard;
+      s.openActivePhysical(targetCard);
     }
     return;
   }

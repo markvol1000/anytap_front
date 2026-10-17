@@ -293,12 +293,14 @@ function DashboardCardSection({ s }) {
 
   const renderSingleCard = () => {
     if (!displayCard) return null;
+    const isActivating = displayCard.status === 'issued' || displayCard.status === 'pending_activation';
     return (
       <DebitCardFace
         card={displayCard}
         onClick={(card) => s.openCardDetails?.(card)}
         dashboard
-        dimmed={displayCard.status === 'shipping'}
+        dimmed={displayCard.status === 'shipping' || isActivating}
+        shimmer={isActivating}
         showBalance={displayCard.status === 'active' || displayCard.status === 'frozen'}
         showFooter={s.cardHasNumber}
       />

@@ -162,9 +162,9 @@ export async function getMemberById(id) {
   try {
     let rawDetail = null;
     try {
-      rawDetail = await apiGet(`/users/${encodeURIComponent(userId)}`);
-    } catch {
       rawDetail = await apiGet(`/admin/members/${encodeURIComponent(userId)}`);
+    } catch {
+      rawDetail = await apiGet(`/users/${encodeURIComponent(userId)}`);
     }
     const userDetail = mapUserDetail(rawDetail);
     if (memberInList) {
@@ -173,6 +173,7 @@ export async function getMemberById(id) {
         ...memberInList,
         ...userDetail,
         isTemp: isTemporary,
+        lastIp: userDetail?.lastIp || memberInList.lastIp || null,
         referralCode: userDetail?.referralCode || memberInList.referralCode || null,
         referrerName: userDetail?.referrerName || memberInList.referrerName || null,
         failureHistory: (userDetail?.failureHistory?.length > 0 ? userDetail.failureHistory : memberInList.failureHistory) || [],

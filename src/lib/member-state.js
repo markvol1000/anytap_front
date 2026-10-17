@@ -75,6 +75,14 @@ export function resolveMemberState(accountState) {
   }
 
   if (hasActiveCard) return MEMBER_STATE.CARD_ACTIVE;
+
+  const userCards = accountState?.userCards || [];
+  const hasPendingActivation = cardStatus === 'pending_activation'
+    || userCards.some((c) => c?.status === 'pending_activation');
+  if (hasPendingActivation) {
+    return MEMBER_STATE.ACTIVATE_CARD;
+  }
+
   if (cardStatus === 'not_issued') return MEMBER_STATE.CARD_APPLY_READY;
   // `applied` is the ALB synonym for application_review after /cards/{id}/register.
   if (['deposit_received', 'creating', 'shipping', 'application_review', 'applied'].includes(cardStatus)) {
@@ -286,7 +294,7 @@ export function getMemberDashboardConfig(memberState, accountState) {
       showWalletBalance: false,
       showActivity: false,
       showEarnings: false,
-      showCardsSection: false,
+      showCardsSection: true,
       showWalletBridge: false,
       showQuickActions: true,
       quickActionsKey: 'activate',
@@ -294,8 +302,8 @@ export function getMemberDashboardConfig(memberState, accountState) {
         mode: 'banner',
         bannerVariant: 'activate',
         title: 'Activate your card to unlock your wallet',
-        body: 'Enter the activation code sent to your email to activate your card and unlock your spending wallet.',
-        primaryCta: { label: 'Activate Card', nextScreen: 'card' },
+        body: 'Set your 6-digit PIN to activate your card and unlock your spending wallet.',
+        primaryCta: { label: 'Activate Card', action: 'activate' },
         modeCard: true,
         statusLabel: 'Registered — activation required',
         cardBlur: false,

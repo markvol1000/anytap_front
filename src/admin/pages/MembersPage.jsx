@@ -715,9 +715,9 @@ export function MembersPage() {
                   <AdminDetailRow label="Email" value={detail.email} />
                   <AdminDetailRow
                     label="Last Login IP"
-                    value={detail.lastIp ? (
+                    value={(detail.lastIp || detail.lastLoginIp) ? (
                       <span style={{ fontFamily: 'monospace', fontSize: '12px', color: '#334155' }}>
-                        {detail.lastIp}
+                        {detail.lastIp || detail.lastLoginIp}
                       </span>
                     ) : '—'}
                   />

@@ -99,7 +99,7 @@ export function AccountCardRegister({ s }) {
             cardNo: activeCardId,
             wasabiCardId: activeCardId,
             last4: targetLast4,
-            status: 'issued',
+            status: 'pending_activation',
             hasSecureCode: true,
             cardType: normalizeCardNumber(form.cardNumber).startsWith('493875') ? 'virtual' : 'physical',
           };
@@ -307,7 +307,7 @@ export function AccountCardRegister({ s }) {
             {isRegistered && !webhookReceived && (
               <span style={{ fontSize: '12px', color: '#D69E2E', display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: '500' }}>
                 <span className="portal-spin" style={{ width: '12px', height: '12px', borderWidth: '2px', borderTopColor: '#D69E2E', borderColor: 'rgba(214, 158, 46, 0.25)' }} />
-                <span>Waiting for network callback...</span>
+                <span>Verifying card system registration...</span>
               </span>
             )}
             {isRegistered && webhookReceived && (
@@ -365,9 +365,9 @@ export function AccountCardRegister({ s }) {
         </button>
       </footer>
 
-      {/* Loading Spinner Modal during 1-Minute Signal Waiting */}
+      {/* Loading Spinner Modal during 1-Minute System Verification Waiting */}
       {isRegistered && !webhookReceived && !timeoutModalOpen && (
-        <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Waiting for Network Confirmation" style={{ zIndex: 1000 }}>
+        <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Verifying Card System Registration" style={{ zIndex: 1000 }}>
           <div className="portal-sheet__backdrop" />
           <div className="portal-sheet__panel" style={{ maxWidth: '400px', padding: '36px 24px', textAlign: 'center' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
@@ -385,10 +385,10 @@ export function AccountCardRegister({ s }) {
               />
             </div>
             <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '10px', color: 'var(--portal-text, #111827)' }}>
-              Verifying Card Network Signal
+              Verifying Card System Registration
             </h3>
             <p style={{ fontSize: '13px', color: 'var(--portal-text-muted, #4B5563)', lineHeight: '1.6', margin: '0 0 24px 0' }}>
-              Please wait a moment while the card network confirms your registration. The PIN activation window will open automatically.
+              Please wait a moment while the system verifies your card registration. The PIN activation window will open automatically.
             </p>
             <button
               type="button"
@@ -406,7 +406,7 @@ export function AccountCardRegister({ s }) {
 
       {/* 1-Minute Timeout Modal */}
       {timeoutModalOpen && (
-        <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Network Signal Timeout" style={{ zIndex: 1000 }}>
+        <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Card Verification Timeout" style={{ zIndex: 1000 }}>
           <div className="portal-sheet__backdrop" onClick={() => {
             setTimeoutModalOpen(false);
             s.reloadAccount?.();
@@ -417,10 +417,10 @@ export function AccountCardRegister({ s }) {
               <Icon name="clock" size={26} stroke={2} />
             </div>
             <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '8px', color: 'var(--portal-text, #111827)' }}>
-              Network Confirmation Pending
+              Card Verification In Progress
             </h3>
             <p style={{ fontSize: '14px', color: 'var(--portal-text-muted, #4B5563)', lineHeight: '1.5', marginBottom: '24px' }}>
-              Card network confirmation is taking longer than usual. Please check your card status and activate directly from the <strong>Cards</strong> menu once the network signal arrives.
+              Card system verification is taking longer than usual. Please check your card status and activate directly from the <strong>Cards</strong> menu once verification is complete.
             </p>
             <button
               type="button"

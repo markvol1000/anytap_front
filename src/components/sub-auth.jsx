@@ -399,8 +399,29 @@ function LoginPage() {
               <p className="login-screen__hint">{fieldHint}</p>
             )}
           </div>
-          <div className="login-screen__recaptcha-wrap" style={{ margin: '14px 0 10px', display: 'flex', justifyContent: 'center' }}>
-            <div ref={turnstileContainerRef} />
+          <div
+            className="login-screen__recaptcha-wrap"
+            style={{
+              margin: '12px 0 8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: '78px',
+              height: '78px',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div
+              ref={turnstileContainerRef}
+              style={{
+                minHeight: '65px',
+                minWidth: '300px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            />
           </div>
           <Link to="/forgot-password" className="login-screen__forgot">Forgot password?</Link>
           <button type="submit" className="btn btn--primary btn--lg login-screen__submit" disabled={entering}>
@@ -853,8 +874,29 @@ function SignUpPage() {
               <p className="login-screen__hint">{hints.agree}</p>
             )}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0 16px 0', minHeight: '65px' }}>
-            <div ref={turnstileContainerRef} />
+          <div
+            className="login-screen__recaptcha-wrap"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '8px 0 16px 0',
+              minHeight: '78px',
+              height: '78px',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div
+              ref={turnstileContainerRef}
+              style={{
+                minHeight: '65px',
+                minWidth: '300px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            />
           </div>
           <button type="submit" className="btn btn--accent btn--lg login-screen__submit">
             Create Account

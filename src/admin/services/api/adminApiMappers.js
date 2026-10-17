@@ -84,7 +84,7 @@ export function mapMemberRow(row) {
     failureHistory: Array.isArray(row?.failureHistory) ? row.failureHistory : [],
     failureReason: row?.failureReason || row?.rejectReason || row?.rejectionReason || '',
     rejectReason: row?.rejectReason || row?.failureReason || '',
-    lastIp: row?.lastIp || row?.last_ip || null,
+    lastIp: row?.lastIp || row?.last_ip || row?.lastLoginIp || row?.last_login_ip || row?.clientIp || row?.ipAddress || row?.ip || null,
   };
 }
 
@@ -93,6 +93,7 @@ export function mapUserDetail(data) {
   const mapped = mapMemberRow(data);
   return {
     ...mapped,
+    lastIp: data?.lastIp || data?.last_ip || data?.lastLoginIp || data?.last_login_ip || data?.clientIp || data?.ipAddress || data?.ip || mapped?.lastIp || null,
     referralCode: data?.referralCode || data?.referral_code || mapped.referralCode || null,
     referrerName: data?.referrerName || data?.referrer_name || mapped.referrerName || null,
     cregisActualBalance: Number(data.cregisActualBalance ?? data.actualBalance ?? mapped.cregisActualBalance ?? 0) || 0,
