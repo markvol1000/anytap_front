@@ -293,6 +293,7 @@ function buildContextFromSession(session, cardInfoList = [], activityItems = [],
         status: cardFrozen ? 'frozen' : cardStatus,
         isPrimary: idx === 0,
         holderName: name,
+        hasSecureCode: cardInfo?.hasSecureCode === true,
       };
     });
   }
@@ -1258,6 +1259,34 @@ export async function activatePhysicalCard(cardNo, pin, activeCode) {
   });
   await refreshSessionFromUser(session.userId);
   return { ok: true, data: res };
+}
+
+export async function checkCardActivationStatus(targetCardId = '') {
+  const session = getHttpSession();
+  if (!session?.userId) return { hasSecureCode: false, status: '' };
+
+  try {
+    const list = await apiGet(`/cards/${encodeURIComponent(session.userId)}/list-info`);
+    const cardList = Array.isArray(list) ? list : (list ? [list] : []);
+    
+    // Find target card or latest issued card
+    const matched = targetCardId
+      ? cardList.find((c) => String(c?.cardNo || c?.wasabiCardId || c?.id || '') === String(targetCardId))
+      : cardList.find((c) => c?.status === 'issued' || c?.hasSecureCode === true) || cardList[0];
+
+    const hasSecureCode = matched?.hasSecureCode === true;
+    const isReady = Boolean(matched && (hasSecureCode || matched?.status === 'active'));
+
+    return {
+      hasSecureCode,
+      status: matched?.status || '',
+      isReady,
+      wasabiCardId: matched?.cardNo || matched?.wasabiCardId || targetCardId,
+    };
+  } catch (err) {
+    console.warn('[accountApi] checkCardActivationStatus error:', err);
+    return { hasSecureCode: false, status: '', isReady: false };
+  }
 }
 
 export async function updatePhysicalCardPin(cardNo, pin) {

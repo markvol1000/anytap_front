@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Icon } from './ui.jsx';
 import { normalizeCardNumber, formatCardNumberInput, formatExpiryInput } from '../lib/card-register.js';
-import { bindExistingCard, sendCardSecureCode, activatePhysicalCard } from '../lib/services/account/accountApi.js';
+import { bindExistingCard, sendCardSecureCode, activatePhysicalCard, checkCardActivationStatus } from '../lib/services/account/accountApi.js';
 
 function RegisterField({ label, error, children }) {
   return (
@@ -197,14 +197,14 @@ export function AccountCardRegister({ s }) {
   const [registeredWasabiCardId, setRegisteredWasabiCardId] = useState('');
   const isStep1Valid = form.cardNumber.replace(/\s/g, '').length === 16 && /^(\d{2})\/(\d{2})$/.test(form.expiry.trim());
 
-  // Polling effect when card is registered to wait for card network webhook signal
+  // Polling effect: Check our DB for secureCode (max 5 polls, 2s interval) without calling Wasabi
   useEffect(() => {
     if (!isRegistered || webhookReceived) return;
 
     let webhookPollAttempts = 0;
-    const MAX_WEBHOOK_POLLS = 15; // 15 attempts * 2s = 30s max
+    const MAX_WEBHOOK_POLLS = 5; // 5 attempts * 2s = 10s max (Webhook arrives in 1-2s)
 
-    let pollInterval = setInterval(async () => {
+    const pollActivation = async () => {
       webhookPollAttempts += 1;
       if (webhookPollAttempts > MAX_WEBHOOK_POLLS) {
         clearInterval(pollInterval);
@@ -212,26 +212,24 @@ export function AccountCardRegister({ s }) {
       }
 
       try {
-        await sRef.current?.reloadAccount?.();
-        const currentCards = sRef.current?.userCards || [];
-        // Strictly match by Wasabi Card ID as the unique key
-        const matchedCard = registeredWasabiCardId
-          ? currentCards.find((c) => String(c?.wasabiCardId || c?.cardNo || c?.id || '') === registeredWasabiCardId)
-          : null;
-
-        // Webhook is confirmed ONLY when Wasabi activation_code webhook has arrived and saved secureCode in DB!
-        const hasSecureCode = matchedCard?.hasSecureCode === true;
-        const isReady = matchedCard && (hasSecureCode || matchedCard?.status === 'active');
-
-        if (isReady) {
+        // Query only our backend DB for card secureCode existence (zero Wasabi calls)
+        const checkResult = await checkCardActivationStatus(registeredWasabiCardId);
+        if (checkResult.isReady) {
           setWebhookReceived(true);
+          if (checkResult.wasabiCardId && !registeredWasabiCardId) {
+            setRegisteredWasabiCardId(checkResult.wasabiCardId);
+          }
           sRef.current?.showToast?.('Network signal received! You can now activate your card.');
           clearInterval(pollInterval);
         }
       } catch (err) {
-        console.error('Error polling activation signal:', err);
+        console.error('Error checking activation signal:', err);
       }
-    }, 2000);
+    };
+
+    // Immediate initial check
+    pollActivation();
+    const pollInterval = setInterval(pollActivation, 2000);
 
     return () => {
       clearInterval(pollInterval);
