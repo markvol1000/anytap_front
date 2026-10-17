@@ -225,7 +225,7 @@ export function getCardStatusBadge(card) {
 
 export function dashboardCardMask(cardStatusDef, card, dimmed) {
   if (dimmed || !card || !cardStatusDef.showCardLast4) return null;
-  if (cardStatusDef.cardMask === 'full' || card.status === 'issued') {
+  if (cardStatusDef.cardMask === 'full' || card.status === 'issued' || card.status === 'pending_activation') {
     return maskCardFull(card.last4);
   }
   return maskCardShort(card.last4);
@@ -233,6 +233,6 @@ export function dashboardCardMask(cardStatusDef, card, dimmed) {
 
 export function cardMaskFor(card, accountCardStatus) {
   if (!card) return null;
-  if (card.status === 'issued' || accountCardStatus === 'issued') return maskCardFull(card.last4);
+  if (card.status === 'issued' || card.status === 'pending_activation' || accountCardStatus === 'issued' || accountCardStatus === 'pending_activation') return maskCardFull(card.last4);
   return maskCardShort(card.last4);
 }

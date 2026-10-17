@@ -129,8 +129,8 @@ export const DashboardQuickActionGroup = WalletFlowQuickActionGroup;
 
 /** Card page — Top Up (+ Card Info, Freeze in detail mode) */
 export function CardQuickActionGroup({ s, card, activeId = null, className = '', mode = 'detail' }) {
+  const isActive = card?.status === 'active';
   const isFrozen = card?.status === 'frozen';
-  const canUse = card?.status === 'active' || card?.status === 'shipping';
   const isSummary = mode === 'summary';
 
   const actions = useMemo(() => {
@@ -149,20 +149,36 @@ export function CardQuickActionGroup({ s, card, activeId = null, className = '',
 
   const handleAction = async (id) => {
     if (id === 'topUp') {
-      if (isFrozen) {
-        s?.showToast?.('Card is frozen. Please unfreeze your card before topping up.', 'error');
+      if (!isActive) {
+        if (isFrozen) {
+          s?.showToast?.('Card is frozen. Please unfreeze your card before topping up.', 'error');
+        } else {
+          s?.showToast?.('Card is not active. Please activate your card first.', 'error');
+        }
         return;
       }
       s.openQuickTopUp?.(card);
     } else if (id === 'cardTransfer') {
-      if (isFrozen) {
-        s?.showToast?.('Card is frozen. Please unfreeze your card before card transfer.', 'error');
+      if (!isActive) {
+        if (isFrozen) {
+          s?.showToast?.('Card is frozen. Please unfreeze your card before card transfer.', 'error');
+        } else {
+          s?.showToast?.('Card is not active. Please activate your card first.', 'error');
+        }
         return;
       }
       s?.openCardTransfer?.(card);
     } else if (id === 'cardDetails') {
+      if (!isActive && !isFrozen) {
+        s?.showToast?.('Card information is available after activation.', 'error');
+        return;
+      }
       s.openCardDetails?.(card);
     } else if (id === 'freeze') {
+      if (!isActive && !isFrozen) {
+        s?.showToast?.('Only active cards can be frozen.', 'error');
+        return;
+      }
       try {
         if (isFrozen) {
           await unfreezeCard(card?.cardId || card?.id);
@@ -184,8 +200,9 @@ export function CardQuickActionGroup({ s, card, activeId = null, className = '',
       actions={actions}
       activeId={activeId ?? (!isSummary && (s.showCardDetails ? 'cardDetails' : (isFrozen ? 'freeze' : null)))}
       disabled={{
-        topUp: isFrozen,
-        cardTransfer: isFrozen,
+        topUp: !isActive,
+        cardTransfer: !isActive,
+        cardDetails: !isActive && !isFrozen,
       }}
       onAction={handleAction}
       className={className}

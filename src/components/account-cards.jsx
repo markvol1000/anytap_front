@@ -311,8 +311,8 @@ function CardSlide({
         card={card}
         onClick={onCardClick}
         dashboard={dashboard}
-        dimmed={dimmed || ['creating', 'issued', 'shipping', 'frozen'].includes(card.status)}
-        shimmer={shimmer || ['creating', 'issued'].includes(card.status)}
+        dimmed={dimmed || ['creating', 'issued', 'pending_activation', 'shipping', 'frozen'].includes(card.status)}
+        shimmer={shimmer || ['creating', 'issued', 'pending_activation'].includes(card.status)}
         showBalance={card.status === 'active' || card.status === 'frozen'}
         showFooter={s.cardHasNumber && card.status !== 'creating' && !!card.last4}
       />

@@ -124,8 +124,13 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
   }, [step, targetUser, selectedDestCard, sourceCard]);
 
   const handleLookup = useCallback(async () => {
-    if ((sourceCard?.status || s?.currentCard?.status) === 'frozen') {
-      s?.showToast?.('Card is frozen. Card transfer is unavailable while frozen.');
+    const currentStatus = sourceCard?.status || s?.currentCard?.status;
+    if (currentStatus !== 'active') {
+      if (currentStatus === 'frozen') {
+        s?.showToast?.('Card is frozen. Card transfer is unavailable while frozen.', 'error');
+      } else {
+        s?.showToast?.('Card is not active. Card transfer is only available for active cards.', 'error');
+      }
       return;
     }
     const trimmedInput = (targetEmail || '').trim();

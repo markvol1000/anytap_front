@@ -1056,6 +1056,10 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
   };
 
   const handleNextOrConfirm = async () => {
+    if (card?.status !== 'active') {
+      s.showToast?.('Card is not active. Top-up is only available for active cards.', 'error');
+      return;
+    }
     if (!amount || !String(amount).trim() || topUpVal <= 0) {
       s.showToast?.(`Please enter a top-up amount (Min. ${minTopUp} USDT).`, 'error');
       return;
@@ -1253,7 +1257,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
 }
 
 export function AccountWallet({ s }) {
-  const activeCards = s.userCards.filter((c) => ['active', 'frozen', 'shipping'].includes(c.status));
+  const activeCards = s.userCards.filter((c) => c.status === 'active');
   const [tab, setTab] = useState(s.walletTab ?? 'charge');
   const [quickActive, setQuickActive] = useState(() => (
     s.walletTab === 'send' ? 'send' : null

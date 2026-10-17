@@ -242,7 +242,7 @@ function AccountPortal() {
       <ReceiveSheet s={s} open={s.receiveOpen} onClose={s.closeReceive} />
       <CardTopUpSelectSheet
         s={s}
-        cards={(s.userCards ?? []).filter((c) => ['active', 'frozen', 'shipping'].includes(c.status))}
+        cards={(s.userCards ?? []).filter((c) => c.status === 'active')}
         open={!!s.cardPickOpen}
         onClose={s.closeCardPickModal}
         onSelect={(card) => {

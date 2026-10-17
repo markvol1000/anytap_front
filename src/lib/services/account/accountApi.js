@@ -56,6 +56,7 @@ function cardStatusRank(status) {
     creating: 3,
     shipping: 4,
     issued: 5,
+    pending_activation: 5,
     frozen: 5,
     active: 6,
   };
@@ -92,6 +93,10 @@ function resolveCardStatusForUi(session, cardInfo) {
 
     if (rawLinkStatus === 'active' || rawStatus === 'active' || rawStatus === 'normal' || rawStatus === 'approved') {
       return 'active';
+    }
+
+    if (rawStatus === 'pending_activation' || rawLinkStatus === 'pending_activation') {
+      return 'pending_activation';
     }
 
     // issued cards stay as 'issued' — activation must be done by admin or pin activation

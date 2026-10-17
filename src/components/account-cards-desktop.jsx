@@ -242,6 +242,8 @@ function CardsDesktopCarousel({
                           card={card}
                           hero
                           dashboard={quickActionsVariant === 'hub' || quickActionsVariant === 'dashboard'}
+                          dimmed={['creating', 'issued', 'pending_activation', 'shipping', 'frozen'].includes(card.status)}
+                          shimmer={['creating', 'issued', 'pending_activation'].includes(card.status)}
                           showBalance={showBalanceOnCard && (card.status === 'active' || card.status === 'frozen')}
                           showFooter={!!card.last4}
                         />
