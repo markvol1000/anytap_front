@@ -161,7 +161,7 @@ export function getCardStatusDisplay(card) {
     return { label: 'CARD ISSUING...', dot: '#F6C77A', text: '#C2860E' };
   }
   if (card?.status === 'pending_activation' || card?.status === 'pending_active') {
-    return { label: 'ACTIVATING...', dot: '#F6C77A', text: '#C2860E' };
+    return { label: 'PENDING', dot: '#F6C77A', text: '#C2860E' };
   }
   return { ...base, label: base.label.toUpperCase() };
 }
@@ -215,8 +215,8 @@ export function getCardStatusBadge(card) {
     issued:             { label: 'Issued',     dot: '#F6C77A', text: '#C2860E' },
     frozen:             { label: 'Frozen',     dot: '#EB5757', text: '#EB5757' },
     shipping:           { label: 'Shipping',   dot: '#F6C77A', text: '#C2860E' },
-    pending_activation: { label: 'Activating', dot: '#F6C77A', text: '#C2860E' },
-    pending_active:     { label: 'Activating', dot: '#F6C77A', text: '#C2860E' },
+    pending_activation: { label: 'Pending',    dot: '#F6C77A', text: '#C2860E' },
+    pending_active:     { label: 'Pending',    dot: '#F6C77A', text: '#C2860E' },
   };
   return map[card?.status] ?? { label: 'Inactive', dot: '#C4C9D1', text: '#9298A4' };
 }

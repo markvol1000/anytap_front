@@ -305,11 +305,12 @@ export function useAccountState() {
     setToast('');
   }, []);
 
-  const showToast = useCallback((m) => {
+  const showToast = useCallback((m, duration = 3000) => {
     const cleanMsg = sanitizeToastMessage(m);
     setToast(cleanMsg);
     clearTimeout(timers.current.toast);
-    timers.current.toast = setTimeout(() => setToast(''), 7000);
+    const ms = typeof duration === 'number' ? duration : 3000;
+    timers.current.toast = setTimeout(() => setToast(''), ms);
   }, []);
 
   const copy = useCallback((text, msg) => {

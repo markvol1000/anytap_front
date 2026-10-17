@@ -1236,12 +1236,15 @@ export async function bindExistingCard(form) {
     expiry: form.expiry,
   });
   
+  const cardData = res?.data || res || {};
+  const cardId = cardData.cardId || cardData.wasabiCardId || form.cardNumber.replace(/\s/g, '');
+
   patchHttpSession({ 
-    cardId: res?.data?.cardId || form.cardNumber.replace(/\s/g, ''),
+    cardId: cardId,
     cardStatus: 'active',
   });
   await refreshSessionFromUser(session.userId);
-  return { ok: true, data: res };
+  return { ok: true, data: cardData };
 }
 
 export async function activatePhysicalCard(cardNo, pin, activeCode) {
@@ -1261,27 +1264,26 @@ export async function activatePhysicalCard(cardNo, pin, activeCode) {
   return { ok: true, data: res };
 }
 
-export async function checkCardActivationStatus(targetCardId = '') {
+export async function checkCardActivationStatus(targetCardId = '', targetLast4 = '') {
   const session = getHttpSession();
   if (!session?.userId) return { hasSecureCode: false, status: '' };
 
   try {
-    const list = await apiGet(`/cards/${encodeURIComponent(session.userId)}/list-info`);
-    const cardList = Array.isArray(list) ? list : (list ? [list] : []);
-    
-    // Find target card or latest issued card
-    const matched = targetCardId
-      ? cardList.find((c) => String(c?.cardNo || c?.wasabiCardId || c?.id || '') === String(targetCardId))
-      : cardList.find((c) => c?.status === 'issued' || c?.hasSecureCode === true) || cardList[0];
+    const params = new URLSearchParams();
+    if (targetCardId) params.append('cardId', targetCardId);
+    if (targetLast4) params.append('last4', targetLast4);
 
-    const hasSecureCode = matched?.hasSecureCode === true;
-    const isReady = Boolean(matched && (hasSecureCode || matched?.status === 'active'));
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const res = await apiGet(`/cards/${encodeURIComponent(session.userId)}/activation-status${qs}`);
+    const data = res?.data || res || {};
 
     return {
-      hasSecureCode,
-      status: matched?.status || '',
-      isReady,
-      wasabiCardId: matched?.cardNo || matched?.wasabiCardId || targetCardId,
+      hasSecureCode: data?.hasSecureCode === true,
+      hasCardId: data?.hasCardId === true,
+      status: data?.status || '',
+      isReady: data?.isReady === true,
+      wasabiCardId: data?.wasabiCardId || data?.cardNo || targetCardId,
+      last4: data?.last4 || targetLast4,
     };
   } catch (err) {
     console.warn('[accountApi] checkCardActivationStatus error:', err);

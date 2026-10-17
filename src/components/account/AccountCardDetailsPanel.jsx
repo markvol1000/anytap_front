@@ -180,15 +180,21 @@ export function AccountCardDetailsPanel({ s }) {
         Sensitive card info is fetched on demand and is never stored in our database.
       </p>
 
-      {/* Activate card CTA — only shown for issued but not yet activated cards */}
-      {card.status === 'issued' && (
-        <button
-          type="button"
-          className="portal-btn-primary portal-card-details__activate"
-          onClick={() => s.openActivePhysical(card)}>
-          Activate Card
-        </button>
-      )}
+      {/* Activate card CTA — only shown for issued / pending_activation cards */}
+      {(card.status === 'issued' || card.status === 'pending_activation') && (() => {
+        const canActivate = card.status === 'pending_activation';
+
+        return (
+          <button
+            type="button"
+            className="portal-btn-primary portal-card-details__activate"
+            disabled={!canActivate}
+            style={canActivate ? undefined : { opacity: 0.6, cursor: 'not-allowed' }}
+            onClick={() => s.openActivePhysical(card)}>
+            Activate Card
+          </button>
+        );
+      })()}
     </div>
   );
 }

@@ -19,7 +19,7 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
 
   if (!open) return null;
 
-  const unactivatedCard = s.userCards?.find((c) => c?.status === 'issued' || c?.linkStatus === 'issued');
+  const unactivatedCard = s.userCards?.find((c) => c?.status === 'pending_activation' || c?.status === 'issued' || c?.linkStatus === 'pending_activation' || c?.linkStatus === 'issued');
   const card = s.activePhysicalTargetCard ?? unactivatedCard ?? s.currentCard;
   const cardNoDisplay = card?.last4 ? `Card ending in ${card.last4}` : 'Physical Card';
   const isAlreadyActive = card?.status === 'active';
@@ -90,7 +90,13 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
   return (
     <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Activate Physical Card">
       <button type="button" className="portal-sheet__backdrop" onClick={onClose} aria-label="Close" />
-      <div className="portal-sheet__panel" style={{ paddingBottom: '32px' }}>
+      <div
+        className="portal-sheet__panel"
+        style={{
+          maxHeight: 'min(90vh, 640px)',
+          overflowY: 'auto',
+          paddingBottom: '32px'
+        }}>
         <div className="portal-sheet__head">
           <h3 className="portal-sheet__title">Activate Physical Card</h3>
           <button type="button" className="portal-sheet__close" onClick={onClose} aria-label="Close">
@@ -115,7 +121,20 @@ export function PhysicalCardActivateSheet({ s, open, onClose }) {
         )}
 
         {errorMsg && (
-          <div className="cregister-alert cregister-alert--error" style={{ marginBottom: '16px', padding: '10px', borderRadius: '6px', background: '#FFF0F0', color: '#E53E3E', fontSize: '14px' }} role="alert">
+          <div
+            className="cregister-alert cregister-alert--error"
+            style={{
+              marginBottom: '16px',
+              padding: '10px 14px',
+              borderRadius: '6px',
+              background: '#FFF0F0',
+              color: '#E53E3E',
+              fontSize: '13px',
+              lineHeight: '1.45',
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word',
+            }}
+            role="alert">
             {errorMsg}
           </div>
         )}

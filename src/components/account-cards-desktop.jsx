@@ -59,7 +59,9 @@ export function CardsDesktopInfoPanel({ card, s }) {
       </div>
     );
   }
-  if (card && card.status === 'issued') {
+  if (card && (card.status === 'issued' || card.status === 'pending_activation')) {
+    const canActivate = card.status === 'pending_activation';
+
     return (
       <div style={{ padding: '24px', background: 'var(--portal-paper)', borderRadius: 'var(--radius-card)', border: '1px solid var(--portal-border)' }}>
         <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '12px' }}>Card Issued</h3>
@@ -69,7 +71,8 @@ export function CardsDesktopInfoPanel({ card, s }) {
         <button
           type="button" 
           className="portal-btn-primary"
-          style={{ width: '100%', height: '48px', borderRadius: '12px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}
+          disabled={!canActivate}
+          style={{ width: '100%', height: '48px', borderRadius: '12px', fontSize: '15px', fontWeight: '600', cursor: canActivate ? 'pointer' : 'not-allowed', opacity: canActivate ? 1 : 0.6 }}
           onClick={() => s.openActivePhysical(card)}
         >
           Activate Card

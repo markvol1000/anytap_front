@@ -40,88 +40,26 @@ function RegisterSuccess({ card, onDone }) {
 }
 
 export function AccountCardRegister({ s }) {
-  const [phase, setPhase] = useState('register');
-
   const [form, setForm] = useState({
     cardNumber: '',
     expiry: '',
-    activeCode: '',
-    pin: '',
-    confirmPin: '',
   });
 
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
   const [activatedCard, setActivatedCard] = useState(null);
-  const [countdown, setCountdown] = useState(20);
-  const [resendStatus, setResendStatus] = useState('');
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [webhookReceived, setWebhookReceived] = useState(false);
+  const [registeredWasabiCardId, setRegisteredWasabiCardId] = useState('');
+  const [timeoutModalOpen, setTimeoutModalOpen] = useState(false);
+
+  const isStep1Valid = form.cardNumber.replace(/\s/g, '').length === 16 && /^(\d{2})\/(\d{2})$/.test(form.expiry.trim());
+
   const sRef = useRef(s);
   useEffect(() => {
     sRef.current = s;
   });
-
-  // Polling effect when phase is 'waiting'
-  useEffect(() => {
-    if (phase !== 'waiting') return;
-
-    let pollInterval;
-    let timerInterval;
-    let pollCount = 0;
-    const MAX_POLLS = 10; // Max 10 attempts (30 seconds total)
-
-    // Start countdown timer
-    timerInterval = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerInterval);
-          if (pollInterval) clearInterval(pollInterval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    // Start API polling
-    pollInterval = setInterval(async () => {
-      pollCount += 1;
-      if (pollCount > MAX_POLLS) {
-        clearInterval(pollInterval);
-        clearInterval(timerInterval);
-        return;
-      }
-
-      try {
-        await sRef.current?.reloadAccount?.();
-        // Check if card has become active
-        const cardStatus = sRef.current?.accountState?.cardStatus;
-        const currentCards = sRef.current?.userCards || [];
-        const hasActive = currentCards.some(c => c?.status === 'active') || cardStatus === 'active';
-        if (hasActive) {
-          clearInterval(pollInterval);
-          clearInterval(timerInterval);
-          
-          const cardNoRaw = normalizeCardNumber(form.cardNumber);
-          const last4 = cardNoRaw.slice(-4);
-          const variant = cardNoRaw.startsWith('493875') ? 'virtual' : 'physical';
-          const label = variant === 'virtual' ? 'Virtual Card' : 'Physical Card';
-          
-          setActivatedCard({
-            last4,
-            label,
-          });
-          sRef.current?.showToast?.('Card activated successfully!');
-        }
-      } catch (err) {
-        console.error('Error polling card status:', err);
-      }
-    }, 3000);
-
-    return () => {
-      clearInterval(pollInterval);
-      clearInterval(timerInterval);
-    };
-  }, [phase, form.cardNumber]);
 
   const setField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -129,98 +67,54 @@ export function AccountCardRegister({ s }) {
     setFormError('');
   };
 
-  const handleRegister = async () => {
-    setFormError('');
-    setFieldErrors({});
-    
-    // Validate Card Number, Expiry Date, and PIN
-    const errors = {};
-    const number = normalizeCardNumber(form.cardNumber);
-    const expiry = String(form.expiry ?? '').trim();
-    const pin = form.pin.trim();
-    const confirmPin = form.confirmPin.trim();
-
-    if (number.length !== 16) {
-      errors.cardNumber = 'Invalid card number. Check the 16-digit number on your card.';
-    }
-    
-    const match = expiry.match(/^(\d{2})\/(\d{2})$/);
-    if (!match) {
-      errors.expiry = 'Enter a valid expiry date (MM/YY).';
-    } else {
-      const month = parseInt(match[1], 10);
-      const year = 2000 + parseInt(match[2], 10);
-      if (month < 1 || month > 12) {
-        errors.expiry = 'Enter a valid expiry date (MM/YY).';
-      } else {
-        const expDate = new Date(year, month, 0, 23, 59, 59);
-        if (expDate < new Date()) {
-          errors.expiry = 'This card has expired.';
-        }
-      }
-    }
-
-    if (!/^\d{6}$/.test(pin)) {
-      errors.pin = 'Enter a 6-digit PIN.';
-    }
-    if (pin !== confirmPin) {
-      errors.confirmPin = 'PINs do not match.';
-    }
-
-    if (Object.keys(errors).length) {
-      setFieldErrors(errors);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const result = await bindExistingCard({
-        cardNumber: number,
-        expiry: expiry,
-      });
-      if (!result.ok) {
-        setFormError(result.message || 'Card registration failed.');
-        return;
-      }
-      s.showToast?.('Card registered. Initiating activation...');
-      setCountdown(20);
-      setPhase('waiting');
-    } catch (err) {
-      setFormError(err.message || 'Failed to register card.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const [isRegistered, setIsRegistered] = useState(false);
-  const [webhookReceived, setWebhookReceived] = useState(false);
-  const [registeredWasabiCardId, setRegisteredWasabiCardId] = useState('');
-  const isStep1Valid = form.cardNumber.replace(/\s/g, '').length === 16 && /^(\d{2})\/(\d{2})$/.test(form.expiry.trim());
-
-  // Polling effect: Check our DB for secureCode (max 5 polls, 2s interval) without calling Wasabi
+  // Polling effect: Check our DB for secureCode & cardId (5s interval, 12 attempts = 60s total)
   useEffect(() => {
     if (!isRegistered || webhookReceived) return;
 
     let webhookPollAttempts = 0;
-    const MAX_WEBHOOK_POLLS = 5; // 5 attempts * 2s = 10s max (Webhook arrives in 1-2s)
+    const MAX_WEBHOOK_POLLS = 12; // 12 attempts * 5s = 60s (1 minute)
+    const targetLast4 = normalizeCardNumber(form.cardNumber).slice(-4);
 
     const pollActivation = async () => {
       webhookPollAttempts += 1;
       if (webhookPollAttempts > MAX_WEBHOOK_POLLS) {
         clearInterval(pollInterval);
+        setTimeoutModalOpen(true);
         return;
       }
 
       try {
-        // Query only our backend DB for card secureCode existence (zero Wasabi calls)
-        const checkResult = await checkCardActivationStatus(registeredWasabiCardId);
+        // Query only our backend DB for card secureCode existence by targetLast4 & registeredWasabiCardId
+        const checkResult = await checkCardActivationStatus(registeredWasabiCardId, targetLast4);
         if (checkResult.isReady) {
-          setWebhookReceived(true);
-          if (checkResult.wasabiCardId && !registeredWasabiCardId) {
-            setRegisteredWasabiCardId(checkResult.wasabiCardId);
+          const activeCardId = checkResult.wasabiCardId || registeredWasabiCardId;
+          if (activeCardId && !registeredWasabiCardId) {
+            setRegisteredWasabiCardId(activeCardId);
           }
-          sRef.current?.showToast?.('Network signal received! You can now activate your card.');
           clearInterval(pollInterval);
+
+          // Build target card object for activation modal
+          const targetCard = {
+            id: activeCardId,
+            cardNo: activeCardId,
+            wasabiCardId: activeCardId,
+            last4: targetLast4,
+            status: 'issued',
+            hasSecureCode: true,
+            cardType: normalizeCardNumber(form.cardNumber).startsWith('493875') ? 'virtual' : 'physical',
+          };
+
+          // Immediately open activation sheet so backdrop transitions seamlessly with zero gap
+          if (typeof sRef.current?.openActivePhysical === 'function') {
+            sRef.current.openActivePhysical(targetCard);
+          }
+          setWebhookReceived(true);
+          sRef.current?.showToast?.('Card ready for activation! Please set your PIN.', 2500);
+
+          // Reload account state in background to sync userCards
+          if (sRef.current?.reloadAccount) {
+            sRef.current.reloadAccount().catch((e) => console.error('Failed to sync account:', e));
+          }
         }
       } catch (err) {
         console.error('Error checking activation signal:', err);
@@ -229,12 +123,12 @@ export function AccountCardRegister({ s }) {
 
     // Immediate initial check
     pollActivation();
-    const pollInterval = setInterval(pollActivation, 2000);
+    const pollInterval = setInterval(pollActivation, 5000);
 
     return () => {
       clearInterval(pollInterval);
     };
-  }, [isRegistered, webhookReceived, registeredWasabiCardId]);
+  }, [isRegistered, webhookReceived, registeredWasabiCardId, form.cardNumber]);
 
   // Step 1 Handler: Register / Bind Card
   const handleRegisterOnly = async () => {
@@ -286,7 +180,7 @@ export function AccountCardRegister({ s }) {
         setRegisteredWasabiCardId(result.data.wasabiCardId || result.data.id || result.data.cardId);
       }
       setIsRegistered(true);
-      s.showToast?.('Card registered! Receiving activation signal...');
+      s.showToast?.('Card registered! Checking activation readiness...', 2500);
       return true;
     } catch (err) {
       const msg = err.message || 'Failed to register card.';
@@ -298,50 +192,18 @@ export function AccountCardRegister({ s }) {
     }
   };
 
-  // Step 2 Handler: Activate Card with PIN
-  const handleActivateOnly = async () => {
-    setFormError('');
-    setFieldErrors({});
-
-    const errors = {};
-    const pin = form.pin.trim();
-    const confirmPin = form.confirmPin.trim();
-
-    if (!/^\d{6}$/.test(pin)) {
-      errors.pin = 'Enter a 6-digit PIN.';
-    }
-    if (pin !== confirmPin) {
-      errors.confirmPin = 'PINs do not match.';
-    }
-
-    if (Object.keys(errors).length) {
-      setFieldErrors(errors);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const cardNoRaw = registeredWasabiCardId || normalizeCardNumber(form.cardNumber);
-      const result = await activatePhysicalCard(cardNoRaw, pin, '');
-      if (!result.ok) {
-        setFormError(result.message || 'Card activation failed. Please check your PIN and try again.');
-        return;
-      }
-
-      const last4 = normalizeCardNumber(form.cardNumber).slice(-4);
-      const variant = normalizeCardNumber(form.cardNumber).startsWith('493875') ? 'virtual' : 'physical';
-      const label = variant === 'virtual' ? 'Virtual Card' : 'Physical Card';
-
-      setActivatedCard({
-        last4,
-        label,
-      });
-      s.showToast?.('Card activated successfully!');
-    } catch (err) {
-      setFormError(err.message || 'Failed to activate card. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+  const handleOpenActivationModal = () => {
+    const targetLast4 = normalizeCardNumber(form.cardNumber).slice(-4);
+    const targetCard = {
+      id: registeredWasabiCardId,
+      cardNo: registeredWasabiCardId,
+      wasabiCardId: registeredWasabiCardId,
+      last4: targetLast4,
+      status: 'issued',
+      hasSecureCode: true,
+      cardType: normalizeCardNumber(form.cardNumber).startsWith('493875') ? 'virtual' : 'physical',
+    };
+    s.openActivePhysical?.(targetCard);
   };
 
   if (activatedCard) {
@@ -356,12 +218,10 @@ export function AccountCardRegister({ s }) {
     );
   }
 
-  const isStep2Enabled = isRegistered && webhookReceived;
-
   return (
     <div className="cregister portal-pop">
       <p className="cregister__lead">
-        Enter your card details, register your card, and set your 6-digit PIN to activate.
+        Enter your card details and register your card. Once verified, you can set your PIN to activate.
       </p>
 
       {formError && (
@@ -428,79 +288,155 @@ export function AccountCardRegister({ s }) {
 
         <hr style={{ border: 'none', borderTop: '1px solid var(--portal-border, #E5E7EB)', margin: '4px 0' }} />
 
-        {/* Step 2: PIN Setup & Activate Card Button */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', opacity: isStep2Enabled ? 1 : 0.4, pointerEvents: isStep2Enabled ? 'auto' : 'none' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {/* Step 2: Information & Activation Status */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div>
             <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--portal-text-muted, #4B5563)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Step 2. Set Transaction PIN
             </span>
+          </div>
+
+          {/* Status Indicator Line between Title and Description */}
+          <div style={{ display: 'flex', alignItems: 'center', minHeight: '20px' }}>
+            {!isRegistered && (
+              <span style={{ fontSize: '12px', color: '#9CA3AF', display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: '500' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#D1D5DB' }} />
+                <span>Awaiting card registration (Step 1)</span>
+              </span>
+            )}
             {isRegistered && !webhookReceived && (
-              <span style={{ fontSize: '12px', color: '#D69E2E', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '500' }}>
-                <span className="portal-spin" style={{ width: '12px', height: '12px' }} />
+              <span style={{ fontSize: '12px', color: '#D69E2E', display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: '500' }}>
+                <span className="portal-spin" style={{ width: '12px', height: '12px', borderWidth: '2px', borderTopColor: '#D69E2E', borderColor: 'rgba(214, 158, 46, 0.25)' }} />
                 <span>Waiting for network callback...</span>
               </span>
             )}
             {isRegistered && webhookReceived && (
-              <span style={{ fontSize: '12px', color: '#38A169', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '500' }}>
-                <span>✓ Network confirmed</span>
+              <span style={{ fontSize: '12px', color: '#38A169', display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: '600' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#38A169' }} />
+                <span>✓ Ready for PIN Setup</span>
               </span>
             )}
           </div>
 
-          <RegisterField label="Set 6-digit PIN" error={fieldErrors.pin}>
-            <input
-              className="cregister-input cregister-input--mono"
-              type="password"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="••••••"
-              value={form.pin}
-              disabled={!isStep2Enabled || loading}
-              onChange={(e) => setField('pin', e.target.value.replace(/\D/g, '').slice(0, 6))}
-            />
-            <span style={{ color: '#6B7280', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '500' }}>
-              ATM withdrawals use only the first 4 digits of your PIN.
-            </span>
-          </RegisterField>
-
-          <RegisterField label="Confirm PIN" error={fieldErrors.confirmPin}>
-            <input
-              className="cregister-input cregister-input--mono"
-              type="password"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="••••••"
-              value={form.confirmPin}
-              disabled={!isStep2Enabled || loading}
-              onChange={(e) => setField('confirmPin', e.target.value.replace(/\D/g, '').slice(0, 6))}
-            />
-          </RegisterField>
+          <div style={{
+            padding: '12px 14px',
+            borderRadius: '8px',
+            backgroundColor: 'var(--portal-paper-subtle, #F9FAFB)',
+            border: '1px solid var(--portal-border, #E5E7EB)',
+            fontSize: '13px',
+            lineHeight: '1.5',
+            color: 'var(--portal-text-muted, #4B5563)'
+          }}>
+            <p style={{ margin: 0 }}>
+              <strong style={{ color: '#D97706', fontWeight: '700' }}>PIN setup window will appear automatically</strong> once confirmed. You can also <strong style={{ color: '#D97706', fontWeight: '700' }}>activate anytime from the Cards menu</strong>.
+            </p>
+          </div>
         </div>
       </div>
 
-      <footer className="cregister-foot" style={{ marginTop: '24px' }}>
-        <button type="button" className="portal-btn-secondary cregister-foot__cancel" onClick={() => s.go('card')} disabled={loading}>
+      <footer className="cregister-foot" style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
+        <button
+          type="button"
+          className="portal-btn-secondary cregister-foot__cancel"
+          style={{ flex: '1', height: '44px', fontWeight: '600', cursor: 'pointer' }}
+          onClick={() => {
+            if (isRegistered) {
+              s.reloadAccount?.();
+            }
+            s.go('card');
+          }}
+          disabled={loading}>
           Cancel
         </button>
+
         <button
           type="button"
           className="portal-btn-primary cregister-foot__submit"
-          disabled={loading || !isStep2Enabled || form.pin.length !== 6 || form.confirmPin.length !== 6}
-          style={{ opacity: (loading || !isStep2Enabled || form.pin.length !== 6 || form.confirmPin.length !== 6) ? 0.6 : 1, cursor: (loading || !isStep2Enabled) ? 'not-allowed' : 'pointer' }}
-          onClick={handleActivateOnly}>
-          {loading && isRegistered ? (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-              <span className="portal-spin" style={{ width: '16px', height: '16px' }} aria-label="Activating" />
-              <span>Activating...</span>
-            </span>
-          ) : isRegistered && !webhookReceived ? (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-              <span className="portal-spin" style={{ width: '16px', height: '16px' }} />
-              <span>Waiting for Network Signal...</span>
-            </span>
-          ) : 'Activate Card'}
+          disabled={loading || !(isRegistered && webhookReceived)}
+          style={{
+            flex: '1',
+            height: '44px',
+            fontWeight: '600',
+            opacity: (isRegistered && webhookReceived) ? 1 : 0.6,
+            cursor: (isRegistered && webhookReceived) ? 'pointer' : 'not-allowed'
+          }}
+          onClick={handleOpenActivationModal}>
+          Activate Card
         </button>
       </footer>
+
+      {/* Loading Spinner Modal during 1-Minute Signal Waiting */}
+      {isRegistered && !webhookReceived && !timeoutModalOpen && (
+        <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Waiting for Network Confirmation" style={{ zIndex: 1000 }}>
+          <div className="portal-sheet__backdrop" />
+          <div className="portal-sheet__panel" style={{ maxWidth: '400px', padding: '36px 24px', textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+              <div
+                className="portal-spin"
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  border: '3.5px solid rgba(255, 85, 0, 0.15)',
+                  borderTopColor: '#ff5500',
+                  animation: 'portal-spin 0.8s linear infinite',
+                  display: 'inline-block'
+                }}
+              />
+            </div>
+            <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '10px', color: 'var(--portal-text, #111827)' }}>
+              Verifying Card Network Signal
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--portal-text-muted, #4B5563)', lineHeight: '1.6', margin: '0 0 24px 0' }}>
+              Please wait a moment while the card network confirms your registration. The PIN activation window will open automatically.
+            </p>
+            <button
+              type="button"
+              className="portal-btn-secondary"
+              style={{ width: '100%', height: '42px', borderRadius: '8px', fontSize: '13px', fontWeight: '600' }}
+              onClick={() => {
+                s.reloadAccount?.();
+                s.go?.('card');
+              }}>
+              Continue Later in Cards Menu
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 1-Minute Timeout Modal */}
+      {timeoutModalOpen && (
+        <div className="portal-sheet" role="dialog" aria-modal="true" aria-label="Network Signal Timeout" style={{ zIndex: 1000 }}>
+          <div className="portal-sheet__backdrop" onClick={() => {
+            setTimeoutModalOpen(false);
+            s.reloadAccount?.();
+            s.go?.('card');
+          }} />
+          <div className="portal-sheet__panel" style={{ maxWidth: '440px', padding: '24px', textAlign: 'center' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#FEF3C7', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <Icon name="clock" size={26} stroke={2} />
+            </div>
+            <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '8px', color: 'var(--portal-text, #111827)' }}>
+              Network Confirmation Pending
+            </h3>
+            <p style={{ fontSize: '14px', color: 'var(--portal-text-muted, #4B5563)', lineHeight: '1.5', marginBottom: '24px' }}>
+              Card network confirmation is taking longer than usual. Please check your card status and activate directly from the <strong>Cards</strong> menu once the network signal arrives.
+            </p>
+            <button
+              type="button"
+              className="portal-btn-primary"
+              style={{ width: '100%', height: '44px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}
+              onClick={() => {
+                setTimeoutModalOpen(false);
+                s.showToast?.('Please check and activate your card from the Cards menu.');
+                s.reloadAccount?.();
+                s.go?.('card');
+              }}>
+              Go to Cards Menu
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
