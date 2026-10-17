@@ -53,6 +53,7 @@ export function AccountCardRegister({ s }) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [activatedCard, setActivatedCard] = useState(null);
   const [countdown, setCountdown] = useState(20);
   const [resendStatus, setResendStatus] = useState('');
   const sRef = useRef(s);
