@@ -52,7 +52,7 @@ function ReferralQr({ value = '' }) {
   );
 }
 
-export function ReferralCodeCard({ code = '', inviteLink = '', onCopy, onShare }) {
+export function ReferralCodeCard({ code = '', inviteLink = '', commissionRate = null, onCopy, onShare }) {
   const safeCode = code || '—';
   const defaultOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://www.anytap.io';
   const safeLink = inviteLink || (code ? `${defaultOrigin}/sign-up?ref=${code}` : '');
@@ -70,7 +70,22 @@ export function ReferralCodeCard({ code = '', inviteLink = '', onCopy, onShare }
 
   return (
     <section className="portal-ref-dash__code portal-dash-panel" aria-labelledby="referral-code-title">
-      <h2 id="referral-code-title" className="portal-ref-dash__section-title">Your Referral Code</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+        <h2 id="referral-code-title" className="portal-ref-dash__section-title" style={{ margin: 0 }}>Your Referral Code</h2>
+        {commissionRate != null && (
+          <span style={{
+            fontSize: '12px',
+            fontWeight: '700',
+            padding: '2px 8px',
+            borderRadius: '6px',
+            backgroundColor: '#f0fdf4',
+            color: '#15803d',
+            border: '1px solid #bbf7d0',
+          }}>
+            Commission: {Number(commissionRate)}%
+          </span>
+        )}
+      </div>
 
       <p className="portal-ref-dash__code-val">{safeCode}</p>
 

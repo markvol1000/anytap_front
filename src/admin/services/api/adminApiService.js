@@ -942,6 +942,8 @@ export async function getReferrals(params = {}) {
         members: r.members != null ? r.members : 0,
         totalDeposit: totalDeposit,
         status: r.status || 'active',
+        referralRatePercent: r.referralRatePercent != null ? Number(r.referralRatePercent) : (r.commissionRate != null ? Number(r.commissionRate) : 0),
+        commissionRate: r.referralRatePercent != null ? Number(r.referralRatePercent) : (r.commissionRate != null ? Number(r.commissionRate) : 0),
         createdAt: joinVal,
         joinDate: joinVal,
       };

@@ -245,24 +245,29 @@ export function ReferralPage() {
   const handleSaveEdit = useCallback(async (e) => {
     e.preventDefault();
     if (!editTargetRow) return;
-    const targetId = editTargetRow.id || editTargetRow.referralCode;
+    const targetCode = editTargetRow.referralCode || editTargetRow.code || editTargetRow.id;
+    const parsedRate = parseFloat(editRate);
+    const validRate = !isNaN(parsedRate) ? parsedRate : 5.0;
+
     try {
-      await updateReferralCode(targetId, {
+      await updateReferralCode(targetCode, {
         referralCode: editCode.trim().toUpperCase(),
         userId: editUserId.trim(),
         memberName: editName.trim(),
         status: editStatus.toLowerCase(),
-        referralRatePercent: parseFloat(editRate) || 5.0,
+        referralRatePercent: validRate,
       });
       setShowEditModal(false);
       partnerList.reload();
-      if (setDetail && (detail?.id === targetId || detail?.referralCode === targetId)) {
+      if (setDetail && (detail?.id === targetCode || detail?.referralCode === targetCode || detail?.code === targetCode)) {
         setDetail((prev) => (prev ? {
           ...prev,
           referralCode: editCode.trim().toUpperCase(),
           userId: editUserId.trim(),
           memberName: editName.trim(),
           status: editStatus.toLowerCase(),
+          referralRatePercent: validRate,
+          commissionRate: validRate,
         } : null));
       }
       memberList?.reload?.();
@@ -564,11 +569,26 @@ export function ReferralPage() {
                     {
                       key: 'referralRatePercent',
                       label: 'Rate (%)',
-                      render: (r) => (
-                        <span style={{ fontWeight: '700', color: '#0284c7' }}>
-                          {r.referralRatePercent != null ? `${Number(r.referralRatePercent).toFixed(1)}%` : '5.0%'}
-                        </span>
-                      ),
+                      render: (r) => {
+                        const raw = r.referralRatePercent != null ? r.referralRatePercent : r.commissionRate;
+                        const val = raw != null && !isNaN(Number(raw)) ? Number(raw) : 0;
+                        return (
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              fontWeight: '700',
+                              fontSize: '12px',
+                              color: val > 0 ? '#0284c7' : '#64748b',
+                              backgroundColor: val > 0 ? '#f0f9ff' : '#f1f5f9',
+                              border: `1px solid ${val > 0 ? '#bae6fd' : '#e2e8f0'}`,
+                            }}
+                          >
+                            {val}%
+                          </span>
+                        );
+                      },
                     },
                     { key: 'joinDate', label: 'Joined', render: (r) => formatAdminDate(r.joinDate || r.createdAt || r.created_at) },
                     { key: 'totalDeposit', label: 'Total Top-up', render: (r) => <strong style={{ color: '#0284c7' }}>{formatUsdt(r.totalDeposit)}</strong> },
@@ -606,7 +626,9 @@ export function ReferralPage() {
                   renderMobileCard={(r) => {
                     const code = r.referralCode || '—';
                     const owner = r.memberName || r.userEmail || r.userId || '—';
-                    const rate = r.commissionRate != null ? `${r.commissionRate}%` : '5%';
+                    const rawRate = r.referralRatePercent != null ? r.referralRatePercent : r.commissionRate;
+                    const rateVal = rawRate != null && !isNaN(Number(rawRate)) ? Number(rawRate) : 0;
+                    const rate = `Rate: ${rateVal}%`;
                     return (
                       <>
                         <div className="admin-mobile-card__row1">
@@ -618,11 +640,11 @@ export function ReferralPage() {
                               style={{
                                 fontSize: '10px',
                                 fontWeight: 700,
-                                padding: '1px 5px',
+                                padding: '1px 6px',
                                 borderRadius: '3px',
-                                backgroundColor: '#f0fdf4',
-                                color: '#15803d',
-                                border: '1px solid #bbf7d0',
+                                backgroundColor: rateVal > 0 ? '#f0fdf4' : '#f1f5f9',
+                                color: rateVal > 0 ? '#15803d' : '#64748b',
+                                border: `1px solid ${rateVal > 0 ? '#bbf7d0' : '#e2e8f0'}`,
                                 lineHeight: 1.2,
                               }}
                             >
@@ -853,6 +875,30 @@ export function ReferralPage() {
                                 },
                               },
                               { key: 'joinDate', label: 'Joined', render: (r) => formatAdminDate(r.joinDate || r.createdAt || r.created_at) },
+                              {
+                                key: 'rate',
+                                label: 'Rate (%)',
+                                render: () => {
+                                  const rawRate = detail?.referralRatePercent != null ? detail.referralRatePercent : detail?.commissionRate;
+                                  const rateVal = rawRate != null && !isNaN(Number(rawRate)) ? Number(rawRate) : 0;
+                                  return (
+                                    <span
+                                      style={{
+                                        display: 'inline-block',
+                                        padding: '1px 6px',
+                                        borderRadius: '3px',
+                                        fontWeight: '700',
+                                        fontSize: '11px',
+                                        color: rateVal > 0 ? '#0284c7' : '#64748b',
+                                        backgroundColor: rateVal > 0 ? '#f0f9ff' : '#f1f5f9',
+                                        border: `1px solid ${rateVal > 0 ? '#bae6fd' : '#e2e8f0'}`,
+                                      }}
+                                    >
+                                      {rateVal}%
+                                    </span>
+                                  );
+                                },
+                              },
                               { key: 'totalDeposit', label: 'Card Top-up', render: (r) => <strong style={{ color: '#0284c7' }}>{formatUsdt(r.topUpUsdt ?? r.totalDeposit)}</strong> },
                               { key: 'earnedCommission', label: 'Earned Commission', render: (r) => <strong style={{ color: '#10b981' }}>{formatUsdt(r.rewardUsdt ?? r.earnedCommission)}</strong> },
                               { key: 'status', label: 'Status', render: (r) => <AdminStatusBadge status={r.status} /> },

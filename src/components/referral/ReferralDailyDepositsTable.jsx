@@ -66,40 +66,29 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
 
   const [page, setPage] = useState(1);
 
-  // Raw card charge rows from backend
+  // Raw card charge rows from backend (filtered exclusively for wallet-to-card charges)
   const rawData = useMemo(() => {
     if (Array.isArray(deposits) && deposits.length > 0) {
-      return deposits.map((d, idx) => ({
-        ...d,
-        id: d.id || d.txId || `charge-${idx + 1}`,
-        date: d.date || d.depositDate || d.createdAt || d.at || d.timestamp || d.chainTime,
-        memberId: d.memberId || d.userId || (d.id && String(d.id).startsWith('US') ? d.id : `US_${idx + 1}`),
-        memberName: d.memberName || d.userEmail || d.loginId || d.email || '',
-        memberEmail: d.memberEmail || d.email || d.loginId || (d.memberName && d.memberName.includes('@') ? d.memberName : ''),
-        amount: Number(d.amount || d.topUpAmount || d.topUpUsdt || 0),
-        feeAmount: Number(d.feeAmount ?? d.commission ?? d.referrerAllowance ?? d.fee ?? 0),
-      }));
-    }
-    if (Array.isArray(memberRows) && memberRows.length > 0) {
-      const derived = [];
-      memberRows.forEach((m, idx) => {
-        const topUp = Number(m.topUpUsdt || m.totalTopUp || 0);
-        if (topUp > 0) {
-          derived.push({
-            id: m.id || `charge-${idx + 1}`,
-            date: m.joinedAt || new Date().toISOString(),
-            memberId: m.id || m.userId || `US_${idx + 1}`,
-            memberName: m.loginId || m.email || m.name || '',
-            memberEmail: m.email || m.loginId || '',
-            amount: topUp,
-            feeAmount: 0,
-          });
-        }
-      });
-      return derived;
+      return deposits
+        .filter((d) => {
+          const txType = (d.txType || d.type || '').toUpperCase();
+          if (txType === 'DEPOSIT' || txType === 'WITHDRAW' || txType === 'CARD_SPEND' || txType === 'REFUND') return false;
+          if (d.toAddress === 'Wasabi Card Deposit') return false;
+          return true;
+        })
+        .map((d, idx) => ({
+          ...d,
+          id: d.id || d.txId || `charge-${idx + 1}`,
+          date: d.date || d.depositDate || d.createdAt || d.at || d.timestamp || d.chainTime,
+          memberId: d.memberId || d.userId || (d.id && String(d.id).startsWith('US') ? d.id : `US_${idx + 1}`),
+          memberName: d.memberName || d.userEmail || d.loginId || d.email || '',
+          memberEmail: d.memberEmail || d.email || d.loginId || (d.memberName && d.memberName.includes('@') ? d.memberName : ''),
+          amount: Number(d.amount || d.topUpAmount || d.topUpUsdt || 0),
+          feeAmount: Number(d.feeAmount ?? d.commission ?? d.referrerAllowance ?? d.fee ?? 0),
+        }));
     }
     return [];
-  }, [deposits, memberRows]);
+  }, [deposits]);
 
   const handleSearchSubmit = (e) => {
     if (e && typeof e.preventDefault === 'function') {
@@ -148,8 +137,28 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
         (d.id && String(d.id).toLowerCase().includes(q))
       ));
     }
-    return res;
+
+    // Sort descending chronologically (latest first)
+    return [...res].sort((a, b) => {
+      const ta = new Date(a.date || a.createdAt || 0).getTime();
+      const tb = new Date(b.date || b.createdAt || 0).getTime();
+      return tb - ta;
+    });
   }, [rawData, appliedFilters]);
+
+  const summaryTotals = useMemo(() => {
+    let totalAmount = 0;
+    let totalFee = 0;
+    filtered.forEach((d) => {
+      totalAmount += Number(d.amount || 0);
+      totalFee += Number(d.feeAmount || 0);
+    });
+    return {
+      count: filtered.length,
+      totalAmount,
+      totalFee,
+    };
+  }, [filtered]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -163,17 +172,25 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
       if (onShowToast) onShowToast('No data to export.');
       return;
     }
-    const headers = ['Date & Time', 'Login ID (Email)', 'Card Charge Amount (USDT)', 'Fee (USDT)'];
+    const headers = ['Date & Time', 'Login ID (Email)', 'Card Charge Amount (USDT)', 'Rate (%)', 'Fee (USDT)'];
     const escapeCsv = (v) => {
       const s = String(v ?? '').replace(/"/g, '""');
       return `"${s}"`;
     };
-    const rows = filtered.map((d) => [
-      escapeCsv(formatDate(d.date || d.at)),
-      escapeCsv(d.memberEmail || d.memberName || d.loginId || d.email || d.memberId || ''),
-      escapeCsv(d.amount?.toFixed(2) || '0.00'),
-      escapeCsv(d.feeAmount?.toFixed(2) || '0.00'),
-    ].join(','));
+    const rows = filtered.map((d) => {
+      const rateStr = d.ratePercent != null
+        ? `${d.ratePercent}%`
+        : (d.amount > 0 && d.feeAmount > 0
+          ? `${((d.feeAmount / d.amount) * 100).toFixed(1)}%`
+          : '—');
+      return [
+        escapeCsv(formatDate(d.date || d.at)),
+        escapeCsv(d.memberEmail || d.memberName || d.loginId || d.email || d.memberId || ''),
+        escapeCsv(d.amount?.toFixed(2) || '0.00'),
+        escapeCsv(rateStr),
+        escapeCsv(d.feeAmount?.toFixed(2) || '0.00'),
+      ].join(',');
+    });
     const csvContent = '\uFEFF' + [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -327,12 +344,18 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
               <th scope="col">Date & Time</th>
               <th scope="col">Login ID (Email)</th>
               <th scope="col">Card Charge Amount</th>
+              <th scope="col">Rate (%)</th>
               <th scope="col">Fee</th>
             </tr>
           </thead>
           <tbody>
             {pagedItems.length > 0 ? pagedItems.map((d) => {
               const displayEmail = d.memberEmail || d.memberName || d.loginId || d.email || d.memberId || '—';
+              const rateVal = d.ratePercent != null
+                ? Number(d.ratePercent)
+                : (d.amount > 0 && d.feeAmount > 0
+                  ? Number(((d.feeAmount / d.amount) * 100).toFixed(2))
+                  : null);
               return (
                 <tr key={d.id}>
                   <td data-label="Date & Time">{formatDate(d.date || d.at)}</td>
@@ -344,6 +367,26 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
                   <td data-label="Card Charge Amount" style={{ fontWeight: '800', color: '#0284c7', fontSize: '14px' }}>
                     +{formatUsdt(d.amount)} USDT
                   </td>
+                  <td data-label="Rate (%)">
+                    {rateVal != null ? (
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          padding: '1px 6px',
+                          borderRadius: '3px',
+                          fontWeight: '700',
+                          fontSize: '11px',
+                          color: rateVal > 0 ? '#0284c7' : '#64748b',
+                          backgroundColor: rateVal > 0 ? '#f0f9ff' : '#f1f5f9',
+                          border: `1px solid ${rateVal > 0 ? '#bae6fd' : '#e2e8f0'}`,
+                        }}
+                      >
+                        {rateVal}%
+                      </span>
+                    ) : (
+                      <span style={{ color: '#94a3b8', fontSize: '12px' }}>—</span>
+                    )}
+                  </td>
                   <td data-label="Fee" style={{ fontWeight: '600', color: 'var(--ink, #0f172a)', fontSize: '13px' }}>
                     {formatUsdt(d.feeAmount)} USDT
                   </td>
@@ -351,7 +394,7 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
               );
             }) : (
               <tr>
-                <td colSpan={4} className="portal-ref-dash__table-empty">
+                <td colSpan={5} className="portal-ref-dash__table-empty">
                   No card charge records match your search criteria.
                 </td>
               </tr>
@@ -359,6 +402,49 @@ export function ReferralDailyDepositsTable({ deposits = [], memberRows = [], onS
           </tbody>
         </table>
       </div>
+
+      {/* Period Summary Totals Bar */}
+      {filtered.length > 0 && (
+        <div
+          className="portal-ref-dash__summary-bar"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
+            marginTop: '14px',
+            padding: '12px 16px',
+            background: 'var(--portal-bg-surface-elevated, #f8fafc)',
+            borderRadius: '8px',
+            border: '1px solid #e2e8f0',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Period Summary
+            </span>
+            <span style={{ fontSize: '12px', color: '#cbd5e1' }}>•</span>
+            <span style={{ fontSize: '12px', color: '#475569', fontWeight: '500' }}>
+              <strong>{summaryTotals.count}</strong> transaction{summaryTotals.count === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12px', color: '#64748b' }}>Total Card Top-up:</span>
+              <strong style={{ fontSize: '13px', color: '#0284c7', fontFamily: 'monospace' }}>
+                +{formatUsdt(summaryTotals.totalAmount)} USDT
+              </strong>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12px', color: '#64748b' }}>Total Commission:</span>
+              <strong style={{ fontSize: '13px', color: '#16a34a', fontFamily: 'monospace' }}>
+                +{formatUsdt(summaryTotals.totalFee)} USDT
+              </strong>
+            </div>
+          </div>
+        </div>
+      )}
 
       {filtered.length > 0 && (
         <div style={{

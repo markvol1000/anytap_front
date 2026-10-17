@@ -565,9 +565,9 @@ export async function fetchAccountContext() {
     const last4 = primaryCard?.last4 || cardNo.replace(/\D/g, '').slice(-4) || cardNo.slice(-4) || '';
     if (!demoLocked) {
       const cardList = Array.isArray(cardInfoList) ? cardInfoList : (cardInfoList ? [cardInfoList] : []);
-      const activeCard = cardList.find((c) => c?.status === 'active' || c?.status === 'frozen') || cardList[0] || null;
+      const activeCard = cardList.find((c) => c?.status === 'active' || c?.status === 'frozen') || null;
       const targetCardNo = String(activeCard?.cardNo || activeCard?.wasabiCardId || activeCard?.balanceInfo?.cardNo || '');
-      const targetLast4 = activeCard?.last4 || targetCardNo.replace(/\D/g, '').slice(-4) || targetCardNo.slice(-4) || '';
+      const targetLast4 = activeCard?.last4 || (targetCardNo ? (targetCardNo.replace(/\D/g, '').slice(-4) || targetCardNo.slice(-4)) : '') || '';
 
       const [cardTxResult, localTxs] = await Promise.all([
         targetCardNo ? fetchCardTransactions(session.userId, { cardId: targetCardNo, last4: targetLast4 }) : Promise.resolve({ items: [] }),
@@ -712,6 +712,9 @@ export async function fetchReferralContext() {
       depositLedger = [];
     }
 
+    const rawRate = referralInfo?.referralRatePercent != null ? Number(referralInfo.referralRatePercent) : (session?.referralRatePercent != null ? Number(session.referralRatePercent) : null);
+    const resolvedRate = rawRate != null && !isNaN(rawRate) ? rawRate : 0.4;
+
     return {
       referralStateKey: 'referralApproved',
       status: 'REFERRAL_APPROVED',
@@ -719,6 +722,8 @@ export async function fetchReferralContext() {
       isPending: false,
       isNormalMember: false,
       code: ownCode,
+      referralRatePercent: resolvedRate,
+      commissionRate: resolvedRate,
       inviteLink: `https://www.anytap.io/sign-up?ref=${ownCode}`,
       totalEarnings,
       availableBalance,

@@ -1,5 +1,5 @@
 // ===== Register Existing Card (B2B / pre-issued) =====
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Icon } from './ui.jsx';
 import { normalizeCardNumber, formatCardNumberInput, formatExpiryInput } from '../lib/card-register.js';
 import { bindExistingCard, sendCardSecureCode, activatePhysicalCard } from '../lib/services/account/accountApi.js';
@@ -55,7 +55,10 @@ export function AccountCardRegister({ s }) {
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(20);
   const [resendStatus, setResendStatus] = useState('');
-  const [activatedCard, setActivatedCard] = useState(null);
+  const sRef = useRef(s);
+  useEffect(() => {
+    sRef.current = s;
+  });
 
   // Polling effect when phase is 'waiting'
   useEffect(() => {
@@ -63,12 +66,15 @@ export function AccountCardRegister({ s }) {
 
     let pollInterval;
     let timerInterval;
+    let pollCount = 0;
+    const MAX_POLLS = 10; // Max 10 attempts (30 seconds total)
 
     // Start countdown timer
     timerInterval = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timerInterval);
+          if (pollInterval) clearInterval(pollInterval);
           return 0;
         }
         return prev - 1;
@@ -77,11 +83,19 @@ export function AccountCardRegister({ s }) {
 
     // Start API polling
     pollInterval = setInterval(async () => {
+      pollCount += 1;
+      if (pollCount > MAX_POLLS) {
+        clearInterval(pollInterval);
+        clearInterval(timerInterval);
+        return;
+      }
+
       try {
-        await s.reloadAccount?.();
+        await sRef.current?.reloadAccount?.();
         // Check if card has become active
-        const cardStatus = s.accountState?.cardStatus;
-        const hasActive = s.userCards?.some(c => c.status === 'active') || cardStatus === 'active';
+        const cardStatus = sRef.current?.accountState?.cardStatus;
+        const currentCards = sRef.current?.userCards || [];
+        const hasActive = currentCards.some(c => c?.status === 'active') || cardStatus === 'active';
         if (hasActive) {
           clearInterval(pollInterval);
           clearInterval(timerInterval);
@@ -95,7 +109,7 @@ export function AccountCardRegister({ s }) {
             last4,
             label,
           });
-          s.showToast?.('Card activated successfully!');
+          sRef.current?.showToast?.('Card activated successfully!');
         }
       } catch (err) {
         console.error('Error polling card status:', err);
@@ -106,7 +120,7 @@ export function AccountCardRegister({ s }) {
       clearInterval(pollInterval);
       clearInterval(timerInterval);
     };
-  }, [phase, form.cardNumber, s]);
+  }, [phase, form.cardNumber]);
 
   const setField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -186,12 +200,22 @@ export function AccountCardRegister({ s }) {
   useEffect(() => {
     if (!isRegistered || webhookReceived) return;
 
+    let webhookPollAttempts = 0;
+    const MAX_WEBHOOK_POLLS = 15; // 15 attempts * 2s = 30s max
+
     let pollInterval = setInterval(async () => {
+      webhookPollAttempts += 1;
+      if (webhookPollAttempts > MAX_WEBHOOK_POLLS) {
+        clearInterval(pollInterval);
+        return;
+      }
+
       try {
-        await s.reloadAccount?.();
+        await sRef.current?.reloadAccount?.();
+        const currentCards = sRef.current?.userCards || [];
         // Strictly match by Wasabi Card ID as the unique key
         const matchedCard = registeredWasabiCardId
-          ? s.userCards?.find((c) => String(c?.wasabiCardId || c?.cardNo || c?.id || '') === registeredWasabiCardId)
+          ? currentCards.find((c) => String(c?.wasabiCardId || c?.cardNo || c?.id || '') === registeredWasabiCardId)
           : null;
 
         // Webhook is confirmed ONLY when Wasabi activation_code webhook has arrived and saved secureCode in DB!
@@ -200,7 +224,7 @@ export function AccountCardRegister({ s }) {
 
         if (isReady) {
           setWebhookReceived(true);
-          s.showToast?.('Network signal received! You can now activate your card.');
+          sRef.current?.showToast?.('Network signal received! You can now activate your card.');
           clearInterval(pollInterval);
         }
       } catch (err) {
@@ -211,7 +235,7 @@ export function AccountCardRegister({ s }) {
     return () => {
       clearInterval(pollInterval);
     };
-  }, [isRegistered, webhookReceived, registeredWasabiCardId, s]);
+  }, [isRegistered, webhookReceived, registeredWasabiCardId]);
 
   // Step 1 Handler: Register / Bind Card
   const handleRegisterOnly = async () => {

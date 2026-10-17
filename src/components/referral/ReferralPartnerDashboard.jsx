@@ -18,6 +18,7 @@ export function ReferralPartnerDashboard({ s, referral }) {
       <ReferralCodeCard
         code={referral.code}
         inviteLink={referral.inviteLink}
+        commissionRate={referral.commissionRate ?? referral.referralRatePercent}
         onCopy={copy}
         onShare={() => copy(referral.inviteLink, 'Referral link copied')}
       />

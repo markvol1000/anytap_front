@@ -31,7 +31,7 @@ export function ReferralMembersTable({ members = [], onDetail, onShowToast }) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return members.filter((m) => {
+    const list = members.filter((m) => {
       if (status !== 'all' && (m.status || '').toLowerCase() !== status) return false;
       if (!q) return true;
       const nameMatch = (m.name || '').toLowerCase().includes(q);
@@ -39,6 +39,15 @@ export function ReferralMembersTable({ members = [], onDetail, onShowToast }) {
       const idMatch = (m.id || m.userId || '').toLowerCase().includes(q);
       return nameMatch || emailMatch || idMatch;
     });
+
+    const getTime = (m) => {
+      const v = m.joinedAt || m.createdAt || m.joinDate || m.date;
+      if (!v) return 0;
+      const t = new Date(v).getTime();
+      return isNaN(t) ? 0 : t;
+    };
+
+    return [...list].sort((a, b) => getTime(b) - getTime(a));
   }, [members, search, status]);
 
   useEffect(() => {
