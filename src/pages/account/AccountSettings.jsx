@@ -34,10 +34,11 @@ function initialsFromName(name = '') {
 }
 
 function kycBadge(accountState, kycStatusDef) {
-  const status = accountState?.kycStatus ?? 'pending';
+  const status = String(accountState?.kycStatus ?? 'not_started').toLowerCase();
   const map = {
     approved: { tone: 'success', label: 'Verified' },
-    pending: { tone: 'warn', label: 'Not Verified' },
+    not_started: { tone: 'neutral', label: 'Not Verified' },
+    pending: { tone: 'neutral', label: 'Not Verified' },
     under_review: { tone: 'warn', label: 'Under Review' },
     rejected: { tone: 'danger', label: 'Rejected' },
   };

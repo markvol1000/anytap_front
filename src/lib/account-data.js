@@ -402,6 +402,12 @@ export function resolveCardStatusDef(cardStatus, accountState = {}) {
 }
 
 export const KYC_STATUS_DEFS = {
+  not_started: {
+    label: 'Not Verified',
+    message: 'Complete identity verification to apply for a card.',
+    cta: 'Start KYC',
+    nextScreen: 'kyc',
+  },
   pending: {
     label: 'Not Verified',
     message: 'Complete identity verification to apply for a card.',

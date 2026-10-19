@@ -544,6 +544,20 @@ export function KycPage() {
                                 }}>
                                   {isApproved ? '✓ APPROVED' : isRejected ? '✕ FAILED' : '⏳ PENDING'}
                                 </span>
+                                {logItem.eventType ? (
+                                  <span style={{
+                                    fontSize: '10px',
+                                    fontWeight: '600',
+                                    fontFamily: 'monospace',
+                                    padding: '2px 5px',
+                                    borderRadius: '4px',
+                                    backgroundColor: '#f1f5f9',
+                                    color: '#64748b',
+                                    border: '1px solid #e2e8f0',
+                                  }}>
+                                    {logItem.eventType}
+                                  </span>
+                                ) : null}
                               </div>
 
                               <span style={{ fontSize: '10px', color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>

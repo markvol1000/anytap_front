@@ -27,6 +27,7 @@ import {
   updateMember,
   updateMemberReferralCode,
   getReferrals,
+  getMemberAuditTimeline,
 } from '../services/adminService.js';
 
 
@@ -137,6 +138,11 @@ export function MembersPage() {
   const [memberCardsLoading, setMemberCardsLoading] = useState(false);
   const [memberTx, setMemberTx] = useState([]);
   const [memberTxLoading, setMemberTxLoading] = useState(false);
+  const [memberTxPage, setMemberTxPage] = useState(1);
+  const [memberHistory, setMemberHistory] = useState([]);
+  const [memberHistoryLoading, setMemberHistoryLoading] = useState(false);
+  const [memberHistoryPage, setMemberHistoryPage] = useState(1);
+  const [memberFailurePage, setMemberFailurePage] = useState(1);
   const [retryLoading, setRetryLoading] = useState(false);
   const [copiedTxId, setCopiedTxId] = useState(null);
   const list = useAdminList(fetchMembers);
@@ -149,6 +155,9 @@ export function MembersPage() {
   }, [paramId]);
 
   useEffect(() => {
+    setMemberTxPage(1);
+    setMemberHistoryPage(1);
+    setMemberFailurePage(1);
     if (detail?.id) {
       setMemberCardsLoading(true);
       getMemberCards(detail.id)
@@ -171,9 +180,16 @@ export function MembersPage() {
         })
         .catch(() => setMemberTx([]))
         .finally(() => setMemberTxLoading(false));
+
+      setMemberHistoryLoading(true);
+      getMemberAuditTimeline(detail.id, detail.email)
+        .then((history) => setMemberHistory(history || []))
+        .catch(() => setMemberHistory([]))
+        .finally(() => setMemberHistoryLoading(false));
     } else {
       setMemberCards([]);
       setMemberTx([]);
+      setMemberHistory([]);
     }
   }, [detail?.id, detail?.email]);
 
@@ -430,11 +446,11 @@ export function MembersPage() {
                   },
                   {
                     key: 'walletAddress',
-                    label: 'USDT Deposit Address',
+                    label: 'Wallet',
                     render: (r) => {
                       const addr = r.cregisWalletAddress || r.walletAddress || r.depositAddress || '';
                       if (!addr || addr === '-' || addr === '—') {
-                        return <span style={{ color: '#94a3b8', fontSize: '11px' }}>Not allocated</span>;
+                        return <AdminStatusBadge status="not_allocated" label="Not allocated" />;
                       }
                       return (
                         <span
@@ -465,25 +481,6 @@ export function MembersPage() {
                       );
                     },
                   },
-                  {
-                    key: 'lastIp',
-                    label: 'Last IP',
-                    render: (r) => (
-                      <span
-                        style={{
-                          fontFamily: 'monospace',
-                          fontSize: '11px',
-                          color: '#475569',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {r.lastIp || '—'}
-                      </span>
-                    ),
-                  },
-                  { key: 'joinDate', label: 'Join Date', render: (r) => formatAdminDate(r.joinDate) },
-                  { key: 'kycStatus', label: 'KYC', render: (r) => <AdminStatusBadge status={r.kycStatus} /> },
-                  { key: 'cardStatus', label: 'Card', render: (r) => <AdminStatusBadge status={r.cardStatus} /> },
                   { 
                     key: 'walletBalance', 
                     label: 'Wallet Balance', 
@@ -521,6 +518,9 @@ export function MembersPage() {
                       );
                     } 
                   },
+                  { key: 'kycStatus', label: 'KYC', render: (r) => <AdminStatusBadge status={r.kycStatus} /> },
+                  { key: 'cardStatus', label: 'Card', render: (r) => <AdminStatusBadge status={r.cardStatus} /> },
+                  { key: 'joinDate', label: 'Join Date', render: (r) => formatAdminDate(r.joinDate) },
                   { 
                     key: 'accountStatus', 
                     label: 'Account Status', 
@@ -639,7 +639,7 @@ export function MembersPage() {
                         </span>
                       </div>
 
-                      {/* Row 3 (Bottom): Member ID (US...), Distinct Name (if any), Last IP, and Join Date */}
+                      {/* Row 3 (Bottom): Member ID (US...), Distinct Name (if any), and Join Date */}
                       <div className="admin-mobile-card__row2" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         <span
                           className="admin-mobile-card__meta"
@@ -659,14 +659,6 @@ export function MembersPage() {
                             <span style={{ color: '#cbd5e1' }}>•</span>
                             <span className="admin-mobile-card__detail" style={{ color: '#64748b' }}>
                               {r.name}
-                            </span>
-                          </>
-                        )}
-                        {r.lastIp && (
-                          <>
-                            <span style={{ color: '#cbd5e1' }}>•</span>
-                            <span className="admin-mobile-card__meta" style={{ fontFamily: 'monospace', color: '#475569' }}>
-                              {r.lastIp}
                             </span>
                           </>
                         )}
@@ -903,9 +895,13 @@ export function MembersPage() {
                 </AdminDetailSection>
 
                 <AdminDetailSection title="Cregis Connection Info">
-                  <AdminDetailRow label="USDT Deposit Address" value={(
+                  <AdminDetailRow label="Wallet" value={(
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '12px' }}>
-                      <span>{hasNoWallet ? 'Not allocated' : walletAddr}</span>
+                      {hasNoWallet ? (
+                        <AdminStatusBadge status="not_allocated" label="Not allocated" />
+                      ) : (
+                        <span>{walletAddr}</span>
+                      )}
                     </div>
                   )} />
                 </AdminDetailSection>
@@ -1012,207 +1008,404 @@ export function MembersPage() {
                       ) : null}
 
                       {detail.failureHistory && detail.failureHistory.length > 0 ? (
-                        <AdminMiniTable
-                          columns={[
-                            {
-                              key: 'timestamp',
-                              label: 'Date & Time',
-                              render: (r) => (
-                                <span style={{ fontSize: '11px', color: '#475569', fontWeight: '600', whiteSpace: 'nowrap' }}>
-                                  {formatAdminDate(r.timestamp || r.date || r.createdAt)}
-                                </span>
-                              ),
-                            },
-                            {
-                              key: 'status',
-                              label: 'Status Code',
-                              render: (r) => (
-                                <span style={{
-                                  display: 'inline-block',
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  backgroundColor: '#fee2e2',
-                                  color: '#b91c1c',
-                                  fontSize: '11px',
-                                  fontWeight: '700',
-                                  fontFamily: 'monospace'
-                                }}>
-                                  {r.status || r.code || 'FAILED'}
-                                </span>
-                              ),
-                            },
-                            {
-                              key: 'reason',
-                              label: 'Failure Reason / Error Detail',
-                              render: (r) => (
-                                <div style={{
-                                  color: '#7f1d1d',
-                                  fontSize: '12px',
-                                  fontFamily: 'monospace',
-                                  wordBreak: 'break-word',
-                                  whiteSpace: 'pre-wrap'
-                                }}>
-                                  {r.reason || r.message || r.error || '—'}
+                        (() => {
+                          const PAGE_SIZE = 5;
+                          const totalPages = Math.ceil(detail.failureHistory.length / PAGE_SIZE) || 1;
+                          const curPage = Math.min(memberFailurePage, totalPages);
+                          const startIdx = (curPage - 1) * PAGE_SIZE;
+                          const pageRows = detail.failureHistory.slice(startIdx, startIdx + PAGE_SIZE);
+
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                              <AdminMiniTable
+                                columns={[
+                                  {
+                                    key: 'timestamp',
+                                    label: 'Date & Time',
+                                    render: (r) => (
+                                      <span style={{ fontSize: '11px', color: '#475569', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                                        {formatAdminDate(r.timestamp || r.date || r.createdAt)}
+                                      </span>
+                                    ),
+                                  },
+                                  {
+                                    key: 'status',
+                                    label: 'Status Code',
+                                    render: (r) => (
+                                      <span style={{
+                                        display: 'inline-block',
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        backgroundColor: '#fee2e2',
+                                        color: '#b91c1c',
+                                        fontSize: '11px',
+                                        fontWeight: '700',
+                                        fontFamily: 'monospace'
+                                      }}>
+                                        {r.status || r.code || 'FAILED'}
+                                      </span>
+                                    ),
+                                  },
+                                  {
+                                    key: 'reason',
+                                    label: 'Failure Reason / Error Detail',
+                                    render: (r) => (
+                                      <div style={{
+                                        color: '#7f1d1d',
+                                        fontSize: '12px',
+                                        fontFamily: 'monospace',
+                                        wordBreak: 'break-word',
+                                        whiteSpace: 'pre-wrap'
+                                      }}>
+                                        {r.reason || r.message || r.error || '—'}
+                                      </div>
+                                    ),
+                                  },
+                                ]}
+                                rows={pageRows}
+                              />
+
+                              {totalPages > 1 && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 4px', fontSize: '11px', color: '#64748b' }}>
+                                  <span>Showing {startIdx + 1}–{Math.min(startIdx + PAGE_SIZE, detail.failureHistory.length)} of {detail.failureHistory.length}</span>
+                                  <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button
+                                      type="button"
+                                      className="admin-btn admin-btn--ghost admin-btn--sm"
+                                      disabled={curPage <= 1}
+                                      onClick={() => setMemberFailurePage((p) => Math.max(1, p - 1))}
+                                      style={{ padding: '2px 8px', fontSize: '11px' }}
+                                    >
+                                      Prev
+                                    </button>
+                                    <span style={{ padding: '2px 6px', fontWeight: '600' }}>{curPage} / {totalPages}</span>
+                                    <button
+                                      type="button"
+                                      className="admin-btn admin-btn--ghost admin-btn--sm"
+                                      disabled={curPage >= totalPages}
+                                      onClick={() => setMemberFailurePage((p) => Math.min(totalPages, p + 1))}
+                                      style={{ padding: '2px 8px', fontSize: '11px' }}
+                                    >
+                                      Next
+                                    </button>
+                                  </div>
                                 </div>
-                              ),
-                            },
-                          ]}
-                          rows={detail.failureHistory}
-                        />
+                              )}
+                            </div>
+                          );
+                        })()
                       ) : null}
                     </div>
                   </AdminDetailSection>
                 ) : null}
 
                 {/* Member Recent Transactions Section */}
-                <AdminDetailSection title="Activity & Transaction History (입 / 출금 내역)" className="admin-detail-full-width">
+                <AdminDetailSection title="Activity & Transaction History" className="admin-detail-full-width">
                   {memberTxLoading ? (
                     <p className="admin-loading admin-loading--inline">Loading transactions…</p>
                   ) : memberTx && memberTx.length > 0 ? (
-                    <AdminMiniTable
-                      columns={[
-                        {
-                          key: 'id',
-                          label: 'Tx ID',
-                          render: (r) => {
-                            const rawId = String(r.id ?? '');
-                            const isCopied = copiedTxId === rawId;
-                            return (
-                              <button
-                                type="button"
-                                title={`Click to copy: ${rawId}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    navigator.clipboard?.writeText(rawId);
-                                    setCopiedTxId(rawId);
-                                    setTimeout(() => setCopiedTxId((curr) => (curr === rawId ? null : curr)), 1500);
-                                  } catch {}
-                                }}
-                                style={{
-                                  fontFamily: 'monospace',
-                                  fontSize: '11px',
-                                  color: '#0284c7',
-                                  background: '#f0f9ff',
-                                  border: '1px solid #bae6fd',
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  whiteSpace: 'nowrap',
-                                  cursor: 'pointer',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                }}
-                              >
-                                <span>{rawId.length > 12 ? `${rawId.slice(0, 6)}...${rawId.slice(-4)}` : rawId}</span>
-                                <span style={{ fontSize: '10px' }}>{isCopied ? '✓' : '📋'}</span>
-                              </button>
-                            );
-                          },
-                        },
-                        {
-                          key: 'kind',
-                          label: 'Type',
-                          render: (r) => {
-                            const k = String(r.kind || '').toLowerCase();
-                            const isInflow = k === 'wallet_topup' || k === 'deposit' || k === 'refund';
-                            const isSpend = k === 'card_spend' || k === 'payment';
-                            
-                            let label = 'Deposit';
-                            let bg = '#f0fdf4';
-                            let text = '#16a34a';
-                            let border = '#bbf7d0';
+                    (() => {
+                      const PAGE_SIZE = 5;
+                      const totalPages = Math.ceil(memberTx.length / PAGE_SIZE) || 1;
+                      const curPage = Math.min(memberTxPage, totalPages);
+                      const startIdx = (curPage - 1) * PAGE_SIZE;
+                      const pageRows = memberTx.slice(startIdx, startIdx + PAGE_SIZE);
 
-                            if (k === 'wallet_withdraw' || k === 'withdraw') {
-                              label = 'Withdrawal';
-                              bg = '#fff7ed';
-                              text = '#ea580c';
-                              border = '#fed7aa';
-                            } else if (isSpend) {
-                              label = 'Card Spend';
-                              bg = '#fdf2f8';
-                              text = '#db2777';
-                              border = '#fbcfe8';
-                            } else if (k === 'refund') {
-                              label = 'Refund';
-                              bg = '#eff6ff';
-                              text = '#2563eb';
-                              border = '#bfdbfe';
-                            }
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                          <AdminMiniTable
+                            columns={[
+                              {
+                                key: 'id',
+                                label: 'Tx ID',
+                                render: (r) => {
+                                  const rawId = String(r.id ?? '');
+                                  const isCopied = copiedTxId === rawId;
+                                  return (
+                                    <button
+                                      type="button"
+                                      title={`Click to copy: ${rawId}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        try {
+                                          navigator.clipboard?.writeText(rawId);
+                                          setCopiedTxId(rawId);
+                                          setTimeout(() => setCopiedTxId((curr) => (curr === rawId ? null : curr)), 1500);
+                                        } catch {}
+                                      }}
+                                      style={{
+                                        fontFamily: 'monospace',
+                                        fontSize: '11px',
+                                        color: '#0284c7',
+                                        background: '#f0f9ff',
+                                        border: '1px solid #bae6fd',
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        whiteSpace: 'nowrap',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                      }}
+                                    >
+                                      <span>{rawId.length > 12 ? `${rawId.slice(0, 6)}...${rawId.slice(-4)}` : rawId}</span>
+                                      <span style={{ fontSize: '10px' }}>{isCopied ? '✓' : '📋'}</span>
+                                    </button>
+                                  );
+                                },
+                              },
+                              {
+                                key: 'kind',
+                                label: 'Type',
+                                render: (r) => {
+                                  const k = String(r.kind || '').toLowerCase();
+                                  const isInflow = k === 'wallet_topup' || k === 'deposit' || k === 'refund';
+                                  const isSpend = k === 'card_spend' || k === 'payment';
+                                  
+                                  let label = 'Deposit';
+                                  let bg = '#f0fdf4';
+                                  let text = '#16a34a';
+                                  let border = '#bbf7d0';
 
-                            return (
-                              <span style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '3px',
-                                padding: '2px 7px',
-                                borderRadius: '4px',
-                                fontSize: '11px',
-                                fontWeight: '700',
-                                backgroundColor: bg,
-                                color: text,
-                                border: `1px solid ${border}`
-                              }}>
-                                {isInflow ? '📥 ' : '📤 '}{label}
-                              </span>
-                            );
-                          },
-                        },
-                        {
-                          key: 'amount',
-                          label: 'Amount (+ / -)',
-                          render: (r) => {
-                            const k = String(r.kind || '').toLowerCase();
-                            const isInflow = k === 'wallet_topup' || k === 'deposit' || k === 'refund';
-                            const sign = isInflow ? '+' : '-';
-                            const color = isInflow ? '#16a34a' : '#dc2626';
-                            const bg = isInflow ? '#f0fdf4' : '#fef2f2';
-                            const border = isInflow ? '#bbf7d0' : '#fecaca';
-                            const num = Math.abs(Number(r.amount) || 0).toLocaleString('en-US', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            });
+                                  if (k === 'wallet_withdraw' || k === 'withdraw') {
+                                    label = 'Withdrawal';
+                                    bg = '#fff7ed';
+                                    text = '#ea580c';
+                                    border = '#fed7aa';
+                                  } else if (isSpend) {
+                                    label = 'Card Spend';
+                                    bg = '#fdf2f8';
+                                    text = '#db2777';
+                                    border = '#fbcfe8';
+                                  } else if (k === 'refund') {
+                                    label = 'Refund';
+                                    bg = '#eff6ff';
+                                    text = '#2563eb';
+                                    border = '#bfdbfe';
+                                  }
 
-                            return (
-                              <div style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                padding: '2px 8px',
-                                borderRadius: '5px',
-                                backgroundColor: bg,
-                                border: `1px solid ${border}`,
-                                fontWeight: '800',
-                                fontSize: '12px',
-                                color: color,
-                                fontFamily: 'monospace',
-                              }}>
-                                <CurrencyBadgeMini currency={r.transCurrency || r.originalCurrency || r.currency} />
-                                <span>{sign}{formatAmountWithCurrency(Math.abs(Number(r.transAmount ?? r.amount) || 0), r.transCurrency || r.originalCurrency || r.currency || '')}</span>
+                                  return (
+                                    <span style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px',
+                                      padding: '2px 7px',
+                                      borderRadius: '4px',
+                                      fontSize: '11px',
+                                      fontWeight: '700',
+                                      backgroundColor: bg,
+                                      color: text,
+                                      border: `1px solid ${border}`
+                                    }}>
+                                      {isInflow ? '📥 ' : '📤 '}{label}
+                                    </span>
+                                  );
+                                },
+                              },
+                              {
+                                key: 'amount',
+                                label: 'Amount (+ / -)',
+                                render: (r) => {
+                                  const k = String(r.kind || '').toLowerCase();
+                                  const isInflow = k === 'wallet_topup' || k === 'deposit' || k === 'refund';
+                                  const sign = isInflow ? '+' : '-';
+                                  const color = isInflow ? '#16a34a' : '#dc2626';
+                                  const bg = isInflow ? '#f0fdf4' : '#fef2f2';
+                                  const border = isInflow ? '#bbf7d0' : '#fecaca';
+
+                                  return (
+                                    <div style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      padding: '2px 8px',
+                                      borderRadius: '5px',
+                                      backgroundColor: bg,
+                                      border: `1px solid ${border}`,
+                                      fontWeight: '800',
+                                      fontSize: '12px',
+                                      color: color,
+                                      fontFamily: 'monospace',
+                                    }}>
+                                      <CurrencyBadgeMini currency={r.transCurrency || r.originalCurrency || r.currency} />
+                                      <span>{sign}{formatAmountWithCurrency(Math.abs(Number(r.transAmount ?? r.amount) || 0), r.transCurrency || r.originalCurrency || r.currency || '')}</span>
+                                    </div>
+                                  );
+                                },
+                              },
+                              {
+                                key: 'status',
+                                label: 'Status',
+                                render: (r) => <AdminStatusBadge status={r.status || 'success'} />,
+                              },
+                              {
+                                key: 'at',
+                                label: 'Date & Time',
+                                render: (r) => (
+                                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                    {formatAdminDate(r.at)}
+                                  </span>
+                                ),
+                              },
+                            ]}
+                            rows={pageRows}
+                          />
+
+                          {totalPages > 1 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 4px', fontSize: '11px', color: '#64748b' }}>
+                              <span>Showing {startIdx + 1}–{Math.min(startIdx + PAGE_SIZE, memberTx.length)} of {memberTx.length}</span>
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn--ghost admin-btn--sm"
+                                  disabled={curPage <= 1}
+                                  onClick={() => setMemberTxPage((p) => Math.max(1, p - 1))}
+                                  style={{ padding: '2px 8px', fontSize: '11px' }}
+                                >
+                                  Prev
+                                </button>
+                                <span style={{ padding: '2px 6px', fontWeight: '600' }}>{curPage} / {totalPages}</span>
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn--ghost admin-btn--sm"
+                                  disabled={curPage >= totalPages}
+                                  onClick={() => setMemberTxPage((p) => Math.min(totalPages, p + 1))}
+                                  style={{ padding: '2px 8px', fontSize: '11px' }}
+                                >
+                                  Next
+                                </button>
                               </div>
-                            );
-                          },
-                        },
-                        {
-                          key: 'status',
-                          label: 'Status',
-                          render: (r) => <AdminStatusBadge status={r.status || 'success'} />,
-                        },
-                        {
-                          key: 'at',
-                          label: 'Date & Time',
-                          render: (r) => (
-                            <span style={{ fontSize: '11px', color: '#64748b' }}>
-                              {formatAdminDate(r.at)}
-                            </span>
-                          ),
-                        },
-                      ]}
-                      rows={memberTx}
-                    />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()
                   ) : (
                     <p className="admin-muted" style={{ paddingLeft: '8px', fontSize: '13px' }}>
                       No recent transactions found for this member.
+                    </p>
+                  )}
+                </AdminDetailSection>
+
+                {/* Member Comprehensive Audit & Activity History */}
+                <AdminDetailSection title="Activity & Audit History" className="admin-detail-full-width">
+                  {memberHistoryLoading ? (
+                    <p className="admin-loading admin-loading--inline">Loading member activity history…</p>
+                  ) : memberHistory && memberHistory.length > 0 ? (
+                    (() => {
+                      const PAGE_SIZE = 5;
+                      const totalPages = Math.ceil(memberHistory.length / PAGE_SIZE) || 1;
+                      const curPage = Math.min(memberHistoryPage, totalPages);
+                      const startIdx = (curPage - 1) * PAGE_SIZE;
+                      const pageRows = memberHistory.slice(startIdx, startIdx + PAGE_SIZE);
+
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                          {pageRows.map((h) => {
+                            const isSuccess = h.tagTone === 'success';
+                            const isDanger = h.tagTone === 'danger';
+                            const isWarn = h.tagTone === 'warning';
+                            
+                            const bg = isSuccess ? '#f0fdf4' : isDanger ? '#fef2f2' : isWarn ? '#fffbeb' : '#f8fafc';
+                            const border = isSuccess ? '#bbf7d0' : isDanger ? '#fecaca' : isWarn ? '#fde68a' : '#e2e8f0';
+                            const tagBg = isSuccess ? '#dcfce7' : isDanger ? '#fee2e2' : isWarn ? '#fef3c7' : '#f1f5f9';
+                            const tagColor = isSuccess ? '#166534' : isDanger ? '#991b1b' : isWarn ? '#92400e' : '#475569';
+                            const tagBorder = isSuccess ? '#86efac' : isDanger ? '#fca5a5' : isWarn ? '#fcd34d' : '#cbd5e1';
+
+                            return (
+                              <div
+                                key={h.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'flex-start',
+                                  justifyContent: 'space-between',
+                                  padding: '10px 12px',
+                                  borderRadius: '6px',
+                                  backgroundColor: bg,
+                                  border: `1px solid ${border}`,
+                                  gap: '12px',
+                                }}
+                              >
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                    <span
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        padding: '2px 8px',
+                                        borderRadius: '999px',
+                                        fontSize: '11px',
+                                        fontWeight: '700',
+                                        fontFamily: 'monospace',
+                                        backgroundColor: tagBg,
+                                        color: tagColor,
+                                        border: `1px solid ${tagBorder}`,
+                                      }}
+                                    >
+                                      {h.tag}
+                                    </span>
+                                    <span style={{ fontWeight: '600', fontSize: '13px', color: '#1e293b' }}>
+                                      {h.title}
+                                    </span>
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: '12px',
+                                      color: isDanger ? '#7f1d1d' : '#475569',
+                                      fontFamily: 'monospace',
+                                      wordBreak: 'break-word',
+                                      lineHeight: 1.4,
+                                    }}
+                                  >
+                                    {h.reason}
+                                  </div>
+                                </div>
+                                <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', whiteSpace: 'nowrap' }}>
+                                    {formatAdminDate(h.at)}
+                                  </span>
+                                  {h.ipAddress ? (
+                                    <span style={{ fontSize: '10px', color: '#94a3b8', fontFamily: 'monospace' }}>
+                                      IP: {h.ipAddress}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {totalPages > 1 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 4px', fontSize: '11px', color: '#64748b' }}>
+                              <span>Showing {startIdx + 1}–{Math.min(startIdx + PAGE_SIZE, memberHistory.length)} of {memberHistory.length}</span>
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn--ghost admin-btn--sm"
+                                  disabled={curPage <= 1}
+                                  onClick={() => setMemberHistoryPage((p) => Math.max(1, p - 1))}
+                                  style={{ padding: '2px 8px', fontSize: '11px' }}
+                                >
+                                  Prev
+                                </button>
+                                <span style={{ padding: '2px 6px', fontWeight: '600' }}>{curPage} / {totalPages}</span>
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn--ghost admin-btn--sm"
+                                  disabled={curPage >= totalPages}
+                                  onClick={() => setMemberHistoryPage((p) => Math.min(totalPages, p + 1))}
+                                  style={{ padding: '2px 8px', fontSize: '11px' }}
+                                >
+                                  Next
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <p className="admin-muted" style={{ paddingLeft: '8px', fontSize: '13px' }}>
+                      No audit or event history found for this member.
                     </p>
                   )}
                 </AdminDetailSection>

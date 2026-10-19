@@ -27,6 +27,8 @@ const STATUS_MAP = {
   blocked: { label: 'Blocked', tone: 'danger' },
   freeze: { label: 'Frozen', tone: 'info' },
   not_issued: { label: 'Not Issued', tone: 'neutral' },
+  not_started: { label: 'Not Started', tone: 'neutral' },
+  not_allocated: { label: 'Not Allocated', tone: 'neutral' },
   success: { label: 'Success', tone: 'success' },
   completed: { label: 'Completed', tone: 'success' },
   failed: { label: 'Failed', tone: 'danger' },

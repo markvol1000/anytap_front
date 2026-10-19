@@ -301,51 +301,34 @@ export async function getKycHistory(userId, email = '') {
     const cleanId = String(userId || '').replace(/\.+$/, '');
     const cleanEmail = String(email || '').trim();
 
-    // 1. Fetch login-logs (contains FAIL_KYC_API, FAIL_KYC_VALIDATION from CardController)
-    const searchTarget = cleanEmail || cleanId;
-    const loginLogsRes = await apiGet(`/admin/login-logs?search=${encodeURIComponent(searchTarget)}&size=100`).catch(() => null);
-    const rawLoginLogs = asArray(loginLogsRes);
-
-    // 2. Fetch event-logs (contains KYC_APPROVED, KYC_REJECTED)
+    // Fetch event-logs strictly for KYC-related events (KYC_SUBMITTED, KYC_APPROVED, KYC_REJECTED, FAIL_KYC_API, etc.)
     const eventLogsRes = await apiGet(`/admin/event-logs?userId=${encodeURIComponent(cleanId)}&size=100`).catch(() => null);
     const rawEventLogs = asArray(eventLogsRes);
     const allAdminLogs = rawEventLogs.length > 0 ? rawEventLogs : asArray(await apiGet('/admin/logs').catch(() => []));
 
     const combined = [];
 
-    // Map login logs (e.g. FAIL_KYC_API, FAIL_KYC_VALIDATION)
-    rawLoginLogs.forEach((l, idx) => {
-      const st = String(l.status || l.eventType || '').toUpperCase();
-      if (st.includes('KYC') || st.includes('FAIL')) {
-        combined.push({
-          id: l.id || `LOGIN_LOG_${idx + 1}`,
-          eventType: st,
-          status: 'rejected',
-          reason: l.reason || l.description || l.message || 'KYC verification submission failed',
-          at: l.attemptedAt || l.createdAt || l.createdDate || l.loggedAt || '',
-        });
-      }
-    });
-
-    // Map event logs (e.g. KYC_APPROVED, KYC_REJECTED)
     allAdminLogs.forEach((l, idx) => {
       const match = (cleanId && (l.userId === cleanId || l.memberId === cleanId || l.id === cleanId)) ||
                     (cleanEmail && l.email === cleanEmail);
       if (match) {
-        const evtType = String(l.eventType || l.type || 'KYC_ATTEMPT').toUpperCase();
-        if (evtType.includes('KYC') || evtType.includes('REJECT') || evtType.includes('APPROV') || evtType.includes('FAIL')) {
+        const evtType = String(l.eventType || l.type || '').toUpperCase();
+        // Strictly only include KYC-related events
+        if (evtType.startsWith('KYC_') || evtType.includes('_KYC_') || evtType.startsWith('FAIL_KYC_') || evtType.includes('CARDHOLDER')) {
           let status = 'pending';
           if (evtType.includes('APPROVED') || evtType.includes('ACTIVE') || evtType.includes('SUCCESS')) {
             status = 'approved';
           } else if (evtType.includes('REJECTED') || evtType.includes('FAIL') || evtType.includes('DECLINED')) {
             status = 'rejected';
+          } else if (evtType.includes('SUBMITTED') || evtType.includes('REVIEW') || evtType.includes('REQUESTED')) {
+            status = 'pending';
           }
 
-          let reason = l.ipAddress || l.description || l.message || l.memo || '';
-          if (!reason || reason.startsWith('127.') || reason.startsWith('192.') || reason.startsWith('10.')) {
+          let reason = l.description || l.message || l.reason || l.memo || '';
+          if (!reason || reason === '-' || reason.startsWith('127.') || reason.startsWith('192.') || reason.startsWith('10.')) {
             if (status === 'approved') reason = 'Identity verification approved';
             else if (status === 'rejected') reason = 'Verification document rejected / validation failed';
-            else reason = 'KYC verification submitted';
+            else reason = 'KYC verification submitted for review';
           }
 
           combined.push({
@@ -353,13 +336,13 @@ export async function getKycHistory(userId, email = '') {
             eventType: evtType,
             status,
             reason,
-            at: l.createdAt || l.loggedAt || l.timestamp || l.date || '',
+            at: l.loggedAt || l.createdAt || l.timestamp || l.date || '',
           });
         }
       }
     });
 
-    // Deduplicate by timestamp + reason and sort descending
+    // Deduplicate by timestamp + eventType + reason and sort descending (latest first)
     const seen = new Set();
     const uniqueList = combined.filter((item) => {
       const key = `${item.eventType}_${item.at}_${item.reason}`;
@@ -371,6 +354,110 @@ export async function getKycHistory(userId, email = '') {
     return uniqueList.sort((a, b) => new Date(b.at) - new Date(a.at));
   } catch (err) {
     console.error('Failed to fetch KYC history', err);
+    return [];
+  }
+}
+
+export async function getMemberAuditTimeline(userId, email = '') {
+  try {
+    const cleanId = String(userId || '').replace(/\.+$/, '');
+    const cleanEmail = String(email || '').trim();
+
+    const [loginLogsRes, eventLogsRes] = await Promise.all([
+      apiGet(`/admin/login-logs?size=100&search=${encodeURIComponent(cleanEmail || cleanId)}`).catch(() => null),
+      apiGet(`/admin/event-logs?userId=${encodeURIComponent(cleanId)}&size=100`).catch(() => null),
+    ]);
+
+    const rawLoginLogs = asArray(loginLogsRes?.items || loginLogsRes?.data?.items || loginLogsRes);
+    const rawEventLogs = asArray(eventLogsRes?.items || eventLogsRes?.data?.items || eventLogsRes);
+
+    const timeline = [];
+
+    // 1. Process Login Logs
+    rawLoginLogs.forEach((l, idx) => {
+      const match = (cleanId && (l.userId === cleanId || l.user_id === cleanId)) ||
+                    (cleanEmail && String(l.email || '').toLowerCase() === cleanEmail.toLowerCase());
+      if (match) {
+        const isSuccess = String(l.status || '').toUpperCase() === 'SUCCESS';
+        timeline.push({
+          id: `LOGIN_${l.id || idx}`,
+          category: 'LOGIN',
+          title: isSuccess ? 'Login Successful' : 'Login Failed',
+          status: isSuccess ? 'success' : 'failed',
+          tag: isSuccess ? 'LOGIN_SUCCESS' : 'LOGIN_FAILED',
+          tagTone: isSuccess ? 'success' : 'danger',
+          reason: l.reason && l.reason !== '-' ? l.reason : (isSuccess ? 'User signed in successfully' : 'Authentication failed'),
+          ipAddress: l.ipAddress || l.ip_address || '',
+          at: l.createdAt || l.created_at || l.loggedAt || '',
+        });
+      }
+    });
+
+    // 2. Process Event Logs (KYC, Wasabi, Cregis, System)
+    rawEventLogs.forEach((e, idx) => {
+      const match = (cleanId && (e.userId === cleanId || e.memberId === cleanId)) ||
+                    (cleanEmail && String(e.email || '').toLowerCase() === cleanEmail.toLowerCase());
+      if (match) {
+        const rawType = String(e.eventType || e.type || '').toUpperCase();
+        let category = 'SYSTEM';
+        let title = rawType;
+        let tagTone = 'neutral';
+        let status = 'info';
+
+        if (rawType.includes('KYC') || rawType.includes('CARDHOLDER')) {
+          category = 'KYC';
+          if (rawType.includes('APPROVED') || rawType.includes('ACTIVE') || rawType.includes('SUCCESS')) {
+            title = 'KYC Verification Approved';
+            tagTone = 'success';
+            status = 'approved';
+          } else if (rawType.includes('REJECTED') || rawType.includes('FAIL')) {
+            title = 'KYC Verification Rejected';
+            tagTone = 'danger';
+            status = 'rejected';
+          } else if (rawType.includes('SUBMITTED') || rawType.includes('REVIEW')) {
+            title = 'KYC Documents Submitted';
+            tagTone = 'warning';
+            status = 'pending';
+          } else {
+            title = 'KYC Verification Updated';
+            tagTone = 'info';
+          }
+        } else if (rawType.includes('CARD')) {
+          category = 'CARD';
+          title = 'Card Operation: ' + rawType;
+          tagTone = rawType.includes('FAIL') ? 'danger' : 'info';
+        } else if (rawType.includes('DEPOSIT') || rawType.includes('WITHDRAW') || rawType.includes('TRANSFER')) {
+          category = 'WALLET';
+          title = 'Wallet Transaction: ' + rawType;
+          tagTone = 'success';
+        }
+
+        timeline.push({
+          id: `EVENT_${e.id || idx}`,
+          category,
+          title,
+          status,
+          tag: rawType,
+          tagTone,
+          reason: e.description || e.message || e.reason || '-',
+          ipAddress: e.ipAddress || '',
+          at: e.loggedAt || e.createdAt || e.timestamp || '',
+        });
+      }
+    });
+
+    // Deduplicate by tag + at + reason
+    const seen = new Set();
+    const unique = timeline.filter((item) => {
+      const key = `${item.tag}_${item.at}_${item.reason}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return unique.sort((a, b) => new Date(b.at) - new Date(a.at));
+  } catch (err) {
+    console.error('Failed to get member audit timeline', err);
     return [];
   }
 }
