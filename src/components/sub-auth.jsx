@@ -185,6 +185,7 @@ function LoginPage() {
         turnstileContainerRef.current.innerHTML = '';
         widgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
           sitekey: '0x4AAAAAAFUPnXqUuCvXL0UY',
+          language: 'en',
           callback: (token) => {
             if (isMounted) setTurnstileToken(token);
           },
@@ -204,6 +205,7 @@ function LoginPage() {
               turnstileContainerRef.current.innerHTML = '';
               widgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
                 sitekey: '0x4AAAAAAFUPnXqUuCvXL0UY',
+                language: 'en',
                 callback: (token) => {
                   if (isMounted) setTurnstileToken(token);
                 },
@@ -414,6 +416,7 @@ function LoginPage() {
           >
             <div
               ref={turnstileContainerRef}
+              data-language="en"
               style={{
                 minHeight: '65px',
                 minWidth: '300px',
@@ -539,6 +542,7 @@ function SignUpPage() {
         turnstileContainerRef.current.innerHTML = '';
         widgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
           sitekey: '0x4AAAAAAFUPnXqUuCvXL0UY',
+          language: 'en',
           callback: (token) => {
             if (isMounted) setTurnstileToken(token);
           },
@@ -558,6 +562,7 @@ function SignUpPage() {
               turnstileContainerRef.current.innerHTML = '';
               widgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
                 sitekey: '0x4AAAAAAFUPnXqUuCvXL0UY',
+                language: 'en',
                 callback: (token) => {
                   if (isMounted) setTurnstileToken(token);
                 },
@@ -889,6 +894,7 @@ function SignUpPage() {
           >
             <div
               ref={turnstileContainerRef}
+              data-language="en"
               style={{
                 minHeight: '65px',
                 minWidth: '300px',
