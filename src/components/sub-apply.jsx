@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Icon } from './ui.jsx';
 import { SubHero, Band, SectionHead, IconCards, StatTiles } from './sub-common.jsx';
 import { englishFormProps, handleEnglishSubmit } from '../utils/formValidation.js';
-import { SUPPORT_EMAIL, SUPPORT_MAILTO } from '../lib/site.ts';
+import { SUPPORT_EMAIL, SUPPORT_MAILTO, SOCIAL_LINKS } from '../lib/site.ts';
 
 // ---- shared form helpers ----
 function FormDone({ title, msg }) {
