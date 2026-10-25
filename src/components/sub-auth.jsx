@@ -427,7 +427,7 @@ function LoginPage() {
             />
           </div>
           <Link to="/forgot-password" className="login-screen__forgot">Forgot password?</Link>
-          <button type="submit" className="btn btn--primary btn--lg login-screen__submit" disabled={entering}>
+          <button type="submit" className="btn btn--primary btn--lg login-screen__submit" disabled={entering || !turnstileToken}>
             Log in <Icon name="arrowRight" size={16} />
           </button>
         </form>
@@ -904,7 +904,7 @@ function SignUpPage() {
               }}
             />
           </div>
-          <button type="submit" className="btn btn--accent btn--lg login-screen__submit">
+          <button type="submit" className="btn btn--accent btn--lg login-screen__submit" disabled={!turnstileToken}>
             Create Account
           </button>
         </form>
@@ -1190,6 +1190,96 @@ function ForgotPasswordPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const { toast, showToast } = useAuthToast();
 
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileContainerRef = useRef(null);
+  const widgetIdRef = useRef(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    let timerId = null;
+
+    const renderWidget = () => {
+      if (!isMounted || !turnstileContainerRef.current) return;
+      if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+        timerId = setTimeout(renderWidget, 100);
+        return;
+      }
+
+      if (widgetIdRef.current !== null) {
+        return;
+      }
+
+      try {
+        turnstileContainerRef.current.innerHTML = '';
+        widgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+          sitekey: '0x4AAAAAAFUPnXqUuCvXL0UY',
+          language: 'en',
+          callback: (token) => {
+            if (isMounted) setTurnstileToken(token);
+          },
+          'expired-callback': () => {
+            if (isMounted) setTurnstileToken('');
+          },
+          'error-callback': () => {
+            if (isMounted) setTurnstileToken('');
+          },
+          theme: 'light',
+        });
+      } catch (err) {
+        if (isMounted && widgetIdRef.current === null) {
+          timerId = setTimeout(() => {
+            if (!isMounted || !turnstileContainerRef.current) return;
+            try {
+              turnstileContainerRef.current.innerHTML = '';
+              widgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+                sitekey: '0x4AAAAAAFUPnXqUuCvXL0UY',
+                language: 'en',
+                callback: (token) => {
+                  if (isMounted) setTurnstileToken(token);
+                },
+                'expired-callback': () => {
+                  if (isMounted) setTurnstileToken('');
+                },
+                'error-callback': () => {
+                  if (isMounted) setTurnstileToken('');
+                },
+                theme: 'light',
+              });
+            } catch { /* noop */ }
+          }, 150);
+        }
+      }
+    };
+
+    timerId = setTimeout(renderWidget, 50);
+
+    if (!window.turnstile) {
+      window.onAnytapTurnstileLoad = renderWidget;
+      if (!document.getElementById('cloudflare-turnstile-script')) {
+        const script = document.createElement('script');
+        script.id = 'cloudflare-turnstile-script';
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onAnytapTurnstileLoad&render=explicit';
+        script.async = true;
+        script.defer = true;
+        document.body.appendChild(script);
+      }
+    }
+
+    return () => {
+      isMounted = false;
+      if (timerId) clearTimeout(timerId);
+      if (widgetIdRef.current !== null) {
+        try {
+          if (window.turnstile && typeof window.turnstile.remove === 'function') {
+            window.turnstile.remove(widgetIdRef.current);
+          }
+        } catch { /* noop */ }
+        widgetIdRef.current = null;
+      }
+      setTurnstileToken('');
+    };
+  }, [step]);
+
   const handleSendEmail = async (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -1198,15 +1288,40 @@ function ForgotPasswordPage() {
       return;
     }
 
+    let token = turnstileToken;
+    if (!token && typeof window !== 'undefined' && window.turnstile) {
+      try {
+        const directToken = (widgetIdRef.current !== null)
+          ? window.turnstile.getResponse(widgetIdRef.current)
+          : window.turnstile.getResponse();
+        if (directToken) {
+          token = directToken;
+          setTurnstileToken(directToken);
+        }
+      } catch { /* noop */ }
+    }
+
+    if (!token) {
+      setErrorMsg('Please complete the security verification and try again.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await sendForgotPasswordEmail({ email });
+      const res = await sendForgotPasswordEmail({ email, recaptchaToken: token });
       if (!res.ok) {
         throw new Error(res.message || 'Failed to send verification code.');
       }
       showToast(res.message || 'Verification code sent to your email.');
       setStep(2);
+      setTurnstileToken('');
     } catch (err) {
+      if (window.turnstile && widgetIdRef.current !== null) {
+        try {
+          window.turnstile.reset(widgetIdRef.current);
+          setTurnstileToken('');
+        } catch { /* noop */ }
+      }
       setErrorMsg(err?.message || 'Failed to send verification code.');
     } finally {
       setLoading(false);
@@ -1233,15 +1348,39 @@ function ForgotPasswordPage() {
       return;
     }
 
+    let token = turnstileToken;
+    if (!token && typeof window !== 'undefined' && window.turnstile) {
+      try {
+        const directToken = (widgetIdRef.current !== null)
+          ? window.turnstile.getResponse(widgetIdRef.current)
+          : window.turnstile.getResponse();
+        if (directToken) {
+          token = directToken;
+          setTurnstileToken(directToken);
+        }
+      } catch { /* noop */ }
+    }
+
+    if (!token) {
+      setErrorMsg('Please complete the security verification and try again.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await resetPassword({ email, code, newPassword });
+      const res = await resetPassword({ email, code, newPassword, recaptchaToken: token });
       if (!res.ok) {
         throw new Error(res.message || 'Failed to reset password.');
       }
       showToast(res.message || 'Password reset successfully!');
       setStep(3);
     } catch (err) {
+      if (window.turnstile && widgetIdRef.current !== null) {
+        try {
+          window.turnstile.reset(widgetIdRef.current);
+          setTurnstileToken('');
+        } catch { /* noop */ }
+      }
       setErrorMsg(err?.message || 'Failed to reset password.');
     } finally {
       setLoading(false);
@@ -1303,15 +1442,44 @@ function ForgotPasswordPage() {
                 required
               />
 
+              <div
+                className="turnstile-wrapper"
+                style={{
+                  margin: '16px 0 8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: '78px',
+                  height: '78px',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <div
+                  ref={turnstileContainerRef}
+                  data-language="en"
+                  style={{
+                    minHeight: '65px',
+                    minWidth: '300px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                />
+              </div>
 
-              <button type="submit" className="btn btn--primary btn--lg login-screen__submit" disabled={loading}>
+              <button
+                type="submit"
+                className="btn btn--primary btn--lg login-screen__submit"
+                disabled={loading || !turnstileToken}
+              >
                 {loading ? 'Resetting...' : 'Set New Password'} <Icon name="arrowRight" size={16} />
               </button>
               <button
                 type="button"
                 className="btn btn--secondary"
                 style={{ marginTop: '8px', width: '100%' }}
-                onClick={() => { setStep(1); setErrorMsg(''); }}>
+                onClick={() => { setStep(1); setErrorMsg(''); setTurnstileToken(''); }}>
                 Back to Change Email
               </button>
             </form>
@@ -1340,7 +1508,38 @@ function ForgotPasswordPage() {
                 autoComplete="email"
                 required
               />
-              <button type="submit" className="btn btn--primary btn--lg login-screen__submit" disabled={loading}>
+
+              <div
+                className="turnstile-wrapper"
+                style={{
+                  margin: '16px 0 8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: '78px',
+                  height: '78px',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <div
+                  ref={turnstileContainerRef}
+                  data-language="en"
+                  style={{
+                    minHeight: '65px',
+                    minWidth: '300px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn--primary btn--lg login-screen__submit"
+                disabled={loading || !turnstileToken}
+              >
                 {loading ? 'Sending Code...' : 'Send Verification Code'} <Icon name="arrowRight" size={16} />
               </button>
             </form>

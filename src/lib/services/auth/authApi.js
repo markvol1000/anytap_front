@@ -404,11 +404,22 @@ export async function changePassword({ userId, currentPassword, newPassword }) {
   }
 }
 
-export async function sendForgotPasswordEmail({ email }) {
+function isTurnstileVerificationError(err) {
+  const msg = String(err?.message || err?.data?.message || err?.data?.msg || '').toLowerCase();
+  return msg.includes('turnstile') || msg.includes('captcha') || msg.includes('security verification');
+}
+
+export async function sendForgotPasswordEmail({ email, recaptchaToken }) {
   try {
-    const res = await apiPost('/auth/forgot-password/send-email', { email });
+    const res = await apiPost('/auth/forgot-password/send-email', {
+      email,
+      ...(recaptchaToken ? { recaptchaToken } : {}),
+    });
     return { ok: true, message: res?.message || 'Verification code sent to email' };
   } catch (err) {
+    if (isTurnstileVerificationError(err)) {
+      return { ok: false, message: 'Please complete the security verification and try again.' };
+    }
     const msg = err?.status === 503 || err?.message?.includes('503') || err?.message?.includes('fetch')
       ? 'System is under maintenance. Please try again later.'
       : (err?.message || 'Failed to send verification email');
@@ -416,15 +427,19 @@ export async function sendForgotPasswordEmail({ email }) {
   }
 }
 
-export async function resetPassword({ email, code, newPassword }) {
+export async function resetPassword({ email, code, newPassword, recaptchaToken }) {
   try {
     const res = await apiPost('/auth/forgot-password/reset', {
       email,
       code,
       newPassword,
+      ...(recaptchaToken ? { recaptchaToken } : {}),
     });
     return { ok: true, message: res?.message || 'Password reset successfully' };
   } catch (err) {
+    if (isTurnstileVerificationError(err)) {
+      return { ok: false, message: 'Please complete the security verification and try again.' };
+    }
     const msg = err?.status === 503 || err?.message?.includes('503') || err?.message?.includes('fetch')
       ? 'System is under maintenance. Please try again later.'
       : (err?.message || 'Failed to reset password');
