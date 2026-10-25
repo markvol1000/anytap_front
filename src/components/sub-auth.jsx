@@ -153,6 +153,7 @@ function LoginPage() {
   const [turnstileToken, setTurnstileToken] = useState('');
   const turnstileContainerRef = useRef(null);
   const widgetIdRef = useRef(null);
+  const lastSubmittedTokenRef = useRef('');
   const { toast, showToast, clearToast } = useAuthToast();
   const hasShownToastRef = useRef(false);
 
@@ -271,7 +272,16 @@ function LoginPage() {
         showToast('System is under maintenance. Please try again later.');
       }
 
-      // 주소창에서 쿼리스트링(?expired=1...)을 즉시 정리하여 리렌더링 시 중복 토스트 재발 방지
+      // Reset Turnstile on session expiry redirect to ensure a fresh token
+      if (window.turnstile && widgetIdRef.current !== null) {
+        try {
+          window.turnstile.reset(widgetIdRef.current);
+        } catch { /* noop */ }
+      }
+      setTurnstileToken('');
+      lastSubmittedTokenRef.current = '';
+
+      // Clean query string from address bar immediately
       try {
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch { /* noop */ }
@@ -299,19 +309,21 @@ function LoginPage() {
         const directToken = (widgetIdRef.current !== null)
           ? window.turnstile.getResponse(widgetIdRef.current)
           : window.turnstile.getResponse();
-        if (directToken) {
+        if (directToken && directToken !== lastSubmittedTokenRef.current) {
           token = directToken;
           setTurnstileToken(directToken);
         }
       } catch { /* noop */ }
     }
 
-    if (!token) {
+    if (!token || token === lastSubmittedTokenRef.current) {
       showToast('Please complete the verification.');
       return;
     }
 
     const startedAt = Date.now();
+    lastSubmittedTokenRef.current = token;
+    setTurnstileToken(''); // Clear immediately so token cannot be double-submitted
     setEntering(true);
     const result = await Promise.resolve(attemptLogin(email, password, { recaptchaToken: token }));
     if (result.ok) {
@@ -338,6 +350,7 @@ function LoginPage() {
     setEntering(false);
 
     // Reset Turnstile on failed login attempt
+    lastSubmittedTokenRef.current = '';
     if (window.turnstile && widgetIdRef.current !== null) {
       try {
         window.turnstile.reset(widgetIdRef.current);

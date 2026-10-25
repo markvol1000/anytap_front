@@ -10,3 +10,4 @@ build.zip
 *.mdc
 *.dev
 *.example
+test_run.mjs

@@ -149,8 +149,11 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
     setSelectedDestCard('');
 
     try {
-      // 1. Fetch recipient cards by target email or ID
-      const userData = await apiGet(`/card/transfer/target-check?email=${encodeURIComponent(trimmedInput)}&identifier=${encodeURIComponent(trimmedInput)}`);
+      // 1. Fetch recipient cards by target email or ID via secure POST body
+      const userData = await apiPost('/card/transfer/target-check', {
+        email: trimmedInput,
+        identifier: trimmedInput,
+      });
       if (userData) {
         setTargetUser(userData);
         if (userData.feeRate != null) {
