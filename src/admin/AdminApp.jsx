@@ -17,6 +17,7 @@ import { LoginLogsPage } from './pages/LoginLogsPage.jsx';
 import { OperationsPage } from './pages/OperationsPage.jsx';
 import { AdminLogsPage } from './pages/AdminLogsPage.jsx';
 import { IpBlacklistPage } from './pages/IpBlacklistPage.jsx';
+import { BatchSchedulersPage } from './pages/BatchSchedulersPage.jsx';
 import '../styles/admin.css';
 
 export function AdminApp() {
@@ -42,7 +43,9 @@ export function AdminApp() {
         <Route path="login-logs" element={<LoginLogsPage />} />
         <Route path="blacklist" element={<IpBlacklistPage />} />
         <Route path="ip-blacklist" element={<IpBlacklistPage />} />
-        <Route path="security/banned-ips" element={<IpBlacklistPage />} />
+                <Route path="security/banned-ips" element={<IpBlacklistPage />} />
+        <Route path="schedulers" element={<BatchSchedulersPage />} />
+        <Route path="batch" element={<BatchSchedulersPage />} />
         <Route path="logs" element={<AdminLogsPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>

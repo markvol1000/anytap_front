@@ -20,6 +20,7 @@ const SYSTEM_NAV = [
   { to: '/admin/login-logs', label: 'Login Logs', icon: 'lock' },
   { to: '/admin/blacklist', label: 'IP Blacklist', icon: 'shield' },
   { to: '/admin/logs', label: 'Admin Logs', icon: 'clock' },
+  { to: '/admin/schedulers', label: 'Batch Schedulers', icon: 'clock' },
 ];
 
 function formatRole(role) {

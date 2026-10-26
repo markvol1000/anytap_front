@@ -113,7 +113,7 @@ export function WafSecurityReport({ onQuickBan }) {
       </div>
 
       {/* Development Environment Standby Banner */}
-      {!isPrd && (
+      {!isPrd && summary.wafEnabled === false && (
         <div
           style={{
             padding: '14px 18px',
