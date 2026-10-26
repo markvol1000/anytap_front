@@ -11,10 +11,12 @@ import { AdminStatusBadge, formatAdminDate, shortenAddress } from '../components
 import { useAdminList } from '../hooks/useAdminList.js';
 import { getBannedIps, banIpAddress, unbanIpAddress } from '../services/adminService.js';
 import { Icon } from '../../components/ui.jsx';
+import { WafSecurityReport } from '../components/WafSecurityReport.jsx';
 
 const fetchBannedIps = (params) => getBannedIps(params);
 
 export function IpBlacklistPage() {
+  const [activeTab, setActiveTab] = useState('blacklist'); // 'blacklist' | 'waf'
   const [selectedId, setSelectedId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [unbanTarget, setUnbanTarget] = useState(null);
@@ -29,9 +31,9 @@ export function IpBlacklistPage() {
   });
   const detail = list.items.find((r) => r.id === selectedId);
 
-  const handleOpenBanModal = () => {
-    setBanInputIp('');
-    setBanInputReason('');
+  const handleOpenBanModal = (ip = '', reason = '') => {
+    setBanInputIp(typeof ip === 'string' ? ip : '');
+    setBanInputReason(typeof reason === 'string' ? reason : '');
     setModalOpen(true);
   };
 
@@ -127,6 +129,47 @@ export function IpBlacklistPage() {
         </div>
       )}
 
+      {/* Navigation Tabs */}
+      <div style={{ display: 'flex', gap: 8, margin: '16px 0 20px', borderBottom: '1px solid #e2e8f0', paddingBottom: 10 }}>
+        <button
+          type="button"
+          onClick={() => setActiveTab('blacklist')}
+          style={{
+            padding: '8px 16px',
+            fontSize: '13px',
+            fontWeight: 600,
+            borderRadius: '6px',
+            cursor: 'pointer',
+            border: 'none',
+            backgroundColor: activeTab === 'blacklist' ? '#0f172a' : '#f1f5f9',
+            color: activeTab === 'blacklist' ? '#ffffff' : '#64748b',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          IP Blacklist ({list.items.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('waf')}
+          style={{
+            padding: '8px 16px',
+            fontSize: '13px',
+            fontWeight: 600,
+            borderRadius: '6px',
+            cursor: 'pointer',
+            border: 'none',
+            backgroundColor: activeTab === 'waf' ? '#0f172a' : '#f1f5f9',
+            color: activeTab === 'waf' ? '#ffffff' : '#64748b',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          AWS WAF Security Reports
+        </button>
+      </div>
+
+      {activeTab === 'waf' ? (
+        <WafSecurityReport onQuickBan={handleOpenBanModal} />
+      ) : (
       <AdminSplitLayout
         left={(
           <AdminPanel>
@@ -570,6 +613,7 @@ export function IpBlacklistPage() {
           </AdminDetailPanel>
         ) : null}
       />
+      )}
 
       {/* Manual Ban Modal */}
       {modalOpen && (

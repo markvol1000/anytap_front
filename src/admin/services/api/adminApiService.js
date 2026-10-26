@@ -1877,3 +1877,9 @@ export async function unbanIpAddress(ip) {
   const query = new URLSearchParams({ ip: ip.trim() });
   return apiPost(`/admin/security/unban?${query.toString()}`);
 }
+
+
+export async function getWafReport(hours = 3) {
+  const res = await apiGet(`/admin/security/waf-report?hours=${encodeURIComponent(hours)}`);
+  return res || {};
+}
