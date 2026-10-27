@@ -8,6 +8,8 @@ export function AdminDataTable({
   selectedId,
   onSelectRow,
   onDoubleClickRow,
+  rowStyle,
+  rowClassName,
   sortKey,
   sortDir,
   onSort,
@@ -149,13 +151,16 @@ export function AdminDataTable({
                 <tr>
                   <td colSpan={columns.length} className="admin-table__empty">{emptyMessage}</td>
                 </tr>
-              ) : rows.map((row) => {
+              ) : rows.map((row, rIdx) => {
                 const id = row[rowKey];
                 const active = selectedId === id;
+                const customStyle = typeof rowStyle === 'function' ? rowStyle(row, rIdx) : (rowStyle || {});
+                const customClass = typeof rowClassName === 'function' ? rowClassName(row, rIdx) : (rowClassName || '');
                 return (
                   <tr
                     key={id}
-                    className={active ? 'is-selected' : ''}
+                    className={`${active ? 'is-selected' : ''} ${customClass}`.trim()}
+                    style={customStyle}
                     onClick={() => onSelectRow?.(row)}
                     onDoubleClick={() => (onDoubleClickRow ? onDoubleClickRow(row) : onSelectRow?.(row))}
                     tabIndex={0}

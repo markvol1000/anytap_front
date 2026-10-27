@@ -1836,6 +1836,19 @@ export async function getCardTransfersReport(params = {}) {
 
 export const MAX_CARDS_PER_MEMBER = 999;
 
+export async function getAllActiveBannedIps() {
+  try {
+    const raw = asArray(await apiGet('/admin/security/banned-ips'));
+    return raw
+      .filter((item) => item.isActive !== false)
+      .map((item) => String(item.ipAddress || '').trim())
+      .filter(Boolean);
+  } catch (e) {
+    console.error('[adminApiService] Failed to fetch active banned IPs:', e);
+    return [];
+  }
+}
+
 export async function getBannedIps(params = {}) {
   try {
     const raw = asArray(await apiGet('/admin/security/banned-ips'));

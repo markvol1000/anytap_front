@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AdminDataTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
 import {
@@ -9,7 +9,7 @@ import {
 } from '../components/AdminSplitLayout.jsx';
 import { AdminStatusBadge, formatAdminDate, shortenAddress } from '../components/AdminStatusBadge.jsx';
 import { useAdminList } from '../hooks/useAdminList.js';
-import { getBannedIps, banIpAddress, unbanIpAddress } from '../services/adminService.js';
+import { getBannedIps, getAllActiveBannedIps, banIpAddress, unbanIpAddress } from '../services/adminService.js';
 import { Icon } from '../../components/ui.jsx';
 import { WafSecurityReport } from '../components/WafSecurityReport.jsx';
 
@@ -24,6 +24,20 @@ export function IpBlacklistPage() {
   const [banInputReason, setBanInputReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [activeBannedIps, setActiveBannedIps] = useState([]);
+
+  const refreshActiveBannedIps = useCallback(async () => {
+    try {
+      const ips = await getAllActiveBannedIps();
+      setActiveBannedIps(ips);
+    } catch (e) {
+      console.error('[IpBlacklistPage] Failed to refresh active banned IPs:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshActiveBannedIps();
+  }, [refreshActiveBannedIps]);
 
   const list = useAdminList(fetchBannedIps, {}, {
     initialSortKey: 'bannedAt',
@@ -47,6 +61,7 @@ export function IpBlacklistPage() {
       setFeedback({ type: 'success', message: `IP ${banInputIp.trim()} has been successfully blacklisted.` });
       setModalOpen(false);
       list.reload();
+      refreshActiveBannedIps();
     } catch (err) {
       setFeedback({ type: 'error', message: err?.message || 'Failed to blacklist IP address.' });
     } finally {
@@ -63,6 +78,7 @@ export function IpBlacklistPage() {
       setFeedback({ type: 'success', message: `IP ${unbanTarget.ipAddress} has been successfully unbanned.` });
       setUnbanTarget(null);
       list.reload();
+      refreshActiveBannedIps();
     } catch (err) {
       setFeedback({ type: 'error', message: err?.message || 'Failed to unban IP address.' });
     } finally {
@@ -76,6 +92,7 @@ export function IpBlacklistPage() {
       await banIpAddress(ip, reason || 'Re-banned by administrator');
       setFeedback({ type: 'success', message: `IP ${ip} has been re-banned.` });
       list.reload();
+      refreshActiveBannedIps();
     } catch (err) {
       setFeedback({ type: 'error', message: err?.message || 'Failed to ban IP address.' });
     } finally {
@@ -168,7 +185,11 @@ export function IpBlacklistPage() {
       </div>
 
       {activeTab === 'waf' ? (
-        <WafSecurityReport onQuickBan={handleOpenBanModal} />
+        <WafSecurityReport
+          onQuickBan={handleOpenBanModal}
+          onQuickUnban={(ip) => setUnbanTarget({ ipAddress: ip })}
+          activeBannedIps={activeBannedIps}
+        />
       ) : (
       <AdminSplitLayout
         left={(
@@ -349,6 +370,10 @@ export function IpBlacklistPage() {
                   },
                 ]}
                 rows={list.items}
+                rowStyle={(r) => ({
+                  backgroundColor: r.isActive ? 'rgba(239, 68, 68, 0.04)' : undefined,
+                  boxShadow: r.isActive ? 'inset 3px 0 0 rgba(239, 68, 68, 0.6)' : undefined,
+                })}
                 selectedId={selectedId}
                 onSelectRow={(r) => setSelectedId(r.id)}
                 sortKey={list.sortKey}
@@ -367,7 +392,17 @@ export function IpBlacklistPage() {
                   const reasonText = r.reason || '—';
 
                   return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        backgroundColor: r.isActive ? 'rgba(239, 68, 68, 0.04)' : 'transparent',
+                        boxShadow: r.isActive ? 'inset 3px 0 0 rgba(239, 68, 68, 0.6)' : 'none',
+                        padding: '10px',
+                        borderRadius: '6px',
+                      }}
+                    >
                       {/* 1줄: IP (왼쪽) 와 Ban 상태 뱃지 (오른쪽) */}
                       <div className="admin-mobile-card__row1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                         <span

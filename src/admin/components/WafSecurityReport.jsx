@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getWafReport } from '../services/adminService.js';
 import { Icon } from '../../components/ui.jsx';
 
-export function WafSecurityReport({ onQuickBan }) {
+export function WafSecurityReport({ onQuickBan, onQuickUnban, activeBannedIps }) {
   const [hours, setHours] = useState(3);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -34,6 +34,12 @@ export function WafSecurityReport({ onQuickBan }) {
   const topIps = report?.topIps || [];
   const topUris = report?.topUris || [];
   const isPrd = summary.environment === 'PRD' || summary.wafEnabled === true;
+
+  const bannedSet = new Set(
+    Array.isArray(activeBannedIps)
+      ? activeBannedIps
+      : (activeBannedIps instanceof Set ? Array.from(activeBannedIps) : [])
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -337,84 +343,129 @@ export function WafSecurityReport({ onQuickBan }) {
                     </td>
                   </tr>
                 ) : (
-                  topIps.map((item, idx) => (
-                    <tr
-                      key={idx}
-                      style={{
-                        borderBottom: '1px solid #f1f5f9',
-                        transition: 'background-color 0.15s',
-                      }}
-                    >
-                      <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 700, color: '#0f172a' }}>
-                        {item.clientIp}
-                      </td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            padding: '2px 6px',
-                            borderRadius: 4,
-                            backgroundColor: '#e0f2fe',
-                            color: '#0369a1',
-                            border: '1px solid #bae6fd',
-                          }}
-                        >
-                          {item.country || '—'}
-                        </span>
-                      </td>
-                      <td
+                  topIps.map((item, idx) => {
+                    const isBanned = Boolean(item.isBanned || bannedSet.has(item.clientIp));
+                    return (
+                      <tr
+                        key={idx}
                         style={{
-                          padding: '10px 14px',
-                          fontFamily: 'monospace',
-                          color: '#64748b',
-                          maxWidth: 140,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
+                          borderBottom: '1px solid #f1f5f9',
+                          backgroundColor: isBanned ? '#fff1f2' : (idx % 2 === 0 ? '#ffffff' : '#f8fafc'),
+                          boxShadow: isBanned ? 'inset 3px 0 0 #ef4444' : 'none',
+                          transition: 'background-color 0.15s',
                         }}
-                        title={item.uri}
                       >
-                        {item.uri}
-                      </td>
-                      <td
-                        style={{
-                          padding: '10px 14px',
-                          maxWidth: 180,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          color: '#334155',
-                        }}
-                        title={item.rule}
-                      >
-                        {item.rule}
-                      </td>
-                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: '#ef4444' }}>
-                        {item.count}
-                      </td>
-                      <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={() => onQuickBan && onQuickBan(item.clientIp, `AWS WAF Blocked: ${item.rule}`)}
+                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 700, color: isBanned ? '#991b1b' : '#0f172a', whiteSpace: 'nowrap' }}>
+                          <span>{item.clientIp}</span>
+                          {isBanned && (
+                            <span
+                              style={{
+                                marginLeft: 8,
+                                fontSize: 10,
+                                fontWeight: 700,
+                                padding: '2px 6px',
+                                borderRadius: 3,
+                                backgroundColor: '#fee2e2',
+                                color: '#b91c1c',
+                                border: '1px solid #fca5a5',
+                                letterSpacing: '0.03em',
+                                verticalAlign: 'middle',
+                              }}
+                            >
+                              BANNED
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              padding: '2px 6px',
+                              borderRadius: 4,
+                              backgroundColor: '#e0f2fe',
+                              color: '#0369a1',
+                              border: '1px solid #bae6fd',
+                            }}
+                          >
+                            {item.country || '—'}
+                          </span>
+                        </td>
+                        <td
                           style={{
-                            padding: '4px 8px',
-                            fontSize: 11,
-                            fontWeight: 600,
-                            borderRadius: 4,
-                            border: '1px solid #fca5a5',
-                            backgroundColor: '#fef2f2',
-                            color: '#dc2626',
-                            cursor: 'pointer',
+                            padding: '10px 14px',
+                            fontFamily: 'monospace',
+                            color: '#64748b',
+                            maxWidth: 140,
                             whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
                           }}
-                          title="Add this IP to system blacklist"
+                          title={item.uri}
                         >
-                          + Ban IP
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                          {item.uri}
+                        </td>
+                        <td
+                          style={{
+                            padding: '10px 14px',
+                            maxWidth: 180,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            color: '#334155',
+                          }}
+                          title={item.rule}
+                        >
+                          {item.rule}
+                        </td>
+                        <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: '#ef4444' }}>
+                          {item.count}
+                        </td>
+                        <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                          {isBanned ? (
+                            <button
+                              type="button"
+                              onClick={() => onQuickUnban && onQuickUnban(item.clientIp)}
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: 11,
+                                fontWeight: 700,
+                                borderRadius: 4,
+                                border: '1px solid #cbd5e1',
+                                backgroundColor: '#ffffff',
+                                color: '#0f172a',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                              }}
+                              title="Unban this IP address from system blacklist"
+                            >
+                              Unban
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => onQuickBan && onQuickBan(item.clientIp, `AWS WAF Blocked: ${item.rule}`)}
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                borderRadius: 4,
+                                border: '1px solid #fca5a5',
+                                backgroundColor: '#fef2f2',
+                                color: '#dc2626',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                              }}
+                              title="Add this IP to system blacklist"
+                            >
+                              + Ban IP
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
