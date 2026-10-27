@@ -454,7 +454,7 @@ export function KycPage() {
                   {detail.status === 'pending' && (
                     <div style={{ padding: '14px 16px', backgroundColor: '#fefce8', border: '1px solid #fef08a', borderRadius: '8px', color: '#854d0e', fontSize: '13px', lineHeight: '1.5' }}>
                       <strong style={{ display: 'block', fontSize: '14px', marginBottom: '4px', color: '#ca8a04' }}>⏳ Pending Review</strong>
-                      <span>Verification request is currently pending admin review. Review submitted details and take action below.</span>
+                      <span>Verification request is currently pending Wasabi review. Status will automatically update upon Wasabi webhook confirmation.</span>
                       {detail.rejectReason && (
                         <div style={{ marginTop: '8px', padding: '8px 10px', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #fde047', color: '#b45309', fontSize: '12px' }}>
                           <strong>Last Attempt Issue:</strong> {detail.rejectReason}
@@ -589,30 +589,7 @@ export function KycPage() {
                   )}
                 </AdminDetailSection>
 
-                {/* ── Admin Action Buttons (Approve / Reject) ── */}
-                {detail.status === 'pending' ? (
-                  <AdminActionStack>
-                    <button type="button" className="admin-btn admin-btn--primary" onClick={handleApprove}>
-                      ✓ Approve KYC
-                    </button>
-                    <button type="button" className="admin-btn admin-btn--danger" onClick={handleReject}>
-                      ✕ Reject KYC
-                    </button>
-                  </AdminActionStack>
-                ) : (
-                  <AdminActionStack>
-                    {detail.status === 'rejected' && (
-                      <button type="button" className="admin-btn admin-btn--secondary" onClick={handleApprove}>
-                        Re-Approve Verification
-                      </button>
-                    )}
-                    {detail.status === 'approved' && (
-                      <button type="button" className="admin-btn admin-btn--danger" onClick={handleReject}>
-                        Revoke / Reject Verification
-                      </button>
-                    )}
-                  </AdminActionStack>
-                )}
+
               </>
             ) : null}
           </AdminDetailPanel>
