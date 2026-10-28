@@ -1,8 +1,8 @@
 /**
- * Portal screen gates — if a page has no meaningful content for the member state,
+ * Portal screen gates ??if a page has no meaningful content for the member state,
  * show a single guidance screen instead of an empty/same layout.
  *
- * Flow: KYC (/account/kyc) → My unlocks → Apply card → $100 deposit → issuing → register → wallet.
+ * Flow: KYC (/account/kyc) ??My unlocks ??Apply card ??$100 deposit ??issuing ??register ??wallet.
  */
 
 import { MEMBER_STATE, resolveMemberState } from './member-state.js';
@@ -17,7 +17,7 @@ const ALWAYS_OPEN = new Set([
   'topup',
   'transactions',
   'kyc',
-  // My hub — always reachable
+  // My hub ??always reachable
   'settings',
   'profile',
   'security',
@@ -33,8 +33,16 @@ function content() {
   return { mode: 'content' };
 }
 
-function preKycGate(memberState) {
-  if (memberState === MEMBER_STATE.KYC_PENDING) {
+function preKycGate(memberState, accountState) {
+  const kycStatus = String(accountState?.kycStatus || accountState?.status || '').toLowerCase();
+  if (['rejected', 'failed', 'register_failed', 'fail'].includes(kycStatus)) {
+    return guide(
+      'Identity verification rejected',
+      'Your identity documents were not approved. Please review your details and submit updated documents to unlock other pages.',
+      { label: 'Retry Verification', nextScreen: 'kyc' },
+    );
+  }
+  if (memberState === MEMBER_STATE.KYC_PENDING || ['review', 'under_review', 'wait_audit'].includes(kycStatus)) {
     return guide(
       'Identity verification in progress',
       'Other pages unlock after KYC is approved. We will email you when the review is complete.',
@@ -76,7 +84,7 @@ export function resolvePortalScreenGate(screen, accountState) {
     if (screen === 'kyc') {
       return content();
     }
-    return preKycGate(memberState);
+    return preKycGate(memberState, accountState);
   }
 
   if (screen === 'kyc') {

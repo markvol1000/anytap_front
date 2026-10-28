@@ -62,8 +62,12 @@ export function resolveMemberState(accountState) {
     return MEMBER_STATE.PENDING_WALLET;
   }
 
-  if (status === 'under_review' || status === 'rejected') {
+  if (status === 'review' || status === 'under_review' || status === 'wait_audit') {
     return MEMBER_STATE.KYC_PENDING;
+  }
+
+  if (['rejected', 'failed', 'register_failed', 'fail'].includes(status)) {
+    return MEMBER_STATE.KYC_REQUIRED;
   }
 
   // Pending, or BE "approved" without a completed KYC profile → stay on KYC.
@@ -136,13 +140,21 @@ export function getMemberDashboardConfig(memberState, accountState) {
       showCardsSection: false,
       showWalletBridge: false,
       showQuickActions: false,
-      hero: {
-        mode: 'welcome',
-        title: 'Verify your identity',
-        body: 'Complete KYC to unlock card application and wallet.',
-        sub: 'About 5 minutes · passport or ID',
-        primaryCta: { label: 'Verify Identity', action: 'verifyIdentity' },
-      },
+      hero: ['rejected', 'failed', 'register_failed', 'fail'].includes(String(accountState?.kycStatus || accountState?.status || '').toLowerCase())
+        ? {
+            mode: 'banner',
+            bannerVariant: 'warn',
+            title: 'Identity verification rejected',
+            body: 'Your identity documents were not approved. Please review your details and submit updated documents.',
+            primaryCta: { label: 'Retry Verification', action: 'verifyIdentity' },
+          }
+        : {
+            mode: 'welcome',
+            title: 'Verify your identity',
+            body: 'Complete KYC to unlock card application and wallet.',
+            sub: 'About 5 minutes · passport or ID',
+            primaryCta: { label: 'Verify Identity', action: 'verifyIdentity' },
+          },
       transactionsEmpty: null,
     },
 
@@ -150,8 +162,8 @@ export function getMemberDashboardConfig(memberState, accountState) {
       memberState,
       dashboardLayout: 'onboarding',
       journeyIndex: 1,
-      journeyLead: null,
-      showJourney: false,
+      journeyLead: 'Step 2 of 5 — Verification in progress',
+      showJourney: true,
       showEmptyCard: false,
       canApplyCard: false,
       showWalletHero: false,
@@ -165,7 +177,7 @@ export function getMemberDashboardConfig(memberState, accountState) {
         mode: 'banner',
         bannerVariant: 'review',
         title: 'Identity verification in progress',
-        body: 'We are reviewing your documents. Profile, card apply, and wallet unlock after approval.',
+        body: 'Your identity documents are under review. Card registration and wallet unlock after approval.',
         eta: 'Usually 24–48 hours',
       },
       transactionsEmpty: null,

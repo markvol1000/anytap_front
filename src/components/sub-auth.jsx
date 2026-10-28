@@ -343,7 +343,8 @@ function LoginPage() {
       if (isAdmin) {
         navigate(typeof from === 'string' && from.startsWith('/admin') ? from : '/admin', { replace: true });
       } else {
-        navigate(typeof from === 'string' && from.startsWith('/account') ? from : '/account', { replace: true });
+        // Always land on Home (/account) regardless of previous location
+        navigate('/account', { replace: true });
       }
       return;
     }

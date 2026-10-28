@@ -197,7 +197,7 @@ function HeroStatusCard({ hero }) {
 }
 
 function HeroMemberBanner({ hero, s }) {
-  const variant = hero.bannerVariant === 'activate' ? 'activate' : 'review';
+  const variant = hero.bannerVariant === 'activate' ? 'activate' : (hero.bannerVariant === 'warn' ? 'warn' : 'review');
   return (
     <div className={`portal-member-banner portal-member-banner--${variant}`}>
       <p className="portal-member-banner__title">{hero.title}</p>

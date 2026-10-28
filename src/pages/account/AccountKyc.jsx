@@ -1,6 +1,6 @@
 // ===== KYC / Identity verification (standalone page) =====
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as C from '../../lib/card-application.js';
 import { isHttpApi } from '../../lib/api/config.js';
 import { profilePatchFromKycForm } from '../../lib/member-profile.js';
@@ -8,6 +8,7 @@ import { KycDocField } from '../../components/kyc-doc-field.jsx';
 import { phoneCountryCodeOptions } from '../../lib/phone-country-codes.js';
 import { nationalityOptions } from '../../lib/nationality-options.ts';
 import { getHttpSession } from '../../lib/api/httpSession.js';
+import { fetchKycDetail } from '../../lib/services/account/accountApi.js';
 
 function FormField({ label, children, className = '', htmlFor }) {
   return (
@@ -34,9 +35,10 @@ function PhoneCountryCodeSelect({ value, onChange, id = "phoneCountryCode", name
       name={name}
       style={style}
       className="capply-input capply-input--select"
-      value={value}
+      value={value || ''}
       onChange={(e) => onChange(e.target.value)}
       aria-label="Country code">
+      <option value="">Select Code</option>
       {options.map((opt, idx) => (
         <option key={opt.key || `${opt.value}-${idx}`} value={opt.value}>{opt.label}</option>
       ))}
@@ -104,12 +106,38 @@ export function AccountKyc({ s }) {
       phoneNumber: sess.phoneNumber || sess.phone || '',
       nationality: sess.nationality || '',
       country: sess.country || '',
+      state: sess.state || '',
+      city: sess.city || '',
+      addressLine1: sess.addressLine1 || '',
+      postalCode: sess.postalCode || '',
+      dateOfBirth: sess.dateOfBirth || '',
+      issueDate: sess.issueDate || '',
+      idNoExpiryDate: sess.idNoExpiryDate || '',
+      idDocNumber: sess.idDocNumber || '',
+      idDocType: sess.idDocType || 'Passport',
+      gender: sess.gender || '',
+      annualSalary: sess.annualSalary || '50000 USD',
+      accountPurpose: sess.accountPurpose || 'Living Expense',
+      expectedMonthlyVolume: sess.expectedMonthlyVolume || '5000 USD',
     };
   });
   const [kycSubmitting, setKycSubmitting] = useState(false);
   const [kycAwaitingReview, setKycAwaitingReview] = useState(false);
   const [kycRetryOpen, setKycRetryOpen] = useState(false);
+  const [kycFetchingDetail, setKycFetchingDetail] = useState(false);
+  const [kycRejectionReason, setKycRejectionReason] = useState('');
   const [errorField, setErrorField] = useState('');
+
+  const kycStatusForGate = kycAwaitingReview && !s.profileReady
+    ? 'under_review'
+    : s.accountState?.kycStatus;
+  const kycApplyStatus = C.mapKycApplyStatus(kycStatusForGate);
+
+  const blocked = kycApplyStatus === 'review' || kycApplyStatus === 'under_review';
+  const isRejected = kycApplyStatus === 'rejected' ||
+    String(s.accountState?.kycStatus || s.accountState?.status || '').toLowerCase() === 'rejected';
+  const verified = Boolean(s.profileReady && kycApplyStatus === 'approved');
+  const showForm = !blocked && !verified;
 
   const focusAndHighlight = (fieldId, message) => {
     if (message) s.showToast(message);
@@ -134,16 +162,6 @@ export function AccountKyc({ s }) {
     }, 50);
   };
 
-  const kycStatusForGate = kycAwaitingReview && !s.profileReady
-    ? 'under_review'
-    : s.accountState?.kycStatus;
-  const kycApplyStatus = C.mapKycApplyStatus(kycStatusForGate);
-
-  const blocked = kycApplyStatus === 'under_review';
-  const rejected = kycApplyStatus === 'rejected' && !kycRetryOpen;
-  const verified = Boolean(s.profileReady && kycApplyStatus === 'approved');
-  const showForm = !blocked && !rejected && !verified;
-
   const setKyc = (key, val) => {
     setErrorField((cur) => (cur === key ? '' : cur));
     setKycForm((f) => ({ ...f, [key]: val }));
@@ -159,7 +177,123 @@ export function AccountKyc({ s }) {
     setKycForm((f) => ({ ...f, [key]: cleaned }));
   };
 
-  const goHome = () => s.go('home');
+
+  const handleFetchPreviousData = async () => {
+    if (kycFetchingDetail) return;
+    setKycFetchingDetail(true);
+    try {
+      const sess = getHttpSession() || {};
+      const res = await fetchKycDetail(sess.userId);
+      const detail = res?.data || res || {};
+
+      const reason = detail.description || detail.respMsg || detail.rejectionReason;
+      if (reason) {
+        setKycRejectionReason(String(reason));
+      }
+
+      setKycForm((prev) => {
+        const next = { ...prev };
+        const fn = detail.firstName || sess.firstName;
+        if (fn) next.firstName = fn;
+        const ln = detail.lastName || sess.lastName;
+        if (ln) next.lastName = ln;
+        const em = detail.email || sess.email;
+        if (em) next.email = em;
+        const ac = detail.areaCode || sess.phoneCountryCode;
+        if (ac) next.phoneCountryCode = ac;
+        const mob = detail.mobile || sess.phoneNumber || sess.phone;
+        if (mob) {
+          let formattedMob = String(mob).trim();
+          // If country code is +82 and starts with 10 (10 digits), restore leading 0 for normal user display (e.g. 01012345678)
+          if ((ac === '+82' || next.phoneCountryCode === '+82') && /^10\d{8}$/.test(formattedMob)) {
+            formattedMob = '0' + formattedMob;
+          }
+          next.phoneNumber = formattedMob;
+        }
+
+        const bday = detail.birthday || sess.dateOfBirth || sess.birthday;
+        if (bday) next.dateOfBirth = String(bday).replace(/[^0-9]/g, '');
+
+        const cntry = detail.country || sess.country;
+        if (cntry) {
+          next.country = cntry;
+          if (!next.nationality) next.nationality = cntry;
+        }
+
+        // Prefer real city name from session or human-readable townStr.
+        // Wasabi internal code (e.g. "KR-11-SEL") should not overwrite human-entered city name.
+        const isInternalCode = (val) => typeof val === 'string' && (val.includes('-') || val.includes('_'));
+        const cityCandidate = (detail.townStr && !isInternalCode(detail.townStr))
+          ? detail.townStr
+          : (detail.city && !isInternalCode(detail.city))
+            ? detail.city
+            : (sess.city || '');
+        if (cityCandidate) next.city = cityCandidate;
+
+        const stateCandidate = detail.state || sess.state || '';
+        if (stateCandidate) next.state = stateCandidate;
+
+        const addr = detail.address || detail.addressLine1 || sess.addressLine1;
+        if (addr) next.addressLine1 = addr;
+
+        const post = detail.postCode || detail.postalCode || sess.postalCode;
+        if (post) next.postalCode = post;
+
+        const iss = detail.issueDate || sess.issueDate;
+        if (iss) next.issueDate = String(iss).replace(/[^0-9]/g, '');
+
+        const exp = detail.idNoExpiryDate || sess.idNoExpiryDate;
+        if (exp) next.idNoExpiryDate = String(exp).replace(/[^0-9]/g, '');
+
+        const nat = detail.nationality || sess.nationality;
+        if (nat) next.nationality = nat;
+
+// state handled above
+
+        const idNum = detail.idNumber || sess.idDocNumber || sess.idNumber;
+        if (idNum) next.idDocNumber = idNum;
+
+        const rawType = String(detail.idType || sess.idDocType || sess.idType || '').toUpperCase();
+        if (rawType.includes('PASS') || rawType === 'PASSPORT') next.idDocType = 'Passport';
+        else if (rawType.includes('DRIV') || rawType === 'DLN' || rawType.includes('DRIVER')) next.idDocType = "Driver's License";
+        else if (rawType.includes('CARD') || rawType.includes('ID_CARD') || rawType.includes('GOVERNMENT')) next.idDocType = 'Government ID';
+
+        const gndr = detail.gender || sess.gender;
+        if (gndr) next.gender = gndr;
+
+        const sal = detail.annualSalary || sess.annualSalary;
+        if (sal) next.annualSalary = sal;
+
+        const purp = detail.accountPurpose || sess.accountPurpose;
+        if (purp) next.accountPurpose = purp;
+
+        const vol = detail.expectedMonthlyVolume || sess.expectedMonthlyVolume;
+        if (vol) next.expectedMonthlyVolume = vol;
+
+        return next;
+      });
+
+      setKycRetryOpen(true);
+    } catch (err) {
+      console.warn('Failed to fetch previous KYC details:', err);
+      // Fallback: still open retry form with current session data
+      setKycRetryOpen(true);
+    } finally {
+      setKycFetchingDetail(false);
+    }
+  };
+
+  // Auto-fetch rejected applicant profile data immediately on mount
+  useEffect(() => {
+    const isRejectedStatus = kycApplyStatus === 'rejected' ||
+      String(s.accountState?.kycStatus || s.accountState?.status || '').toLowerCase() === 'rejected';
+
+    if (isRejectedStatus && !kycFetchingDetail) {
+      handleFetchPreviousData();
+    }
+  }, [kycApplyStatus, s.accountState?.kycStatus, s.accountState?.status]);
+
+    const goHome = () => s.go('home');
   const goRegister = () => s.go('cardRegister');
 
   const handleVerify = async () => {
@@ -226,6 +360,11 @@ export function AccountKyc({ s }) {
     }
     if (age < 18 || age > 100) {
       focusAndHighlight('dateOfBirth', 'Please ensure that the date range is between 18 - 100 years from the current year.');
+      return;
+    }
+
+    if (!kycForm.gender?.trim()) {
+      focusAndHighlight('gender', 'Please select your gender.');
       return;
     }
 
@@ -331,20 +470,55 @@ export function AccountKyc({ s }) {
       return;
     }
 
+    const rawExpiryDate = String(kycForm.idNoExpiryDate || '').replace(/[^\d]/g, '');
+    if (!rawExpiryDate) {
+      focusAndHighlight('idNoExpiryDate', 'Please enter your ID document expiry date.');
+      return;
+    }
+    if (rawExpiryDate.length !== 8) {
+      focusAndHighlight('idNoExpiryDate', 'Please enter your ID document expiry date in YYYYMMDD format (8 digits).');
+      return;
+    }
+    const eYear = parseInt(rawExpiryDate.substring(0, 4), 10);
+    const eMonth = parseInt(rawExpiryDate.substring(4, 6), 10) - 1;
+    const eDay = parseInt(rawExpiryDate.substring(6, 8), 10);
+    const expiryDateObj = new Date(eYear, eMonth, eDay);
+    if (isNaN(expiryDateObj.getTime()) || expiryDateObj.getFullYear() !== eYear || expiryDateObj.getMonth() !== eMonth || expiryDateObj.getDate() !== eDay) {
+      focusAndHighlight('idNoExpiryDate', 'Please enter a valid ID document expiry date.');
+      return;
+    }
+    if (expiryDateObj <= issueDateObj) {
+      focusAndHighlight('idNoExpiryDate', 'Expiry date must be after the issue date.');
+      return;
+    }
+
     const phoneCountryCode = String(kycForm.phoneCountryCode || '').trim();
-    const phoneNumber = String(kycForm.phoneNumber || '').trim();
-    if (!phoneCountryCode || !phoneNumber) {
-      focusAndHighlight(phoneNumber ? 'phoneCountryCode' : 'phoneNumber', 'Please enter your phone number.');
+    if (!phoneCountryCode) {
+      focusAndHighlight('phoneCountryCode', 'Please select your phone country code.');
       return;
     }
     if (phoneCountryCode.length < 2 || phoneCountryCode.length > 5) {
       focusAndHighlight('phoneCountryCode', 'Phone country code must be between 2 and 5 characters.');
       return;
     }
-    const phoneDigits = phoneNumber.replace(/[^\d]/g, '');
-    if (phoneDigits.length < 7 || phoneDigits.length > 15) {
-      focusAndHighlight('phoneNumber', 'Please enter a valid mobile number with 7-15 digits.');
+
+    const phoneNumber = String(kycForm.phoneNumber || '').trim();
+    if (!phoneNumber) {
+      focusAndHighlight('phoneNumber', 'Please enter your phone number.');
       return;
+    }
+    const phoneDigits = phoneNumber.replace(/[^\d]/g, '');
+    if (phoneCountryCode === '+82') {
+      // South Korea: Must be 010XXXXXXXX (11 digits) or 10XXXXXXXX (10 digits)
+      if (!/^0?10\d{8}$/.test(phoneDigits)) {
+        focusAndHighlight('phoneNumber', 'Please enter a valid South Korean phone number (e.g., 01012345678 or 1012345678).');
+        return;
+      }
+    } else {
+      if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+        focusAndHighlight('phoneNumber', 'Please enter a valid mobile number with 7-15 digits.');
+        return;
+      }
     }
 
     if (isHttpApi && !kycForm.idFrontFile && !kycForm.idFrontId) {
@@ -402,6 +576,7 @@ export function AccountKyc({ s }) {
       else if (lowerMsg.includes('first name') || lowerMsg.includes('firstname')) focusAndHighlight('firstName');
       else if (lowerMsg.includes('last name') || lowerMsg.includes('lastname')) focusAndHighlight('lastName');
       else if (lowerMsg.includes('birth') || lowerMsg.includes('dob')) focusAndHighlight('dateOfBirth');
+      else if (lowerMsg.includes('gender') || lowerMsg.includes('sex')) focusAndHighlight('gender');
       else if (lowerMsg.includes('nationality')) focusAndHighlight('nationality');
       else if (lowerMsg.includes('country') || lowerMsg.includes('residence')) focusAndHighlight('country');
       else if (lowerMsg.includes('state') || lowerMsg.includes('region') || lowerMsg.includes('province')) focusAndHighlight('state');
@@ -454,17 +629,20 @@ export function AccountKyc({ s }) {
         </div>
       )}
 
-      {rejected && (
-        <div className="capply-alert capply-alert--warn">
-          <p>Verification failed. Please check your information and try again.</p>
-          <button type="button" className="portal-btn-primary capply-alert__btn" onClick={() => setKycRetryOpen(true)}>
-            Retry verification
-          </button>
-        </div>
-      )}
+
 
       {showForm && (
         <>
+          {isRejected && (
+            <div className="capply-alert capply-alert--warn" style={{ marginBottom: 16 }}>
+              <p><strong>Verification rejected</strong></p>
+              <p className="capply-alert__sub">
+                {kycRejectionReason
+                  ? `Reason: ${kycRejectionReason}`
+                  : (kycFetchingDetail ? 'Loading your previous application data...' : 'Your previous submission was not approved. Your previous information has been loaded below. Please review and update your documents.')}
+              </p>
+            </div>
+          )}
           <div className="capply-kyc-notice" role="note">
             <p className="capply-kyc-notice__title">{C.KYC_IDENTITY_NOTICE.title}</p>
             <p className="capply-kyc-notice__body">{C.KYC_IDENTITY_NOTICE.body}</p>
@@ -496,7 +674,8 @@ export function AccountKyc({ s }) {
                 />
               </FormField>
               <FormField label="Gender" htmlFor="gender">
-                <select id="gender" name="gender" className="capply-input" style={errorField === 'gender' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.gender} onChange={(e) => setKyc('gender', e.target.value)}>
+                <select id="gender" name="gender" className="capply-input" style={errorField === 'gender' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined} value={kycForm.gender || ''} onChange={(e) => setKyc('gender', e.target.value)}>
+                  <option value="">Select Gender</option>
                   <option value="M">Male</option>
                   <option value="F">Female</option>
                 </select>
@@ -586,9 +765,12 @@ export function AccountKyc({ s }) {
                   placeholder="YYYYMMDD (e.g. 20220101)"
                 />
               </FormField>
-              <FormField label="ID document expiry date">
+              <FormField label="ID document expiry date" htmlFor="idNoExpiryDate">
                 <input
+                  id="idNoExpiryDate"
+                  name="idNoExpiryDate"
                   className="capply-input"
+                  style={errorField === 'idNoExpiryDate' ? { borderColor: '#e53e3e', boxShadow: '0 0 0 2px rgba(229, 62, 62, 0.25)' } : undefined}
                   type="text"
                   maxLength={8}
                   value={kycForm.idNoExpiryDate || ''}
@@ -663,7 +845,7 @@ export function AccountKyc({ s }) {
 
       <StickyFoot
         secondaryLabel="Cancel"
-        primaryLabel={showForm ? 'Verify Identity' : 'Back to Home'}
+        primaryLabel={showForm ? (isRejected ? 'Resubmit Identity' : 'Verify Identity') : 'Back to Home'}
         primaryDisabled={kycSubmitting}
         onSecondary={goHome}
         onPrimary={showForm ? handleVerify : goHome}

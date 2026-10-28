@@ -22,12 +22,12 @@ export function useAccountState() {
   const timers = useRef({});
   const skipDetailsResetRef = useRef(false);
 
-  // â”€â”€ UI state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ?€?€ UI state ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
   const [homeLoading, setHomeLoading] = useState(true);
   const [toast, setToast] = useState('');
   const [tempDeduct, setTempDeduct] = useState(0);
 
-  // â”€â”€ Card state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ?€?€ Card state ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
   const [cardTab, setCardTab] = useState('virtual');
   const [selectedCardIndex, setSelectedCardIndex] = useState(0);
   const [showCardDetails, setShowCardDetails] = useState(false);
@@ -35,7 +35,7 @@ export function useAccountState() {
   const [showCvv, setShowCvv] = useState(false);
   const [verifyCodeSent, setVerifyCodeSent] = useState(false);
 
-  // â”€â”€ Wallet / top-up state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ?€?€ Wallet / top-up state ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
   const [addrLoading, setAddrLoading] = useState(true);
   const [walletTab, setWalletTab] = useState('charge');
   const [receiveOpen, setReceiveOpen] = useState(false);
@@ -53,7 +53,7 @@ export function useAccountState() {
     setActivePhysicalTargetCard(null);
   }, []);
 
-  // â”€â”€ Dev/mock scenario â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ?€?€ Dev/mock scenario ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
   // TODO: Remove scenarioKey entirely when real auth/API is wired
   const [scenarioKey, setScenarioKey] = useState(() => A.scenarioForMockSession());
   const [referralStateKey, setReferralStateKey] = useState('normalMember');
@@ -294,7 +294,7 @@ export function useAccountState() {
     return mockContext.activityItems;
   }, [mockContext.activityItems, selectedCardTxs]);
 
-  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ?€?€ Helpers ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
   const clearToast = useCallback(() => {
     clearTimeout(timers.current.toast);
     setToast('');
@@ -421,7 +421,7 @@ export function useAccountState() {
     else if (def.secondaryAction === 'viewCard') go('card');
   }, [copy, go, showToast, walletAddress, openActivePhysical, currentCard, userCards]);
 
-  // â”€â”€ Referral â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ?€?€ Referral ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
   const applyReferralPartner = useCallback(async () => {
     setReferralStateKey('referralPending');
     showToast('Referral partner application submitted');
@@ -431,7 +431,7 @@ export function useAccountState() {
     showToast('Withdrawal request submitted');
   }, [showToast]);
 
-  // â”€â”€ Page title / sub â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ?€?€ Page title / sub ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
   const myActive = ['settings', 'profile', 'security', 'notifications', 'support'].includes(screen);
   const referralTitles = screen === 'referral' ? A.referralPageTitles(referralContext) : null;
   const pageTitle = referralTitles?.[0] ?? (A.PAGE_TITLES[screen] || ['', ''])[0];
@@ -440,7 +440,7 @@ export function useAccountState() {
     ? (profileReady && firstName ? `Welcome back, ${firstName}` : 'Welcome back')
     : referralTitles?.[1] ?? (A.PAGE_TITLES[screen] || ['', ''])[1];
 
-  // â”€â”€ Nav helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ?€?€ Nav helpers ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
   const navActive = (id) => {
     if (id === 'home') return screen === 'home';
     if (id === 'card') return screen === 'card' || screen === 'cardApply' || screen === 'cardRegister';
@@ -451,7 +451,10 @@ export function useAccountState() {
     return false;
   };
 
-  const kycGatePending = accountState.kycStatus === 'under_review';
+  const kycGatePending = (accountState.kycStatus === 'review' || accountState.kycStatus === 'under_review') || (accountState.status === 'REVIEW' || accountState.status === 'UNDER_REVIEW');
+  const kycGateRejected = ['rejected', 'failed', 'register_failed', 'fail'].includes(
+    String(accountState.kycStatus || accountState.status || '').toLowerCase()
+  );
 
   const openKycGate = useCallback(() => setKycGateOpen(true), []);
   const closeKycGate = useCallback(() => setKycGateOpen(false), []);
@@ -462,7 +465,7 @@ export function useAccountState() {
       return;
     }
 
-    // My is always open â€” profile / KYC status live there.
+    // My is always open ??profile / KYC status live there.
     if (id === 'my') {
       go('settings');
       return;
@@ -477,7 +480,7 @@ export function useAccountState() {
     else go(id);
   }, [go, openKycGate, profileReady]);
 
-  // â”€â”€ Side effects â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ?€?€ Side effects ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
   useEffect(() => {
     resetCardDetails();
     setSelectedCardIndex(0);
@@ -506,7 +509,7 @@ export function useAccountState() {
     return () => clearTimeout(timers.current.cvv);
   }, [showCvv]);
 
-  // Home loading skeleton â€” http: wait for API; mock: short UI shimmer
+  // Home loading skeleton ??http: wait for API; mock: short UI shimmer
   useEffect(() => {
     if (isHttpApi) return;
     if (screen === 'home') {
@@ -519,7 +522,7 @@ export function useAccountState() {
   const apiHomeLoading = isHttpApi && hasHttpSession() && remoteLoading;
   const showHomeLoading = apiHomeLoading || (!isHttpApi && homeLoading);
 
-  // Wallet address loading â€” http: use API state only
+  // Wallet address loading ??http: use API state only
   useEffect(() => {
     if (isHttpApi) {
       setAddrLoading(remoteLoading);
@@ -536,7 +539,7 @@ export function useAccountState() {
     Object.values(timers.current).forEach((id) => clearTimeout(id));
   }, []);
 
-  // â”€â”€ Derived card display values â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ?€?€ Derived card display values ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
   const isV = (currentCard?.variant ?? cardTab) === 'virtual';
   const cardVariant = currentCard?.variant ?? (isV ? 'virtual' : 'physical');
   const cardVariantInfo = A.CARD_VARIANTS[cardVariant];
@@ -552,7 +555,7 @@ export function useAccountState() {
   return {
     // Navigation
     screen, go, logout, navActive, myActive, onMemberNav,
-    openKycGate, closeKycGate, kycGateOpen, kycGatePending,
+    openKycGate, closeKycGate, kycGateOpen, kycGatePending, kycGateRejected,
     // Page meta
     pageTitle, pageSub,
     // Toast
@@ -560,7 +563,7 @@ export function useAccountState() {
     // Dev/mock
     scenarioKey, setScenarioKey,
     referralStateKey, setReferralStateKey,
-    // Account data â€” TODO: replace with Supabase + Wasabi + Cregis
+    // Account data ??TODO: replace with Supabase + Wasabi + Cregis
     accountState, mockContext, kycStatusDef, cardStatusDef,
     referralContext, applyReferralPartner, requestReferralWithdrawal,
     reloadAccount, refresh: reloadAccount, deductWalletBalance: (amount) => setTempDeduct((v) => v + amount),

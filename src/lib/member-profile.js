@@ -1,5 +1,5 @@
 /**
- * Member display profile — name / phone / country from KYC until backend stores them.
+ * Member display profile ??name / phone / country from KYC until backend stores them.
  * Scoped to the signed-in userId so another account's KYC name does not leak.
  */
 
@@ -76,7 +76,7 @@ export function bindMemberProfileToUser(userId) {
   writeBoundUserId(id);
 }
 
-/** Prefer saved profile → session fields. No email-local-part inventing. */
+/** Prefer saved profile ??session fields. No email-local-part inventing. */
 export function resolveMemberDisplayName(source = {}) {
   const profile = getMemberProfile();
   const fn = String(source.firstName || profile.firstName || '').trim();
@@ -97,22 +97,20 @@ export function resolveMemberDisplayName(source = {}) {
 /**
  * Card / wallet unlock: KYC approved (or completed) and a legal name exists.
  * BE auto-APPROVED-at-signup without a form still counts as incomplete (no name).
- * My page itself is always open — it does not use this helper for navigation.
+ * My page itself is always open ??it does not use this helper for navigation.
  */
 export function hasCompletedKycProfile(accountState = {}) {
   const kycStatus = String(accountState.kycStatus || accountState.status || '').toLowerCase();
-  const isApproved = ['approved', 'completed', 'active', 'pass_audit', 'pending_wallet'].includes(kycStatus);
-  if (isApproved) return true;
+  // Rejected or under_review users must NOT be treated as having a completed profile that unlocks other features
+  if (['rejected', 'failed', 'register_failed', 'fail'].includes(kycStatus)) {
+    return false;
+  }
+  if (['review', 'under_review', 'wait_audit'].includes(kycStatus)) {
+    return false;
+  }
 
-  const hasName = Boolean(
-    String(accountState.name || '').trim() ||
-    (String(accountState.firstName || '').trim() && String(accountState.lastName || '').trim())
-  );
-  const hasHolder = Boolean(
-    accountState.wasabiHolderId &&
-    !String(accountState.wasabiHolderId).startsWith('HOLDER_')
-  );
-  return hasName || hasHolder;
+  const isApproved = ['approved', 'completed', 'active', 'pass_audit', 'pending_wallet'].includes(kycStatus);
+  return isApproved;
 }
 
 export function resolveMemberCountry(source = {}) {

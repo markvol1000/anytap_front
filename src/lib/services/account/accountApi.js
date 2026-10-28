@@ -24,13 +24,17 @@ import {
 } from '../../member-profile.js';
 import { getEmailForLoginId } from '../auth/loginId.js';
 
-function mapKycStatus(status) {
+function mapKycStatus(status, fallbackStatus) {
   const s = String(status || '').toUpperCase();
-  if (s === 'PENDING_WALLET') return 'pending_wallet';
-  if (s === 'COMPLETED' || s === 'APPROVED' || s === 'PASS_AUDIT') return 'approved';
-  if (s === 'FAILED' || s === 'REJECTED') return 'rejected';
-  if (s === 'UNDER_REVIEW' || s === 'WAIT_AUDIT') return 'under_review';
-  return 'pending';
+  const f = String(fallbackStatus || '').toUpperCase();
+  const check = (val) => {
+    if (val === 'PENDING_WALLET') return 'pending_wallet';
+    if (val === 'COMPLETED' || val === 'APPROVED' || val === 'PASS_AUDIT') return 'approved';
+    if (val === 'FAILED' || val === 'REJECTED') return 'rejected';
+    if (val === 'REVIEW' || val === 'UNDER_REVIEW' || val === 'WAIT_AUDIT') return 'review';
+    return null;
+  };
+  return check(s) || check(f) || 'pending';
 }
 
 function mapCardStatus(status) {
@@ -223,17 +227,11 @@ async function fetchCregisWalletBalance(userId) {
 
 function buildContextFromSession(session, cardInfoList = [], activityItems = [], cregisBalance = null) {
   const demoLocked = false;
-  const hasRealHolder = Boolean(session.wasabiHolderId && !String(session.wasabiHolderId).startsWith('HOLDER_'));
-  const rawKyc = String(session.kycStatus || '').trim().toUpperCase();
-  const kycStatus = mapKycStatus(
-    rawKyc && rawKyc !== 'ACTIVE'
-      ? rawKyc
-      : (hasRealHolder ? 'APPROVED' : 'PENDING')
-  );
+  const kycStatus = mapKycStatus(session.kycStatus, session.status);
   const kycApproved = kycStatus === 'approved' || kycStatus === 'pending_wallet';
   const email = session.email || getEmailForLoginId(session.loginId) || '';
   // Show KYC fields once submitted (approved or under review); hide while still pending.
-  const showProfileFields = kycApproved || kycStatus === 'under_review' || kycStatus === 'pending_wallet';
+  const showProfileFields = kycApproved || kycStatus === 'under_review' || kycStatus === 'review' || kycStatus === 'pending_wallet';
   const name = showProfileFields
     ? resolveMemberDisplayName({ ...session, email })
     : '';
@@ -924,6 +922,21 @@ async function refreshSessionFromUser(userId) {
       ...(user.nationality ? { country: user.nationality, nationality: user.nationality } : {}),
       ...(user.phoneCountryCode ? { phoneCountryCode: user.phoneCountryCode } : {}),
       ...(user.phoneNumber ? { phoneNumber: user.phoneNumber } : {}),
+      ...(() => {
+        // Fallback for user.phone from backend (e.g., "+82 1012345678" or "+82 01012345678")
+        if (user.phone && typeof user.phone === 'string') {
+          const parts = user.phone.trim().split(/\s+/);
+          if (parts.length >= 2 && parts[0].startsWith('+')) {
+            const code = parts[0];
+            let num = parts.slice(1).join('');
+            if (code === '+82' && /^10\d{8}$/.test(num)) {
+              num = '0' + num;
+            }
+            return { phoneCountryCode: code, phoneNumber: num, phone: num };
+          }
+        }
+        return {};
+      })(),
     }, { notify: false });
     } catch (err) {
       console.warn('[accountApi] refresh user', err);
@@ -942,6 +955,18 @@ async function refreshSessionFromUser(userId) {
  * (POST /auth/register-cardholder is temp-user only, before sign-up.)
  * Rejected members use POST /users/{userId}/kyc/resubmit.
  */
+/**
+ * Query KYC rejected applicant details from Wasabi via POST /users/{userId}/kyc/detail
+ * Strict mandate: POST only (no GET) and caller authorized.
+ */
+export async function fetchKycDetail(userId) {
+  const session = getHttpSession();
+  const targetId = userId || session?.userId;
+  if (!targetId) throw new Error('Not authenticated');
+
+  return await apiPost(`/users/${encodeURIComponent(targetId)}/kyc/detail`, {});
+}
+
 export async function submitKycApplication(form = {}) {
   const session = getHttpSession();
   if (!session?.userId || !session?.email) throw new Error('Not authenticated');
@@ -960,7 +985,15 @@ export async function submitKycApplication(form = {}) {
     email: session.email,
     firstName: (form.firstName || '').trim(),
     lastName: (form.lastName || '').trim(),
-    mobile: form.phoneNumber || '',
+    mobile: (() => {
+      const raw = String(form.phoneNumber || '').replace(/[^\d]/g, '');
+      const code = form.phoneCountryCode || '+82';
+      // Normalize South Korean number: if user entered 010..., strip leading 0 to send 10... to Wasabi
+      if (code === '+82' && raw.startsWith('0')) {
+        return raw.substring(1);
+      }
+      return raw || form.phoneNumber || '';
+    })(),
     areaCode: form.phoneCountryCode || '+82',
     birthday: (() => {
       const raw = String(form.dateOfBirth || '').replace(/[^\d]/g, '');
@@ -1009,6 +1042,22 @@ export async function submitKycApplication(form = {}) {
       kycStatus: 'UNDER_REVIEW',
       phoneCountryCode: form.phoneCountryCode,
       phoneNumber: form.phoneNumber,
+      dateOfBirth: form.dateOfBirth,
+      birthday: form.dateOfBirth,
+      issueDate: form.issueDate,
+      idNoExpiryDate: form.idNoExpiryDate,
+      idDocNumber: form.idDocNumber,
+      idDocType: form.idDocType,
+      nationality: form.nationality,
+      country: form.country,
+      state: form.state,
+      city: form.city,
+      addressLine1: form.addressLine1,
+      postalCode: form.postalCode,
+      gender: form.gender,
+      annualSalary: form.annualSalary,
+      accountPurpose: form.accountPurpose,
+      expectedMonthlyVolume: form.expectedMonthlyVolume,
       ...profilePatch,
     });
     await refreshSessionFromUser(session.userId);
@@ -1028,6 +1077,22 @@ export async function submitKycApplication(form = {}) {
     idType,
     phoneCountryCode: form.phoneCountryCode,
     phoneNumber: form.phoneNumber,
+    dateOfBirth: form.dateOfBirth,
+    birthday: form.dateOfBirth,
+    issueDate: form.issueDate,
+    idNoExpiryDate: form.idNoExpiryDate,
+    idDocNumber: form.idDocNumber,
+    idDocType: form.idDocType,
+    nationality: form.nationality,
+    country: form.country,
+    state: form.state,
+    city: form.city,
+    addressLine1: form.addressLine1,
+    postalCode: form.postalCode,
+    gender: form.gender,
+    annualSalary: form.annualSalary,
+    accountPurpose: form.accountPurpose,
+    expectedMonthlyVolume: form.expectedMonthlyVolume,
     ...profilePatch,
   });
   await refreshSessionFromUser(session.userId);

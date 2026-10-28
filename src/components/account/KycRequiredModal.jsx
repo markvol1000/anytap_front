@@ -3,13 +3,22 @@ import { PortalButton } from '../portal/PortalButton';
 /**
  * Modal when a locked nav/page is opened before KYC is complete.
  */
-export function KycRequiredModal({ open, pending = false, onClose, onVerify }) {
+export function KycRequiredModal({ open, pending = false, rejected = false, onClose, onVerify }) {
   if (!open) return null;
 
-  const title = pending ? 'Verification in progress' : 'Verify your identity';
-  const body = pending
-    ? 'Your identity documents are under review. Profile, cards, and wallet unlock after KYC is approved.'
-    : 'Complete identity verification to open this page. It only takes a few minutes.';
+  const title = rejected
+    ? 'Identity verification rejected'
+    : pending
+      ? 'Verification in progress'
+      : 'Verify your identity';
+
+  const body = rejected
+    ? 'Your identity verification was rejected. Please review your information and submit updated documents to unlock this feature.'
+    : pending
+      ? 'Your identity documents are under review. Profile, cards, and wallet unlock after KYC is approved.'
+      : 'Complete identity verification to open this page. It only takes a few minutes.';
+
+  const verifyLabel = rejected ? 'Retry Verification' : 'Verify Identity';
 
   return (
     <div className="portal-sheet" role="dialog" aria-modal="true" aria-labelledby="kyc-required-title">
@@ -33,7 +42,7 @@ export function KycRequiredModal({ open, pending = false, onClose, onVerify }) {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <PortalButton variant="primary" className="portal-wallet-sheet__submit" onClick={onVerify} style={{ width: '100%' }}>
-              Verify Identity
+              {verifyLabel}
             </PortalButton>
             <PortalButton variant="secondary" onClick={onClose} style={{ width: '100%' }}>
               Not now

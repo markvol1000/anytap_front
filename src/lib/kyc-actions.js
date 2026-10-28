@@ -17,10 +17,14 @@ export const KYC_STEP1_SCREEN = 'kyc';
  * @param {object} accountState
  */
 export function isKycInProgress(accountState) {
+  const status = String(accountState?.kycStatus || accountState?.status || '').toLowerCase();
+  // Rejected status is NOT in progress ??user MUST be allowed to retry verification directly!
+  if (['rejected', 'failed', 'register_failed', 'fail'].includes(status)) {
+    return false;
+  }
   const memberState = resolveMemberState(accountState);
   if (memberState === MEMBER_STATE.KYC_PENDING) return true;
-  const status = String(accountState?.kycStatus || '').toLowerCase();
-  return status === 'under_review' || status === 'rejected';
+  return status === 'review' || status === 'under_review' || status === 'wait_audit';
 }
 
 /**

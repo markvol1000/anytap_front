@@ -231,6 +231,7 @@ function AccountPortal() {
       <KycRequiredModal
         open={!!s.kycGateOpen}
         pending={!!s.kycGatePending}
+        rejected={!!s.kycGateRejected}
         onClose={s.closeKycGate}
         onVerify={() => {
           s.closeKycGate?.();
