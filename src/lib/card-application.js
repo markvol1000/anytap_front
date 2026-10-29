@@ -1,4 +1,4 @@
-/** Card application policy — Visa only, dummy data (no partner APIs). */
+/** Card application policy ??Visa only, dummy data (no partner APIs). */
 
 import { CARD_ISSUANCE_FEE, getCardIssuanceFee } from './account-data.js';
 
@@ -44,7 +44,7 @@ export const CARD_BINS = {
   physical: '493724',
 };
 
-/** Official card design per type — not user-selectable */
+/** Official card design per type ??not user-selectable */
 export const CARD_DESIGN_BY_TYPE = {
   virtual: 'white',
   physical: 'black',
@@ -84,7 +84,7 @@ export const CARD_COLOR_IMAGES = {
 
 export const ID_DOC_TYPES = ['Passport', "Driver's License"];
 
-/** Map UI ID labels → Wasabi / backend idType (PASSPORT | DLN | ID_CARD). */
+/** Map UI ID labels ??Wasabi / backend idType (PASSPORT | DLN | ID_CARD). */
 export function mapWasabiIdType(idDocType) {
   const t = String(idDocType || '').toLowerCase();
   if (t.includes('passport')) return 'PASSPORT';
@@ -92,7 +92,7 @@ export function mapWasabiIdType(idDocType) {
   return 'ID_CARD';
 }
 
-/** Shown on KYC gate — passport or English DL only (director policy). */
+/** Shown on KYC gate ??passport or English DL only (director policy). */
 export const KYC_IDENTITY_NOTICE = {
   title: 'KYC Identity Verification Notice',
   body:
@@ -127,7 +127,7 @@ export function generateApplicationNumber() {
 export function mapKycApplyStatus(kycStatus) {
   const s = String(kycStatus || '').toLowerCase();
   const map = {
-    pending: 'not_started',
+    pending: 'review',
     not_started: 'not_started',
     none: 'not_started',
     unverified: 'not_started',

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Portal screen gates ??if a page has no meaningful content for the member state,
  * show a single guidance screen instead of an empty/same layout.
  *
@@ -42,7 +42,7 @@ function preKycGate(memberState, accountState) {
       { label: 'Retry Verification', nextScreen: 'kyc' },
     );
   }
-  if (memberState === MEMBER_STATE.KYC_PENDING || ['review', 'under_review', 'wait_audit'].includes(kycStatus)) {
+  if (memberState === MEMBER_STATE.KYC_PENDING || ['review', 'under_review', 'wait_audit', 'pending'].includes(kycStatus)) {
     return guide(
       'Identity verification in progress',
       'Other pages unlock after KYC is approved. We will email you when the review is complete.',
@@ -179,3 +179,4 @@ export function resolvePortalScreenGate(screen, accountState) {
 
   return content();
 }
+

@@ -62,7 +62,7 @@ export function resolveMemberState(accountState) {
     return MEMBER_STATE.PENDING_WALLET;
   }
 
-  if (status === 'review' || status === 'under_review' || status === 'wait_audit') {
+  if (status === 'review' || status === 'under_review' || status === 'wait_audit' || status === 'pending') {
     return MEMBER_STATE.KYC_PENDING;
   }
 
