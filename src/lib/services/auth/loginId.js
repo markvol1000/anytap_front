@@ -2,7 +2,7 @@
  * Login ID helpers — backend requires loginId (8–32 chars); UI uses email only.
  */
 
-import { apiGet } from '../../api/httpClient.js';
+import { apiGet, apiPost } from '../../api/httpClient.js';
 
 const LOGIN_ID_MAP_KEY = 'anytap_email_login_id';
 
@@ -103,7 +103,7 @@ export function getEmailForLoginId(loginId) {
 /** @returns {Promise<boolean>} true if loginId is already taken */
 async function isLoginIdTaken(loginId) {
   try {
-    const duplicate = await apiGet(`/auth/check-login-id?loginId=${encodeURIComponent(loginId)}`);
+    const duplicate = await apiPost('/auth/check-login-id', { loginId: loginId.trim() });
     return duplicate === true;
   } catch {
     return true;

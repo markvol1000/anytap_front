@@ -218,7 +218,7 @@ export async function attemptSignUp(email, password, { loginId, referral = '' } 
 export async function checkReferralCode(code) {
   if (!code || !code.trim()) return false;
   try {
-    const res = await apiGet(`/auth/check-referral?code=${encodeURIComponent(code.trim().toUpperCase())}`);
+    const res = await apiPost('/auth/check-referral', { code: code.trim().toUpperCase() });
     return res === true || res?.data === true || res?.exists === true;
   } catch {
     return false;
