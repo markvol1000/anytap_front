@@ -30,11 +30,11 @@ function asArray(data) {
 }
 
 async function fetchMembersRaw() {
-  return asArray(await apiGet('/admin/members')).map(mapMemberRow);
+  return asArray(await apiPost('/admin/members')).map(mapMemberRow);
 }
 
 async function fetchKycRaw() {
-  return asArray(await apiGet('/admin/kyc')).map(mapKycRow);
+  return asArray(await apiPost('/admin/kyc')).map(mapKycRow);
 }
 
 async function fetchCardsRaw(params = {}) {
@@ -43,7 +43,7 @@ async function fetchCardsRaw(params = {}) {
   if (params?.limit) query.append('pageSize', params.limit);
   const queryString = query.toString() ? `?${query.toString()}` : '';
   const endpoint = params.onlyRegistered ? '/admin/cards' : '/admin/reports/cards';
-  return asArray(await apiGet(`${endpoint}${queryString}`)).map(mapCardRow);
+  return asArray(await apiPost(`${endpoint}${queryString}`)).map(mapCardRow);
 }
 
 function resolveUserId(id) {
@@ -66,7 +66,7 @@ async function updateCardStatus(userId, body, originalId = null) {
 }
 
 async function resolveFirstCardNo(userId) {
-  const data = await apiGet(`/admin/members/${encodeURIComponent(userId)}/cards`);
+  const data = await apiPost(`/admin/members/${encodeURIComponent(userId)}/cards`);
   const list = asArray(data);
   const first = list[0];
   if (!first) {
@@ -80,7 +80,7 @@ export async function resetAdminStore() {
 }
 
 export async function getCurrentAdmin() {
-  return mapAdminProfile(await apiGet('/admin/me'));
+  return mapAdminProfile(await apiPost('/admin/me'));
 }
 
 export async function getDashboardKpis() {
@@ -109,12 +109,12 @@ export async function getSystemSummary() {
 
 export async function getDashboardData() {
   const [summary, members, kyc, cards, recentTxs, withdrawals] = await Promise.all([
-    apiGet('/admin/analytics/daily-summary').catch(() => ({})),
+    apiPost('/admin/analytics/daily-summary').catch(() => ({})),
     fetchMembersRaw().catch(() => []),
     fetchKycRaw().catch(() => []),
     fetchCardsRaw().catch(() => []),
     apiPost('/admin/transactions/recent', { limit: 1000 }).catch(() => []),
-    apiGet('/admin/withdrawals').catch(() => []),
+    apiPost('/admin/withdrawals').catch(() => []),
   ]);
   return mapDailySummaryToDashboard({
     summary,
@@ -162,9 +162,9 @@ export async function getMemberById(id) {
   try {
     let rawDetail = null;
     try {
-      rawDetail = await apiGet(`/admin/members/${encodeURIComponent(userId)}`);
+      rawDetail = await apiPost(`/admin/members/${encodeURIComponent(userId)}`);
     } catch {
-      rawDetail = await apiGet(`/users/${encodeURIComponent(userId)}`);
+      rawDetail = await apiPost(`/users/${encodeURIComponent(userId)}`);
     }
     const userDetail = mapUserDetail(rawDetail);
     if (memberInList) {
@@ -199,6 +199,7 @@ export async function updateMember(id, patch = {}) {
   if (patch.trackingNumber != null) body.trackingNumber = patch.trackingNumber;
   if (patch.carrier != null) body.carrier = patch.carrier;
   if (patch.wasabiCardId != null) body.wasabiCardId = patch.wasabiCardId;
+  if (patch.maxCardsAllowed != null) body.maxCardsAllowed = Number(patch.maxCardsAllowed);
   if (patch.status != null) body.status = String(patch.status).toUpperCase();
   if (patch.accountStatus != null) body.status = String(patch.accountStatus).toUpperCase();
 
@@ -230,7 +231,7 @@ export async function triggerFeePayout(userId) {
 export async function getMemberCards(userId) {
   if (!userId) return [];
   try {
-    const rawCards = asArray(await apiGet(`/admin/members/${encodeURIComponent(userId)}/cards`));
+    const rawCards = asArray(await apiPost(`/admin/members/${encodeURIComponent(userId)}/cards`));
     if (rawCards.length > 0) {
       const mapped = rawCards.map((c, i) => mapCardRow(c, i));
       const seen = new Set();
@@ -302,9 +303,9 @@ export async function getKycHistory(userId, email = '') {
     const cleanEmail = String(email || '').trim();
 
     // Fetch event-logs strictly for KYC-related events (KYC_SUBMITTED, KYC_APPROVED, KYC_REJECTED, FAIL_KYC_API, etc.)
-    const eventLogsRes = await apiGet(`/admin/event-logs?userId=${encodeURIComponent(cleanId)}&size=100`).catch(() => null);
+    const eventLogsRes = await apiPost(`/admin/event-logs?userId=${encodeURIComponent(cleanId)}&size=100`).catch(() => null);
     const rawEventLogs = asArray(eventLogsRes);
-    const allAdminLogs = rawEventLogs.length > 0 ? rawEventLogs : asArray(await apiGet('/admin/logs').catch(() => []));
+    const allAdminLogs = rawEventLogs.length > 0 ? rawEventLogs : asArray(await apiPost('/admin/logs').catch(() => []));
 
     const combined = [];
 
@@ -364,8 +365,8 @@ export async function getMemberAuditTimeline(userId, email = '') {
     const cleanEmail = String(email || '').trim();
 
     const [loginLogsRes, eventLogsRes] = await Promise.all([
-      apiGet(`/admin/login-logs?size=100&search=${encodeURIComponent(cleanEmail || cleanId)}`).catch(() => null),
-      apiGet(`/admin/event-logs?userId=${encodeURIComponent(cleanId)}&size=100`).catch(() => null),
+      apiPost(`/admin/login-logs?size=100&search=${encodeURIComponent(cleanEmail || cleanId)}`).catch(() => null),
+      apiPost(`/admin/event-logs?userId=${encodeURIComponent(cleanId)}&size=100`).catch(() => null),
     ]);
 
     const rawLoginLogs = asArray(loginLogsRes?.items || loginLogsRes?.data?.items || loginLogsRes);
@@ -473,7 +474,7 @@ export async function getCardApplications(params = {}) {
 export async function getCardById(id) {
   if (!id) return null;
   try {
-    const data = await apiGet(`/admin/cards/applications/detail/${encodeURIComponent(id)}`);
+    const data = await apiPost(`/admin/cards/applications/detail/${encodeURIComponent(id)}`);
     if (data) return mapCardRow(data);
   } catch {
     // fallback below
@@ -521,7 +522,7 @@ export async function getCardById(id) {
 export async function getMemberCardCount(memberId) {
   try {
     const userId = resolveUserId(memberId);
-    const cards = asArray(await apiGet(`/admin/members/${encodeURIComponent(userId)}/cards`));
+    const cards = asArray(await apiPost(`/admin/members/${encodeURIComponent(userId)}/cards`));
     return cards.length;
   } catch {
     return 1;
@@ -643,7 +644,7 @@ export async function getCardTransactions(userId, cardNo = '') {
     ? `/admin/members/${encodeURIComponent(actualUserId)}/cards/transactions${queryString}`
     : `/admin/cards/transactions${queryString}`;
 
-  const data = await apiGet(url).catch(() => ({ records: [], total: 0 }));
+  const data = await apiPost(url).catch(() => ({ records: [], total: 0 }));
   const rawList = Array.isArray(data) 
     ? data 
     : (Array.isArray(data?.records) ? data.records : (Array.isArray(data?.items) ? data.items : []));
@@ -675,14 +676,14 @@ function mapWalletRow(u) {
 }
 
 export async function getWallets(params = {}) {
-  const rawList = asArray(await apiGet('/admin/wallets'));
+  const rawList = asArray(await apiPost('/admin/wallets'));
   const mapped = rawList.map(mapWalletRow);
   return paginateLocal(mapped, params, ['address', 'memberName', 'memberId']);
 }
 
 export async function getWalletById(id, sync = false) {
   const cleanId = String(id || '').replace(/\.+$/, '');
-  const u = await apiGet(`/admin/wallets/${encodeURIComponent(cleanId)}?sync=${sync}`);
+  const u = await apiPost(`/admin/wallets/${encodeURIComponent(cleanId)}?sync=${sync}`);
   if (!u) return null;
   return {
     ...mapWalletRow(u),
@@ -1002,7 +1003,7 @@ export async function getActiveMembers() {
 
 export async function getReferrals(params = {}) {
   const [data, members] = await Promise.all([
-    apiGet('/admin/referrals').catch(() => null),
+    apiPost('/admin/referrals/list').catch(() => null),
     fetchMembersRaw().catch(() => []),
   ]);
   const rawList = asArray(data);
@@ -1081,7 +1082,7 @@ export async function updateMemberReferralCode(userId, referralCode) {
 export async function getReferredMembers(code, params = {}) {
   const pageNum = params.page || 1;
   const pageSize = params.pageSize || 10;
-  const data = await apiGet(`/admin/referrals/${encodeURIComponent(code)}/members?pageNum=${pageNum}&pageSize=${pageSize}`).catch(() => null);
+  const data = await apiPost(`/admin/referrals/${encodeURIComponent(code)}/members?pageNum=${pageNum}&pageSize=${pageSize}`).catch(() => null);
   
   if (data && data.items) {
     const mapped = data.items.map((m, i) => ({
@@ -1115,7 +1116,7 @@ export async function getReferredMembers(code, params = {}) {
 export async function getAdminReferredDailyDeposits(code, params = {}) {
   const pageNum = params.page || 1;
   const pageSize = params.pageSize || 100;
-  const data = await apiGet(`/admin/referrals/${encodeURIComponent(code)}/daily-deposits?pageNum=${pageNum}&pageSize=${pageSize}`).catch(() => null);
+  const data = await apiPost(`/admin/referrals/${encodeURIComponent(code)}/daily-deposits?pageNum=${pageNum}&pageSize=${pageSize}`).catch(() => null);
   if (data && data.items) {
     return {
       items: data.items,
@@ -1131,7 +1132,7 @@ export async function getAdminReferredDailyDeposits(code, params = {}) {
 export async function getCommissionLedger(params = {}) {
   const pageNum = params.page || 1;
   const pageSize = params.pageSize || 10;
-  const data = await apiGet(`/admin/referrals/commission-ledger?pageNum=${pageNum}&pageSize=${pageSize}`);
+  const data = await apiPost(`/admin/referrals/commission-ledger?pageNum=${pageNum}&pageSize=${pageSize}`);
   if (data && data.items) {
     return {
       items: data.items,
@@ -1150,7 +1151,7 @@ export async function adjustReferralReward(id, amount, note = '') {
 
 export async function getWithdrawals(params = {}) {
   const [data, members] = await Promise.all([
-    apiGet('/admin/withdrawals').catch(() => []),
+    apiPost('/admin/withdrawals').catch(() => []),
     fetchMembersRaw().catch(() => []),
   ]);
 
@@ -1198,7 +1199,7 @@ export async function getWithdrawals(params = {}) {
 
 export async function getWithdrawalById(id) {
   const [data, members] = await Promise.all([
-    apiGet('/admin/withdrawals').catch(() => []),
+    apiPost('/admin/withdrawals').catch(() => []),
     fetchMembersRaw().catch(() => []),
   ]);
 
@@ -1265,7 +1266,7 @@ export async function getNotifications() {
 
 export async function getContentItems() {
   try {
-    const res = await apiGet('/admin/content');
+    const res = await apiPost('/admin/content');
     return asArray(res);
   } catch {
     return [];
@@ -1278,7 +1279,7 @@ export async function getEmailTemplates(params = {}) {
   query.append('pageSize', params.pageSize || params.limit || 20);
   if (params.search) query.append('search', params.search);
 
-  const res = await apiGet(`/admin/email-templates?${query.toString()}`);
+  const res = await apiPost(`/admin/email-templates?${query.toString()}`);
   if (res && res.items) {
     return {
       items: res.items,
@@ -1296,7 +1297,7 @@ export async function getEmailTemplates(params = {}) {
 }
 
 export async function getEmailTemplateByCode(code) {
-  return apiGet(`/admin/email-templates/${encodeURIComponent(code)}`);
+  return apiPost(`/admin/email-templates/${encodeURIComponent(code)}`);
 }
 
 export async function createEmailTemplate(payload) {
@@ -1319,11 +1320,11 @@ export async function sendTestEmailTemplate(code, email, variables = {}) {
 }
 
 export async function getEventNotifications() {
-  return apiGet('/admin/event-notifications');
+  return apiPost('/admin/event-notifications');
 }
 
 export async function getEventNotificationRule(eventType) {
-  return apiGet(`/admin/event-notifications/${encodeURIComponent(eventType)}`);
+  return apiPost(`/admin/event-notifications/${encodeURIComponent(eventType)}`);
 }
 
 export async function saveEventNotificationRule(eventType, rule) {
@@ -1335,7 +1336,7 @@ export async function testDispatchEventNotification(eventType, payload) {
 }
 
 export async function getSettings() {
-  const data = await apiGet('/admin/settings').catch(() => ({}));
+  const data = await apiPost('/admin/settings').catch(() => ({}));
   const raw = data || {};
   return {
     cardFeeUsdt: Number(raw.cardFeeUsdt ?? raw.WASABI_CARD_FEE_USDT ?? 100),
@@ -1373,7 +1374,7 @@ export async function deleteSettingKey(key) {
 }
 
 export async function getFeeMaster() {
-  const data = await apiGet('/admin/fees').catch(() => null);
+  const data = await apiPost('/admin/fees').catch(() => null);
   if (Array.isArray(data) && data.length > 0) return data;
   return [
     { feeCode: 'A1', calculationType: 'Rate (2)', description: 'USDT Deposit Processing Fee Rate (3.0%)', fixedAmount: 0.0, rateValue: 0.03, updatedAt: '2026-07-03' },
@@ -1393,7 +1394,7 @@ export async function getLoginLogs(params = {}) {
   const searchStr = params.search || params.query || '';
   const statusStr = params.status || 'all';
 
-  const res = await apiGet(`/admin/login-logs?page=${pageNum}&size=${pageSize}&search=${encodeURIComponent(searchStr)}&status=${encodeURIComponent(statusStr)}`).catch(() => null);
+  const res = await apiPost(`/admin/login-logs?page=${pageNum}&size=${pageSize}&search=${encodeURIComponent(searchStr)}&status=${encodeURIComponent(statusStr)}`).catch(() => null);
 
   if (res) {
     const rawData = res.items || res.data?.items || (Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []));
@@ -1432,7 +1433,7 @@ export async function getLoginLogs(params = {}) {
 }
 
 export async function getAdminLogs(params = {}) {
-  const rawList = asArray(await apiGet('/admin/logs'));
+  const rawList = asArray(await apiPost('/admin/logs'));
   const excludedActions = new Set([
     'CARD_SPEND',
     'CARD_REFUND',
@@ -1520,7 +1521,7 @@ export async function getEmailLogs(params = {}) {
 }
 
 export async function getEventLogs(params = {}) {
-  const rawList = asArray(await apiGet('/admin/event-logs'));
+  const rawList = asArray(await apiPost('/admin/event-logs'));
   const mapped = rawList.map(l => ({
     id: String(l.id),
     userId: l.user ? l.user.userId : '-',
@@ -1719,24 +1720,24 @@ export async function getServerLogs() {
 
 
 export async function getSystemStatus() {
-  return apiGet('/admin/system/status');
+  return apiPost('/admin/system/status');
 }
 
 export async function getSystemConfig() {
-  return apiGet('/admin/system/config');
+  return apiPost('/admin/system/config');
 }
 
 /** Extra helpers used by ops dashboard / future admin panels */
 export async function getMerchantInfo() {
-  return apiGet('/admin/merchant-info');
+  return apiPost('/admin/merchant-info');
 }
 
 export async function getSettlementFees() {
-  return asArray(await apiGet('/admin/settlement/fees'));
+  return asArray(await apiPost('/admin/settlement/fees'));
 }
 
 export async function getDailySummary() {
-  return apiGet('/admin/analytics/daily-summary');
+  return apiPost('/admin/analytics/daily-summary');
 }
 
 export async function retryCregisWallet(userId) {
@@ -1759,7 +1760,7 @@ export async function syncAllCregisDeposits() {
 }
 
 export async function getDbTableMetrics() {
-  const data = await apiGet('/admin/operations/db-tables').catch(() => null);
+  const data = await apiPost('/admin/operations/db-tables').catch(() => null);
   if (Array.isArray(data) && data.length > 0) {
     return data;
   }
@@ -1780,15 +1781,15 @@ export async function getDbTableMetrics() {
 }
 
 export async function getServerLogsText(limit = 2000) {
-  return apiGet(`/admin/operations/server-logs?limit=${limit}&_t=${Date.now()}`);
+  return apiPost(`/admin/operations/server-logs?limit=${limit}&_t=${Date.now()}`);
 }
 
 export async function getOperationsIssues() {
-  return apiGet('/admin/operations/issues');
+  return apiPost('/admin/operations/issues');
 }
 
 export async function getOperationsIssueContext(issueId) {
-  return apiGet(`/admin/operations/issues/${encodeURIComponent(issueId)}/context`);
+  return apiPost(`/admin/operations/issues/${encodeURIComponent(issueId)}/context`);
 }
 
 export async function updateOperationsIssueStatus(issueId, status) {
@@ -1810,7 +1811,7 @@ export async function getFeesReport(params = {}) {
   if (params?.endDate) query.append('endDate', params.endDate);
   const qStr = query.toString() ? `?${query.toString()}` : '';
 
-  const res = await apiGet(`/admin/reports/fees${qStr}`);
+  const res = await apiPost(`/admin/reports/fees${qStr}`);
   if (res?.summary && (res?.byUser || res?.byItem)) {
     return res;
   }
@@ -1823,7 +1824,7 @@ export async function getFeesReport(params = {}) {
 
 export async function getCardTransfersReport(params = {}) {
   try {
-    const raw = asArray(await apiGet('/admin/reports/transfers'));
+    const raw = asArray(await apiPost('/admin/reports/transfers'));
     return paginateLocal(raw, {
       ...params,
       searchKeys: ['sourceCardNo', 'destinationCardNo', 'sourceCardLast4', 'destinationCardLast4', 'fromLoginId', 'toLoginId', 'fromHolder', 'toHolder', 'merchantOrderNo', 'wasabiOrderNo'],
@@ -1838,7 +1839,7 @@ export const MAX_CARDS_PER_MEMBER = 999;
 
 export async function getAllActiveBannedIps() {
   try {
-    const raw = asArray(await apiGet('/admin/security/banned-ips'));
+    const raw = asArray(await apiPost('/admin/security/banned-ips'));
     return raw
       .filter((item) => item.isActive !== false)
       .map((item) => String(item.ipAddress || '').trim())
@@ -1851,7 +1852,7 @@ export async function getAllActiveBannedIps() {
 
 export async function getBannedIps(params = {}) {
   try {
-    const raw = asArray(await apiGet('/admin/security/banned-ips'));
+    const raw = asArray(await apiPost('/admin/security/banned-ips'));
     const mapped = raw.map((item) => ({
       id: String(item.id || item.ipAddress),
       ipAddress: item.ipAddress || '',

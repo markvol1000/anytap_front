@@ -83,8 +83,8 @@ export function getAccountScenarios() {
 export async function fetchSystemAddress() {
   if (isHttpApi) {
     try {
-      const { apiGet } = await import('../api/httpClient.js');
-      const res = await apiGet('/common/system-address');
+      const { apiPost } = await import('../api/httpClient.js');
+      const res = await apiPost('/common/system-address');
       return res?.data?.tronAddress || res?.tronAddress || '';
     } catch (err) {
       console.warn('Failed to fetch system address from backend:', err);

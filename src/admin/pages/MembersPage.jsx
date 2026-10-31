@@ -841,6 +841,54 @@ export function MembersPage() {
                         : '👤 Member'}
                     </span>
                   )} />
+                  <AdminDetailRow label="Max Cards Allowed" value={(
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const inputEl = e.currentTarget.elements.namedItem('maxCardsInput');
+                        const val = parseInt(inputEl.value, 10);
+                        if (!val || val < 1) {
+                          showToast('Please enter a valid card limit (at least 1)');
+                          return;
+                        }
+                        try {
+                          const targetId = isTemporary ? (detail.id || detail.userId || detail.email) : detail.id;
+                          await updateMember(targetId, { maxCardsAllowed: val });
+                          showToast('Successfully updated max card limit to ' + val);
+                          setDetail(prev => ({ ...prev, maxCardsAllowed: val }));
+                        } catch (err) {
+                          showToast('Failed to update max card limit');
+                        }
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      <input
+                        name="maxCardsInput"
+                        type="number"
+                        min="1"
+                        max="99"
+                        defaultValue={detail.maxCardsAllowed ?? 3}
+                        key={detail.id + '_' + (detail.maxCardsAllowed ?? 3)}
+                        style={{
+                          width: '70px',
+                          padding: '5px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          textAlign: 'center'
+                        }}
+                      />
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>cards</span>
+                      <button
+                        type="submit"
+                        className="admin-btn admin-btn--primary admin-btn--sm"
+                        style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '600' }}
+                      >
+                        Save
+                      </button>
+                    </form>
+                  )} />
                 </AdminDetailSection>
 
                 <AdminDetailSection title="Referrer Assignment & Matching">

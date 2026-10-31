@@ -104,6 +104,7 @@ export function mapUserDetail(data) {
     needsActivation: data.needsActivation === true,
     trackingNumber: data.trackingNumber || '',
     carrier: data.carrier || '',
+    maxCardsAllowed: Number(data.maxCardsAllowed ?? 3),
   };
 }
 

@@ -208,7 +208,7 @@ async function fetchCregisWalletBalance(userId) {
   }
   cregisBalanceInFlight = (async () => {
     try {
-      const data = await apiGet(`/cregis/user/sub-address-balance/${encodeURIComponent(userId)}`);
+      const data = await apiPost(`/cregis/user/sub-address-balance/${encodeURIComponent(userId)}`);
       const parsed = parseCregisAvailableBalance(data);
       cregisBalanceCachedValue = parsed;
       cregisBalanceLastFetched = Date.now();
@@ -404,7 +404,7 @@ export async function fetchCardTransactions(userId, { pageNum = 1, pageSize = 50
 export async function fetchLocalTransactions(userId) {
   if (!userId) return [];
   try {
-    const data = await apiGet(`/cards/${encodeURIComponent(userId)}/local-transactions`);
+    const data = await apiPost(`/cards/${encodeURIComponent(userId)}/local-transactions`);
     if (!Array.isArray(data)) return [];
     return data
       .filter((tx) => {
@@ -550,7 +550,7 @@ export async function fetchAccountContext() {
 
   if (!demoLocked && shouldFetchWasabiCardInfo(session)) {
     try {
-      cardInfoList = await apiGet(`/cards/${encodeURIComponent(session.userId)}/list-info`);
+      cardInfoList = await apiPost(`/cards/${encodeURIComponent(session.userId)}/list-info`);
     } catch (err) {
       if (err?.status !== 400 && err?.status !== 404) {
         console.warn('[accountApi] card info list', err);
@@ -635,7 +635,7 @@ export async function fetchReferralContext() {
     const uid = encodeURIComponent(session.userId);
 
     try {
-      const res = await apiGet(`/users/${uid}/referral`).catch(() => null);
+      const res = await apiPost(`/users/${uid}/referral`).catch(() => null);
       if (res && typeof res === 'object') {
         referralInfo = res.data || res;
         ownCode = referralInfo.ownReferralCode || referralInfo.referralCode || null;
@@ -676,7 +676,7 @@ export async function fetchReferralContext() {
 
     let rawMembers = [];
     try {
-      const res = await apiGet(`/users/${uid}/referral/members?pageNum=1&pageSize=100`).catch(() => null);
+      const res = await apiPost(`/users/${uid}/referral/members?pageNum=1&pageSize=100`).catch(() => null);
       if (res && Array.isArray(res.items)) {
         rawMembers = res.items;
       } else if (res && Array.isArray(res?.data?.items)) {
@@ -705,7 +705,7 @@ export async function fetchReferralContext() {
 
     let depositLedger = [];
     try {
-      const depRes = await apiGet(`/users/${uid}/referral/daily-deposits`).catch(() => null);
+      const depRes = await apiPost(`/users/${uid}/referral/daily-deposits`).catch(() => null);
       if (depRes && Array.isArray(depRes.items)) {
         depositLedger = depRes.items;
       } else if (depRes && Array.isArray(depRes?.data?.items)) {
@@ -882,7 +882,7 @@ async function refreshSessionFromUser(userId) {
   }
   const promise = (async () => {
     try {
-      const user = await apiGet(`/users/${encodeURIComponent(userId)}`);
+      const user = await apiPost(`/users/${encodeURIComponent(userId)}`);
       refreshUserLastFetched.set(userId, Date.now());
       if (!user || typeof user !== 'object') return null;
     const current = getHttpSession() || {};
@@ -1144,7 +1144,7 @@ export async function submitCardApplication({ cardType, shipping, kycForm } = {}
 
   let cardInfo = null;
   try {
-    cardInfo = await apiGet(`/cards/${encodeURIComponent(session.userId)}/info`);
+    cardInfo = await apiPost(`/cards/${encodeURIComponent(session.userId)}/info`);
   } catch (err) {
     if (err?.status !== 400 && err?.status !== 404) throw err;
   }
@@ -1345,7 +1345,7 @@ export async function checkCardActivationStatus(targetCardId = '', targetLast4 =
     if (targetLast4) params.append('last4', targetLast4);
 
     const qs = params.toString() ? `?${params.toString()}` : '';
-    const res = await apiGet(`/cards/${encodeURIComponent(session.userId)}/activation-status${qs}`);
+    const res = await apiPost(`/cards/${encodeURIComponent(session.userId)}/activation-status${qs}`);
     const data = res?.data || res || {};
 
     return {
