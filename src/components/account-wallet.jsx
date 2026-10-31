@@ -906,7 +906,7 @@ export function ReceiveSheet({ s, open, onClose }) {
       const userId = s.accountState?.userId || s.user?.id;
       if (userId) {
         import('../lib/api/httpClient.js').then(({ apiPost }) => {
-          apiGet(`/cregis/user/address/${encodeURIComponent(userId)}`)
+          apiPost(`/cregis/user/address/${encodeURIComponent(userId)}`)
             .then((res) => {
               const addr = res?.data?.address || res?.address || '';
               if (addr) setFetchedAddress(addr);

@@ -113,7 +113,7 @@ export async function getDashboardData() {
     fetchMembersRaw().catch(() => []),
     fetchKycRaw().catch(() => []),
     fetchCardsRaw().catch(() => []),
-    apiGet('/admin/transactions/recent').catch(() => []),
+    apiPost('/admin/transactions/recent', { limit: 1000 }).catch(() => []),
     apiGet('/admin/withdrawals').catch(() => []),
   ]);
   return mapDailySummaryToDashboard({
@@ -134,7 +134,7 @@ export async function getRecentMembers(limit = 5) {
 }
 
 export async function getRecentTransactions(limit = 10) {
-  const txs = asArray(await apiGet('/admin/transactions/recent').catch(() => []));
+  const txs = asArray(await apiPost('/admin/transactions/recent', { limit: 1000 }).catch(() => []));
   return txs.slice(0, limit);
 }
 
