@@ -8,6 +8,7 @@ import { showAdminPortalLink, hasMemberSession, refreshAdminPortalLink, attemptL
 import { PwaInstallPrompt } from './PwaInstallPrompt.jsx';
 import { ScrollToTop } from './ScrollToTop.jsx';
 import { IssuanceDepositPanel } from './account-wallet.jsx';
+import { useServerDown } from '../lib/server-health.ts';
 import * as W from '../utils/wallet-data.js';
 
 const SOCIAL_LINK_ATTRS = {
@@ -43,6 +44,7 @@ function normalizePath(pathname) {
 
 function SiteHeader({
   member = false,
+
   memberName = '',
   loginId = '',
   unreadNotifications = 0,
@@ -64,6 +66,7 @@ function SiteHeader({
   const [showAdminPortal, setShowAdminPortal] = useState(showAdminPortalLink);
   const [isLoggedIn, setIsLoggedIn] = useState(hasMemberSession);
   const [showDeposit, setShowDeposit] = useState(false);
+  const isServerDown = useServerDown();
   const closeTimer = useRef(null);
 
   const closeNav = () => {
@@ -223,10 +226,20 @@ function SiteHeader({
               </Link>
             ) : (
               <>
-                <Link to="/login" className="btn btn--ghost btn--sm topbar__login" onClick={closeNav}>Log in</Link>
-                <Link to="/sign-up" className="btn btn--accent btn--sm topbar__apply" onClick={closeNav}>
-                  Get your card <Icon name="arrowRight" size={14} />
-                </Link>
+                {isServerDown ? (
+                  <span className="btn btn--ghost btn--sm topbar__login" style={{ opacity: 0.45, cursor: 'not-allowed' }} title="Service temporarily unavailable">Log in</span>
+                ) : (
+                  <Link to="/login" className="btn btn--ghost btn--sm topbar__login" onClick={closeNav}>Log in</Link>
+                )}
+                {isServerDown ? (
+                  <span className="btn btn--accent btn--sm topbar__apply" style={{ opacity: 0.45, cursor: 'not-allowed' }} title="Service temporarily unavailable">
+                    Get your card <Icon name="arrowRight" size={14} />
+                  </span>
+                ) : (
+                  <Link to="/sign-up" className="btn btn--accent btn--sm topbar__apply" onClick={closeNav}>
+                    Get your card <Icon name="arrowRight" size={14} />
+                  </Link>
+                )}
               </>
             )}
             <button className="topbar__burger" aria-label="Menu" onClick={() => setMobileOpen(true)}>
@@ -356,13 +369,28 @@ function SiteHeader({
               </>
             ) : (
               <>
-                <Link to="/sign-up" className="btn btn--accent btn--lg mobnav__cta" onClick={closeNav}>
-                  Get your card <Icon name="arrowRight" size={16} />
-                </Link>
+                {isServerDown ? (
+                  <span className="btn btn--accent btn--lg mobnav__cta" style={{ opacity: 0.45, cursor: 'not-allowed' }}>
+                    Get your card <Icon name="arrowRight" size={16} />
+                  </span>
+                ) : (
+                  <Link to="/sign-up" className="btn btn--accent btn--lg mobnav__cta" onClick={closeNav}>
+                    Get your card <Icon name="arrowRight" size={16} />
+                  </Link>
+                )}
                 <div className="mobnav__divider" aria-hidden="true" />
                 <div className="mobnav__auth">
-                  <Link to="/login" className="btn btn--outline mobnav__login" onClick={closeNav}>Log in</Link>
-                  <Link to="/sign-up" className="btn btn--outline mobnav__signup" onClick={closeNav}>Sign up</Link>
+                  {isServerDown ? (
+                    <>
+                      <span className="btn btn--outline mobnav__login" style={{ opacity: 0.45, cursor: 'not-allowed' }}>Log in</span>
+                      <span className="btn btn--outline mobnav__signup" style={{ opacity: 0.45, cursor: 'not-allowed' }}>Sign up</span>
+                    </>
+                  ) : (
+                    <>
+                      <Link to="/login" className="btn btn--outline mobnav__login" onClick={closeNav}>Log in</Link>
+                      <Link to="/sign-up" className="btn btn--outline mobnav__signup" onClick={closeNav}>Sign up</Link>
+                    </>
+                  )}
                 </div>
               </>
             )}

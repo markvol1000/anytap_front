@@ -1,48 +1,40 @@
-/** Scheduled system maintenance notice (2026-09-12). */
+/**
+ * Service Security & Asset Protection Notice
+ * Displays notice when server is down / undergoing maintenance or manually activated.
+ */
 
-export const MAINTENANCE_NOTICE_ID = '2026-09-12';
-
-/** UTC window from the published notice. */
-export const MAINTENANCE_START_UTC = Date.parse('2026-09-11T23:00:00.000Z');
-export const MAINTENANCE_END_UTC = Date.parse('2026-09-12T03:00:00.000Z');
-
-export const MAINTENANCE_STORAGE_KEY = `anytap_maintenance_dismissed:${MAINTENANCE_NOTICE_ID}`;
+export const MAINTENANCE_NOTICE_ID = 'security_asset_protection_2026';
 
 export const MAINTENANCE_NOTICE = {
   id: MAINTENANCE_NOTICE_ID,
-  title: 'Scheduled System Maintenance',
-  subtitle: 'Anytap will undergo scheduled maintenance to improve service stability.',
-  scheduleLabel: 'Maintenance Schedule',
-  regions: [
+  badge: 'SECURITY NOTICE',
+  title: 'Service Security and Customer Asset Protection',
+  greeting: 'Hello, this is Anytap.',
+  lead: 'AI-driven cyberattacks targeting financial institutions worldwide have been increasing recently. Anytap has also experienced attack attempts; however, we responded in accordance with our security protocols, and your assets remain safely protected.',
+  sections: [
     {
-      region: '🇰🇷🇯🇵 Korea / Japan',
-      time: 'Sept 12, 08:00–12:00 (KST/JST)',
+      title: 'Regarding Payment and Withdrawal Delays',
+      tone: 'warn' as const,
+      description: 'Some payments or withdrawals may experience temporary delays or errors. These may be caused by financial network updates or network conditions in your country of residence.',
     },
     {
-      region: '🇸🇬🇭🇰 Singapore / Hong Kong',
-      time: 'Sept 12, 07:00–11:00 (SGT/HKT)',
-    },
-    {
-      region: '🇻🇳🇮🇩 Vietnam / Indonesia',
-      time: 'Sept 12, 06:00–10:00 (ICT/WIB)',
+      title: 'Customer Asset Protection',
+      tone: 'ok' as const,
+      points: [
+        'All of your asset management records and transaction history are securely maintained.',
+        'Even in the event of a temporary disruption, your assets and transaction records will not be affected.',
+      ],
     },
   ],
-  utcReference: 'Reference: 2026/09/11 23:00 – 2026/09/12 03:00 (UTC)',
-  notes: [
-    { tone: 'ok' as const, text: 'Your card will remain usable for payments during this time.' },
-    { tone: 'warn' as const, text: 'You will not be able to log in to the Anytap app during the maintenance window.' },
-    { tone: 'warn' as const, text: 'Top-up, transfers, and balance updates may be temporarily unavailable.' },
-  ],
-  apology: 'We apologize for any inconvenience and appreciate your understanding.',
-  cta: 'Got it',
+  closing: 'We apologize for any inconvenience and remain committed to providing you with stable and reliable service.',
+  support: 'For any inquiries, please contact our Customer Support team.',
+  team: 'The Anytap Team',
+  cta: 'I Understand',
 };
 
-/** 공지 팝업 비활성화 (종료) */
-export function isMaintenanceNoticeActive(_now = Date.now()): boolean {
-  return false;
-}
+/** Manual override: set to true to force display even if server is online */
+export const FORCE_MAINTENANCE_NOTICE = false;
 
-export function shouldShowMaintenanceNotice(now = Date.now()): boolean {
-  if (typeof window === 'undefined') return false;
-  return isMaintenanceNoticeActive(now);
+export function isMaintenanceNoticeActive(): boolean {
+  return FORCE_MAINTENANCE_NOTICE;
 }

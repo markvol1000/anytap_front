@@ -1477,7 +1477,7 @@ export async function getEmailLogs(params = {}) {
   if (params.endDate) query.set('endDate', params.endDate);
 
   try {
-    const res = await apiGet(`/admin/email-logs?${query.toString()}`);
+    const res = await apiPost(`/admin/email-logs?${query.toString()}`, Object.fromEntries(query.entries()));
     if (res && res.items) {
       const mapped = res.items.map(l => ({
         id: String(l.id || l.emailLogId || ''),
@@ -1744,7 +1744,7 @@ export async function retryCregisWallet(userId) {
 }
 
 export async function getCregisDepositList(userId) {
-  const res = await apiGet(`/cregis/user/deposit-list/${encodeURIComponent(userId)}`);
+  const res = await apiPost(`/cregis/user/deposit-list/${encodeURIComponent(userId)}`, { userId });
   return res?.data || res;
 }
 
@@ -1893,6 +1893,6 @@ export async function unbanIpAddress(ip) {
 
 
 export async function getWafReport(hours = 3) {
-  const res = await apiGet(`/admin/security/waf-report?hours=${encodeURIComponent(hours)}`);
+  const res = await apiPost(`/admin/security/waf-report?hours=${encodeURIComponent(hours)}`, { hours });
   return res || {};
 }

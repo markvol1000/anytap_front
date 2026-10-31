@@ -1,61 +1,110 @@
 import { useCallback, useEffect, useId, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ClockIcon } from '@phosphor-icons/react';
-import { Icon } from './ui.jsx';
+import { ShieldCheck, WarningCircle, CheckCircle, X } from '@phosphor-icons/react';
 import {
   MAINTENANCE_NOTICE,
-  shouldShowMaintenanceNotice,
+  FORCE_MAINTENANCE_NOTICE,
 } from '../lib/maintenance-notice.ts';
+import { API_BASE_URL } from '../lib/api/config.js';
+import { forceLogoutAndRedirect } from '../lib/api/httpClient.js';
+import { setServerDownState } from '../lib/server-health.ts';
 import '../styles/maintenance-notice.css';
 
 function isTargetNoticePage(pathname: string): boolean {
-  return pathname === '/' || pathname === '/login';
+  return pathname === '/';
 }
 
 export function MaintenanceNoticePopup() {
   const location = useLocation();
   const titleId = useId();
-  const [open, setOpen] = useState(
-    () => isTargetNoticePage(location.pathname) && shouldShowMaintenanceNotice(),
-  );
+  const [open, setOpen] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
 
-  const close = useCallback(() => {
-    setOpen(false);
-  }, []);
-
-  // 기존에 브라우저 localStorage에 남아있던 영구 닫힘 키 정리
-  useEffect(() => {
-    try {
-      localStorage.removeItem('anytap_maintenance_dismissed:2026-09-12');
-    } catch { /* noop */ }
-  }, []);
-
-  useEffect(() => {
-    if (isTargetNoticePage(location.pathname) && shouldShowMaintenanceNotice()) {
+  // Check server health to auto-detect shutdown
+  const checkServerStatus = useCallback(async () => {
+    if (FORCE_MAINTENANCE_NOTICE) {
       setOpen(true);
-    } else {
-      setOpen(false);
+      return;
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+      // Light probe: POST to check auth/session or health endpoint
+      const targetUrl = API_BASE_URL ? `${API_BASE_URL}/auth/session` : '/api/v1/auth/session';
+      const res = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      // Check server response:
+      // - 200 OK or 401 Unauthorized (session check normal response) -> Server is UP & ALIVE!
+      // - 500 (Vite proxy fail), 502/503/504 (Gateway / ALB down) -> Server is DOWN!
+      const isAlive = res.ok || res.status === 401;
+
+      if (!isAlive) {
+        console.warn(`[MaintenanceNotice] Backend probe returned HTTP ${res.status}. Server is down.`);
+        setServerDownState(true);
+        forceLogoutAndRedirect('server_unreachable');
+        if (location.pathname === '/') {
+          setOpen(true);
+        }
+      } else {
+        // Server is ALIVE!
+        setServerDownState(false);
+        setOpen(false);
+      }
+    } catch (err) {
+      // Network failure / connection refused / timeout -> Backend EC2 is completely down
+      console.warn('[MaintenanceNotice] Backend unreachable (network/timeout). Triggering maintenance popup.', err);
+      setServerDownState(true);
+      forceLogoutAndRedirect('server_unreachable');
+      if (location.pathname === '/') {
+        setOpen(true);
+      }
     }
   }, [location.pathname]);
 
   useEffect(() => {
-    if (!open) return undefined;
+    checkServerStatus();
+
+    // Re-check periodically every 15 seconds
+    const interval = setInterval(checkServerStatus, 15000);
+    return () => clearInterval(interval);
+  }, [location.pathname, isDismissed, checkServerStatus]);
+
+  const close = useCallback(() => {
+    setOpen(false);
+    setIsDismissed(true);
+    document.body.style.removeProperty('overflow');
+    document.documentElement.style.removeProperty('overflow');
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      document.body.style.removeProperty('overflow');
+      document.documentElement.style.removeProperty('overflow');
+      return undefined;
+    }
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close();
     };
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', onKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.body.style.removeProperty('overflow');
+      document.documentElement.style.removeProperty('overflow');
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [open, close]);
 
-  if (!open || !isTargetNoticePage(location.pathname)) return null;
+  if (!open || isDismissed || !isTargetNoticePage(location.pathname)) return null;
 
   const notice = MAINTENANCE_NOTICE;
 
@@ -73,42 +122,63 @@ export function MaintenanceNoticePopup() {
           aria-label="Close"
           onClick={close}
         >
-          <Icon name="close" size={16} stroke={2} />
+          <X size={18} weight="bold" />
         </button>
 
-        <div className="maint-notice__icon" aria-hidden="true">
-          <ClockIcon size={28} weight="duotone" />
+        <div className="maint-notice__badge">
+          <ShieldCheck size={16} weight="fill" className="maint-notice__badge-icon" />
+          <span>{notice.badge}</span>
         </div>
+
         <h2 className="maint-notice__title" id={titleId}>
           {notice.title}
         </h2>
-        <p className="maint-notice__subtitle">{notice.subtitle}</p>
 
-        <div className="maint-notice__schedule">
-          <div className="maint-notice__schedule-label">{notice.scheduleLabel}</div>
-          {notice.regions.map((row) => (
-            <div className="maint-notice__schedule-row" key={row.region}>
-              <span className="maint-notice__region">{row.region}</span>
-              <span className="maint-notice__time">{row.time}</span>
+        <p className="maint-notice__greeting">{notice.greeting}</p>
+        <p className="maint-notice__lead">{notice.lead}</p>
+
+        <div className="maint-notice__content-card">
+          {notice.sections.map((sec, idx) => (
+            <div key={idx} className={`maint-notice__section is-${sec.tone}`}>
+              <div className="maint-notice__section-header">
+                {sec.tone === 'ok' ? (
+                  <CheckCircle size={18} weight="fill" className="maint-notice__sec-icon text-success" />
+                ) : (
+                  <WarningCircle size={18} weight="fill" className="maint-notice__sec-icon text-warning" />
+                )}
+                <h3 className="maint-notice__section-title">{sec.title}</h3>
+              </div>
+
+              {sec.description && (
+                <p className="maint-notice__section-desc">{sec.description}</p>
+              )}
+
+              {sec.points && (
+                <ul className="maint-notice__points">
+                  {sec.points.map((pt, pIdx) => (
+                    <li key={pIdx}>
+                      <span className="maint-notice__bullet">•</span>
+                      <span>{pt}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           ))}
-          <p className="maint-notice__ref">{notice.utcReference}</p>
         </div>
 
-        <ul className="maint-notice__notes">
-          {notice.notes.map((note) => (
-            <li key={note.text} className={note.tone === 'ok' ? 'is-ok' : 'is-warn'}>
-              <span className="maint-notice__mark" aria-hidden="true">
-                {note.tone === 'ok' ? '✓' : '!'}
-              </span>
-              <span>{note.text}</span>
-            </li>
-          ))}
-        </ul>
+        <p className="maint-notice__closing">{notice.closing}</p>
+        <p className="maint-notice__support">{notice.support}</p>
+        <p className="maint-notice__team">
+          Thank you.<br />
+          <strong>{notice.team}</strong>
+        </p>
 
-        <p className="maint-notice__apology">{notice.apology}</p>
-
-        <button type="button" className="btn btn--accent maint-notice__cta" onClick={close}>
+        <button
+          type="button"
+          className="btn btn--accent maint-notice__cta"
+          onClick={close}
+        >
           {notice.cta}
         </button>
       </div>

@@ -80,27 +80,26 @@ export function forceLogoutAndRedirect(reason = 'server_unreachable') {
   } catch { /* noop */ }
 
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-  const publicPaths = ['/login', '/sign-up', '/forgot-password', '/sign-up/verify'];
-  const isAlreadyOnAuthPage = publicPaths.some((p) => currentPath === p || currentPath.startsWith(p));
+  const isAlreadyOnHome = currentPath === '/';
 
-  if (isAlreadyOnAuthPage) {
+  if (isAlreadyOnHome) {
     return;
   }
 
   if (isRedirecting) return;
   isRedirecting = true;
 
-  console.warn(`[AnyTap] Server unreachable or session expired (${reason}). Redirecting to /login...`);
+  console.warn(`[AnyTap] Server unreachable or session expired (${reason}). Redirecting to / ...`);
 
   setTimeout(() => {
     try {
-      window.location.replace(`/login?expired=1&reason=${encodeURIComponent(reason)}`);
+      window.location.replace(`/?expired=1&reason=${encodeURIComponent(reason)}`);
     } catch {
-      window.location.href = `/login?expired=1&reason=${encodeURIComponent(reason)}`;
+      window.location.href = `/?expired=1&reason=${encodeURIComponent(reason)}`;
     } finally {
       setTimeout(() => { isRedirecting = false; }, 3000);
     }
-  }, 100);
+  }, 50);
 }
 
 /**
@@ -170,9 +169,10 @@ export async function apiRequest(path, options = {}) {
 
     console.error(`[API Network Error] ${requestUrl}:`, fetchErr);
 
-    // 사용자의 페이지 새로고침/이탈(Abort) 시에는 세션을 파기하거나 로그아웃시키지 않음
+    // 백엔드 서버 다운(Connection Refused, Timeout, Network Error) 시 세션 파기 후 메인 화면으로 리다이렉트
     if (!isLoginEndpoint && isNetworkError) {
-      console.warn(`[API Network Error] Server unreachable on ${requestUrl}. Retaining session tokens.`);
+      console.warn(`[API Network Error] Server unreachable on ${requestUrl}. Clearing session and redirecting to main.`);
+      forceLogoutAndRedirect('server_unreachable');
     }
 
     const err = new Error(isAbort ? 'Request cancelled.' : 'System is under maintenance. Please try again later.');

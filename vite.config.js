@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
   if (mode === 'dev') {
     proxyTarget = 'http://13.209.47.166:8082';
   } else if (mode === 'prd') {
-    proxyTarget = 'http://anytap-alb-1199820250.ap-northeast-2.elb.amazonaws.com';
+    proxyTarget = 'https://api.anytap.io';
   } else if (mode === 'loc') {
     proxyTarget = 'http://localhost:8082';
   }
