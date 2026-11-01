@@ -80,6 +80,7 @@ function normalizeAuthProfile(data, loginId) {
     cardStatus: data.cardStatus || data.card_status || 'not_issued',
     status: data.status || '',
     role: data.role || 'MEMBER',
+    maxCardsAllowed: data.maxCardsAllowed != null ? Number(data.maxCardsAllowed) : 3,
   };
   if (walletAddr) profile.cregisWalletAddress = walletAddr;
   if (walletExists) profile.walletExists = true;

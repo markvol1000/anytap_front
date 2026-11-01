@@ -23,12 +23,49 @@ import * as D from '../lib/dashboard-state.js';
 import { resolveWalletBalance, resolveWalletAddress } from '../lib/api/display-data.js';
 
 function DashboardCardSlider({ s }) {
+  const cardCount = s.userCards?.length ?? 0;
+  const maxCards = s.cardLimit?.max ?? 3;
+
   return (
-    <CardPanel
-      mode="detail"
-      s={s}
-      className="portal-mycards-mob__panel"
-    />
+    <div className="portal-dash-wf__cards-wrap">
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 4px 12px 4px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h2 style={{
+            margin: 0,
+            fontSize: '18px',
+            fontWeight: '700',
+            color: 'var(--ink, #0f172a)',
+            letterSpacing: '-0.02em'
+          }}>
+            My Cards
+          </h2>
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: '2px 8px',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: '600',
+            backgroundColor: 'var(--surface-sunken, #f1f5f9)',
+            color: 'var(--ink-muted, #475569)',
+            border: '1px solid var(--border-subtle, #e2e8f0)'
+          }}>
+            {cardCount} / {maxCards} Cards
+          </span>
+        </div>
+
+      </div>
+      <CardPanel
+        mode="detail"
+        s={s}
+        className="portal-mycards-mob__panel"
+      />
+    </div>
   );
 }
 

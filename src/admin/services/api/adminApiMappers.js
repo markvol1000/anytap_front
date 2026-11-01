@@ -85,6 +85,7 @@ export function mapMemberRow(row) {
     failureReason: row?.failureReason || row?.rejectReason || row?.rejectionReason || '',
     rejectReason: row?.rejectReason || row?.failureReason || '',
     lastIp: row?.lastIp || row?.last_ip || row?.lastLoginIp || row?.last_login_ip || row?.clientIp || row?.ipAddress || row?.ip || null,
+    maxCardsAllowed: row?.maxCardsAllowed != null ? Number(row.maxCardsAllowed) : 3,
   };
 }
 

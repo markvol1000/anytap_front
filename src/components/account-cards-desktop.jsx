@@ -296,6 +296,8 @@ function CardsDesktopCarousel({
         <DashboardCardPager
           slideIndex={slideIndex}
           maxSlots={slots.length}
+          maxCardsAllowed={s?.cardLimit?.max}
+          showPositionLabel={true}
           onSelect={setSlideIndex}
         />
       )}
@@ -396,8 +398,8 @@ export function AccountMyCardsDesktop({ s }) {
   const { userCards, selectedCardIndex, setSelectedCardIndex } = s;
   const canAdd = s.cardLimit?.canAdd ?? false;
   const carouselSlots = useMemo(
-    () => buildDashboardCarouselSlots(userCards),
-    [userCards],
+    () => buildDashboardCarouselSlots(userCards, s.cardLimit?.max),
+    [userCards, s.cardLimit?.max],
   );
   const [deskSlide, setDeskSlide] = useState(() =>
     Math.min(selectedCardIndex, Math.max(0, carouselSlots.length - 1)),
@@ -431,7 +433,24 @@ export function AccountMyCardsDesktop({ s }) {
   return (
     <div className="portal-mycards-desk">
       <header className="portal-mycards-desk__intro">
-        <h1 className="portal-mycards-desk__intro-title">My Card</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <h1 className="portal-mycards-desk__intro-title" style={{ margin: 0 }}>My Cards</h1>
+          {s?.cardLimit?.max && (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '2px 8px',
+              borderRadius: '12px',
+              fontSize: '12px',
+              fontWeight: '600',
+              backgroundColor: 'var(--surface-sunken, #f1f5f9)',
+              color: 'var(--ink-muted, #475569)',
+              border: '1px solid var(--border-subtle, #e2e8f0)'
+            }}>
+              {userCards.length} / {s.cardLimit.max} Cards
+            </span>
+          )}
+        </div>
         <p className="portal-mycards-desk__intro-sub">
           Manage your Anytap Visa card and its security controls.
         </p>

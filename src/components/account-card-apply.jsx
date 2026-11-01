@@ -463,7 +463,7 @@ export function AccountCardApply({ s }) {
 
       {blocked && (
         <div className="capply-alert capply-alert--warn" role="alert">
-          You can hold up to {A.MAX_CARDS_PER_USER} cards.
+          You can hold up to {s.cardLimit?.max || A.MAX_CARDS_PER_USER} cards.
         </div>
       )}
 

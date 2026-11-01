@@ -848,16 +848,21 @@ export function MembersPage() {
                         const inputEl = e.currentTarget.elements.namedItem('maxCardsInput');
                         const val = parseInt(inputEl.value, 10);
                         if (!val || val < 1) {
-                          showToast('Please enter a valid card limit (at least 1)');
+                          window.alert('Please enter a valid card limit (at least 1)');
                           return;
                         }
                         try {
-                          const targetId = isTemporary ? (detail.id || detail.userId || detail.email) : detail.id;
-                          await updateMember(targetId, { maxCardsAllowed: val });
-                          showToast('Successfully updated max card limit to ' + val);
-                          setDetail(prev => ({ ...prev, maxCardsAllowed: val }));
+                          const targetId = detail.userId || detail.id;
+                          const updated = await updateMember(targetId, { maxCardsAllowed: val });
+                          window.alert('Successfully updated max card limit to ' + val);
+                          if (updated) {
+                            setDetail(updated);
+                          } else {
+                            setDetail(prev => ({ ...prev, maxCardsAllowed: val }));
+                          }
+                          list.reload();
                         } catch (err) {
-                          showToast('Failed to update max card limit');
+                          window.alert('Failed to update max card limit: ' + (err?.message || 'Error'));
                         }
                       }}
                       style={{ display: 'flex', alignItems: 'center', gap: '8px' }}

@@ -27,8 +27,8 @@ export function CardPanel({
   const isDetail = mode === 'detail';
   const { userCards, selectedCardIndex, setSelectedCardIndex } = s;
   const cardCount = userCards.length;
-  const canAdd = cardCount < A.MAX_CARDS_PER_USER && (s.cardLimit?.canAdd ?? true);
-  const sliderSlots = useMemo(() => buildDashboardCarouselSlots(userCards), [userCards]);
+  const canAdd = s.cardLimit ? s.cardLimit.canAdd : (cardCount < (s.cardLimit?.max ?? A.MAX_CARDS_PER_USER));
+  const sliderSlots = useMemo(() => buildDashboardCarouselSlots(userCards, s.cardLimit?.max), [userCards, s.cardLimit?.max]);
   const [slideIndex, setSlideIndex] = useState(0);
   const openCard = useCallback((card) => s.openCardDetails?.(card), [s]);
   const goApply = useCallback(() => s.go?.('cardApply'), [s]);
@@ -52,7 +52,7 @@ export function CardPanel({
   }, [setSelectedCardIndex, sliderSlots, userCards, s]);
 
   const showPager = sliderSlots.length > 1;
-  const showMaxHint = cardCount >= A.MAX_CARDS_PER_USER;
+  const showMaxHint = s.cardLimit ? s.cardLimit.atMax : (cardCount >= (s.cardLimit?.max ?? A.MAX_CARDS_PER_USER));
   const showQuickActions = true;
 
   if (cardCount === 0) {
@@ -106,6 +106,7 @@ export function CardPanel({
               <DashboardCardPager
                 slideIndex={slideIndex}
                 maxSlots={sliderSlots.length}
+                maxCardsAllowed={s.cardLimit?.max}
                 onSelect={handleSlideChange}
               />
             )}
@@ -132,7 +133,7 @@ export function CardPanel({
         </div>
 
         {showMaxHint && (
-          <p className="portal-dash-wf__cards-max">Maximum 3 cards issued</p>
+          <p className="portal-dash-wf__cards-max">Maximum {s.cardLimit?.max ?? 3} cards issued</p>
         )}
       </div>
 

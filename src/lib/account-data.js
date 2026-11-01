@@ -182,9 +182,9 @@ export function resolveUserCards(accountState) {
   return [];
 }
 
-export function getCardLimitInfo(cards) {
-  const used = cards.length;
-  const max = MAX_CARDS_PER_USER;
+export function getCardLimitInfo(cards, maxCardsAllowed = MAX_CARDS_PER_USER) {
+  const used = (cards || []).length;
+  const max = (typeof maxCardsAllowed === 'number' && maxCardsAllowed > 0) ? maxCardsAllowed : MAX_CARDS_PER_USER;
   return { used, max, canAdd: used < max, atMax: used >= max, shortLabel: `${used} / ${max}` };
 }
 

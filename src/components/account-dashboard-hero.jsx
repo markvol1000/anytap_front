@@ -78,8 +78,9 @@ function DashboardEmptyCardSlot({ s }) {
 
 function DashboardMyCards({ s }) {
   const { userCards, selectedCardIndex, setSelectedCardIndex } = s;
-  const walletSlots = useMemo(() => buildWalletSlots(userCards), [userCards]);
-  const walletAllFull = userCards.length >= A.MAX_CARDS_PER_USER;
+  const cardLimitMax = s.cardLimit?.max ?? A.MAX_CARDS_PER_USER;
+  const walletSlots = useMemo(() => buildWalletSlots(userCards, cardLimitMax), [userCards, cardLimitMax]);
+  const walletAllFull = s.cardLimit ? s.cardLimit.atMax : (userCards.length >= cardLimitMax);
   const [walletSlide, setWalletSlide] = useState(selectedCardIndex);
   const selectedIndex = Math.min(selectedCardIndex, Math.max(0, userCards.length - 1));
 
@@ -119,7 +120,14 @@ function DashboardMyCards({ s }) {
     <div className="portal-dash-wallet-hub__cards portal-mycards--v10">
       <div className="portal-dash-wallet-hub__cards-head">
         <div>
-          <h3 className="portal-dash-wallet-hub__cards-title">My Cards</h3>
+          <h3 className="portal-dash-wallet-hub__cards-title">
+            My Cards
+            {s?.cardLimit?.max ? (
+              <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b', marginLeft: '8px' }}>
+                ({userCards.length}/{s.cardLimit.max})
+              </span>
+            ) : null}
+          </h3>
           <p className="portal-dash-wallet-hub__cards-sub">Spend with Visa using your prepaid balance</p>
         </div>
         {s.cardLimit?.canAdd && userCards.length > 0 && (

@@ -220,10 +220,11 @@ export function DebitCardFace({
   return face;
 }
 
-export function buildDashboardCarouselSlots(userCards) {
+export function buildDashboardCarouselSlots(userCards, max = A.MAX_CARDS_PER_USER) {
   const count = userCards.length;
   if (count === 0) return [];
-  if (count >= A.MAX_CARDS_PER_USER) return userCards;
+  const limit = (typeof max === 'number' && max > 0) ? max : A.MAX_CARDS_PER_USER;
+  if (count >= limit) return userCards;
   return [...userCards, null];
 }
 
@@ -365,7 +366,7 @@ function CardSlide({
 
 export function CardOnboardingActions({ s, layout = 'inline' }) {
   const applyDisabled = !s.kycApproved && !s.cardApplicationPending;
-  const applyLimited = s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3);
+  const applyLimited = s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= (s.cardLimit?.max ?? 3));
 
   const goApply = () => {
     if (!s.kycApproved && !s.cardApplicationPending) {
@@ -424,7 +425,7 @@ export function CardOnboardingActions({ s, layout = 'inline' }) {
           </span>
           <span className="portal-card-onboard__body">
             <span className="portal-card-onboard__title">Apply New Card</span>
-            <span className="portal-card-onboard__desc">{applyLimited ? 'Maximum limit of 3 cards reached.' : 'Request a new Anytap card.'}</span>
+            <span className="portal-card-onboard__desc">{applyLimited ? `Maximum limit of ${s.cardLimit?.max || 3} cards reached.` : 'Request a new Anytap card.'}</span>
           </span>
           <span className="portal-card-onboard__arrow" aria-hidden="true">
             <Icon name="chevron" size={18} stroke={2} />
@@ -441,7 +442,7 @@ export function CardOnboardingActions({ s, layout = 'inline' }) {
           </span>
           <span className="portal-card-onboard__body">
             <span className="portal-card-onboard__title">Register Existing Card</span>
-            <span className="portal-card-onboard__desc">{applyLimited ? 'Maximum limit of 3 cards reached.' : 'Activate a pre-issued card you received.'}</span>
+            <span className="portal-card-onboard__desc">{applyLimited ? `Maximum limit of ${s.cardLimit?.max || 3} cards reached.` : 'Activate a pre-issued card you received.'}</span>
           </span>
           <span className="portal-card-onboard__arrow" aria-hidden="true">
             <Icon name="chevron" size={18} stroke={2} />
@@ -507,16 +508,16 @@ function CardOnboardingSheet({ s, open, onClose, hint }) {
         <div className="portal-card-onboard portal-card-onboard--cards portal-card-onboard--sheet">
           <button
             type="button"
-            disabled={s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)}
+            disabled={s.cardLimit ? !s.cardLimit.canAdd : ((s.userCards?.length >= (s.cardLimit?.max ?? 3)))}
             className="portal-card-onboard__card portal-card-onboard__card--sheet"
-            style={(s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)) ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+            style={(s.cardLimit ? !s.cardLimit.canAdd : ((s.userCards?.length >= (s.cardLimit?.max ?? 3)))) ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
             onClick={goApply}>
             <span className="portal-card-onboard__icon" aria-hidden="true">
               <Icon name="plus" size={24} stroke={1.75} />
             </span>
             <span className="portal-card-onboard__body">
               <span className="portal-card-onboard__title">Apply New Card</span>
-              <span className="portal-card-onboard__desc">{(s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)) ? 'Maximum limit of 3 cards reached.' : 'Request a new Anytap card.'}</span>
+              <span className="portal-card-onboard__desc">{(s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= (s.cardLimit?.max || 3))) ? `Maximum limit of ${s.cardLimit?.max || 3} cards reached.` : 'Request a new Anytap card.'}</span>
             </span>
             <span className="portal-card-onboard__arrow" aria-hidden="true">
               <Icon name="chevron" size={18} stroke={2} />
@@ -525,12 +526,12 @@ function CardOnboardingSheet({ s, open, onClose, hint }) {
 
           <button
             type="button"
-            disabled={s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)}
+            disabled={s.cardLimit ? !s.cardLimit.canAdd : ((s.userCards?.length >= (s.cardLimit?.max ?? 3)))}
             className="portal-card-onboard__card portal-card-onboard__card--sheet"
-            style={(s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)) ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+            style={(s.cardLimit ? !s.cardLimit.canAdd : ((s.userCards?.length >= (s.cardLimit?.max ?? 3)))) ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
             onClick={() => {
-              if (s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)) {
-                s.showToast?.('Maximum limit of 3 cards reached.');
+              if (s.cardLimit ? !s.cardLimit.canAdd : ((s.userCards?.length >= (s.cardLimit?.max ?? 3)))) {
+                s.showToast?.(`Maximum limit of ${s.cardLimit?.max || 3} cards reached.`);
                 return;
               }
               onClose();
@@ -541,7 +542,7 @@ function CardOnboardingSheet({ s, open, onClose, hint }) {
             </span>
             <span className="portal-card-onboard__body">
               <span className="portal-card-onboard__title">Register Existing Card</span>
-              <span className="portal-card-onboard__desc">{(s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= 3)) ? 'Maximum limit of 3 cards reached.' : 'Activate a pre-issued card you received.'}</span>
+              <span className="portal-card-onboard__desc">{(s.cardLimit ? !s.cardLimit.canAdd : (s.userCards?.length >= (s.cardLimit?.max || 3))) ? `Maximum limit of ${s.cardLimit?.max || 3} cards reached.` : 'Activate a pre-issued card you received.'}</span>
             </span>
             <span className="portal-card-onboard__arrow" aria-hidden="true">
               <Icon name="chevron" size={18} stroke={2} />
@@ -573,7 +574,14 @@ export function DashboardYourCardsHead({
       <div className="portal-dash-cards-head">
         <div>
           {!hideTitle && (
-            <h2 className="portal-dash-section__title portal-dash-cards-head__title">{title}</h2>
+            <h2 className="portal-dash-section__title portal-dash-cards-head__title">
+              {title}
+              {s?.cardLimit?.max ? (
+                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b', marginLeft: '8px' }}>
+                  ({(s.userCards?.length ?? 0)}/{s.cardLimit.max})
+                </span>
+              ) : null}
+            </h2>
           )}
           {hint ? (
             <p className={`portal-mycards__hint${hintWarn ? ' portal-mycards__hint--warn' : ''}${hideTitle ? ' portal-mycards__hint--solo' : ''}`}>{hint}</p>
@@ -614,6 +622,7 @@ export function DashboardCardPager({
   maxSlots,
   onSelect,
   showPositionLabel = false,
+  maxCardsAllowed,
 }) {
   return (
     <div className={`portal-dash-card-pager${showPositionLabel ? ' portal-dash-card-pager--labeled' : ''}`}>
@@ -633,6 +642,11 @@ export function DashboardCardPager({
       {showPositionLabel && maxSlots > 1 && (
         <span className="portal-dash-card-pager__count">
           {slideIndex + 1} / {maxSlots}
+          {maxCardsAllowed && maxCardsAllowed > maxSlots && (
+            <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '4px', fontWeight: '500' }}>
+              (Max {maxCardsAllowed})
+            </span>
+          )}
         </span>
       )}
     </div>
@@ -1241,8 +1255,9 @@ export function MyCardsEmptyState({ s }) {
 
 export function AccountMyCards({ s }) {
   const { userCards, selectedCardIndex } = s;
-  const carouselSlots = useMemo(() => buildDashboardCarouselSlots(userCards), [userCards]);
-  const walletAllFull = userCards.length >= A.MAX_CARDS_PER_USER;
+  const cardLimitMax = s.cardLimit?.max ?? A.MAX_CARDS_PER_USER;
+  const carouselSlots = useMemo(() => buildDashboardCarouselSlots(userCards, cardLimitMax), [userCards, cardLimitMax]);
+  const walletAllFull = s.cardLimit ? s.cardLimit.atMax : (userCards.length >= cardLimitMax);
 
   if (!userCards.length) {
     return <MyCardsEmptyState s={s} />;
@@ -1254,12 +1269,45 @@ export function AccountMyCards({ s }) {
   return (
     <div className="portal-page portal-page--unified portal-mycards portal-mycards--v10">
       <div className="portal-mycards-mob">
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px 8px 16px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h2 style={{
+              margin: 0,
+              fontSize: '18px',
+              fontWeight: '700',
+              color: 'var(--ink, #0f172a)'
+            }}>
+              My Cards
+            </h2>
+            {s?.cardLimit?.max && (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '600',
+                backgroundColor: 'var(--surface-sunken, #f1f5f9)',
+                color: 'var(--ink-muted, #475569)',
+                border: '1px solid var(--border-subtle, #e2e8f0)'
+              }}>
+                {userCards.length} / {s.cardLimit.max} Cards
+              </span>
+            )}
+          </div>
+
+        </div>
         <CardPanel
           mode="detail"
           s={s}
           className="portal-mycards-mob__panel"
           showSlideHead
-          slideHeadHint={walletAllFull ? `Maximum ${A.MAX_CARDS_PER_USER} cards issued` : undefined}
+          slideHeadHint={walletAllFull ? `Maximum ${cardLimitMax} cards issued` : undefined}
         />
 
         {!s.hasActiveCard && s.accountState.cardStatus !== 'active' && s.accountState.cardStatus !== 'issued' && s.accountState.cardStatus !== 'pending_activation' && (
