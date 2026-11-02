@@ -235,7 +235,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         id: "Q47",
         question: "Can I withdraw my card balance to an external wallet?",
-        answer: "Yes. You can withdraw your card balance to an external TRC-20 wallet. Submit a withdrawal request from the Wallet tab of the dashboard.\n\u2022  Withdrawal fee: 3% of the withdrawal amount, plus a separate $1 USDT per transaction\n\u2022  The withdrawal address must be a wallet address that supports TRC-20 USDT.\n\u2022  Only KYC-completed customers may request external withdrawals.\nContact support@anytap.io for withdrawal processing time and minimum withdrawal amount.",
+        answer: "Yes. You can withdraw your card balance to an external TRC-20 wallet. Submit a withdrawal request from the Wallet tab of the dashboard.\n\u2022  Withdrawal fee: 0.5% of the withdrawal amount, plus a network (gas) fee of 3 USDT per transaction\n\u2022  The withdrawal address must be a wallet address that supports TRC-20 USDT.\n\u2022  Only KYC-completed customers may request external withdrawals.\nContact support@anytap.io for withdrawal processing time and minimum withdrawal amount.",
       },
       {
         id: "Q48",
