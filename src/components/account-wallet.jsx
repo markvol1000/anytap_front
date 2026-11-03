@@ -647,10 +647,13 @@ function WalletTopUpPanel({
   );
 }
 
-function SendSummaryDesk({ address, sendAmount, gasFee }) {
+function SendSummaryDesk({ address, sendAmount, gasFee, withdrawFeeRate = 0.005 }) {
   const sendVal = parseFloat(sendAmount) || 0;
   const hasAmount = sendVal > 0;
   const trimmed = address.trim();
+  const withdrawFeeVal = sendVal * withdrawFeeRate;
+  const withdrawFeePercentLabel = (withdrawFeeRate * 100).toFixed(withdrawFeeRate * 100 % 1 === 0 ? 0 : 1);
+  const totalFee = withdrawFeeVal + gasFee;
 
   return (
     <section className="portal-wallet-desk__summary" aria-label="Transfer summary">
@@ -669,13 +672,17 @@ function SendSummaryDesk({ address, sendAmount, gasFee }) {
           </dd>
         </div>
         <div className="portal-wallet-desk__summary-row">
+          <dt>Withdrawal Fee ({withdrawFeePercentLabel}%)</dt>
+          <dd>{hasAmount ? `${withdrawFeeVal.toFixed(2)} USDT` : '0.00 USDT'}</dd>
+        </div>
+        <div className="portal-wallet-desk__summary-row">
           <dt>Estimated Network Fee</dt>
           <dd>{gasFee.toFixed(2)} USDT</dd>
         </div>
         <div className="portal-wallet-desk__summary-row">
           <dt>Total from Wallet</dt>
           <dd className={hasAmount ? 'is-emphasis' : ''}>
-            {hasAmount ? `${(sendVal + gasFee).toFixed(2)} USDT` : '—'}
+            {hasAmount ? `${(sendVal + totalFee).toFixed(2)} USDT` : '—'}
           </dd>
         </div>
       </dl>
@@ -1303,6 +1310,7 @@ export function AccountWallet({ s }) {
   const cardFeeRate = Number(s?.feePolicy?.cardChargeFeeRate ?? W.CARD_CHARGE_FEE_RATE ?? 0.02);
   const gasFeeVal = Number(s?.feePolicy?.cardChargeGasFee ?? W.GAS_FEE_CHARGE ?? 3.00);
   const withdrawGasFeeVal = Number(s?.feePolicy?.withdrawGasFee ?? W.GAS_FEE_SEND ?? 3.00);
+  const withdrawFeeRate = Number(s?.feePolicy?.withdrawFeeRate ?? W.WITHDRAW_FEE_RATE ?? 0.005);
   const minTopUp = Number(s?.feePolicy?.minTopUp ?? W.MIN_TOPUP ?? 50);
   const minSend = Number(s?.feePolicy?.minSend ?? W.MIN_SEND ?? 50);
 
@@ -1311,10 +1319,14 @@ export function AccountWallet({ s }) {
   const cardFeeVal = topUpVal * cardFeeRate;
   const totalChargeFee = cardFeeVal + gasFeeVal;
   const sendVal = parseFloat(sendAmount) || 0;
+  const withdrawFeeVal = sendVal * withdrawFeeRate;
+  const totalWithdrawFee = withdrawFeeVal + withdrawGasFeeVal;
   const walletBal = resolveWalletBalance(s.walletBalance);
-  const sendExceeded = sendVal > 0 && (sendVal + withdrawGasFeeVal > walletBal);
+  const sendExceeded = sendVal > 0 && (sendVal + totalWithdrawFee > walletBal);
   const chargeTotal = (topUpVal + totalChargeFee).toFixed(2);
+  const withdrawTotal = (sendVal + totalWithdrawFee).toFixed(2);
   const feePercentLabel = (cardFeeRate * 100).toFixed(cardFeeRate * 100 % 1 === 0 ? 0 : 1);
+  const withdrawFeePercentLabel = (withdrawFeeRate * 100).toFixed(withdrawFeeRate * 100 % 1 === 0 ? 0 : 1);
 
   const addTopUpQuick = (n) => {
     const cur = parseFloat(topUpAmount) || 0;
@@ -1352,7 +1364,7 @@ export function AccountWallet({ s }) {
     setLoading(true);
     try {
       await withdrawToExternal(sendVal, sendAddress, password);
-      s.deductWalletBalance?.(sendVal + withdrawGasFeeVal);
+      s.deductWalletBalance?.(sendVal + totalWithdrawFee);
       closeConfirm();
       setSendAddress('');
       setSendAmount('');
@@ -1526,6 +1538,7 @@ export function AccountWallet({ s }) {
                   address={sendAddress}
                   sendAmount={sendAmount}
                   gasFee={withdrawGasFeeVal}
+                  withdrawFeeRate={withdrawFeeRate}
                 />
                 <WalletNotice>
                   Anytap is not responsible for transfers to incorrect addresses. Always verify before sending.
@@ -1576,8 +1589,9 @@ export function AccountWallet({ s }) {
           rows={[
             { label: 'To Address', value: W.maskAddress(sendAddress, 8, 4) },
             { label: 'Amount', value: `${sendVal.toFixed(2)} USDT`, danger: true },
+            { label: `Withdrawal Fee (${withdrawFeePercentLabel}%)`, value: `${withdrawFeeVal.toFixed(2)} USDT` },
             { label: 'Gas Fee', value: `${withdrawGasFeeVal.toFixed(2)} USDT` },
-            { label: 'Total', value: `${(sendVal + withdrawGasFeeVal).toFixed(2)} USDT`, emphasis: true },
+            { label: 'Total', value: `${withdrawTotal} USDT`, emphasis: true },
           ]}
           password={password}
           onPassword={setPassword}

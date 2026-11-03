@@ -777,6 +777,7 @@ export function useAccountState() {
       cardChargeFeeRate: 0.02,
       cardChargeGasFee: 3.00,
       withdrawGasFee: 3.00,
+      withdrawFeeRate: 0.005,
       minTopUp: 50.00,
       minSend: 50.00,
     },
