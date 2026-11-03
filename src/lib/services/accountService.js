@@ -10,8 +10,8 @@ import { isHttpApi } from '../api/config.js';
 import * as mock from '../mock-context.js';
 import * as api from './account/accountApi.js';
 
-export async function loadAccountContext(scenarioKey) {
-  if (isHttpApi) return api.fetchAccountContext();
+export async function loadAccountContext(scenarioKey, targetCardId = null) {
+  if (isHttpApi) return api.fetchAccountContext(targetCardId);
   return mock.getMockContext(scenarioKey);
 }
 

@@ -29,7 +29,12 @@ export function CardPanel({
   const cardCount = userCards.length;
   const canAdd = s.cardLimit ? s.cardLimit.canAdd : (cardCount < (s.cardLimit?.max ?? A.MAX_CARDS_PER_USER));
   const sliderSlots = useMemo(() => buildDashboardCarouselSlots(userCards, s.cardLimit?.max), [userCards, s.cardLimit?.max]);
-  const [slideIndex, setSlideIndex] = useState(0);
+  const [slideIndex, setSlideIndex] = useState(() => {
+    const card = userCards[selectedCardIndex];
+    if (!card) return 0;
+    const idx = sliderSlots.findIndex((c) => c?.id === card.id);
+    return idx >= 0 ? idx : 0;
+  });
   const openCard = useCallback((card) => s.openCardDetails?.(card), [s]);
   const goApply = useCallback(() => s.go?.('cardApply'), [s]);
 

@@ -302,7 +302,6 @@ export function CardTransferModal({ open, onClose, s, sourceCard }) {
           s?.deductCardBalance?.(primaryKey, totalVal);
         }
         s?.triggerCardTxRefresh?.();
-        s?.refresh?.();
         s?.showToast?.('Card transfer completed successfully!');
       } else {
         s?.showToast?.('Your transfer could not be processed. Please contact AnyTap support.');

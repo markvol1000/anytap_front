@@ -34,6 +34,7 @@ export function PortalCardMedia({
   showBalance = false,
   balance,
   balanceLabel = 'Available Balance',
+  balanceLoading = false,
   blur = false,
   hero = false,
   emphasizeBadge = false,
@@ -105,7 +106,7 @@ export function PortalCardMedia({
               {showBalance && balance ? (
                 <div className={`portal-card-media__prepaid-balance${isFrozen ? ' is-frozen' : ''}`}>
                   <span className="portal-card-media__balance-label">{balanceLabel}</span>
-                  <span className={`portal-card-media__balance-val${isFrozen ? ' is-frozen' : ''}`}>{balance}</span>
+                  <span className={`portal-card-media__balance-val${isFrozen ? ' is-frozen' : ''}`}>{balanceLoading ? <span className="portal-card-balance-spinner" aria-label="Loading balance..." /> : balance}</span>
                 </div>
               ) : null}
               {(maskedNumber || expiry) && (
@@ -137,7 +138,7 @@ export function PortalCardMedia({
                 {showBalance && balance && (
                   <div className={`portal-card-media__balance${isFrozen ? ' is-frozen' : ''}`}>
                     <span className="portal-card-media__balance-label">{balanceLabel}</span>
-                    <span className={`portal-card-media__balance-val${isFrozen ? ' is-frozen' : ''}`}>{A.formatCardBalance(balance)}</span>
+                    <span className={`portal-card-media__balance-val${isFrozen ? ' is-frozen' : ''}`}>{balanceLoading ? <span className="portal-card-balance-spinner" aria-label="Loading balance..." /> : A.formatCardBalance(balance)}</span>
                   </div>
                 )}
               </div>
@@ -174,6 +175,7 @@ export function DebitCardFace({
   showFooter = true,
   dashboard = false,
   hero = false,
+  balanceLoading = false,
 }) {
   if (!card) return null;
 
@@ -198,6 +200,7 @@ export function DebitCardFace({
       badgeDot={badge.dot}
       showBalance={canShowBalance}
       balance={canShowBalance ? A.formatCardSpendingBalance(card) : undefined}
+      balanceLoading={balanceLoading}
       balanceLabel="Available Balance"
       maskedNumber={canShowFooter ? A.maskCardDashboard(card.last4) : undefined}
       expiry={canShowFooter && card.expiry ? card.expiry : undefined}
@@ -316,6 +319,7 @@ function CardSlide({
         shimmer={shimmer || ['creating', 'issued', 'pending_activation'].includes(card.status)}
         showBalance={card.status === 'active' || card.status === 'frozen'}
         showFooter={s.cardHasNumber && card.status !== 'creating' && !!card.last4}
+        balanceLoading={s?.cardBalancesLoading}
       />
     );
 
@@ -352,6 +356,7 @@ function CardSlide({
           card={card}
           showBalance={showBalance}
           showFooter={showDetails}
+          balanceLoading={s?.cardBalancesLoading}
         />
       </div>
       {!hideCaption && (
@@ -1030,7 +1035,7 @@ export function CardInformationPanel({ card, s, className = '' }) {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const walletAddress = resolveWalletAddress(
     card.linkedWallet
-    ?? s?.mockContext?.wallet?.address
+    ?? s?.accountContext?.wallet?.address
     ?? s?.accountState?.walletAddress,
   );
   const fullNumber = card?.fullNumber ?? '';
@@ -1126,7 +1131,7 @@ export function CardInformationPanel({ card, s, className = '' }) {
             <div className="portal-card-info__item">
               <dt className="portal-card-info__label">Available Balance</dt>
               <dd className={`portal-card-info__value${card.status === 'frozen' ? ' portal-card-info__value--frozen' : ''}`}>
-                {A.formatAvailableLimit(card)}
+                {s?.cardBalancesLoading ? <span className="portal-card-balance-spinner" aria-label="Loading balance..." /> : A.formatAvailableLimit(card)}
               </dd>
             </div>
           )}

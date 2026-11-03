@@ -246,6 +246,7 @@ function CardsDesktopCarousel({
                           shimmer={['creating', 'issued', 'pending_activation'].includes(card.status)}
                           showBalance={showBalanceOnCard && (card.status === 'active' || card.status === 'frozen')}
                           showFooter={!!card.last4}
+                          balanceLoading={s?.cardBalancesLoading}
                         />
                       </button>
                     ) : (
@@ -427,7 +428,7 @@ export function AccountMyCardsDesktop({ s }) {
   }
 
   const isAddSlot = deskSlide >= 0 && deskSlide < carouselSlots.length && carouselSlots[deskSlide] === null;
-  const selectedCard = isAddSlot ? null : (carouselSlots[deskSlide] ?? userCards[selectedCardIndex] ?? userCards[0]);
+  const selectedCard = isAddSlot ? null : (userCards[selectedCardIndex] ?? carouselSlots[deskSlide] ?? userCards[0]);
   const showPager = carouselSlots.length > 1;
 
   return (

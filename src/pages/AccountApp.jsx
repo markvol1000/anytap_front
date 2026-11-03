@@ -254,7 +254,7 @@ function AccountPortal() {
       <QuickTopUpSheet s={s} card={s.quickTopUpCard} open={!!s.quickTopUpCard} onClose={s.closeQuickTopUp} />
       <CardTransferModal s={s} sourceCard={s.cardTransferCard} open={!!s.cardTransferCard} onClose={s.closeCardTransfer} />
       <PhysicalCardActivateSheet s={s} open={s.activePhysicalCardOpen} onClose={s.closeActivePhysical} />
-      {s.remoteLoading && <PageLoader />}
+      {s.remoteLoading && !s.accountContext && <PageLoader />}
     </div>
   );
 }

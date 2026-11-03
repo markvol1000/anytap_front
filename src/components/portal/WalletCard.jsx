@@ -24,7 +24,7 @@ export function WalletCard({
   const isDetail = mode === 'detail';
   const [hidden, setHidden] = useState(false);
   const balance = resolveWalletBalance(s.walletBalance);
-  const address = resolveWalletAddress(s.mockContext?.wallet?.address);
+  const address = resolveWalletAddress(s.accountContext?.wallet?.address);
 
   const copyAddress = () => {
     if (!address) return;

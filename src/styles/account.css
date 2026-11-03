@@ -85,6 +85,20 @@ body.portal-member {
   border-radius: 50%;
   animation: portal-spin .7s linear infinite;
 }
+.portal-card-balance-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: portal-spin 0.65s linear infinite;
+  vertical-align: middle;
+}
+.portal-card-info__value .portal-card-balance-spinner {
+  border: 2px solid rgba(15, 23, 42, 0.2);
+  border-top-color: var(--portal-accent, #ff5500);
+}
 
 .portal-sk {
   background: linear-gradient(90deg, #E7E9ED 25%, #F2F3F5 37%, #E7E9ED 63%);

@@ -90,7 +90,7 @@ export function WalletBalanceCard({
 
 export function DashboardWalletHero({ s }) {
   const balance = resolveWalletBalance(s.walletBalance);
-  const address = resolveWalletAddress(s.mockContext?.wallet?.address);
+  const address = resolveWalletAddress(s.accountContext?.wallet?.address);
 
   return (
     <WalletBalanceCard

@@ -1257,7 +1257,7 @@ export function QuickTopUpSheet({ s, card, open, onClose }) {
 }
 
 export function AccountWallet({ s }) {
-  const activeCards = s.userCards.filter((c) => c.status === 'active');
+  const activeCards = useMemo(() => (s.userCards || []).filter((c) => c.status === 'active'), [s.userCards]);
   const [tab, setTab] = useState(s.walletTab ?? 'charge');
   const [quickActive, setQuickActive] = useState(() => (
     s.walletTab === 'send' ? 'send' : null
@@ -1293,7 +1293,9 @@ export function AccountWallet({ s }) {
       const exists = activeCards.some((c) => c.id === selectedCardId);
       if (!exists || !selectedCardId) {
         const preferred = activeCards.find((c) => c.status === 'active') || activeCards[0];
-        setSelectedCardId(preferred.id);
+        if (preferred && preferred.id !== selectedCardId) {
+          setSelectedCardId(preferred.id);
+        }
       }
     }
   }, [activeCards, selectedCardId]);
@@ -1428,7 +1430,7 @@ export function AccountWallet({ s }) {
             setTopUpAmount={setTopUpAmount}
             addTopUpQuick={addTopUpQuick}
             onConfirm={() => setConfirmCharge(true)}
-            onManageCards={() => s.go('card')}
+            onManageCards={() => { if (selectedCard) { s.openCardDetails?.(selectedCard); } else { s.go('card'); } }}
           />
         )}
 
@@ -1491,7 +1493,7 @@ export function AccountWallet({ s }) {
               setTopUpAmount={setTopUpAmount}
               addTopUpQuick={addTopUpQuick}
               onConfirm={() => setConfirmCharge(true)}
-              onManageCards={() => s.go('card')}
+              onManageCards={() => { if (selectedCard) { s.openCardDetails?.(selectedCard); } else { s.go('card'); } }}
               layout="grid"
             />
           </div>
