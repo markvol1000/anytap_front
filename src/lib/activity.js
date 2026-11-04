@@ -519,6 +519,37 @@ export function formatActivityDateTime(isoOrDate) {
   return `${date} · ${time}`;
 }
 
+export function normalizeDisplayCurrency(currency = '') {
+  if (!currency) return '';
+  const trimmed = String(currency).trim();
+  const upper = trimmed.toUpperCase();
+
+  // Cregis TRON (195) TRC-20 USDT contract addresses or truncated forms (e.g. 195@TR7NHQJEKQXGTCI8...)
+  if (upper.includes('TR7NH') || upper.includes('TG3XX')) {
+    return 'USDT';
+  }
+  // Cregis Ethereum (60) ERC-20 USDT
+  if (upper.includes('0XDAC17F')) {
+    return 'USDT';
+  }
+  // Cregis Ethereum (60) ERC-20 USDC
+  if (upper.includes('0XA0B869')) {
+    return 'USDC';
+  }
+  // Native Cregis coin tokens (195@195 -> TRX, 60@60 -> ETH, 0@0 -> BTC)
+  if (upper === '195@195' || upper === '195') {
+    return 'TRX';
+  }
+  if (upper === '60@60' || upper === '60') {
+    return 'ETH';
+  }
+  if (upper === '0@0' || upper === '0') {
+    return 'BTC';
+  }
+
+  return trimmed;
+}
+
 export function formatActivityAmountParts(amount, incoming, kind, item = {}) {
   const displayAmount = item?.transAmount ?? item?.originalAmount ?? item?.amount ?? amount;
   const rawCurr = item?.transCurrency || item?.originalCurrency || item?.currency || item?.coinType || item?.txCurrency || item?.authorizedCurrency || item?.settleCurrency;

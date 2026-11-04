@@ -15,8 +15,9 @@ export function ActivityAmount({ amount, incoming, failed, kind, large = false, 
 
   const displayAmt = item?.transAmount ?? item?.originalAmount ?? item?.amount ?? amount;
   const rawCurr = item?.transCurrency || item?.originalCurrency || item?.currency || item?.coinType || item?.txCurrency || item?.authorizedCurrency || item?.settleCurrency;
+  const normalizedRaw = A.normalizeDisplayCurrency ? A.normalizeDisplayCurrency(rawCurr) : rawCurr;
   const displayCurr = (rawCurr && String(rawCurr).trim() && String(rawCurr).trim().toLowerCase() !== 'null')
-    ? String(rawCurr).trim().toUpperCase()
+    ? String(normalizedRaw).trim().toUpperCase()
     : (kind === 'card_spend' || kind === 'refund' || kind === 'reversal' ? 'USD' : 'USDT');
 
   const { sign, value } = A.formatActivityAmountParts(amount, incoming, kind, item);

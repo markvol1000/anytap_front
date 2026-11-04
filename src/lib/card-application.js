@@ -127,7 +127,7 @@ export function generateApplicationNumber() {
 export function mapKycApplyStatus(kycStatus) {
   const s = String(kycStatus || '').toLowerCase();
   const map = {
-    pending: 'review',
+    pending: 'not_started',
     not_started: 'not_started',
     none: 'not_started',
     unverified: 'not_started',

@@ -534,7 +534,7 @@ export async function fetchLocalTransactions(userId) {
         cardId: tx.cardId || tx.cardNo || tx.wasabiCardId || '',
         wasabiCardId: tx.wasabiCardId || tx.cardId || tx.cardNo || '',
         reference: tx.txId ? tx.txId.slice(0, 10).toUpperCase() : '',
-        currency: tx.currency || tx.originalCurrency || tx.coinType || '',
+        currency: (typeof tx.currency === 'string' && (tx.currency.includes('TR7NH') || tx.currency.includes('TG3XX')) ? 'USDT' : (tx.currency || tx.originalCurrency || tx.coinType || '')),
         originalCurrency: tx.originalCurrency || tx.currency || '',
         originalAmount: tx.originalAmount ?? tx.amount ?? 0,
         description: tx.description || '',
