@@ -82,7 +82,7 @@ export const CARD_COLOR_IMAGES = {
   black: '/assets/cards/black_card_bg.png',
 };
 
-export const ID_DOC_TYPES = ['Passport', "Driver's License"];
+export const ID_DOC_TYPES = ['Passport'];
 
 /** Map UI ID labels ??Wasabi / backend idType (PASSPORT | DLN | ID_CARD). */
 export function mapWasabiIdType(idDocType) {
@@ -96,7 +96,7 @@ export function mapWasabiIdType(idDocType) {
 export const KYC_IDENTITY_NOTICE = {
   title: 'KYC Identity Verification Notice',
   body:
-    "We only accept applications submitted with a Passport or a Driver's License in English. (National ID cards are not accepted.)",
+    "We only accept applications submitted with a Passport. (Driver's licenses and National ID cards are not accepted.)",
 };
 
 export const PAYMENT_STATUS = {
