@@ -490,7 +490,7 @@ export function DashboardWalletFirst({ s, view: viewProp }) {
     s.openQuickTopUp?.(card);
   }, [s]);
 
-  const showEarnings = view.showEarnings !== false && view.dashboardLayout === 'wallet';
+  const showEarnings = false;
   const showCards = view.showCardsSection !== false;
   const showBridge = view.showWalletBridge === true;
   const showActivity = view.showActivity === true;

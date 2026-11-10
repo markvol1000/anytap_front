@@ -11,9 +11,8 @@ import { isHttpApi } from './api/config.js';
 /** Card usage transactions — `at` is ISO 8601 local datetime */
 export const ACTIVITY = [];
 
-/** Scope tabs — All | Wallet | Cards (Transactions & Activity page) */
+/** Scope tabs — Wallet | Cards (Transactions & Activity page) */
 export const ACTIVITY_SCOPE_FILTERS = [
-  { id: 'all', label: 'All' },
   { id: 'wallet', label: 'Wallet' },
   { id: 'card', label: 'Cards' },
 ];
@@ -318,10 +317,9 @@ export function resolveActivityFilterFromSearch(searchParams) {
   const source = searchParams?.get?.('source');
   const tab = searchParams?.get?.('tab');
   const activeScope = tab || source;
-  if (activeScope === 'wallet' || type === 'topup') return 'wallet';
   if (activeScope === 'card' || activeScope === 'cards') return 'card';
   if (activeScope === 'rewards' || type === 'reward') return 'rewards';
-  return 'all';
+  return 'wallet';
 }
 
 /** Default sort: timestamp descending (latest first) */

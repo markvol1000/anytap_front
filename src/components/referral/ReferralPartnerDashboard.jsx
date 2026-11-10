@@ -1,11 +1,9 @@
 import { REFERRAL_FAQ } from '../../lib/referral-mock.ts';
-import { ReferralHero } from './ReferralHero.jsx';
 import { ReferralCodeCard } from './ReferralCodeCard.jsx';
 import { ReferralSummaryStats } from './ReferralSummaryStats.jsx';
 import { ReferralRewardFlow } from './ReferralRewardFlow.jsx';
 import { ReferralMembersTable } from './ReferralMembersTable.jsx';
 import { ReferralDailyDepositsTable } from './ReferralDailyDepositsTable.jsx';
-import { ReferralEarningsChart } from './ReferralEarningsChart.jsx';
 import { ReferralFaq } from './ReferralFaq.jsx';
 
 export function ReferralPartnerDashboard({ s, referral }) {
@@ -13,8 +11,6 @@ export function ReferralPartnerDashboard({ s, referral }) {
 
   return (
     <div className="portal-ref-dash">
-      <ReferralHero />
-
       <ReferralCodeCard
         code={referral.code}
         inviteLink={referral.inviteLink}
@@ -26,8 +22,6 @@ export function ReferralPartnerDashboard({ s, referral }) {
       <ReferralSummaryStats referral={referral} />
 
       <ReferralRewardFlow />
-
-      <ReferralEarningsChart data={referral.monthlyEarnings} />
 
       <ReferralMembersTable
         members={referral.memberRows}

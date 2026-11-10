@@ -2,6 +2,7 @@
 
 /** Mobile back targets — settings sub-pages return to My; tabs return to Home. */
 export const PORTAL_CHILD_BACK = {
+  home: 'home',
   kyc: 'home',
   card: 'home',
   cardApply: 'home',
@@ -17,6 +18,7 @@ export const PORTAL_CHILD_BACK = {
 };
 
 const PORTAL_BREADCRUMB = {
+  home: ['Home'],
   kyc: ['Home', 'Identity Verification'],
   card: ['Home', 'Cards'],
   cardApply: ['Home', 'Apply New Card'],
@@ -41,13 +43,11 @@ export function isPortalDashboardScreen(screen) {
  * @param {{ pageTitle: string, showCardDetails?: boolean, resetCardDetails?: () => void, go?: (scr: string) => void }} ctx
  */
 export function resolvePortalPageMeta(screen, ctx) {
-  if (isPortalDashboardScreen(screen)) return null;
-
   const backTarget = PORTAL_CHILD_BACK[screen] ?? 'home';
-  const breadcrumb = PORTAL_BREADCRUMB[screen] ?? ['Home', ctx.pageTitle];
+  const breadcrumb = PORTAL_BREADCRUMB[screen] ?? ['Home', ctx.pageTitle].filter(Boolean);
 
   return {
-    title: ctx.pageTitle || 'Back',
+    title: ctx.pageTitle || 'Home',
     breadcrumb,
     onBack: () => ctx.go?.(backTarget),
   };

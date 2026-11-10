@@ -34,8 +34,8 @@ function ReferralQr({ value = '' }) {
     <div
       className="portal-ref-dash__qr"
       style={{
-        width: '84px',
-        height: '84px',
+        width: '92px',
+        height: '92px',
         padding: '6px',
         background: '#ffffff',
         border: '1px solid #cbd5e1',
@@ -70,53 +70,59 @@ export function ReferralCodeCard({ code = '', inviteLink = '', commissionRate = 
 
   return (
     <section className="portal-ref-dash__code portal-dash-panel" aria-labelledby="referral-code-title">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-        <h2 id="referral-code-title" className="portal-ref-dash__section-title" style={{ margin: 0 }}>Your Referral Code</h2>
-        {commissionRate != null && (
-          <span style={{
-            fontSize: '12px',
-            fontWeight: '700',
-            padding: '2px 8px',
-            borderRadius: '6px',
-            backgroundColor: '#f0fdf4',
-            color: '#15803d',
-            border: '1px solid #bbf7d0',
-          }}>
-            Commission: {Number(commissionRate)}%
-          </span>
-        )}
-      </div>
+      <div className="portal-ref-dash__code-main">
+        <div className="portal-ref-dash__code-left">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
+            <h2 id="referral-code-title" className="portal-ref-dash__section-title" style={{ margin: 0, whiteSpace: 'nowrap' }}>Your Referral Code</h2>
+            {commissionRate != null && (
+              <span style={{
+                fontSize: '11px',
+                fontWeight: '700',
+                padding: '2px 8px',
+                borderRadius: '6px',
+                backgroundColor: '#f0fdf4',
+                color: '#15803d',
+                border: '1px solid #bbf7d0',
+                whiteSpace: 'nowrap',
+              }}>
+                Commission: {Number(commissionRate)}%
+              </span>
+            )}
+          </div>
 
-      <p className="portal-ref-dash__code-val">{safeCode}</p>
+          <div className="portal-ref-dash__code-row">
+            <span className="portal-ref-dash__code-val">{safeCode}</span>
+            <div className="portal-ref-dash__code-actions">
+              <button
+                type="button"
+                className="portal-btn-primary portal-ref-dash__code-btn"
+                disabled={!code}
+                onClick={() => onCopy?.(code, 'Referral code copied')}>
+                <Icon name="copy" size={15} stroke={1.75} />
+                Copy
+              </button>
+              <button type="button" className="portal-btn-secondary portal-ref-dash__code-btn" disabled={!code} onClick={handleShare}>
+                <Icon name="share" size={15} stroke={1.75} />
+                Share
+              </button>
+            </div>
+          </div>
+        </div>
 
-      <div className="portal-ref-dash__code-actions">
-        <button
-          type="button"
-          className="portal-btn-primary portal-ref-dash__code-btn"
-          disabled={!code}
-          onClick={() => onCopy?.(code, 'Referral code copied')}>
-          <Icon name="copy" size={16} stroke={1.75} />
-          Copy
-        </button>
-        <button type="button" className="portal-btn-secondary portal-ref-dash__code-btn" disabled={!code} onClick={handleShare}>
-          <Icon name="share" size={16} stroke={1.75} />
-          Share
-        </button>
-      </div>
-
-      <div className="portal-ref-dash__code-meta">
-        <ReferralQr value={qrTarget} />
-        <div className="portal-ref-dash__link-block">
-          <span className="portal-ref-dash__link-label">Referral Link</span>
-          <p className="portal-ref-dash__link-val">{safeLink || '—'}</p>
-          <button
-            type="button"
-            className="portal-btn-secondary portal-ref-dash__link-copy"
-            disabled={!safeLink}
-            onClick={() => onCopy?.(safeLink, 'Referral link copied')}>
-            <Icon name="copy" size={14} stroke={1.75} />
-            Copy link
-          </button>
+        <div className="portal-ref-dash__code-meta">
+          <ReferralQr value={qrTarget} />
+          <div className="portal-ref-dash__link-block">
+            <span className="portal-ref-dash__link-label">Referral Link</span>
+            <p className="portal-ref-dash__link-val">{safeLink || '—'}</p>
+            <button
+              type="button"
+              className="portal-btn-secondary portal-ref-dash__link-copy"
+              disabled={!safeLink}
+              onClick={() => onCopy?.(safeLink, 'Referral link copied')}>
+              <Icon name="copy" size={15} stroke={1.75} />
+              Copy link
+            </button>
+          </div>
         </div>
       </div>
     </section>

@@ -144,7 +144,7 @@ function AccountPortal() {
     go: s.go,
   });
   const showMobilePageBar = !isDashboard && !isDesktop && pageMeta;
-  const showDesktopPageHead = !isDashboard && isDesktop && pageMeta;
+  const showDesktopPageHead = isDesktop && pageMeta;
   const showGlobalHeader = isDashboard || isDesktop;
 
   const isReferralEligible = Boolean(

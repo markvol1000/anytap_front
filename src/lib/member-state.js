@@ -335,7 +335,7 @@ export function getMemberDashboardConfig(memberState, accountState) {
       showWalletHero: true,
       showWalletBalance: false,
       showActivity: hasTransactions,
-      showEarnings: true,
+      showEarnings: false,
       showCardsSection: true,
       showWalletBridge: true,
       showCarousel: true,

@@ -6,7 +6,7 @@ export function PortalDesktopPageHead({ title, breadcrumb = [], actions = null }
   return (
     <header className={`portal-desktop-page-head${actions ? ' portal-desktop-page-head--actions' : ''}`}>
       <div className="portal-desktop-page-head__main">
-        {crumbs.length > 1 && (
+        {crumbs.length > 0 && (
           <nav className="portal-desktop-page-head__crumb" aria-label="Breadcrumb">
             <ol className="portal-desktop-page-head__crumb-list">
               {crumbs.map((label, i) => (
@@ -17,6 +17,11 @@ export function PortalDesktopPageHead({ title, breadcrumb = [], actions = null }
                     </span>
                   )}
                   <span>{label}</span>
+                  {crumbs.length === 1 && (
+                    <span className="portal-desktop-page-head__crumb-sep" aria-hidden="true">
+                      /
+                    </span>
+                  )}
                 </li>
               ))}
             </ol>

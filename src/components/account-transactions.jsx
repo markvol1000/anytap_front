@@ -43,34 +43,65 @@ function TxStatusBadge({ status }) {
 }
 
 function TransactionsToolbar({
-  dateRange,
-  onDateRangeChange,
-  customFrom,
-  customTo,
-  onCustomFromChange,
-  onCustomToChange,
-  status,
-  onStatusChange,
-  searchQuery,
-  onSearchQueryChange,
+  fromDateInput,
+  toDateInput,
+  onFromDateChange,
+  onToDateChange,
+  searchInput,
+  onSearchInputChange,
+  onSearchSubmit,
+  onResetFilters,
+  onExportCsv,
+  hasActiveFilter,
   scope,
   cards = [],
   selectedCardId = 'all',
   onCardChange,
 }) {
+  const isCard = scope === 'card';
+  const sectionTitle = isCard ? 'Card Activity History' : 'Wallet Activity History';
+  const sectionSubtitle = isCard
+    ? 'Real-time card charges, payments, and authorizations'
+    : 'Real-time on-chain deposits, transfers, and wallet balance records';
+
   return (
-    <div className="portal-tx-panel__toolbar">
-      <div className="portal-tx-page__toolbar">
-        <div className="portal-tx-page__toolbar-row portal-tx-page__toolbar-row--filters">
+    <div className="portal-tx-panel__toolbar" style={{ padding: '16px 20px', background: 'var(--portal-bg-surface, #ffffff)', borderBottom: '1px solid var(--portal-border, #e2e8f0)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', width: '100%' }}>
+        {/* Title & Subtitle block matching Referral style */}
+        <div style={{ flexShrink: 0 }}>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: 'var(--portal-ink, #1e293b)', letterSpacing: '-0.01em' }}>
+            {sectionTitle}
+          </h2>
+          <span style={{ fontSize: '12px', color: 'var(--portal-text-muted, #64748b)', marginTop: '2px', display: 'inline-block' }}>
+            {sectionSubtitle}
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginLeft: 'auto' }}>
           {cards && cards.length > 0 && scope === 'card' && (
-            <div className="portal-tx-page__toolbar-card">
-              <label className="portal-tx-page__field portal-tx-page__field--card-select">
-                <span className="portal-tx-page__field-label">Card</span>
+            <div className="portal-tx-page__toolbar-card" style={{ flexShrink: 0 }}>
+              <label className="portal-tx-page__field portal-tx-page__field--card-select" style={{ margin: 0 }}>
                 <select
                   className="portal-tx-page__select"
                   value={selectedCardId}
                   onChange={(e) => onCardChange?.(e.target.value)}
-                  aria-label="Select card">
+                  aria-label="Select card"
+                  style={{
+                    height: '36px',
+                    boxSizing: 'border-box',
+                    padding: '0 8px',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    backgroundColor: '#ffffff',
+                    color: '#1a1a1a',
+                    whiteSpace: 'nowrap',
+                    width: 'auto',
+                    minWidth: '100px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
                   <option value="all">All Cards</option>
                   {cards.map((c) => {
                     const last4 = c.last4 || (c.cardNo ? c.cardNo.slice(-4) : '');
@@ -87,89 +118,135 @@ function TransactionsToolbar({
             </div>
           )}
 
-          <div className="portal-tx-page__toolbar-date">
-            <label className="portal-tx-page__field portal-tx-page__field--date-range">
-              <span className="portal-tx-page__field-label">Date</span>
-              <select
-                className="portal-tx-page__select"
-                value={dateRange}
-                onChange={(e) => onDateRangeChange(e.target.value)}
-                aria-label="Date range">
-                {A.TX_DATE_RANGES.map((r) => (
-                  <option key={r.id} value={r.id}>{r.label}</option>
-                ))}
-              </select>
-            </label>
-            {dateRange === 'custom' && (
-              <>
-                <label className="portal-tx-page__field portal-tx-page__field--date">
-                  <span className="portal-tx-page__field-label">From</span>
-                  <input
-                    type="date"
-                    className="portal-tx-page__input"
-                    value={customFrom}
-                    onChange={(e) => onCustomFromChange(e.target.value)}
-                    aria-label="Custom range from"
-                  />
-                </label>
-                <label className="portal-tx-page__field portal-tx-page__field--date">
-                  <span className="portal-tx-page__field-label">To</span>
-                  <input
-                    type="date"
-                    className="portal-tx-page__input"
-                    value={customTo}
-                    onChange={(e) => onCustomToChange(e.target.value)}
-                    aria-label="Custom range to"
-                  />
-                </label>
-              </>
-            )}
-          </div>
+          <form
+            onSubmit={onSearchSubmit}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}
+          >
+            {/* Date Range Picker */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+              <input
+                type="date"
+                lang="en"
+                aria-label="Filter start date"
+                value={fromDateInput}
+                onChange={(e) => onFromDateChange(e.target.value)}
+                style={{
+                  height: '36px',
+                  boxSizing: 'border-box',
+                  padding: '0 6px',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  backgroundColor: '#ffffff',
+                  color: '#1a1a1a',
+                  width: '125px',
+                }}
+              />
+              <span style={{ color: 'var(--fg-muted, #94a3b8)', fontSize: '12px', fontWeight: '700' }}>~</span>
+              <input
+                type="date"
+                lang="en"
+                aria-label="Filter end date"
+                value={toDateInput}
+                onChange={(e) => onToDateChange(e.target.value)}
+                style={{
+                  height: '36px',
+                  boxSizing: 'border-box',
+                  padding: '0 6px',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  backgroundColor: '#ffffff',
+                  color: '#1a1a1a',
+                  width: '125px',
+                }}
+              />
+            </div>
 
-          <div
-            className="portal-tx-filters portal-tx-filters--status portal-tx-filters--compact"
-            role="tablist"
-            aria-label="Transaction status">
-            {A.TX_STATUS_FILTERS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                role="tab"
-                aria-selected={status === f.id}
-                className={`portal-tx-filters__chip${status === f.id ? ' is-active' : ''}`}
-                onClick={() => onStatusChange(f.id)}>
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="portal-tx-page__toolbar-row portal-tx-page__toolbar-row--search">
-          <label className="portal-tx-page__field portal-tx-page__field--search">
-            <span className="portal-tx-page__field-label visually-hidden">Search</span>
-            <div className="portal-tx-search-wrap">
-              <span className="portal-tx-search-icon" aria-hidden="true">
-                <Icon name="search" size={15} stroke={2} />
-              </span>
+            {/* Search transaction / keyword input */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              height: '36px',
+              boxSizing: 'border-box',
+              padding: '0 8px',
+              width: scope === 'card' ? '140px' : '160px',
+              borderRadius: '6px',
+              border: '1px solid #cbd5e1',
+              backgroundColor: '#ffffff',
+              flexShrink: 0,
+            }}>
+              <Icon name="search" size={13} stroke={2} />
               <input
                 type="search"
-                className="portal-tx-page__input portal-tx-page__input--search"
-                value={searchQuery}
-                onChange={(e) => onSearchQueryChange(e.target.value)}
-                placeholder="Search merchant, reference, transaction ID, or card number..."
-                aria-label="Search merchant, reference, transaction ID, or card number"
+                placeholder="Search transactions..."
+                value={searchInput}
+                onChange={(e) => onSearchInputChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onSearchSubmit(e);
+                }}
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  width: '100%',
+                  fontSize: '12px',
+                  backgroundColor: 'transparent',
+                  color: '#1a1a1a',
+                }}
               />
-              {searchQuery && (
-                <button
-                  type="button"
-                  className="portal-tx-search-clear"
-                  onClick={() => onSearchQueryChange('')}
-                  aria-label="Clear search">
-                  <Icon name="close" size={13} stroke={2} />
-                </button>
-              )}
             </div>
-          </label>
+
+            {/* Search Button */}
+            <button
+              type="button"
+              onClick={onSearchSubmit}
+              style={{
+                height: '36px',
+                boxSizing: 'border-box',
+                padding: '0 12px',
+                fontSize: '12px',
+                fontWeight: '700',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                backgroundColor: '#0284c7',
+                color: '#ffffff',
+                border: 'none',
+                flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              Search
+            </button>
+
+            {/* Reset Button (Always visible) */}
+            <button
+              type="button"
+              onClick={onResetFilters}
+              style={{
+                height: '36px',
+                boxSizing: 'border-box',
+                padding: '0 10px',
+                fontSize: '12px',
+                fontWeight: '700',
+                color: '#475569',
+                backgroundColor: '#f1f5f9',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              Reset
+            </button>
+          </form>
         </div>
       </div>
     </div>
@@ -601,13 +678,16 @@ function TransactionsGroupedFeed({ items, onSelect }) {
   );
 }
 
-export function TransactionsPage({ items = [], initialScope = 'all', initialCardId = 'all', s }) {
-  const [scope, setScope] = useState(initialScope);
-  const [dateRange, setDateRange] = useState('90d');
-  const [customFrom, setCustomFrom] = useState('');
-  const [customTo, setCustomTo] = useState('');
-  const [status, setStatus] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+export function TransactionsPage({ items = [], initialScope = 'wallet', initialCardId = 'all', s }) {
+  const [scope, setScope] = useState(initialScope === 'all' ? 'wallet' : initialScope);
+  const [fromDateInput, setFromDateInput] = useState('');
+  const [toDateInput, setToDateInput] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [appliedFilters, setAppliedFilters] = useState({
+    fromDate: '',
+    toDate: '',
+    search: '',
+  });
 
   // Owned user cards for selector dropdown
   const cards = useMemo(() => {
@@ -694,21 +774,114 @@ export function TransactionsPage({ items = [], initialScope = 'all', initialCard
   // Reset page to 1 when any filter changes
   useEffect(() => {
     setPage(1);
-  }, [scope, dateRange, customFrom, customTo, status, searchQuery, selectedCardId]);
+  }, [scope, appliedFilters, selectedCardId]);
 
-  const filtered = useMemo(
-    () => A.applyTransactionFilters(activeItems, {
+  const handleSearchSubmit = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setAppliedFilters({
+      fromDate: fromDateInput,
+      toDate: toDateInput,
+      search: searchInput.trim(),
+    });
+  };
+
+  const handleResetFilters = () => {
+    setFromDateInput('');
+    setToDateInput('');
+    setSearchInput('');
+    setAppliedFilters({
+      fromDate: '',
+      toDate: '',
+      search: '',
+    });
+  };
+
+  const hasActiveFilter = Boolean(fromDateInput || toDateInput || searchInput || appliedFilters.fromDate || appliedFilters.toDate || appliedFilters.search);
+
+  const filtered = useMemo(() => {
+    return A.applyTransactionFilters(activeItems, {
       scope,
-      dateRange,
-      customFrom,
-      customTo,
-      status,
-      searchQuery,
+      dateRange: (appliedFilters.fromDate || appliedFilters.toDate) ? 'custom' : 'all',
+      customFrom: appliedFilters.fromDate,
+      customTo: appliedFilters.toDate,
+      status: 'all',
+      searchQuery: appliedFilters.search,
       cardLast4: scope === 'card' ? selectedCardId : 'all',
       cardId: scope === 'card' ? selectedCardId : 'all',
-    }),
-    [activeItems, scope, dateRange, customFrom, customTo, status, searchQuery, selectedCardId],
-  );
+    });
+  }, [activeItems, scope, appliedFilters, selectedCardId]);
+
+  const handleExportCsv = () => {
+    if (filtered.length === 0) {
+      if (s?.showToast) s.showToast('No data to export.');
+      return;
+    }
+    const headers = ['Title', 'Amount', 'Type & Details', 'Date', 'Status', 'Scope'];
+    const escapeCsv = (v) => {
+      const str = String(v ?? '').replace(/"/g, '""');
+      return `"${str}"`;
+    };
+    const rows = filtered.map((d) => {
+      // 1. Title (exact text shown on Line 1)
+      const titleStr = d.title || 'Transaction';
+
+      // 2. Amount (exact amount + currency shown on Line 1, e.g. +50.00 USD)
+      const rawCurr = d.transCurrency || d.originalCurrency || d.currency || d.coinType || d.txCurrency || d.authorizedCurrency || d.settleCurrency;
+      const normalizedRaw = A.normalizeDisplayCurrency ? A.normalizeDisplayCurrency(rawCurr) : rawCurr;
+      const displayCurr = (rawCurr && String(rawCurr).trim() && String(rawCurr).trim().toLowerCase() !== 'null')
+        ? String(normalizedRaw).trim().toUpperCase()
+        : (d.kind === 'card_spend' || d.kind === 'refund' || d.kind === 'reversal' ? 'USD' : 'USDT');
+      const { sign, value } = A.formatActivityAmountParts(d.amount, d.incoming, d.kind, d);
+      const isZeroDec = displayCurr === 'KRW' || displayCurr === 'IDR' || displayCurr === 'JPY' || displayCurr === '₩' || displayCurr === 'RP' || displayCurr === '¥';
+      const valStr = value || Math.abs(Number(d.transAmount ?? d.originalAmount ?? d.amount ?? 0) || 0).toLocaleString(
+        displayCurr === 'KRW' ? 'ko-KR' : (displayCurr === 'IDR' ? 'id-ID' : (displayCurr === 'JPY' ? 'ja-JP' : 'en-US')),
+        { minimumFractionDigits: isZeroDec ? 0 : 2, maximumFractionDigits: isZeroDec ? 0 : 2 }
+      );
+      const amountStr = `${sign}${valStr} ${displayCurr}`;
+
+      // 3. Type & Details (exact Line 2 subtitle, e.g. Card Top Up · Visa ••••5063 or Wallet Deposit)
+      const subtitle = A.activitySubtitleLabel(d);
+      const typeLabel = d.typeLabel || A.getActivityTypeLabel(d.kind);
+      const typeSubtitle = subtitle && subtitle !== typeLabel && subtitle !== '—' ? `${typeLabel} · ${subtitle}` : typeLabel;
+
+      // 4. Date (exact date/time format shown on Line 2, e.g. Nov 03 · 23:55)
+      const dateStr = A.formatActivityWhen(d.at, { style: 'standard' });
+
+      // 5. Status (exact status badge, e.g. COMPLETED / AUTHORIZED / PENDING / FAILED)
+      const rawStatus = A.getActivityStatus(d);
+      let statusLabel = 'COMPLETED';
+      if (rawStatus === 'failed') {
+        statusLabel = 'FAILED';
+      } else if (rawStatus === 'pending') {
+        statusLabel = 'PENDING';
+      } else if (d.rawStatus === 'authorized' || (!d.incoming && d.kind !== 'card_topup' && d.kind !== 'wallet_deposit' && d.kind !== 'wallet_receive' && d.kind !== 'card_transfer_out' && d.kind !== 'card_transfer' && d.kind !== 'wallet_send')) {
+        statusLabel = 'AUTHORIZED';
+      }
+
+      // 6. Scope badge (exact source badge, e.g. W or C)
+      const scopeLabel = A.getActivitySourceLabel(d);
+
+      return [
+        escapeCsv(titleStr),
+        escapeCsv(amountStr),
+        escapeCsv(typeSubtitle),
+        escapeCsv(dateStr),
+        escapeCsv(statusLabel),
+        escapeCsv(scopeLabel),
+      ].join(',');
+    });
+    const csvContent = '\uFEFF' + [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transactions_${scope}_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if (s?.showToast) s.showToast('CSV exported successfully.');
+  };
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -728,7 +901,35 @@ export function TransactionsPage({ items = [], initialScope = 'all', initialCard
   return (
     <div className="portal-tx-page portal-pop">
       <div className={`portal-tx-panel portal-tx-panel--tab-${scope}`}>
-        <ActivityScopeTabBar scope={scope} onScopeChange={setScope} />
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '12px', width: '100%' }}>
+          <ActivityScopeTabBar scope={scope} onScopeChange={setScope} />
+          {scope !== 'referral' && (
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              style={{
+                height: '34px',
+                padding: '0 12px',
+                marginBottom: '4px',
+                fontSize: '12px',
+                fontWeight: '700',
+                color: '#0284c7',
+                backgroundColor: '#f0f9ff',
+                border: '1px solid #bae6fd',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              }}
+            >
+              📥 Export CSV
+            </button>
+          )}
+        </div>
 
         {scope === 'referral' ? (
           <div style={{ marginTop: '16px' }}>
@@ -737,16 +938,16 @@ export function TransactionsPage({ items = [], initialScope = 'all', initialCard
         ) : (
           <div className="portal-tx-panel__surface" id="portal-tx-panel-surface">
           <TransactionsToolbar
-            dateRange={dateRange}
-            onDateRangeChange={setDateRange}
-            customFrom={customFrom}
-            customTo={customTo}
-            onCustomFromChange={setCustomFrom}
-            onCustomToChange={setCustomTo}
-            status={status}
-            onStatusChange={setStatus}
-            searchQuery={searchQuery}
-            onSearchQueryChange={setSearchQuery}
+            fromDateInput={fromDateInput}
+            toDateInput={toDateInput}
+            onFromDateChange={setFromDateInput}
+            onToDateChange={setToDateInput}
+            searchInput={searchInput}
+            onSearchInputChange={setSearchInput}
+            onSearchSubmit={handleSearchSubmit}
+            onResetFilters={handleResetFilters}
+            onExportCsv={handleExportCsv}
+            hasActiveFilter={hasActiveFilter}
             scope={scope}
             cards={cards}
             selectedCardId={selectedCardId}

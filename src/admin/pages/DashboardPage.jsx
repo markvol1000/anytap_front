@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AdminKpiCard, AdminKpiGrid } from '../components/AdminKpiCard.jsx';
 import { AdminMiniTable } from '../components/AdminDataTable.jsx';
 import { AdminPanel, AdminPagination, AdminPageHeader } from '../components/AdminFilterBar.jsx';
 import { AdminStatusBadge, formatAdminDate, formatUsdt } from '../components/AdminStatusBadge.jsx';
@@ -13,13 +12,7 @@ import {
   AdminChartDateFilter,
   AdminDashSection,
   AdminDashTabs,
-  AdminPendingTaskCard,
-  AdminPendingTaskGrid,
   AdminRequestDistributionChart,
-  AdminTxKindChips,
-  AdminTxVolumeChart,
-  formatTxKind,
-  requestDetailRoute,
 } from '../components/dashboard/AdminDashboardBlocks.jsx';
 import {
   getDashboardData,
@@ -29,17 +22,6 @@ import {
   getBannedIps,
   getLoginLogs,
 } from '../services/adminService.js';
-
-function formatCount(n) {
-  return Number(n ?? 0).toLocaleString('en-US');
-}
-
-function formatMoney(amount) {
-  if (amount == null) return '—';
-  if (amount >= 1000000) return `$${(amount / 1000000).toFixed(2)}M`;
-  if (amount >= 10000) return `$${(amount / 1000).toFixed(1)}k`;
-  return `$${Number(amount).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-}
 
 function getPresetDates(presetId) {
   const today = new Date();
@@ -116,7 +98,7 @@ export function DashboardPage() {
     setRequestDetail(null);
   };
 
-  // Default to 7 days per user request
+  // Default to 7 days
   const default7d = getPresetDates('7d');
   const [chartPreset, setChartPreset] = useState('7d');
   const [chartStartDate, setChartStartDate] = useState(default7d.start);
@@ -166,10 +148,6 @@ export function DashboardPage() {
     reloadDashboard();
   }, []);
 
-  const isMaintenance = data?.systemSummary?.systemStatus === 'maintenance';
-  const pending = data?.pendingTasks;
-  const summary = data?.systemSummary;
-
   const kycRows = data?.recentRequests?.kyc ?? [];
   const cardRows = data?.recentRequests?.card ?? [];
   const withdrawalRows = data?.recentRequests?.withdrawal ?? [];
@@ -198,15 +176,6 @@ export function DashboardPage() {
   const chartKycRows = kycRows.filter(isRowInChartDateRange);
   const chartCardRows = cardRows.filter(isRowInChartDateRange);
   const chartWithdrawalRows = withdrawalRows.filter(isRowInChartDateRange);
-
-  const chartWalletTxs = (data?.walletTransactions ?? []).filter(isRowInChartDateRange);
-  const chartCardTxs = (data?.cardTransactions ?? []).filter(isRowInChartDateRange);
-
-  const chartTopUpAmount = chartWalletTxs.reduce((sum, t) => sum + Number(t.amount || 0), 0);
-  const chartPaymentsAmount = chartCardTxs.reduce((sum, t) => sum + Number(t.amount || 0), 0);
-
-  const displayTopUp = (!activeDateFilter.start && !activeDateFilter.end) ? (summary?.todayTopUp || chartTopUpAmount) : chartTopUpAmount;
-  const displayPayments = (!activeDateFilter.start && !activeDateFilter.end) ? (summary?.todayPayments || chartPaymentsAmount) : chartPaymentsAmount;
 
   // Security status metrics calculation
   const filteredBannedIps = bannedIps.filter((item) => {
@@ -259,215 +228,135 @@ export function DashboardPage() {
     <div className="admin-page admin-page--dashboard">
       <AdminPageHeader
         title="Dashboard"
-        description="Real-time operational summary, pending review tasks, volume trends, and request breakdown."
+        description="Real-time operational summary, review tasks, volume trends, and request breakdown."
         onRefresh={reloadDashboard}
         refreshing={loading}
       />
 
       {loading ? <p className="admin-loading">Loading…</p> : null}
 
-      {pending ? (
-        <AdminDashSection
-          title="Pending tasks"
-          action={<Link to="/admin/logs" className="admin-panel__link">View queue history</Link>}>
-          <AdminPendingTaskGrid>
-            <AdminPendingTaskCard
-              label="KYC"
-              icon="shield"
-              tone="orange"
-              count={formatCount(pending.pendingKyc)}
-              to="/admin/kyc?status=pending"
-            />
-            <AdminPendingTaskCard
-              label="CARD"
-              icon="creditCard"
-              tone="orange"
-              count={formatCount(pending.cardApplications)}
-              to="/admin/cards?status=pending"
-            />
-            <AdminPendingTaskCard
-              label="With"
-              icon="arrowUpRight"
-              tone="orange"
-              count={formatCount(pending.withdrawalRequests)}
-              to="/admin/withdrawals?status=pending"
-              urgent
-            />
-            <AdminPendingTaskCard
-              label="Dep"
-              icon="coins"
-              tone="orange"
-              count={formatCount(pending.depositVerification)}
-              to="/admin/transactions?kind=wallet_receive&status=pending"
-              urgent
-            />
-          </AdminPendingTaskGrid>
-        </AdminDashSection>
-      ) : null}
-
       {data ? (
         <>
-          {/* 1. VISUAL CHARTS OVERVIEW (Placed ABOVE the list) */}
-          <AdminDashSection
-            title="Performance & Activity Charts"
-            action={
-              <AdminChartDateFilter
-                preset={chartPreset}
-                onPresetChange={handleChartPresetChange}
-                startDate={chartStartDate}
-                endDate={chartEndDate}
-                onStartDateChange={(val) => {
-                  setChartStartDate(val);
-                  setChartPreset('custom');
-                }}
-                onEndDateChange={(val) => {
-                  setChartEndDate(val);
-                  setChartPreset('custom');
-                }}
-                onApply={handleApplyCustomDates}
-              />
-            }>
-            <div className="admin-chart-grid">
+          {/* TOP OVERVIEW: 2 COLUMNS (LEFT: REQUEST DISTRIBUTION DONUT CHART, RIGHT: SECURITY & ACCESS DEFENSE) */}
+          <div className="admin-dashboard-two-col">
+            {/* LEFT COLUMN: Request Distribution Donut Chart */}
+            <AdminDashSection
+              title="Request Distribution"
+              action={
+                <AdminChartDateFilter
+                  preset={chartPreset}
+                  onPresetChange={handleChartPresetChange}
+                  startDate={chartStartDate}
+                  endDate={chartEndDate}
+                  onStartDateChange={(val) => {
+                    setChartStartDate(val);
+                    setChartPreset('custom');
+                  }}
+                  onEndDateChange={(val) => {
+                    setChartEndDate(val);
+                    setChartPreset('custom');
+                  }}
+                  onApply={handleApplyCustomDates}
+                />
+              }
+            >
               <AdminRequestDistributionChart
                 kycCount={chartKycRows.length}
                 cardCount={chartCardRows.length}
                 withdrawalCount={chartWithdrawalRows.length}
               />
-              <AdminTxVolumeChart
-                walletTxCount={chartWalletTxs.length}
-                cardTxCount={chartCardTxs.length}
-                withdrawalTxCount={chartWithdrawalRows.length}
-                todayTopUp={displayTopUp}
-                todayPayments={displayPayments}
-                walletAssets={summary?.walletAssets ?? 0}
-              />
-            </div>
-          </AdminDashSection>
+            </AdminDashSection>
 
-          {/* 1-1. SECURITY & ACCESS DEFENSE OVERVIEW */}
-          <AdminDashSection
-            title="Security & Access Defense Overview"
-            action={
-              <Link to="/admin/ip-blacklist" className="admin-panel__link" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <span>Manage IP Blacklist</span>
-                <span>➔</span>
-              </Link>
-            }
-          >
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ padding: '14px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', borderLeft: '4px solid #ef4444', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Banned IPs (Filtered)</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '4px' }}>
-                  <span style={{ fontSize: '26px', fontWeight: '800', color: '#b91c1c', fontFamily: 'monospace' }}>{filteredBannedIps.length}</span>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>({activeBansCount} active)</span>
-                </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                  Total blocked during selected period
-                </div>
-              </div>
+            {/* RIGHT COLUMN: Security & Access Defense Overview */}
+            <AdminDashSection
+              title="Security & Access Defense Overview"
+              action={
+                <Link to="/admin/ip-blacklist" className="admin-panel__link" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <span>Manage IP Blacklist</span>
+                  <span>➔</span>
+                </Link>
+              }
+            >
+              <div className="admin-sec-overview-card">
+                <div className="admin-sec-grid">
+                  <div className="admin-sec-stat-tile admin-sec-stat-tile--red">
+                    <span className="admin-sec-stat-tile__lbl">Banned IPs</span>
+                    <div className="admin-sec-stat-tile__val-row">
+                      <span className="admin-sec-stat-tile__val" style={{ color: '#b91c1c' }}>{filteredBannedIps.length}</span>
+                      <span className="admin-sec-stat-tile__sub">({activeBansCount} active)</span>
+                    </div>
+                    <span className="admin-sec-stat-tile__desc">Total blocked in selected period</span>
+                  </div>
 
-              <div style={{ padding: '14px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', borderLeft: '4px solid #f97316', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Auto-Detected Blocks</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '4px' }}>
-                  <span style={{ fontSize: '26px', fontWeight: '800', color: '#ea580c', fontFamily: 'monospace' }}>{autoDetectedBans.length}</span>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    ({filteredBannedIps.length > 0 ? Math.round((autoDetectedBans.length / filteredBannedIps.length) * 100) : 0}%)
-                  </span>
-                </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                  Triggered by rate-limit & attack detection
-                </div>
-              </div>
-
-              <div style={{ padding: '14px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', borderLeft: '4px solid #eab308', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Failed Login Attempts</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '4px' }}>
-                  <span style={{ fontSize: '26px', fontWeight: '800', color: '#ca8a04', fontFamily: 'monospace' }}>{failedLogins.length}</span>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>/ {filteredLoginLogs.length} attempts</span>
-                </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                  Authentication failures tracked
-                </div>
-              </div>
-
-              <div style={{ padding: '14px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', borderLeft: '4px solid #10b981', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Defense Perimeter Status</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                  <span style={{ fontSize: '16px', fontWeight: '800', color: '#047857' }}>Active & Enforced</span>
-                </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>
-                  Zero-trust real-time gateway defense
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Banned IPs Preview Mini-List */}
-            {filteredBannedIps.length > 0 && (
-              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>Recent Banned IP Accesses ({Math.min(5, filteredBannedIps.length)})</span>
-                  <Link to="/admin/ip-blacklist" style={{ fontSize: '11px', color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}>View All ({filteredBannedIps.length}) ➔</Link>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {filteredBannedIps.slice(0, 5).map((ipItem) => (
-                    <div
-                      key={ipItem.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '6px 10px',
-                        background: '#f8fafc',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        border: '1px solid #f1f5f9'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                        <span style={{ fontFamily: 'monospace', fontWeight: '700', color: '#0f172a' }}>{ipItem.ipAddress}</span>
-                        <span style={{
-                          fontSize: '9px',
-                          fontWeight: '700',
-                          padding: '1px 5px',
-                          borderRadius: '3px',
-                          backgroundColor: ipItem.bannedBy === 'AUTO_DETECTION' ? '#fee2e2' : '#e0f2fe',
-                          color: ipItem.bannedBy === 'AUTO_DETECTION' ? '#991b1b' : '#0369a1',
-                        }}>
-                          {ipItem.bannedBy === 'AUTO_DETECTION' ? 'AUTO' : 'ADMIN'}
-                        </span>
-                        <span style={{ color: '#64748b', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '240px' }}>
-                          {ipItem.reason || '—'}
-                        </span>
-                      </div>
-                      <span style={{ color: '#94a3b8', whiteSpace: 'nowrap', fontSize: '10px' }}>
-                        {formatAdminDate(ipItem.bannedAt || ipItem.createdAt)}
+                  <div className="admin-sec-stat-tile admin-sec-stat-tile--orange">
+                    <span className="admin-sec-stat-tile__lbl">Auto-Detected</span>
+                    <div className="admin-sec-stat-tile__val-row">
+                      <span className="admin-sec-stat-tile__val" style={{ color: '#ea580c' }}>{autoDetectedBans.length}</span>
+                      <span className="admin-sec-stat-tile__sub">
+                        ({filteredBannedIps.length > 0 ? Math.round((autoDetectedBans.length / filteredBannedIps.length) * 100) : 0}%)
                       </span>
                     </div>
-                  ))}
+                    <span className="admin-sec-stat-tile__desc">Rate-limit & threat triggers</span>
+                  </div>
+
+                  <div className="admin-sec-stat-tile admin-sec-stat-tile--yellow">
+                    <span className="admin-sec-stat-tile__lbl">Failed Logins</span>
+                    <div className="admin-sec-stat-tile__val-row">
+                      <span className="admin-sec-stat-tile__val" style={{ color: '#ca8a04' }}>{failedLogins.length}</span>
+                      <span className="admin-sec-stat-tile__sub">/ {filteredLoginLogs.length}</span>
+                    </div>
+                    <span className="admin-sec-stat-tile__desc">Suspicious auth attempts</span>
+                  </div>
+
+                  <div className="admin-sec-stat-tile admin-sec-stat-tile--green">
+                    <span className="admin-sec-stat-tile__lbl">Perimeter Status</span>
+                    <div className="admin-sec-stat-tile__val-row" style={{ marginTop: '5px' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', flexShrink: 0 }} />
+                      <span style={{ fontSize: '14px', fontWeight: '800', color: '#047857' }}>Active & Enforced</span>
+                    </div>
+                    <span className="admin-sec-stat-tile__desc">Zero-trust gateway defense</span>
+                  </div>
                 </div>
+
+                {/* Recent Banned IPs Preview Mini-List */}
+                {filteredBannedIps.length > 0 && (
+                  <div className="admin-sec-recent-box">
+                    <div className="admin-sec-recent-head">
+                      <span className="admin-sec-recent-title">Recent Banned IP Accesses ({Math.min(4, filteredBannedIps.length)})</span>
+                      <Link to="/admin/ip-blacklist" className="admin-sec-recent-link">View All ({filteredBannedIps.length}) ➔</Link>
+                    </div>
+                    <div className="admin-sec-recent-list">
+                      {filteredBannedIps.slice(0, 4).map((ipItem) => (
+                        <div key={ipItem.id} className="admin-sec-recent-item">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                            <span style={{ fontFamily: 'monospace', fontWeight: '700', color: '#0f172a' }}>{ipItem.ipAddress}</span>
+                            <span style={{
+                              fontSize: '9px',
+                              fontWeight: '700',
+                              padding: '1px 5px',
+                              borderRadius: '3px',
+                              backgroundColor: ipItem.bannedBy === 'AUTO_DETECTION' ? '#fee2e2' : '#e0f2fe',
+                              color: ipItem.bannedBy === 'AUTO_DETECTION' ? '#991b1b' : '#0369a1',
+                            }}>
+                              {ipItem.bannedBy === 'AUTO_DETECTION' ? 'AUTO' : 'ADMIN'}
+                            </span>
+                            <span style={{ color: '#64748b', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '160px' }}>
+                              {ipItem.reason || '—'}
+                            </span>
+                          </div>
+                          <span style={{ color: '#94a3b8', whiteSpace: 'nowrap', fontSize: '10px' }}>
+                            {formatAdminDate(ipItem.bannedAt || ipItem.createdAt)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </AdminDashSection>
-
-          {/* 2. SYSTEM KPI METRICS GRID (Placed ABOVE the list) */}
-          {summary ? (
-            <AdminDashSection
-              title="System Summary Metrics"
-              className="admin-dash-section--muted">
-              <AdminKpiGrid>
-                <AdminKpiCard label="Members" icon="users" tone="green" to="/admin/members" value={formatCount(summary.members)} />
-                <AdminKpiCard label="Wallets" icon="wallet" tone="green" to="/admin/wallets" value={formatCount(summary.wallets)} />
-                <AdminKpiCard label="Cards" icon="creditCard" tone="green" to="/admin/cards" value={formatCount(summary.cards)} />
-                <AdminKpiCard label="Today's Top-up" icon="arrowUp" tone="blue" to="/admin/transactions?kind=wallet_topup" value={formatMoney(summary.todayTopUp)} />
-                <AdminKpiCard label="Today's Payments" icon="receipt" tone="green" to="/admin/transactions?kind=card_spend" value={formatMoney(summary.todayPayments)} />
-                <AdminKpiCard label="Referral Rewards" icon="trophy" tone="blue" to="/admin/referral" value={formatMoney(summary.referralRewards)} />
-                <AdminKpiCard label="Wallet Assets" icon="bank" tone="green" to="/admin/wallets" value={formatMoney(summary.walletAssets)} />
-              </AdminKpiGrid>
             </AdminDashSection>
-          ) : null}
+          </div>
 
-          {/* 3. ONLY LIST SECTION: RECENT REQUESTS (10 items per page) */}
+          {/* BOTTOM SECTION: RECENT REQUESTS (10 items per page) */}
           <AdminDashSection
             title="Recent Requests"
             action={<span className="admin-dash-section__hint">Newest first (10 per page)</span>}>

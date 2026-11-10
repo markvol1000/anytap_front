@@ -95,89 +95,115 @@
 
 /* ── Referral code card ── */
 .portal-ref-dash__code {
-  text-align: center;
+  width: 100%;
+  padding: 18px 24px;
+}
+
+.portal-ref-dash__code-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: stretch;
+}
+
+@media (min-width: 820px) {
+  .portal-ref-dash__code-main {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+  }
+}
+
+.portal-ref-dash__code-left {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}
+
+.portal-ref-dash__code-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .portal-ref-dash__code-val {
-  margin: 0 0 20px;
+  margin: 0;
   font-family: var(--font-display, inherit);
-  font-size: clamp(32px, 6vw, 44px);
+  font-size: clamp(22px, 2.5vw, 28px);
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
+  line-height: 1;
   color: var(--brand-primary, #ff5500);
+  white-space: nowrap;
 }
 
 .portal-ref-dash__code-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  margin-bottom: 24px;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
 }
 
 .portal-ref-dash__code-btn {
-  width: auto;
-  min-width: 120px;
-  flex: 1;
-  max-width: 160px;
-  padding: 0 var(--btn-px);
-  height: var(--btn-h);
-  min-height: var(--btn-h);
+  width: auto !important;
+  min-width: 100px !important;
+  max-width: fit-content !important;
+  flex: 0 0 auto !important;
+  padding: 8px 16px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
 }
 
 .portal-ref-dash__code-meta {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 20px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-default, rgba(26, 26, 26, 0.1));
+  gap: 16px;
+  padding: 14px 18px;
+  background: var(--surface-subtle, #f8fafc);
+  border: 1px solid var(--border-subtle, rgba(26, 26, 26, 0.08));
+  border-radius: 12px;
+  text-align: left;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 820px) {
   .portal-ref-dash__code-meta {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: center;
-    text-align: left;
+    max-width: 480px;
+    flex: 1;
+    justify-content: flex-start;
   }
 }
 
 .portal-ref-dash__qr {
   flex: none;
-  padding: 10px;
   background: #fff;
   border: 1px solid var(--border-default, rgba(26, 26, 26, 0.1));
-  border-radius: var(--radius-md, 12px);
-}
-
-.portal-ref-dash__qr-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 8px);
-  gap: 2px;
-}
-
-.portal-ref-dash__qr-grid span {
-  width: 8px;
-  height: 8px;
-  border-radius: 1px;
-  background: rgba(26, 26, 26, 0.06);
-}
-
-.portal-ref-dash__qr-grid span.is-on {
-  background: var(--ink, #1a1a1a);
+  border-radius: 10px;
 }
 
 .portal-ref-dash__link-block {
   flex: 1;
   min-width: 0;
-  max-width: 420px;
 }
 
 .portal-ref-dash__link-label {
   display: block;
-  margin-bottom: 6px;
-  font-size: 11px;
+  margin-bottom: 3px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -185,22 +211,31 @@
 }
 
 .portal-ref-dash__link-val {
-  margin: 0 0 12px;
-  font-size: 13px;
+  margin: 0 0 8px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--fg-muted, #6b6057);
   word-break: break-all;
-  line-height: 1.45;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .portal-ref-dash__link-copy {
-  width: auto;
-  min-width: 140px;
-  padding: 11px 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  width: auto !important;
+  min-width: 100px !important;
+  padding: 8px 16px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  border-radius: 8px !important;
+  white-space: nowrap !important;
 }
 
 /* ── Summary stats ── */
