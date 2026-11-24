@@ -138,6 +138,9 @@ export function AdminTableWrap({ children, loading, error, hasData = false }) {
 }
 
 export function AdminPagination({ page, totalPages, total, pageSize, onPageChange, onPageSizeChange }) {
+  const startIdx = total > 0 ? (page - 1) * (pageSize || 10) + 1 : 0;
+  const endIdx = total > 0 ? Math.min(page * (pageSize || 10), total) : 0;
+
   return (
     <div className="admin-pagination" style={{
       display: 'flex',
@@ -148,7 +151,9 @@ export function AdminPagination({ page, totalPages, total, pageSize, onPageChang
       backgroundColor: '#ffffff'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#64748b' }}>
-        <span>Total <strong style={{ color: '#0f172a' }}>{total}</strong> items</span>
+        <span>
+          Showing <strong style={{ color: '#0f172a' }}>{startIdx}–{endIdx}</strong> of <strong style={{ color: '#0f172a' }}>{total}</strong> items
+        </span>
         {onPageSizeChange && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <span>Per page:</span>
@@ -166,6 +171,7 @@ export function AdminPagination({ page, totalPages, total, pageSize, onPageChang
             >
               <option value={10}>10 per page</option>
               <option value={20}>20 per page</option>
+              <option value={25}>25 per page</option>
               <option value={50}>50 per page</option>
               <option value={100}>100 per page</option>
             </select>

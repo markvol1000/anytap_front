@@ -11,3 +11,9 @@ build.zip
 *.dev
 *.example
 test_run.mjs
+playwright.config.js
+e2e/01_portal_acceptance.spec.js
+playwright-report/index.html
+test-results/.last-run.json
+playwright-report/
+test-results/

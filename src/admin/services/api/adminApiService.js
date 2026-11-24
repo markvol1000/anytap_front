@@ -1066,10 +1066,12 @@ export async function createReferralCode(payload) {
 }
 
 export async function updateReferralCode(id, payload) {
-  return await apiPut(`/admin/referrals/${encodeURIComponent(id)}`, payload).catch(() => ({
-    id,
-    ...payload,
-  }));
+  return await apiPost(`/admin/referrals/${encodeURIComponent(id)}`, payload).catch(() => (
+    apiPut(`/admin/referrals/${encodeURIComponent(id)}`, payload).catch(() => ({
+      id,
+      ...payload,
+    }))
+  ));
 }
 
 export async function updateMemberReferralCode(userId, referralCode) {
@@ -1147,6 +1149,45 @@ export async function getCommissionLedger(params = {}) {
 
 export async function adjustReferralReward(id, amount, note = '') {
   return { id, amount, note, success: true };
+}
+
+export async function getReferralSettlementSummary(params = {}) {
+  const data = await apiPost('/admin/settlement/summary', {
+    referralCode: params.referralCode || null,
+    startDate: params.startDate || null,
+    endDate: params.endDate || null,
+  }).catch(() => null);
+
+  const raw = asArray(data);
+  return {
+    items: raw,
+    total: raw.length,
+    page: 1,
+    pageSize: raw.length || 10,
+    totalPages: 1,
+  };
+}
+
+export async function getReferralSettlementDetails(params = {}) {
+  const data = await apiPost('/admin/settlement/details', {
+    referralCode: params.referralCode || null,
+    filterType: params.filterType || 'ALL',
+    startDate: params.startDate || null,
+    endDate: params.endDate || null,
+  }).catch(() => null);
+
+  const raw = asArray(data);
+  return {
+    items: raw,
+    total: raw.length,
+    page: 1,
+    pageSize: raw.length || 10,
+    totalPages: 1,
+  };
+}
+
+export async function confirmReferralSettlement(payload = {}) {
+  return await apiPost('/admin/settlement/confirm', payload);
 }
 
 export async function getWithdrawals(params = {}) {

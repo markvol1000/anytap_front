@@ -12,6 +12,7 @@ const OPS_NAV = [
   { to: '/admin/wallets', label: 'Wallets', icon: 'wallet' },
   { to: '/admin/transactions', label: 'Transactions', icon: 'receipt' },
   { to: '/admin/referral', label: 'Referral List', icon: 'trophy' },
+  // { to: '/admin/settlement', label: 'Referral Settlement', icon: 'creditCard' },
   { to: '/admin/withdrawals', label: 'Withdrawals', icon: 'arrowUpRight' },
 ];
 

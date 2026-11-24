@@ -11,6 +11,7 @@ import { EmailLogsReportPage } from './pages/reports/emails.jsx';
 import { WalletsPage } from './pages/WalletsPage.jsx';
 import { TransactionsPage } from './pages/TransactionsPage.jsx';
 import { ReferralPage } from './pages/ReferralPage.jsx';
+import { SettlementPage } from './pages/SettlementPage.jsx';
 import { WithdrawalsPage } from './pages/WithdrawalsPage.jsx';
 import { NotificationsPage } from './pages/NotificationsPage.jsx';
 import { LoginLogsPage } from './pages/LoginLogsPage.jsx';
@@ -37,6 +38,7 @@ export function AdminApp() {
         <Route path="wallets" element={<WalletsPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="referral" element={<ReferralPage />} />
+        <Route path="settlement" element={<SettlementPage />} />
         <Route path="withdrawals" element={<WithdrawalsPage />} />
         <Route path="operations" element={<OperationsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />

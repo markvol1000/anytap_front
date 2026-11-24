@@ -16,7 +16,9 @@ export function AdminDataTable({
   page: pageProp,
   totalPages: totalPagesProp,
   total: totalProp,
+  pageSize: pageSizeProp,
   onPageChange: onPageChangeProp,
+  onPageSizeChange: onPageSizeChangeProp,
   pagination,
   emptyMessage = 'No records found',
   renderMobileCard,
@@ -24,9 +26,9 @@ export function AdminDataTable({
   const page = pagination?.page ?? pageProp;
   const totalPages = pagination?.totalPages ?? totalPagesProp;
   const total = pagination?.total ?? totalProp;
-  const pageSize = pagination?.pageSize;
+  const pageSize = pagination?.pageSize ?? pageSizeProp;
   const onPageChange = pagination?.onPageChange ?? onPageChangeProp;
-  const onPageSizeChange = pagination?.onPageSizeChange;
+  const onPageSizeChange = pagination?.onPageSizeChange ?? onPageSizeChangeProp;
 
   const defaultRenderMobileCard = (row) => {
     // Pick first column for title/identifier
