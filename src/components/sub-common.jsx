@@ -49,7 +49,7 @@ function SubHeroReferralNetworkBg() {
   );
 }
 
-function SubHero({ eyebrow, title, sub, primary, secondary, tone = 'light', variant, children }) {
+function SubHero({ eyebrow, badge, title, sub, primary, secondary, note, tone = 'light', variant, children }) {
   const ref = useRef(null);
   useScrollProgress(ref, variant === 'referral-network' ? { mode: 'hero' } : {});
 
@@ -61,15 +61,23 @@ function SubHero({ eyebrow, title, sub, primary, secondary, tone = 'light', vari
       {variant === 'security-globe' && <SubHeroVideoBg src="/assets/infra_bg.mp4" />}
       <div className="shell subhero__grid">
         <div className="subhero__copy">
-          {eyebrow && <span className="eyebrow"><span className="dot"></span> {eyebrow}</span>}
+          {(eyebrow || badge) && (
+            <div className="subhero__kicker">
+              {eyebrow && <span className="eyebrow"><span className="dot"></span> {eyebrow}</span>}
+              {badge && <span className="subhero__badge">{badge}</span>}
+            </div>
+          )}
           <h1 className="subhero__title">{title}</h1>
           {sub && <p className="subhero__sub">{sub}</p>}
           {(primary || secondary) && (
             <div className="subhero__cta">
               {primary && <Link to={primary.href} className="btn btn--accent btn--lg">{primary.label} <Icon name="arrowRight" size={16} /></Link>}
-              {secondary && <Link to={secondary.href} className="btn btn--outline btn--lg">{secondary.label}</Link>}
+              {secondary && (secondary.href.startsWith('#')
+                ? <a href={secondary.href} className="btn btn--outline btn--lg">{secondary.label}</a>
+                : <Link to={secondary.href} className="btn btn--outline btn--lg">{secondary.label}</Link>)}
             </div>
           )}
+          {note && <p className="subhero__note">{note}</p>}
         </div>
         {children && <div className="subhero__visual">{children}</div>}
       </div>

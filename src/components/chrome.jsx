@@ -393,7 +393,7 @@ function SiteFooter() {
             <Link to="/" aria-label="Anytap home"><Logo inverse /></Link>
             <p className="footer__tagline">
               The world's most reliable crypto debit card — powered by 60+ global
-              BINs. Spend USDT &amp; USDC anywhere Visa is accepted.
+              BINs. Spend USDT anywhere Visa is accepted.
             </p>
           </div>
 

@@ -16,7 +16,7 @@ export function FaqPage() {
             Frequently asked <span className="subhero__accent">questions</span>
           </>
         }
-        sub="Everything about Anytap cards, KYC, top-ups, fees, security, and the referral program."
+        sub="Everything about Anytap cards, KYC, top-ups, Easy Top Up, fees, security, and the referral program."
       />
       <Band>
         <div className="faq-page">

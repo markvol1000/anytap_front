@@ -49,7 +49,7 @@ export const SEO_KNOWS_ABOUT = [
 export const DEFAULT_TITLE = `${BRAND} — Crypto card`;
 
 const DEFAULT_DESC =
-  'Anytap crypto card — spend USDT and USDC anywhere Visa is accepted. 60+ global BINs, Apple Pay, Google Pay, and Samsung Pay.';
+  'A crypto Visa card you top up with USDT (TRC-20) or with local currency through Easy Top Up — powered by 60+ global BINs, with Apple Pay, Google Pay and Samsung Pay.';
 
 /** Marketing + legal routes that should be indexed. */
 export const SEO_PAGES: PageSeo[] = [
@@ -72,7 +72,7 @@ export const SEO_PAGES: PageSeo[] = [
     path: '/faq',
     title: `FAQ | ${BRAND}`,
     description:
-      'Frequently asked questions about the Anytap crypto card, KYC, top-ups, fees, security, and the referral program.',
+      'Frequently asked questions about the Anytap crypto card, KYC, top-ups, Easy Top Up, fees, security, and the referral program.',
   },
   {
     path: '/card-how-to-use',
@@ -96,6 +96,12 @@ export const SEO_PAGES: PageSeo[] = [
     path: '/card-application',
     title: `Apply for ${BRAND} Card`,
     description: 'Start your Anytap Visa card application online — virtual or physical.',
+  },
+  {
+    path: '/card-easy-top-up',
+    title: 'Easy Top Up — Top up your Anytap card with local currency',
+    description:
+      'Top up your Anytap Visa card in your local currency. Send money through a remittance provider or bank in your country — it arrives on your card as USDT. No exchange account or wallet needed.',
   },
   {
     path: '/apply-card',
@@ -294,7 +300,7 @@ export function financialProductJsonLd() {
     '@type': 'FinancialProduct' as const,
     name: 'Anytap Crypto Debit Card',
     description:
-      'Physical and virtual Visa debit card. Top up with USDT or USDC and spend anywhere Visa is accepted.',
+      'Physical and virtual Visa debit card. Top up with USDT (TRC-20) or Easy Top Up and spend anywhere Visa is accepted.',
     url: `${SITE_ORIGIN}/`,
     provider: { '@type': 'Organization' as const, name: 'Anytap' },
   };

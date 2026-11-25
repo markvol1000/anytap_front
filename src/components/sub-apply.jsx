@@ -67,7 +67,7 @@ function ApplyCardPage() {
                 <FormField label="First name" req><input type="text" required placeholder="Given name" autoComplete="given-name" /></FormField>
                 <FormField label="Date of birth" req><input type="text" required placeholder="MM / DD / YYYY" lang="en" inputMode="numeric" /></FormField>
                 <FormField label="Country / Region" req>
-                  <select required defaultValue=""><option value="" disabled>Select…</option><option>United States</option><option>Singapore</option><option>United Arab Emirates</option><option>United Kingdom</option><option>Vietnam</option><option>Japan</option><option>Other</option></select>
+                  <select required defaultValue=""><option value="" disabled>Select…</option><option>South Korea</option><option>Indonesia</option><option>Japan</option><option>Philippines</option><option>Malaysia</option><option>Singapore</option><option>Vietnam</option><option>Thailand</option><option>United States</option><option>United Arab Emirates</option><option>United Kingdom</option><option>Other</option></select>
                 </FormField>
                 <FormField label="Residential address" req full><input type="text" required placeholder="Enter your residential address" /></FormField>
               </div>
@@ -77,15 +77,15 @@ function ApplyCardPage() {
                 <FormField label="ID document type" req>
                   <select required defaultValue=""><option value="" disabled>Select…</option><option>Passport</option><option>Driver's license</option></select>
                 </FormField>
-                <FormField label="Stablecoin you'll top up with" req>
-                  <select required defaultValue=""><option value="" disabled>Select…</option><option>USDT (TRC-20)</option><option>USDT (ERC-20)</option><option>USDC</option></select>
+                <FormField label="How will you top up?" req>
+                  <select required defaultValue=""><option value="" disabled>Select…</option><option>USDT (TRC-20)</option><option>Easy Top Up (local currency)</option></select>
                 </FormField>
               </div>
 
               <div className="aform__sec">Card</div>
               <div className="aform__grid">
                 <FormField label="Card type" req>
-                  <select required defaultValue=""><option value="" disabled>Select…</option><option>Physical</option><option disabled>Virtual (coming soon)</option></select>
+                  <select required defaultValue=""><option value="" disabled>Select…</option><option>Virtual (instant)</option><option>Physical</option></select>
                 </FormField>
                 <FormField label="Add to mobile wallet">
                   <select defaultValue=""><option value="" disabled>Select…</option><option>Apple Pay</option><option>Google Pay</option><option>Samsung Pay</option><option>Decide later</option></select>
@@ -96,7 +96,7 @@ function ApplyCardPage() {
 
               <div className="aform__actions">
                 <button type="submit" className="btn btn--accent btn--lg">Submit application <Icon name="arrowRight" size={16} /></button>
-                <span className="aform__note">A one-time USD 100 issuance fee applies for the physical card. A 3% fee applies on stablecoin top-ups. Virtual cards are coming soon.</span>
+                <span className="aform__note">Issuance fee (one-time): virtual card 20 USDT, physical card 100 USDT. Top-up fee: 2%. Minimum top-up: 50 USDT. No annual fee. Up to 3 physical cards per person.</span>
               </div>
             </form>
           )}
@@ -183,7 +183,9 @@ function MerchantApplyPage() {
       <SubHero
         tone="ink"
         title={<>Turn your customers' crypto into <span className="subhero__accent">revenue</span></>}
-        sub="Integrate USDT · USDC stablecoin payments into your service today. No complex financial license — start global crypto acceptance with a single API." />
+        badge="Launching July 2027"
+        sub="Integrate USDT · USDC stablecoin payments into your service — launching July 2027. No complex financial license — start global crypto acceptance with a single API."
+        note="Anytap Pay launches in July 2027. Apply now to join as an early merchant." />
 
       <Band tone="subtle">
         <SectionHead eyebrow="What you get" title="Why partner with Anytap Pay" />
@@ -196,7 +198,7 @@ function MerchantApplyPage() {
 
       <Band>
         <div className="aform-wrap">
-          <SectionHead eyebrow="Merchant application · 15 questions" title="Tell us about your business" lede="Complete the form and the Anytap partner team will review and contact you within 10 business days. Your information is used for review only and is never shared." />
+          <SectionHead eyebrow="Merchant application · 15 questions" title="Tell us about your business" lede="Applications are open now ahead of our July 2027 launch. Complete the form and the Anytap partner team will review and contact you within 10 business days. Your information is used for review only and is never shared." />
           <div className="aform__actions aform__actions--lead">
             <Link to="/merchant-apply/form" className="btn btn--accent btn--lg">
               Start application <Icon name="arrowRight" size={16} />
@@ -258,14 +260,14 @@ function ContactPage() {
                 <FormField label="Email or Account ID" req><input type="text" required placeholder="Enter email or account ID" /></FormField>
               </div>
               <FormField label="What do you need help with?" req>
-                <select required defaultValue=""><option value="" disabled>Select a category…</option><option>Card issuance & KYC</option><option>Card top-up & balance</option><option>Lost or stolen card</option><option>Payment / merchant solution</option><option>Referral program</option><option>Other</option></select>
+                <select required defaultValue=""><option value="" disabled>Select a category…</option><option>Card issuance & KYC</option><option>Card top-up & balance</option><option>Easy Top Up</option><option>Lost or stolen card</option><option>Payment / merchant solution</option><option>Referral program</option><option>Other</option></select>
               </FormField>
               <FormField label="Message" req full>
                 <textarea rows="5" required placeholder="Enter your message"></textarea>
               </FormField>
               <div className="aform__actions">
                 <button type="submit" className="btn btn--accent btn--lg">Submit <Icon name="arrowRight" size={16} /></button>
-                <span className="aform__note">Average first response under a few hours. Lost-card reports are prioritized 24/7.</span>
+                <span className="aform__note">We respond within a maximum of 72 hours. Lost-card reports are prioritized 24/7. Customer support is provided in English only. For business and partnership inquiries: biz@anytap.io</span>
               </div>
             </form>
           )}
@@ -282,7 +284,7 @@ function AboutPage() {
       <SubHero
         tone="ink"
         title={<>The fintech operator connecting crypto and <span className="subhero__accent">everyday life</span></>}
-        sub="A U.S.-headquartered fintech company specializing in cryptocurrency solutions, with offices in Singapore, Dubai and London." />
+        sub="A U.S.-headquartered fintech company specializing in cryptocurrency solutions, with offices in Singapore, Dubai and London. Anytap is a functional crypto card operated by an overseas remittance business, growing through exchange partnerships." />
 
       <Band>
         <SectionHead eyebrow="Our mission" title={'“We hold crypto — so why is it still so hard to spend?”'} lede="That question is where Anytap began. Crypto is already a store of value for hundreds of millions of people — yet real barriers remain for something as simple as paying at a store or sending money abroad. Removing those barriers is our mission." />
@@ -291,7 +293,7 @@ function AboutPage() {
       <Band tone="subtle">
         <SectionHead eyebrow="One platform, two engines" title="Card issuance + payment gateway" />
         <IconCards cols={2} items={[
-          { icon: "creditCard", title: "Visa card engine", body: "Real-time blockchain processing, API-controlled card management, and automatic stablecoin-to-fiat settlement. Physical & virtual cards, with Apple Pay and Google Pay." },
+          { icon: "creditCard", title: "Visa card engine", body: "Real-time blockchain processing, API-controlled card management, and automatic stablecoin-to-fiat settlement. Physical & virtual Visa cards, with Apple Pay, Google Pay and Samsung Pay." },
           { icon: "api", title: "Anytap Pay gateway", body: "A REST-API enterprise solution that integrates with e-commerce, SaaS, marketplaces and trading platforms — 350+ cryptocurrencies and 30+ stablecoins, on a global AML/KYC framework." },
         ]} />
       </Band>
@@ -304,7 +306,7 @@ function AboutPage() {
           { value: "Americas · Asia · Europe", label: "Infrastructure partners" },
         ]} />
         <p className="prose" style={{ marginTop: 28, textAlign: "center", maxWidth: 720, marginInline: "auto" }}>
-          Anytap believes blockchain can become the financial infrastructure people rely on every day — buying groceries, having coffee, or booking travel. Crypto adoption for everyday life is the one challenge we're built to solve.
+          Anytap believes blockchain can become the financial infrastructure people rely on every day — buying groceries, having coffee, or booking travel. Crypto adoption for everyday life is the one challenge we're built to solve. Business inquiries: biz@anytap.io
         </p>
       </Band>
     </>

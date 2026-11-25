@@ -17,7 +17,7 @@ function SecurityPage() {
         tone="ink"
         variant="security-globe"
         title={<>Your <span className="subhero__accent">crypto</span>. Our responsibility.</>}
-        sub="Anytap runs on infrastructure certified by financial authorities.">
+        sub="Anytap runs on certified, licensed partner infrastructure.">
         <div className="secart">
           <div className="secart__glow"></div>
           <div className="secart__shield">

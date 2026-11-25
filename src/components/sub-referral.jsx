@@ -11,14 +11,14 @@ function ReferralWhy() {
     <>
       <SubHero
         variant="referral-network"
-        title={<>Share Anytap. <span className="subhero__accent">Earn</span> while you sleep.</>}
+        title={<>Share Anytap. <span className="subhero__accent">Earn</span> when your referrals top up.</>}
         sub="Every time a member you brought tops up their card, your earnings grow."
         primary={{ label: "Become a Referral", href: "/referral-apply" }} />
 
       <Band>
         <Split media={
           <div className="ref-card">
-            <div className="ref-card__head"><span>Referral earnings</span><span className="ref-card__live"><span className="dot"></span> Live</span></div>
+            <div className="ref-card__head"><span>Sample · Referral earnings</span><span className="ref-card__live"><span className="dot"></span> Live</span></div>
             <div className="ref-card__amount">$2,410<span>.25</span></div>
             <div className="ref-card__sub">This month · paid in USDT</div>
             <div className="ref-card__bars">{[42,58,50,72,64,88,100].map((h,i)=><span key={i} style={{height:`${h}%`}}></span>)}</div>
@@ -33,7 +33,7 @@ function ReferralWhy() {
           <CheckList items={[
             "Start with a simple online application — no complex process.",
             "Get active the moment your referral code is issued.",
-            "Settled monthly, paid in USDT.",
+            "Calculated every week and paid in USDT the following week.",
           ]} />
         </Split>
       </Band>
@@ -48,6 +48,7 @@ function ReferralWhy() {
             ["50 referred members × $1,000 top-up / month", { v: "Up to $100 USDT / month", kind: "em" }],
             ["100 referred members × $1,000 top-up / month", { v: "Up to $200 USDT / month", kind: "em" }],
           ]} />
+        <p className="prose" style={{ marginTop: 24 }}>Examples only. Earnings are not guaranteed.</p>
       </Band>
     </>
   );
@@ -69,7 +70,7 @@ function ReferralEarn() {
           highlightCol={1}
           headers={["Item", "Referral Partner"]}
           rows={[
-            ["Card issuance bonus", "$10 USDT per card"],
+            ["Card issuance bonus", "10 USDT per physical card issued by your referral"],
             ["Top-up fee income", "0.2% of every top-up"],
             ["How to join", "Apply → Admin approval"],
           ]} />
@@ -90,9 +91,8 @@ function ReferralEarn() {
           headers={["", "Anytap", "Competitors"]}
           rows={[
             ["Real-time earnings tracking", { v: "Yes", kind: "yes" }, { v: "No", kind: "no" }],
-            ["Instant withdrawal requests", { v: "Yes", kind: "yes" }, "Limited"],
+            ["Withdrawal requests from the dashboard", { v: "Yes", kind: "yes" }, "Limited"],
             ["Lifetime earnings structure", { v: "Yes", kind: "yes" }, "Partial"],
-            ["Industry-leading earning rate", { v: "Yes", kind: "yes" }, "Average"],
             ["Referral dashboard", { v: "Yes", kind: "yes" }, "Limited"],
           ]} />
       </Band>
@@ -114,11 +114,11 @@ function ReferralEarn() {
         <DataTable
           headers={["Item", "Detail"]}
           rows={[
-            ["Settlement date", "Paid once in the following month. May change later by partner."],
+            ["Settlement date", "Calculated every week and paid in USDT the following week."],
             ["Payout currency", { v: "USDT", kind: "em" }],
             ["Payout method", "Request withdrawal from the referral dashboard → reviewed → paid"],
-            ["Sign-up commission", "Settled the following month after KYC + card issuance complete"],
-            ["Top-up commission", "Monthly commission totaled, settled the following month"],
+            ["Sign-up commission", "Included in the week the physical card is issued after KYC approval, and paid the following week."],
+            ["Top-up commission", "Weekly commission totaled, paid the following week."],
           ]} />
       </Band>
     </>
@@ -133,7 +133,7 @@ function ReferralForm() {
       <div className="refform refform--done">
         <div className="refform__check"><Icon name="checkCircle" size={40} /></div>
         <h3>Application received</h3>
-        <p>Thank you. Our team will review your application and email you the decision shortly.</p>
+        <p>Thank you. Our team will review your application and email you the decision shortly. After approval, Anytap issues your own referral code.</p>
       </div>
     );
   }
@@ -174,7 +174,7 @@ function ReferralApply() {
       </Band>
 
       <Band tone="subtle">
-        <SectionHead eyebrow="Application" title="Tell us about you" lede="Bloggers, YouTubers, SNS creators, community managers and crypto investors are all welcome." />
+        <SectionHead eyebrow="Application" title="Tell us about you" lede="Bloggers, YouTubers, SNS creators, community managers and crypto investors are all welcome. Businesses and offline communities: contact support@anytap.io." />
         <ReferralForm />
       </Band>
     </>

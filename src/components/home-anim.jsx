@@ -6,9 +6,9 @@ import { useScrollProgress } from '../hooks/useScrollProgress.js';
 import { Icon, Logo, OptimizedImg } from './ui.jsx';
 
 const lifestyleSlides = [
-  { id: 'life-1', src: lifeNewYork, webp: '/assets/life-newyork.webp', alt: 'New York — paying with Anytap on 42nd Street', width: 1665, height: 944 },
-  { id: 'life-2', src: lifeVietnam, webp: '/assets/life-vietnam.webp', alt: 'Thailand — family traveling with Anytap Visa card', width: 1536, height: 1024 },
-  { id: 'life-3', src: lifeJapan, webp: '/assets/life-japan.webp', alt: 'Japan — paying with Anytap at a convenience store', width: 1448, height: 1086 },
+  { id: 'life-1', src: lifeNewYork, webp: '/assets/life-newyork.webp', alt: 'New York — paying with Anytap on a city street', width: 1024, height: 576 },
+  { id: 'life-2', src: lifeVietnam, webp: '/assets/life-vietnam.webp', alt: 'Thailand — family traveling with Anytap Visa card', width: 1024, height: 682 },
+  { id: 'life-3', src: lifeJapan, webp: '/assets/life-japan.webp', alt: 'At sea — paying with an Anytap Visa card', width: 1024, height: 612 },
 ];
 
 function LifestyleScatter() {
@@ -24,11 +24,11 @@ function LifestyleScatter() {
       width: lifestyleSlides[0].width,
       height: lifestyleSlides[0].height,
       alt: lifestyleSlides[0].alt,
-      tag: 'At a coffee shop',
+      tag: 'On a city street',
       tagSoft: 'var(--brand-primary-pale)',
       tagStrong: 'var(--brand-primary)',
       w: '520px',
-      ar: '16 / 10',
+      ar: '16 / 9',
       c: { x: -8, y: 6, r: -6, s: 1.02 },
       o: { x: -220, y: -90, r: -10, s: 1.0 },
       z: 3,
@@ -41,7 +41,7 @@ function LifestyleScatter() {
       height: lifestyleSlides[1].height,
       alt: lifestyleSlides[1].alt,
       w: '440px',
-      ar: '4 / 3',
+      ar: '3 / 2',
       c: { x: 6, y: -4, r: 4, s: 1.03 },
       o: { x: 0, y: 158, r: 6, s: 1.03 },
       z: 2,
@@ -54,7 +54,7 @@ function LifestyleScatter() {
       height: lifestyleSlides[2].height,
       alt: lifestyleSlides[2].alt,
       w: '480px',
-      ar: '3 / 2',
+      ar: '5 / 3',
       c: { x: 10, y: 8, r: 8, s: 1.01 },
       o: { x: 161, y: -64, r: 10, s: 1.0 },
       z: 1,
@@ -312,9 +312,9 @@ const HW_STEPS = [
   { num: "1", title: "Create Account", body: "Sign up with your email, name and address on the web — no app install needed.", screen: 0 },
   { num: "2", title: "Verify Identity (KYC)", body: "Scan your passport or ID and take a quick selfie. Approved in minutes.", screen: 1 },
   { num: "3", title: "Apply for a Card", body: "Choose virtual or physical Visa and submit your application.", screen: 2 },
-  { num: "4", title: "Card Issuing", body: "Pay the issuance fee, then we create and ship your card.", screen: 3 },
+  { num: "4", title: "Card Issuing", body: "Pay the issuance fee (virtual 20 USDT, physical 100 USDT). Your virtual card is issued instantly, and physical cards are shipped directly by Anytap — typically within 7–14 days.", screen: 3 },
   { num: "5", title: "Activate Card", body: "Register your card number to unlock your personal wallet.", screen: 4 },
-  { num: "6", title: "Top Up & Spend", body: "Add USDT or USDC and tap to pay anywhere Visa is accepted.", screen: 5 },
+  { num: "6", title: "Top Up & Spend", body: "Top up with USDT (TRC-20) or Easy Top Up, then tap to pay anywhere Visa is accepted.", screen: 5 },
 ];
 
 function HowItWorks() {

@@ -71,7 +71,7 @@ function TrustBar() {
 const CARD_FEATS = [
   { icon: "shield", title: "Never stops working", body: "60+ BINs run in redundancy. When a competitor's single issuer goes down, Anytap simply routes to another — no service interruption." },
   { icon: "phone", title: "Tap to pay anywhere", body: "Officially supported on Apple Pay, Samsung Pay and Google Pay. Add your card once and tap at any NFC terminal worldwide." },
-  { icon: "zap", title: "Instant top-up", body: "Send USDT or USDC and your balance is ready within minutes — TRC-20 settles fastest and cheapest." },
+  { icon: "zap", title: "Instant top-up", body: "Two easy ways to top up: send USDT on the TRC-20 network, or use Easy Top Up to pay in your local currency through a remittance provider or bank in your country. Minimum top-up: 50 USDT.", linkTo: "/card-easy-top-up", linkLabel: "Learn about Easy Top Up" },
 ];
 
 function CardFeatures() {
@@ -108,7 +108,7 @@ function CardFeatures() {
               <div className="cardfeat__icon"><Icon name={f.icon} size={24} /></div>
               <div className="cardfeat__title">{f.title}</div>
               <p className="cardfeat__body">{f.body}</p>
-              <Link to="/card-benefits" className="cardfeat__link">View card details <Icon name="arrowRight" size={14} /></Link>
+              <Link to={f.linkTo || "/card-benefits"} className="cardfeat__link">{f.linkLabel || "View card details"} <Icon name="arrowRight" size={14} /></Link>
             </div>
           )}
         </div>

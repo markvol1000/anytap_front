@@ -7,6 +7,7 @@ export const NAV = [
       { label: 'Who Can Apply', href: '/card-who-can-apply', desc: 'Eligibility & card specs' },
       { label: 'Card Benefits', href: '/card-benefits', desc: 'Why Anytap card' },
       { label: 'Apply for Card', href: '/card-application', desc: 'Start your application' },
+      { label: 'Easy Top Up', href: '/card-easy-top-up', desc: 'Top up in local currency' },
     ],
   },
   {
@@ -32,7 +33,7 @@ export const NAV = [
     label: 'Referral',
     href: '/referral-why',
     items: [
-      { label: 'Why Referral', href: '/referral-why', desc: 'Earn while you sleep' },
+      { label: 'Why Referral', href: '/referral-why', desc: 'Earn when they top up' },
       { label: 'Earn More', href: '/referral-earn', desc: 'Partner commission' },
       { label: 'Apply Now', href: '/referral-apply', desc: 'Join the program' },
     ],

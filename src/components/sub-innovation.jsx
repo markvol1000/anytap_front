@@ -79,22 +79,22 @@ function InnovationVision() {
         sub="How stablecoins are changing the world. Anytap is at the front line." />
 
       <Band>
-        <SectionHead eyebrow="Roadmap" title="Anytap's three phases" />
+        <SectionHead eyebrow="Roadmap" title="Anytap's three stages" />
         <div className="roadmap">
           <div className="phase phase--1">
-            <div className="phase__when">Phase 01 · 2026</div>
-            <div className="phase__name">Crypto Debit Card</div>
-            <p className="phase__body">Distribute crypto debit cards across Asia. Building a consumer base comes first.</p>
+            <div className="phase__when">Stage 01 · December 2026</div>
+            <div className="phase__name">Anytap Card</div>
+            <p className="phase__body">Full launch of virtual and physical Visa cards. Building a consumer base comes first.</p>
           </div>
           <div className="phase phase--2">
-            <div className="phase__when">Phase 02 · 2026–2027</div>
-            <div className="phase__name">Cross-border Payment</div>
-            <p className="phase__body">Add a business revenue layer with white-label payment solutions — for gaming, fintech and exchanges.</p>
+            <div className="phase__when">Stage 02 · March 2027</div>
+            <div className="phase__name">Asia Expansion</div>
+            <p className="phase__body">Korea → Indonesia → Japan → Philippines → Malaysia → Singapore → Vietnam → Thailand → other Southeast Asia, then Africa.</p>
           </div>
           <div className="phase phase--3">
-            <div className="phase__when">Phase 03 · 2027–</div>
-            <div className="phase__name">Anytap Coin (ATC)</div>
-            <p className="phase__body">Issue a usage-backed token where card volume directly drives token demand. Targeting top-10 global exchange listings.</p>
+            <div className="phase__when">Stage 03 · July 2027</div>
+            <div className="phase__name">Payment Solution</div>
+            <p className="phase__body">White-label crypto payment solutions for gaming, fintech and exchanges.</p>
           </div>
         </div>
       </Band>
@@ -140,6 +140,8 @@ function InnovationMarket() {
             ["BIN redundancy", { v: "60+", kind: "em" }, { v: "None", kind: "no" }],
             ["Global licenses", { v: "US MSB/MTL · PCI DSS L1 · SG Visa TPA", kind: "em" }, { v: "Often none", kind: "no" }],
             ["Dedicated support", { v: "Yes", kind: "yes" }, { v: "No", kind: "no" }],
+            ["Physical cards per person", { v: "Up to 3 (up to 3x limits)", kind: "em" }, { v: "Often 1", kind: "no" }],
+            ["Card-to-card transfer", { v: "Free, by email", kind: "yes" }, { v: "Often none", kind: "no" }],
           ]} />
       </Band>
     </>

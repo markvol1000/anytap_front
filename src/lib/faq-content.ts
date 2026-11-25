@@ -7,513 +7,544 @@ export interface FaqSection {
   title: string;
   items: FaqItem[];
 }
-/** Full FAQ — sourced from Anytap FAQ document (July 2026). */
+/** Full FAQ — sourced from Anytap FAQ document (November 2026). */
 export const FAQ_SECTIONS: FaqSection[] = [
   {
-    title: "SECTION 1 \u2014 Service Overview (Q1\u2013Q10)",
-    items: [
+    "title": "Service Overview (Q1–Q10)",
+    "items": [
       {
-        id: "Q1",
-        question: "What is Anytap?",
-        answer: "Anytap is a cryptocurrency prepaid card service that lets you load USDT directly onto a card and use it for online payments, offline payments, and ATM withdrawals at merchants worldwide. You can start immediately with just an online application \u2014 no separate bank account link is required.",
+        "id": "Q1",
+        "question": "What is Anytap?",
+        "answer": "Anytap is a cryptocurrency prepaid card service. Top up your Visa card with USDT (TRC-20) — or with local currency through Easy Top Up — and use it for online payments, in-store payments and ATM withdrawals at merchants worldwide. You can start with just an online application. No bank account link is required."
       },
       {
-        id: "Q2",
-        question: "What network does the Anytap card use?",
-        answer: "The Physical Card uses the Visa network. The two cards serve different purposes.\nThe virtual card is scheduled to launch after November.",
+        "id": "Q2",
+        "question": "What network does the Anytap card use?",
+        "answer": "All Anytap cards — both virtual and physical — are issued on the Visa network.\nType — Network — Main use\nVirtual Card — Visa — Online payments, mobile wallets (Apple Pay, Google Pay, Samsung Pay)\nPhysical Card — Visa — In-store payments, ATM withdrawals, mobile wallets"
       },
       {
-        id: "Q3",
-        question: "Which cryptocurrencies are supported?",
-        answer: "Currently USDT (TRC-20) and USDC are supported. Using the TRC-20 network is recommended since it has the lowest fees. Other cryptocurrencies such as BTC and ETH are not currently supported.",
+        "id": "Q3",
+        "question": "Which cryptocurrencies are supported?",
+        "answer": "Only USDT on the TRC-20 (TRON) network is supported. USDC, BTC, ETH and other cryptocurrencies are not supported. You can also top up in your local currency with Easy Top Up."
       },
       {
-        id: "Q4",
-        question: "Do I need to install an app?",
-        answer: "No separate app installation is required \u2014 the service can be used entirely through a web browser. Anytap is provided as a Progressive Web App (PWA), so you can add it to your smartphone home screen and use it like an app.",
+        "id": "Q4",
+        "question": "Do I need to install an app?",
+        "answer": "No separate app installation is required. The service can be used entirely through a web browser. Anytap is provided as a Progressive Web App (PWA), so you can add it to your smartphone home screen and use it like an app."
       },
       {
-        id: "Q5",
-        question: "Which countries can use the service?",
-        answer: "Card payments and service use are available anywhere in the world. However, card issuance is not available in the following countries due to regulatory and sanctions policies.\nThere may be additional restricted countries beyond this list. If issuance eligibility for a specific country is unclear, contact support@anytap.io before applying. Further updates will follow once the responsible team confirms with the card infrastructure partner.\n\nRestricted countries include: Cuba, Iran, North Korea, Russia, Syria, Sudan, Crimea Region, Donetsk/Luhansk People\u2019s Republics, and all countries/regions subject to U.S. Treasury OFAC sanctions. There may be additional restricted countries.",
+        "id": "Q5",
+        "question": "Which countries can use the service?",
+        "answer": "Card payments are available anywhere Visa is accepted. However, card issuance is not available in the following countries and regions due to regulatory and sanctions policies:\nCuba\nIran\nNorth Korea\nRussia\nSyria\nSudan\nCrimea region\nDonetsk and Luhansk regions (DNR / LNR)\nAll countries and regions subject to U.S. Treasury OFAC sanctions\nThere may be additional restricted countries beyond this list. If issuance eligibility for a specific country is unclear, contact support@anytap.io before applying."
       },
       {
-        id: "Q6",
-        question: "Can I use the service without a bank account?",
-        answer: "Yes. Anytap lets you receive and use a card through an online application alone, without linking a bank account. If you hold cryptocurrency, you can start right away.",
+        "id": "Q6",
+        "question": "Can I use the service without a bank account?",
+        "answer": "Yes. Anytap lets you receive and use a card through an online application alone, without linking a bank account."
       },
       {
-        id: "Q7",
-        question: "Where can I use my Anytap card for payments?",
-        answer: "It can be used at any Visa merchant worldwide, and ATM withdrawals are also supported.\nRepresentative merchants: Netflix, Amazon, ChatGPT Plus, AWS, Booking.com, Adobe, and others.",
+        "id": "Q7",
+        "question": "Where can I use my Anytap card for payments?",
+        "answer": "It can be used at any Visa merchant worldwide, both online and in store. ATM withdrawals are supported with the physical card.\nRepresentative merchants: Netflix, Amazon, ChatGPT Plus, AWS, Booking.com, Adobe, and others."
       },
       {
-        id: "Q8",
-        question: "What is Anytap's security framework?",
-        answer: "Anytap operates a 3-layer risk management framework.\n\u2022  Layer 1 \u2014 Real-time rule engine: analyzes every transaction in real time using 200+ rules, automatically blocking high-risk merchants\n\u2022  Layer 2 \u2014 Behavior-based model: detects anomalous transactions based on region, payment patterns, and device information\n\u2022  Layer 3 \u2014 AI detection system: assigns a risk score of 0\u2013100 to each transaction, then automatically approves, declines, or requests additional authentication\nExternal security partners: Chainalysis, TRM Labs, Elliptic, Sumsub.",
+        "id": "Q8",
+        "question": "What is Anytap's security framework?",
+        "answer": "Anytap operates a 3-layer risk management framework.\nLayer 1 — Real-time rule engine: analyzes every transaction in real time using 200+ rules, automatically blocking high-risk merchants\nLayer 2 — Behavior-based model: detects anomalous transactions based on region, payment patterns and device information\nLayer 3 — AI detection system: assigns a risk score of 0–100 to each transaction, then automatically approves, declines or requests additional authentication\nExternal security partners: Chainalysis, TRM Labs, Elliptic, Sumsub."
       },
       {
-        id: "Q9",
-        question: "How many physical cards can I hold per person?",
-        answer: "You may apply for and hold up to 3 cards per person.",
+        "id": "Q9",
+        "question": "How many cards can I hold per person?",
+        "answer": "You can hold up to 3 physical cards per person. Limits apply per card, so with 3 physical cards you can spend and withdraw up to 3x the single-card limits. There is no annual fee on any card."
       },
       {
-        id: "Q10",
-        question: "How can I get customer support?",
-        answer: "\u2022  Email inquiries: support@anytap.io\n\u2022  Business/partnership inquiries: biz@anytap.io\n\u2022  Customer support is provided in English only.\n\u2022  Responses are provided within a maximum of 72 hours of receiving your inquiry.",
-      },
-    ],
+        "id": "Q10",
+        "question": "How can I get customer support?",
+        "answer": "Email inquiries: support@anytap.io\nBusiness and partnership inquiries: biz@anytap.io\nCustomer support is provided in English only.\nWe respond within a maximum of 72 hours of receiving your inquiry. Lost-card reports are prioritized 24/7."
+      }
+    ]
   },
   {
-    title: "SECTION 2 \u2014 Sign-up and KYC (Q11\u2013Q22)",
-    items: [
+    "title": "Sign-up and KYC (Q11–Q21)",
+    "items": [
       {
-        id: "Q11",
-        question: "How do I sign up?",
-        answer: "You sign up on the Anytap website by entering your email address and password. Registration is completed once email verification and the KYC (identity verification) process are confirmed.",
+        "id": "Q11",
+        "question": "How do I sign up?",
+        "answer": "Sign up on the Anytap website with your email address and password. Registration is completed once email verification and the KYC (identity verification) process are confirmed."
       },
       {
-        id: "Q12",
-        question: "Where do I enter a referral code?",
-        answer: "Enter your referrer's code in the Referral Code field on the sign-up screen. It cannot be entered retroactively after registration is complete, so be sure to confirm it at the time of sign-up.",
+        "id": "Q12",
+        "question": "Where do I enter a referral code?",
+        "answer": "Enter your referrer's code in the Referral Code field on the sign-up screen. It cannot be entered after registration is complete, so be sure to confirm it at the time of sign-up."
       },
       {
-        id: "Q13",
-        question: "What is KYC (identity verification) and why is it needed?",
-        answer: "KYC (Know Your Customer) is a mandatory identity verification procedure required under international anti-money laundering (AML) regulations. It must be completed to use the Visa and Mastercard networks, and card issuance and top-up services cannot be used until it is complete.",
+        "id": "Q13",
+        "question": "What is KYC (identity verification) and why is it needed?",
+        "answer": "KYC (Know Your Customer) is a mandatory identity verification procedure required under international anti-money laundering (AML) regulations. Card issuance and top-up services cannot be used until it is complete."
       },
       {
-        id: "Q14",
-        question: "What documents are needed to apply for KYC?",
-        answer: "\u2022  A valid government-issued ID (a passport is strongly recommended \u2014 national ID cards may cause recognition errors or review delays)\n\u2022  Proof of residence may be additionally requested if needed",
+        "id": "Q14",
+        "question": "What documents are needed to apply for KYC?",
+        "answer": "A valid government-issued ID (a passport is strongly recommended — national ID cards may cause recognition errors or review delays)\nProof of residence may be additionally requested if needed"
       },
       {
-        id: "Q15",
-        question: "How long does KYC approval take?",
-        answer: "It is generally processed immediately, though it may take up to 2 business days.",
+        "id": "Q15",
+        "question": "How long does KYC approval take?",
+        "answer": "It is generally processed immediately, though it may take up to 2 business days."
       },
       {
-        id: "Q16",
-        question: "My KYC was rejected. What should I do?",
-        answer: "It may be rejected if the ID photo is unclear or the ID information does not match. After checking the reason for rejection, resubmit your documents or contact support@anytap.io.",
+        "id": "Q16",
+        "question": "My KYC was rejected. What should I do?",
+        "answer": "It may be rejected if the ID photo is unclear or the ID information does not match. After checking the reason for rejection, resubmit your documents or contact support@anytap.io."
       },
       {
-        id: "Q17",
-        question: "Can someone under 18 apply?",
-        answer: "No. Anytap cards are only available to applicants aged 18 and older.",
+        "id": "Q17",
+        "question": "Can someone under 18 apply?",
+        "answer": "No. Anytap cards are only available to applicants aged 18 and older."
       },
       {
-        id: "Q18",
-        question: "How is personal information collected during KYC managed?",
-        answer: "Personal information collected during the KYC process is securely managed in accordance with the legally required retention period. For KYC verification, personal information is not stored in encrypted form.",
+        "id": "Q18",
+        "question": "How is personal information collected during KYC managed?",
+        "answer": "Personal information collected during the KYC process is securely managed in accordance with the legally required retention period. See the Privacy Policy for details."
       },
       {
-        id: "Q19",
-        question: "I forgot my password. How do I reset it?",
-        answer: "Click 'Forgot Password?' on the login screen, and a reset link will be sent to your registered email address. Use the link to set a new password.",
+        "id": "Q19",
+        "question": "I forgot my password. How do I reset it?",
+        "answer": "Click \"Forgot Password?\" on the login screen, and a reset link will be sent to your registered email address. Use the link to set a new password."
       },
       {
-        id: "Q20",
-        question: "Can I change my email address?",
-        answer: "Email address changes are handled by the customer support team. Contact support@anytap.io.",
+        "id": "Q20",
+        "question": "Can I change my email address?",
+        "answer": "Email address changes are handled by the customer support team. Contact support@anytap.io."
       },
       {
-        id: "Q22",
-        question: "I want to close my account. How do I do that?",
-        answer: "To request account closure, email support@anytap.io. The email must include the following information:\n\u2022  Full legal name (as used for KYC registration)\n\u2022  Registered email address\n\u2022  Copy of the ID used for KYC (e.g., passport)\nProcessing instructions will be provided within a maximum of 72 hours of receipt. If a balance remains, separate instructions for handling it will be provided before the account closure is processed.",
-      },
-    ],
+        "id": "Q21",
+        "question": "I want to close my account. How do I do that?",
+        "answer": "To request account closure, email support@anytap.io with the following information:\nFull legal name (as used for KYC registration)\nRegistered email address\nCopy of the ID used for KYC (e.g., passport)\nProcessing instructions will be provided within a maximum of 72 hours of receipt. If a balance remains, separate instructions for handling it will be provided before the account closure is processed."
+      }
+    ]
   },
   {
-    title: "SECTION 3 \u2014 Card Issuance (Q23\u2013Q34)",
-    items: [
+    "title": "Card Issuance (Q22–Q30)",
+    "items": [
       {
-        id: "Q25",
-        question: "How do I apply for a physical card?",
-        answer: "After completing registration, you can apply for physical card (Visa) issuance from the dashboard.",
+        "id": "Q22",
+        "question": "How do I apply for a card?",
+        "answer": "After completing registration and KYC, you can apply for a virtual or physical Visa card from the dashboard."
       },
       {
-        id: "Q26",
-        question: "How much does physical card issuance cost?",
-        answer: "The virtual card issuance fee is 20 USDT. The physical card issuance fee is shown in the application flow before you pay. After applying for a physical card, deposit the issuance fee to Anytap's designated wallet; once the deposit is confirmed, the card will be shipped.",
+        "id": "Q23",
+        "question": "How much does card issuance cost?",
+        "answer": "Card — Issuance fee\nVirtual Card — 20 USDT\nPhysical Card — 100 USDT\nYou can hold up to 3 physical cards per person. There is no annual fee."
       },
       {
-        id: "Q27",
-        question: "How long does physical card delivery take?",
-        answer: "Delivery typically takes around 10 days after application. This may vary by country.",
+        "id": "Q24",
+        "question": "How long does physical card delivery take?",
+        "answer": "Physical cards are typically delivered around 7–14 days after application. All cards are shipped directly by Anytap."
       },
       {
-        id: "Q29",
-        question: "Can I add my physical card to Apple Pay?",
-        answer: "Whether the physical card (Visa) supports Apple Pay is currently under review. The responsible team will update the confirmed details after consulting with the card infrastructure partner. Once confirmed, this will be announced through official channels.",
+        "id": "Q25",
+        "question": "Can I add my card to Apple Pay?",
+        "answer": "Yes. Since November 2026, both virtual and physical cards can be added to Apple Pay."
       },
       {
-        id: "Q30",
-        question: "How do I register for Google Pay?",
-        answer: "The physical card (Visa) supports Google Pay registration. In the Google Wallet app, select 'Add card' and enter the card number, expiration date, and CVV.",
+        "id": "Q26",
+        "question": "How do I register for Google Pay?",
+        "answer": "Both virtual and physical cards support Google Pay. In the Google Wallet app, select \"Add card\" and enter the card number, expiration date and CVV."
       },
       {
-        id: "Q31",
-        question: "Is Samsung Pay supported?",
-        answer: "Not currently supported. Support is planned starting November 2026. When support begins, this will be announced separately via dashboard notification and official channels.",
+        "id": "Q27",
+        "question": "Is Samsung Pay supported?",
+        "answer": "Yes. Since November 2026, both virtual and physical cards can be added to Samsung Pay."
       },
       {
-        id: "Q32",
-        question: "What happens when my card expires?",
-        answer: "Cards are not automatically renewed after expiration. After expiration, you must submit a new card issuance application. Advance notice will be sent via dashboard notification before the expiration date.",
+        "id": "Q28",
+        "question": "What happens when my card expires?",
+        "answer": "Cards are not automatically renewed after expiration. After expiration, you must submit a new card issuance application. Advance notice will be sent via dashboard notification before the expiration date."
       },
       {
-        id: "Q33",
-        question: "Where can I check my card number and CVV?",
-        answer: "You can check them in the Card Management tab of the dashboard. For security, card details are only displayed when you tap (click) directly on that screen.",
+        "id": "Q29",
+        "question": "Where can I check my card number and CVV?",
+        "answer": "You can check them in the Card Management tab of the dashboard. For security, card details are only displayed when you tap directly on that screen."
       },
       {
-        id: "Q34",
-        question: "What if I lose or damage my physical card?",
-        answer: "If your card is lost or damaged, the existing card cannot be reused. You must submit a new issuance application.\n\u2022  Step 1: Immediately lock the card in the Card Management tab of the dashboard\n\u2022  Step 2: Apply for new card issuance (the current issuance fee is charged again)\nIf theft is suspected, after locking the card, be sure to email support@anytap.io to report the theft. Include your full legal name, registered email, and the circumstances of the loss in the report.",
-      },
-    ],
+        "id": "Q30",
+        "question": "What if I lose or damage my physical card?",
+        "answer": "If your card is lost or damaged, the existing card cannot be reused. You must submit a new issuance application.\nStep 1: Immediately lock the card in the Card Management tab of the dashboard\nStep 2: Apply for new card issuance (the physical card issuance fee of 100 USDT applies again)\nIf theft is suspected, after locking the card, email support@anytap.io with your full legal name, registered email and the circumstances of the loss."
+      }
+    ]
   },
   {
-    title: "SECTION 4 \u2014 Top-up (Q35\u2013Q50)",
-    items: [
+    "title": "Top-up (Q31–Q45)",
+    "items": [
       {
-        id: "Q35",
-        question: "How do I top up my card?",
-        answer: "Check your personal USDT deposit address (TRC-20) in the Wallet tab of the dashboard, then send USDT to that address from an exchange (Binance, OKX, Bybit, etc.) or a personal wallet. Enter the desired amount from your dedicated wallet and press the card top-up button to load funds onto your card.",
+        "id": "Q31",
+        "question": "How do I top up my card?",
+        "answer": "There are two ways to top up:\nUSDT: Check your personal USDT deposit address (TRC-20) in the Wallet tab of the dashboard, then send USDT to that address from an exchange or a personal wallet. Enter the desired amount and press the card top-up button.\nEasy Top Up: Send local currency through a remittance provider or bank in your country. It is converted to USDT and added to your card. See the Easy Top Up page and Q46–Q50."
       },
       {
-        id: "Q36",
-        question: "Where can I find my TRC-20 address?",
-        answer: "Your personal, dedicated TRC-20 USDT deposit address is shown in the Wallet tab of the dashboard. This address is for your use only \u2014 do not share it with anyone else.",
+        "id": "Q32",
+        "question": "Where can I find my TRC-20 address?",
+        "answer": "Your personal TRC-20 USDT deposit address is shown in the Wallet tab of the dashboard. This address is for your use only — do not share it with anyone else."
       },
       {
-        id: "Q37",
-        question: "How long after topping up does it reflect on the card?",
-        answer: "Under normal conditions, it reflects on the card immediately after on-chain confirmation. The TRC-20 network typically processes within 1\u20132 minutes. It may be delayed during network congestion, and status can be checked on the web page.",
+        "id": "Q33",
+        "question": "How long after topping up does it reflect on the card?",
+        "answer": "Under normal conditions, it reflects on the card after on-chain confirmation. The TRC-20 network typically processes within 1–2 minutes. It may be delayed during network congestion."
       },
       {
-        id: "Q38",
-        question: "Is there a minimum top-up amount?",
-        answer: "The minimum top-up amount is 30 USDT on the TRC-20 network.",
+        "id": "Q34",
+        "question": "Is there a minimum top-up amount?",
+        "answer": "The minimum top-up amount is 50 USDT."
       },
       {
-        id: "Q39",
-        question: "Is there a maximum top-up amount?",
-        answer: "The maximum top-up amount is being confirmed and will be announced.",
+        "id": "Q35",
+        "question": "Is there a maximum top-up amount?",
+        "answer": "No. There is no maximum limit on the amount of a single top-up."
       },
       {
-        id: "Q40",
-        question: "What is the top-up fee?",
-        answer: "Anytap does not publish a separate percentage top-up fee. The minimum top-up is 30 USDT via TRC-20. TRC-20 network fees are typically low. Check the dashboard top-up screen for the amount that will be credited.",
+        "id": "Q36",
+        "question": "What is the top-up fee?",
+        "answer": "The top-up fee is 2% of the deposit amount, deducted in USDT at the time of top-up. The net amount is reflected in the card balance.\nExample: Depositing 100 USDT incurs a 2 USDT fee, so 98 USDT is credited."
       },
       {
-        id: "Q41",
-        question: "Can I deposit using a network other than TRC-20?",
-        answer: "Only the TRC-20 network is supported. Sending via other networks such as ERC-20 (Ethereum) or BEP-20 (Binance Smart Chain) may result in loss of funds. Always send via TRC-20 (TRON network).",
+        "id": "Q37",
+        "question": "Can I deposit using a network other than TRC-20?",
+        "answer": "Only the TRC-20 network is supported. Sending via other networks such as ERC-20 or BEP-20 may result in loss of funds. Always send via TRC-20 (TRON network)."
       },
       {
-        id: "Q43",
-        question: "I sent USDT to the wrong address. Can it be recovered?",
-        answer: "Due to the nature of blockchain transactions, assets sent to the wrong address cannot be recovered. Always verify the address carefully before sending.",
+        "id": "Q38",
+        "question": "Can I send money to another Anytap member?",
+        "answer": "Yes. You can transfer balance between Anytap cards using only the recipient's email address — no wallet address is needed. Card-to-card transfers are free, and wallet transfers between Anytap members are also free."
       },
       {
-        id: "Q44",
-        question: "I accidentally sent via ERC-20. What happens?",
-        answer: "Sending ERC-20 USDT to a TRC-20 address may result in loss of funds. This is a transfer error caused by a network mismatch and may not be recoverable. Contact support@anytap.io immediately with the transaction hash (TXID).",
+        "id": "Q39",
+        "question": "I sent USDT to the wrong address. Can it be recovered?",
+        "answer": "Due to the nature of blockchain transactions, assets sent to the wrong address cannot be recovered. Always verify the address carefully before sending."
       },
       {
-        id: "Q45",
-        question: "My deposited USDT is not reflected in my dedicated wallet.",
-        answer: "Check the following items in order:\n\u2022  Confirm the on-chain transaction has received at least 1\u20132 confirmations\n\u2022  Confirm the deposit address is a TRC-20 network address (depositing via ERC-20 may result in loss of funds)\nIf it is still not reflected after more than 30 minutes, contact support@anytap.io with the transaction hash (TXID).",
+        "id": "Q40",
+        "question": "I accidentally sent via ERC-20. What happens?",
+        "answer": "Sending ERC-20 USDT to a TRC-20 address may result in loss of funds and may not be recoverable. Contact support@anytap.io immediately with the transaction hash (TXID)."
       },
       {
-        id: "Q46",
-        question: "Where can I view my top-up history?",
-        answer: "You can check deposit status and history in the Wallet tab or Transactions tab of the dashboard.",
+        "id": "Q41",
+        "question": "My deposited USDT is not reflected.",
+        "answer": "Check the following items in order:\nConfirm the on-chain transaction has received at least 1–2 confirmations\nConfirm the deposit address is a TRC-20 network address\nIf it is still not reflected after more than 30 minutes, contact support@anytap.io with the transaction hash (TXID)."
       },
       {
-        id: "Q47",
-        question: "Can I withdraw my card balance to an external wallet?",
-        answer: "Yes. You can withdraw your card balance to an external TRC-20 wallet. Submit a withdrawal request from the Wallet tab of the dashboard.\n\u2022  Withdrawal fee: 3% of the withdrawal amount, plus a separate $1 USDT per transaction\n\u2022  The withdrawal address must be a wallet address that supports TRC-20 USDT.\n\u2022  Only KYC-completed customers may request external withdrawals.\nContact support@anytap.io for withdrawal processing time and minimum withdrawal amount.",
+        "id": "Q42",
+        "question": "Where can I view my top-up history?",
+        "answer": "You can check deposit status and history in the Wallet tab or Transactions tab of the dashboard."
       },
       {
-        id: "Q48",
-        question: "Can I also top up with USDC?",
-        answer: "USDC is also supported. However, using USDT on TRC-20 is recommended, as it is more favorable in terms of fees and processing speed.",
+        "id": "Q43",
+        "question": "Can I withdraw my balance to an external wallet?",
+        "answer": "Yes. You can withdraw to an external TRC-20 wallet from the Wallet tab of the dashboard.\nExternal wallet transfer fee: 3% of the amount, plus a network gas fee of 3 USDT per transaction\nThe withdrawal address must support TRC-20 USDT\nOnly KYC-completed customers may request external withdrawals"
       },
       {
-        id: "Q49",
-        question: "Can my top-up address change?",
-        answer: "Anytap permanently assigns each customer a dedicated TRC-20 deposit address. If the address does change, you will be notified separately via the dashboard.",
+        "id": "Q44",
+        "question": "Can I top up with USDC?",
+        "answer": "No. USDC is not supported. Only USDT on the TRC-20 network can be used for crypto top-ups."
       },
-    ],
+      {
+        "id": "Q45",
+        "question": "Can my top-up address change?",
+        "answer": "Anytap assigns each customer a dedicated TRC-20 deposit address. If the address changes, you will be notified separately via the dashboard."
+      }
+    ]
   },
   {
-    title: "SECTION 5 \u2014 Card Use and Payments (Q51\u2013Q63)",
-    items: [
+    "title": "Easy Top Up (Q46–Q50)",
+    "items": [
       {
-        id: "Q51",
-        question: "Can I withdraw cash from an ATM?",
-        answer: "Yes. ATM withdrawals are available with the physical Visa card. The withdrawal fee is 2% (minimum $1). Daily withdrawal limit: $1,500 (up to 30 transactions). Monthly limit: $15,000. Singapore does not support ATM withdrawal.",
+        "id": "Q46",
+        "question": "Why does Anytap offer Easy Top Up?",
+        "answer": "In some countries there is no easy access to crypto exchanges, which makes buying USDT difficult. Easy Top Up solves this. When you deposit local currency (fiat), Anytap helps you buy USDT through a virtual account issued overseas and tops up your Anytap card. You do not need a crypto exchange account or a personal wallet.\nEasy Top Up is coming soon. The launch will be announced on the Anytap website."
       },
       {
-        id: "Q52",
-        question: "What are the ATM withdrawal limits?",
-        answer: "\n\nPayment limits: per transaction $20,000 \u00b7 daily count 100 \u00b7 daily $250,000 \u00b7 monthly $1,000,000.",
+        "id": "Q47",
+        "question": "How does Easy Top Up work?",
+        "answer": "Send local currency through a remittance provider or bank in your country to your personal virtual account. The funds arrive in USD, are converted to USDT through an on-ramp service, and are added to your Anytap card. Each member gets one personal virtual account. If you have one card, it is topped up automatically; if you have two or more, you choose which card to top up."
       },
       {
-        id: "Q53",
-        question: "What are the card payment limits?",
-        answer: "[Physical Card]",
+        "id": "Q48",
+        "question": "Who provides the on-ramp service? Is it licensed?",
+        "answer": "Anytap receives on-ramp services from legally licensed companies located in Singapore, Hong Kong or Dubai. Anytap partnered with each company only after a thorough KYB (Know Your Business) review."
       },
       {
-        id: "Q54",
-        question: "What happens if I exceed a limit?",
-        answer: "Payments are automatically declined if a limit is exceeded. Limits reset on a daily/monthly basis. If you need a higher limit, contact support@anytap.io.",
+        "id": "Q49",
+        "question": "Is my money safe with Easy Top Up?",
+        "answer": "Yes. Anytap applies strict KYC standards to every customer, and customer assets are kept safely throughout the top-up process. The USDT purchased for you is delivered directly to your Anytap card."
       },
       {
-        id: "Q55",
-        question: "What currency are payments processed in?",
-        answer: "Card balances are managed in USD. Payments made in a currency other than USD use a real-time exchange rate, and a foreign transaction fee applies.\n\nFee schedule:\n\u2022 Virtual card issuance: 20 USDT\n\u2022 Physical card issuance: shown in the application flow\n\u2022 Top-up: minimum 30 USDT on TRC-20 (no published percentage fee)\n\u2022 Cross-border / foreign transaction fee: 1% + $0.30 per transaction\n\u2022 ATM withdrawal: 2% (minimum $1); not available in Singapore\n\u2022 Small-transaction fee: 0.3 USDT (under 30 USDT)\n\u2022 Decline fee: $0.50\n\u2022 Refund fee: 2%\n\u2022 Dispute processing fee: $30\n\u2022 Cancellation fee: $1.00\n\u2022 Annual fee: None",
-      },
-      {
-        id: "Q56",
-        question: "My payment was declined. Why?",
-        answer: "\u2022  Insufficient card balance\n\u2022  Payment limit exceeded\n\u2022  Card is locked\n\u2022  KYC incomplete or pending\n\u2022  Automatic block due to risk rules (suspicious transaction detected)\n\u2022  Merchant country or industry restriction\nIf you cannot determine the cause, contact support@anytap.io.",
-      },
-      {
-        id: "Q57",
-        question: "Can I lock or unlock my card?",
-        answer: "You can lock or unlock your card at any time from the Card Management tab of the dashboard. All payments are blocked immediately upon locking.",
-      },
-      {
-        id: "Q58",
-        question: "Is there an extra fee for small transactions?",
-        answer: "A small-transaction fee of 0.3 USDT per transaction applies to transactions under 30 USDT.",
-      },
-      {
-        id: "Q59",
-        question: "How are refunds processed?",
-        answer: "If the merchant approves a refund, the amount is returned to the card balance. Refund processing may take 2\u20135 business days, and a 2% fee applies per refund.",
-      },
-      {
-        id: "Q60",
-        question: "I want to dispute a transaction. How do I do that?",
-        answer: "Submit the disputed transaction details to support@anytap.io, and you will be guided through the process. A $30 fee applies per dispute.",
-      },
-      {
-        id: "Q61",
-        question: "Is there a fee for payments made overseas?",
-        answer: "A cross-border transaction fee of 1% plus $0.30 applies per transaction when spending in currencies other than USD. The payment amount is converted at the real-time exchange rate before being deducted from the USD balance.",
-      },
-      {
-        id: "Q62",
-        question: "Is a fee charged even if a payment is declined?",
-        answer: "A decline fee of $0.50 per transaction may apply when a payment is declined. Always check your balance and limits before making a payment.",
-      },
-      {
-        id: "Q63",
-        question: "Can I download my transaction history?",
-        answer: "You can view your history by date, amount, and merchant name in the Transactions tab of the dashboard, and CSV download is also supported.",
-      },
-    ],
+        "id": "Q50",
+        "question": "What are the fees and the minimum amount for Easy Top Up?",
+        "answer": "The Anytap top-up fee is 2%, deducted in USDT. The minimum top-up is 50 USDT. Your remittance provider or bank may charge its own transfer fees and applies its own exchange rate."
+      }
+    ]
   },
   {
-    title: "SECTION 6 \u2014 Fee Summary (Q64\u2013Q69)",
-    items: [
+    "title": "Card Use and Payments (Q51–Q62)",
+    "items": [
       {
-        id: "Q64",
-        question: "Can you give me a full overview of the fees involved in using an Anytap card?",
-        answer: "",
+        "id": "Q51",
+        "question": "Can I withdraw cash from an ATM?",
+        "answer": "Yes, with the physical card at ATMs that accept Visa. ATMs in Singapore are currently not supported."
       },
       {
-        id: "Q65",
-        question: "What is the ATM withdrawal fee?",
-        answer: "ATM withdrawals with the physical Visa card incur a 2% fee (minimum $1). Local ATM operator fees may also apply. ATM withdrawal is not available in Singapore.",
+        "id": "Q52",
+        "question": "What are the ATM withdrawal limits and fees?",
+        "answer": "Item — Limit / Fee (per card)\nPer withdrawal — $1,500\nDaily — $1,500 (up to 30 transactions)\nMonthly — $15,000\nATM withdrawal fee — 2% (minimum $1)\nLimits apply per card. With 3 physical cards, you can withdraw up to $4,500 per day and $45,000 per month. Local ATM operators may charge their own fees separately."
       },
       {
-        id: "Q66",
-        question: "Is there an annual fee?",
-        answer: "Anytap does not charge an annual fee.",
+        "id": "Q53",
+        "question": "What are the card payment limits?",
+        "answer": "Card — Per transaction — Daily — Monthly\nVirtual Card — $150,000 — $200,000 — $1,000,000\nApple Pay / Google Pay — $100,000 — $200,000 — $5,000,000\nPhysical Card — $20,000 — $250,000 (up to 100 transactions) — $1,000,000\nLimits apply per card. With 3 physical cards, you can spend up to 3x the single-card limits (for example, up to $3,000,000 per month)."
       },
       {
-        id: "Q67",
-        question: "When are fees deducted?",
-        answer: "Network fees on TRC-20, if any, are paid on-chain at the time of transfer. Cross-border and other card fees are deducted from the card balance when the related transaction occurs.",
+        "id": "Q54",
+        "question": "What happens if I exceed a limit?",
+        "answer": "Payments are automatically declined if a limit is exceeded. Limits reset on a daily and monthly basis. If you need a higher limit, contact support@anytap.io."
       },
       {
-        id: "Q68",
-        question: "Can fees change?",
-        answer: "Fees may change with prior notice. Changes will be announced via dashboard notification and email. Always check the Anytap website for the latest fees.",
+        "id": "Q55",
+        "question": "What currency are payments processed in?",
+        "answer": "Card balances are managed in USD. Payments made in a currency other than USD are converted at the real-time exchange rate, and a foreign transaction fee applies."
       },
       {
-        id: "Q69",
-        question: "How much do I need to send to load a card amount that already accounts for the top-up fee?",
-        answer: "There is no published percentage top-up fee. Send at least 30 USDT on TRC-20, then check the dashboard top-up screen for the amount that will be credited.",
+        "id": "Q56",
+        "question": "My payment was declined. Why?",
+        "answer": "Insufficient card balance\nPayment limit exceeded\nCard is locked\nKYC incomplete or pending\nAutomatic block due to risk rules (suspicious transaction detected)\nMerchant country or industry restriction\nIf you cannot determine the cause, contact support@anytap.io."
       },
-    ],
+      {
+        "id": "Q57",
+        "question": "Can I lock or unlock my card?",
+        "answer": "You can lock or unlock your card at any time from the Card Management tab of the dashboard. All payments are blocked immediately upon locking."
+      },
+      {
+        "id": "Q58",
+        "question": "How are refunds processed?",
+        "answer": "If the merchant approves a refund, the amount is returned to the card balance. Refund processing may take 2–5 business days, and a 2% fee applies per refund."
+      },
+      {
+        "id": "Q59",
+        "question": "I want to dispute a transaction. How do I do that?",
+        "answer": "Submit the disputed transaction details to support@anytap.io, and you will be guided through the process. A $30 fee applies per dispute."
+      },
+      {
+        "id": "Q60",
+        "question": "Is there a fee for payments made overseas?",
+        "answer": "A fee of 1% + $0.30 per transaction applies to payments in a currency other than USD. This is the standard Visa network cross-border rate."
+      },
+      {
+        "id": "Q61",
+        "question": "Is a fee charged even if a payment is declined?",
+        "answer": "Yes. A decline fee of $0.50 per transaction applies. Always check your balance and limits before making a payment."
+      },
+      {
+        "id": "Q62",
+        "question": "Can I download my transaction history?",
+        "answer": "You can view your history by date, amount and merchant name in the Transactions tab of the dashboard, and CSV download is supported."
+      }
+    ]
   },
   {
-    title: "SECTION 7 \u2014 Security and Privacy (Q70\u2013Q77)",
-    items: [
+    "title": "Fee Summary (Q63–Q68)",
+    "items": [
       {
-        id: "Q70",
-        question: "I suspect my card details (card number, CVV) have been leaked. What should I do?",
-        answer: "Immediately lock your card on the dashboard, then report it to support@anytap.io. Your card number and CVV are not stored on the server and are displayed in encrypted form only on your device.",
+        "id": "Q63",
+        "question": "Can you give me a full overview of the fees?",
+        "answer": "Fee item — Amount — Notes\nVirtual card issuance — 20 USDT per card — Charged at application\nPhysical card issuance — 100 USDT per card — Charged at application\nTop-up fee — 2% of deposit amount — Deducted in USDT at top-up (USDT and Easy Top Up)\nForeign transaction fee — 1% + $0.30 per transaction — Standard Visa network rate, non-USD payments\nATM withdrawal fee — 2% (minimum $1) — Local ATM operator fees may apply separately\nCard-to-card transfer — Free — By recipient email\nTransfer between Anytap members — Free\nExternal wallet transfer — 3% + 3 USDT gas fee per transaction — TRC-20 only\nRefund fee — 2% per refund — Charged on merchant refunds\nDispute processing fee — $30 per dispute — Charged when a dispute is filed\nDecline fee — $0.50 per transaction — Charged when a payment is declined\nCancellation fee — $1.00 per transaction — Charged when a transaction is cancelled\nAnnual fee — None"
       },
       {
-        id: "Q71",
-        question: "Can I get notified when there's a login from a new device?",
-        answer: "If you suspect unauthorized access, change your password immediately and contact support@anytap.io.",
+        "id": "Q64",
+        "question": "What is the ATM withdrawal fee?",
+        "answer": "The ATM withdrawal fee is 2% of the withdrawal amount, with a minimum of $1. Local ATM operators may charge their own fees separately. Check the fee notice on the ATM screen before withdrawing."
       },
       {
-        id: "Q72",
-        question: "Does Anytap hold my crypto assets directly?",
-        answer: "No. Anytap does not directly custody customers' USDT. After a USDT deposit is processed, it is converted into a card balance, which is then managed on Anytap's internal card system ledger. USDT on the blockchain and the card balance (USD) are operated separately.",
+        "id": "Q65",
+        "question": "Is there an annual fee?",
+        "answer": "No."
       },
       {
-        id: "Q73",
-        question: "Is my personal information shared with third parties?",
-        answer: "Anytap does not disclose customers' personal information to third parties without authorization, except where legally required (e.g., reporting to authorities in connection with AML/KYC). See the Privacy Policy for details.",
+        "id": "Q66",
+        "question": "When are fees deducted?",
+        "answer": "The top-up fee is deducted from the deposit amount at the time of top-up, and the net amount is reflected in the card balance. Other fees are deducted from the card balance when the relevant transaction occurs."
       },
       {
-        id: "Q74",
-        question: "Does Anytap use cookies for advertising purposes?",
-        answer: "Anytap does not use advertising cookies or third-party behavioral profiling cookies. Only essential, functional, and analytics cookies necessary for service operation are used. See the Cookie Policy for details.",
+        "id": "Q67",
+        "question": "Can fees change?",
+        "answer": "Fees may change with prior notice. Changes will be announced via dashboard notification and email."
       },
       {
-        id: "Q75",
-        question: "What happens if a suspicious transaction occurs?",
-        answer: "Anytap's AI risk engine automatically detects suspicious transactions and may decline the transaction or request additional authentication. Accounts confirmed to have fraudulent use may be suspended without prior notice.",
-      },
-      {
-        id: "Q76",
-        question: "How is the AML (anti-money laundering) policy operated?",
-        answer: "Anytap complies with international AML and counter-terrorist financing (CFT) regulations. Suspicious transactions must be reported to the relevant authorities, and only KYC-completed customers may use card services.",
-      },
-      {
-        id: "Q77",
-        question: "Can I request to view or delete my personal information?",
-        answer: "Yes. To request to view, correct, or delete your personal information, contact support@anytap.io. However, deletion may be restricted for information subject to a legally required retention period under AML/KYC regulations.",
-      },
-    ],
+        "id": "Q68",
+        "question": "How much do I need to send to load a specific card amount?",
+        "answer": "Amount to send = desired card balance ÷ 0.98 (based on the 2% top-up fee, rounded up to the cent).\nDesired card balance — USDT amount to send (fee included)\n$50 — 51.03 USDT\n$100 — 102.05 USDT\n$200 — 204.09 USDT\n$500 — 510.21 USDT\n$1,000 — 1,020.41 USDT"
+      }
+    ]
   },
   {
-    title: "SECTION 8 \u2014 Referral Program (Q78\u2013Q92)",
-    items: [
+    "title": "Security and Privacy (Q69–Q76)",
+    "items": [
       {
-        id: "Q78",
-        question: "What is the referral program?",
-        answer: "The Anytap referral program is a structure where you recruit new members through a referral link and earn income each time that member issues a card or tops up. It is a referral-based recurring income model rather than direct sales.",
+        "id": "Q69",
+        "question": "I suspect my card details (card number, CVV) have been leaked. What should I do?",
+        "answer": "Immediately lock your card on the dashboard, then report it to support@anytap.io. Your card number and CVV are not stored on our servers and are displayed in encrypted form only on your device."
       },
       {
-        id: "Q79",
-        question: "Can anyone join the referral program?",
-        answer: "Anyone may apply. Bloggers, YouTubers, social media operators, community managers, crypto investors, and others may participate regardless of channel type.",
+        "id": "Q70",
+        "question": "What should I do if I suspect unauthorized access to my account?",
+        "answer": "Change your password immediately and contact support@anytap.io."
       },
       {
-        id: "Q80",
-        question: "What is the referral program structure?",
-        answer: "Anytap operates a single referral program: Referral Partner. You can become a Referral Partner by submitting an application, which is then reviewed and approved by our admin team.",
+        "id": "Q71",
+        "question": "Does Anytap hold my crypto assets directly?",
+        "answer": "No. After a USDT deposit is processed, it is converted into a card balance (USD) managed on the card system ledger. USDT on the blockchain and the card balance are operated separately."
       },
       {
-        id: "Q81",
-        question: "What is the card issuance commission?",
-        answer: "The commission is confirmed once the referred member's KYC is approved and card issuance is complete, and is settled the following month.\n\nIssuance commission: $10 USDT per card.",
+        "id": "Q72",
+        "question": "Is my personal information shared with third parties?",
+        "answer": "Anytap does not disclose customers' personal information to third parties without authorization, except where legally required (for example, reporting to authorities in connection with AML/KYC). See the Privacy Policy for details."
       },
       {
-        id: "Q82",
-        question: "How is the top-up fee commission calculated?",
-        answer: "Each time a recruited member tops up, 0.2% of the top-up amount is automatically accrued as commission. This income continues to accrue for as long as the member keeps topping up their card.",
+        "id": "Q73",
+        "question": "Does Anytap use cookies for advertising purposes?",
+        "answer": "No. Only essential, functional and analytics cookies necessary for service operation are used. See the Cookie Policy for details."
       },
       {
-        id: "Q83",
-        question: "Can you give me income scenarios?",
-        answer: "The figures below are examples based on a 0.2% top-up commission and are not guaranteed income.\n\u2022 10 members \u00d7 $1,000 monthly top-up \u2192 up to $20 USDT/month\n\u2022 50 members \u00d7 $1,000 \u2192 up to $100 USDT/month\n\u2022 100 members \u00d7 $1,000 \u2192 up to $200 USDT/month",
+        "id": "Q74",
+        "question": "What happens if a suspicious transaction occurs?",
+        "answer": "Anytap's risk engine automatically detects suspicious transactions and may decline the transaction or request additional authentication. Accounts confirmed to have fraudulent use may be suspended without prior notice."
       },
       {
-        id: "Q84",
-        question: "Can offline businesses or corporate members become referral partners?",
-        answer: "Yes. Offline businesses and corporate members are welcome to inquire. Please email us at support@anytap.io with your business details, and our team will contact you.",
+        "id": "Q75",
+        "question": "How is the AML (anti-money laundering) policy operated?",
+        "answer": "Anytap complies with international AML and counter-terrorist financing (CFT) regulations. Suspicious transactions must be reported to the relevant authorities, and only KYC-completed customers may use card services."
       },
       {
-        id: "Q85",
-        question: "What is the settlement cycle and payment method for income?",
-        answer: "Settlement: paid once in the following month. The payout schedule may later vary by partner. Payout currency: USDT. Card issuance commission settles the following month after KYC and issuance. Top-up fee commission accrued during the month is settled the following month. Minimum settlement: $1 USDT.",
-      },
-      {
-        id: "Q86",
-        question: "How do I get a referral code?",
-        answer: "For business/partnership inquiries, complete the application form and email it to biz@anytap.io. After review, your referrer status will be confirmed (your referral code is the member ID assigned at sign-up).",
-      },
-      {
-        id: "Q87",
-        question: "Can I check whether a referred member entered my referral code?",
-        answer: "You can view the number of recruited members, cumulative income, and this month's income in real time in the Referral tab of the referrer dashboard.",
-      },
-      {
-        id: "Q88",
-        question: "Does referral income have an expiration period?",
-        answer: "Commission continues to accrue for as long as the recruited member keeps topping up their card. There is no separate expiration period \u2014 income keeps accumulating as long as the member uses the service.",
-      },
-      {
-        id: "Q89",
-        question: "Can I withdraw referral income to an external wallet?",
-        answer: "After submitting a withdrawal request in the referrer dashboard, it is reviewed and paid out in USDT. The minimum settlement amount is $1 USDT, paid to the designated wallet issued at sign-up.",
-      },
-      {
-        id: "Q90",
-        question: "I'm already an Anytap member \u2014 do I need to apply separately for the referral program?",
-        answer: "Yes. General membership registration and referral program application are separate procedures. To act as a referrer, you must apply for the referral program separately and be approved.",
-      },
-      {
-        id: "Q91",
-        question: "If I sign up without a referrer, can I add one later?",
-        answer: "A referral code can only be entered at sign-up. It cannot be entered retroactively after registration is complete.",
-      },
-      {
-        id: "Q92",
-        question: "Is referral income taxed?",
-        answer: "Tax treatment of crypto income may vary depending on the tax laws of your country of residence. Anytap does not provide tax advice, so please consult a tax professional or accountant.",
-      },
-    ],
+        "id": "Q76",
+        "question": "Can I request to view or delete my personal information?",
+        "answer": "Yes. Contact support@anytap.io. Deletion may be restricted for information subject to a legally required retention period under AML/KYC regulations."
+      }
+    ]
   },
   {
-    title: "SECTION 9 \u2014 Account Management and Troubleshooting (Q93\u2013Q100)",
-    items: [
+    "title": "Referral Program (Q77–Q91)",
+    "items": [
       {
-        id: "Q94",
-        question: "I can't log in to the dashboard.",
-        answer: "Check that your ID/password are correct.\n\u2022  If you forgot your password, click 'Forgot Password?' on the login screen to reset it.\nIf the problem persists, contact support@anytap.io.",
+        "id": "Q77",
+        "question": "What is the referral program?",
+        "answer": "The Anytap Referral Partner program lets you recruit new members through your referral link and earn income when those members issue a physical card or top up. It is a referral-based recurring income model, not direct sales."
       },
       {
-        id: "Q95",
-        question: "My card balance shown is different from the actual balance.",
-        answer: "Refresh the dashboard and check the balance again. If a recent top-up or payment is still processing, it may take a moment to reflect. If the discrepancy persists for more than 30 minutes, contact support@anytap.io.",
+        "id": "Q78",
+        "question": "Can anyone join the referral program?",
+        "answer": "Anyone may apply. Bloggers, YouTubers, social media operators, community managers, crypto investors and others may participate regardless of channel type."
       },
       {
-        id: "Q96",
-        question: "My physical card is not working at an ATM.",
-        answer: "\u2022  Check on the dashboard that the card is active\n\u2022  Check that you have not exceeded the ATM withdrawal limit ($1,500/day)\n\u2022  Check that the ATM supports the Visa network\n\u2022  Check that the PIN is correct (this is the first 4 digits of the 6-digit PIN entered when registering the card)\nPIN setup details will be confirmed and announced.\nIf the problem persists, contact support@anytap.io.",
+        "id": "Q79",
+        "question": "How does the program work?",
+        "answer": "There is one program: Anytap Referral Partner. You apply, and your participation begins after admin approval."
       },
       {
-        id: "Q97",
-        question: "There is an unrecognized charge in my transaction history.",
-        answer: "Immediately lock your card on the dashboard, then report the transaction to support@anytap.io. An investigation process will begin once the dispute is filed.",
+        "id": "Q80",
+        "question": "What is the card issuance commission?",
+        "answer": "You earn 10 USDT for each physical card issued by a referred member. The commission is confirmed once the referred member's KYC is approved and the card is issued, and it is paid with that week's settlement."
       },
       {
-        id: "Q98",
-        question: "Is card use suspended during Anytap system maintenance?",
-        answer: "Offline payments on already-issued cards may still be possible during Anytap system maintenance. However, online functions such as top-ups, balance inquiries, and dashboard access may be temporarily suspended during maintenance. Maintenance notices are announced in advance via the dashboard and official channels.",
+        "id": "Q81",
+        "question": "How is the top-up commission calculated?",
+        "answer": "Each time a referred member tops up, you earn 0.2% of the top-up amount. This income continues for as long as the member keeps topping up."
       },
       {
-        id: "Q100",
-        question: "How do I submit a complaint or suggestion about the service?",
-        answer: "Send your feedback to support@anytap.io. Submissions are reviewed internally and reflected in service improvements. For partnership or business proposals, contact biz@anytap.io separately.",
+        "id": "Q82",
+        "question": "Can you give me income examples?",
+        "answer": "Scenario — Maximum estimated monthly income\n10 referred members × $1,000 monthly top-up each — Up to 20 USDT per month\n50 referred members × $1,000 monthly top-up each — Up to 100 USDT per month\n100 referred members × $1,000 monthly top-up each — Up to 200 USDT per month\nThese figures are examples and are not guaranteed income."
       },
-    ],
+      {
+        "id": "Q83",
+        "question": "I represent a business or an offline community. How can we join?",
+        "answer": "Businesses, offline groups and community operators who want to take part in the referral program should contact support@anytap.io."
+      },
+      {
+        "id": "Q84",
+        "question": "What is the settlement cycle and payment method?",
+        "answer": "Item — Details\nSettlement cycle — Weekly\nPayment — Paid in USDT the following week\nCard issuance commission — Included in the week the card is issued after KYC approval\nTop-up commission — Weekly total\nMinimum settlement amount — 1 USDT"
+      },
+      {
+        "id": "Q85",
+        "question": "How do I get a referral code?",
+        "answer": "Apply on the Referral \"Apply Now\" page. After admin approval, Anytap issues you a separate referral code. Your referral code is not your member ID — it is a dedicated code issued by Anytap."
+      },
+      {
+        "id": "Q86",
+        "question": "Can I check whether a referred member entered my referral code?",
+        "answer": "You can view the number of referred members, cumulative income and this week's income in real time in the Referral tab of the referrer dashboard."
+      },
+      {
+        "id": "Q87",
+        "question": "Does referral income have an expiration period?",
+        "answer": "No. Commission continues to accrue for as long as the referred member keeps topping up."
+      },
+      {
+        "id": "Q88",
+        "question": "How do I withdraw my referral income?",
+        "answer": "Submit a withdrawal request from the referral dashboard. After review, commissions settled for the week are paid in USDT the following week to your designated wallet. The minimum settlement amount is 1 USDT."
+      },
+      {
+        "id": "Q89",
+        "question": "I'm already an Anytap member — do I need to apply separately for the referral program?",
+        "answer": "Yes. Membership registration and the referral program application are separate procedures."
+      },
+      {
+        "id": "Q90",
+        "question": "If I sign up without a referrer, can I add one later?",
+        "answer": "No. A referral code can only be entered at sign-up."
+      },
+      {
+        "id": "Q91",
+        "question": "Is referral income taxed?",
+        "answer": "Tax treatment of crypto income may vary depending on the tax laws of your country of residence. Anytap does not provide tax advice; please consult a tax professional."
+      }
+    ]
   },
+  {
+    "title": "Account Management and Troubleshooting (Q92–Q97)",
+    "items": [
+      {
+        "id": "Q92",
+        "question": "I can't log in to the dashboard.",
+        "answer": "Check that your ID and password are correct. If you forgot your password, click \"Forgot Password?\" on the login screen to reset it. If the problem persists, contact support@anytap.io."
+      },
+      {
+        "id": "Q93",
+        "question": "My card balance shown is different from the actual balance.",
+        "answer": "Refresh the dashboard and check again. If a recent top-up or payment is still processing, it may take a moment to reflect. If the discrepancy persists for more than 30 minutes, contact support@anytap.io."
+      },
+      {
+        "id": "Q94",
+        "question": "My physical card is not working at an ATM.",
+        "answer": "Check on the dashboard that the card is active\nCheck that you have not exceeded the ATM withdrawal limit ($1,500 per day per card)\nCheck that the ATM supports the Visa network and is not located in Singapore\nCheck that the PIN is correct (the first 4 digits of the 6-digit PIN set when registering the card)\nIf the problem persists, contact support@anytap.io."
+      },
+      {
+        "id": "Q95",
+        "question": "There is an unrecognized charge in my transaction history.",
+        "answer": "Immediately lock your card on the dashboard, then report the transaction to support@anytap.io. An investigation will begin once the dispute is filed."
+      },
+      {
+        "id": "Q96",
+        "question": "Is card use suspended during system maintenance?",
+        "answer": "Payments on already-issued cards may still be possible during maintenance, but top-ups, balance inquiries and dashboard access may be temporarily suspended. Maintenance notices are announced in advance."
+      },
+      {
+        "id": "Q97",
+        "question": "How do I submit a complaint or suggestion?",
+        "answer": "Send your feedback to support@anytap.io. For partnership or business proposals, contact biz@anytap.io."
+      }
+    ]
+  }
 ];
 
-export const FAQ_FLAT: FaqItem[] = FAQ_SECTIONS.flatMap((s) => s.items);
+export const EASY_TOPUP_FAQ: FaqItem[] =
+  FAQ_SECTIONS.find((s) => s.title.startsWith('Easy Top Up'))?.items ?? [];

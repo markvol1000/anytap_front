@@ -20,6 +20,7 @@ export const appRoutes = [
   { path: '/card-how-to-use', page: lazyNamed(() => import('./components/sub-card.jsx'), 'CardHowToUse') },
   { path: '/card-who-can-apply', page: lazyNamed(() => import('./components/sub-card.jsx'), 'CardWhoCanApply') },
   { path: '/card-benefits', page: lazyNamed(() => import('./components/sub-card.jsx'), 'CardBenefits') },
+  { path: '/card-easy-top-up', page: lazyNamed(() => import('./components/sub-card.jsx'), 'CardEasyTopUp') },
   { path: '/payment-why', page: lazyNamed(() => import('./components/sub-payment.jsx'), 'PaymentWhy') },
   { path: '/payment-how', page: lazyNamed(() => import('./components/sub-payment.jsx'), 'PaymentHow') },
   { path: '/payment-business', page: lazyNamed(() => import('./components/sub-payment.jsx'), 'PaymentBusiness') },

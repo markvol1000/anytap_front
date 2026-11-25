@@ -9,9 +9,11 @@ function PaymentWhy() {
   return (
     <>
       <SubHero
+        badge="Launching July 2027"
         title={<>The <span className="subhero__accent">future</span> of business payments is here</>}
-        sub="Move beyond the limits of traditional payments. Accept borderless crypto payments and welcome more customers."
-        primary={{ label: "Apply as Merchant", href: "/merchant-apply" }}>
+        sub="Move beyond the limits of traditional payments. From July 2027, accept borderless crypto payments and welcome more customers."
+        primary={{ label: "Apply as Merchant", href: "/merchant-apply" }}
+        note="Anytap Pay launches in July 2027. Apply now to join as an early merchant.">
         <CheckoutApiArt />
       </SubHero>
 
@@ -54,9 +56,11 @@ function PaymentHow() {
   return (
     <>
       <SubHero
+        badge="Launching July 2027"
         title={<>Simple integration. <span className="subhero__accent">Instant</span> payments.</>}
-        sub="Start accepting 350+ cryptocurrencies with a single API — no complex blockchain development."
-        primary={{ label: "Apply as Merchant", href: "/merchant-apply" }} />
+        sub="From July 2027, start accepting 350+ cryptocurrencies with a single API — no complex blockchain development."
+        primary={{ label: "Apply as Merchant", href: "/merchant-apply" }}
+        note="Anytap Pay launches in July 2027. Apply now to join as an early merchant." />
 
       <Band>
         <SectionHead eyebrow="Payment flow" title="From checkout to settlement" />
@@ -106,9 +110,11 @@ function PaymentBusiness() {
     <>
       <SubHero
         tone="ink"
+        badge="Launching July 2027"
         title={<>Built for businesses that move <span className="subhero__accent">fast</span></>}
         sub="Gaming, fintech, e-commerce — a solution for any business that needs global crypto payments."
-        primary={{ label: "Apply as Merchant", href: "/merchant-apply" }} />
+        primary={{ label: "Apply as Merchant", href: "/merchant-apply" }}
+        note="Anytap Pay launches in July 2027. Apply now to join as an early merchant." />
 
       <Band>
         <SectionHead eyebrow="Why adopt" title="What merchants get" />
@@ -121,12 +127,12 @@ function PaymentBusiness() {
       </Band>
 
       <Band tone="subtle">
-        <SectionHead eyebrow="How merchant onboarding works" title="Apply and go live in days" />
+        <SectionHead eyebrow="How merchant onboarding works" title="Apply now — go live from July 2027" />
         <StepFlow steps={[
           { title: "Apply", body: "Submit the merchant application form." },
           { title: "Review", body: "Our team reviews and reaches out within 10 business days." },
           { title: "Integrate", body: "Connect via API, payment link, plugin, or widget." },
-          { title: "Go live", body: "Go live and start accepting 350+ cryptocurrencies." },
+          { title: "Go live", body: "Go live from July 2027 and start accepting 350+ cryptocurrencies." },
         ]} />
       </Band>
     </>

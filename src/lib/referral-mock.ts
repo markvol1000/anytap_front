@@ -109,7 +109,7 @@ export const REFERRAL_FAQ: ReferralFaqItem[] = [
   },
   {
     question: 'When are rewards paid?',
-    answer: 'Rewards are paid once in the following month. The payout schedule may later vary by partner.',
+    answer: 'Commissions are calculated every week and paid in USDT the following week.',
   },
   {
     question: 'How do withdrawals work?',
