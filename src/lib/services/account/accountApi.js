@@ -612,17 +612,22 @@ export async function fetchAccountContext(targetCardId = null) {
         fetchLocalTransactions(session.userId),
       ]);
 
-      const cardTxs = cardTxResult?.items || [];
+      const cardTxs = (cardTxResult?.items || []).filter((cTx) => {
+        const cId = String(cTx.id || cTx.txId || cTx.reference || cTx.orderNo || '').trim();
+        return !cId.startsWith('SWEEP_');
+      });
 
       const normalizedLocalTxs = localTxs.map((tx) => {
         if (tx.kind === 'card_topup') {
+          const isSweep = String(tx.txId || tx.id || '').startsWith('SWEEP_');
+          const curr = tx.currency || tx.originalCurrency || '';
           return { 
             ...tx, 
             cardNo: tx.cardNo || '', 
             cardLast4: tx.cardLast4 || tx.last4 || targetLast4 || '',
-            incoming: false,
-            cardIncoming: false,
-            cardDisplayAmount: `-${Math.abs(Number(tx.amount || 0)).toFixed(2)} USDT`
+            incoming: !isSweep && tx.incoming === true,
+            cardIncoming: !isSweep && tx.incoming === true,
+            cardDisplayAmount: curr ? `-${Math.abs(Number(tx.amount || 0)).toFixed(2)} ${curr}` : `-${Math.abs(Number(tx.amount || 0)).toFixed(2)}`
           };
         }
         return tx;

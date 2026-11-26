@@ -331,7 +331,11 @@ export function CardsDesktopTransactions({ items, card, cardLast4, onViewAll, ti
     fetchCardTransactions(session.userId, { cardId: cNo, last4: l4 })
       .then((res) => {
         if (!cancelled && res?.items) {
-          setLiveItems(res.items);
+          const clean = res.items.filter((item) => {
+            const id = String(item?.id || item?.txId || item?.reference || '');
+            return !id.startsWith('SWEEP_');
+          });
+          setLiveItems(clean);
         }
       })
       .catch(() => {

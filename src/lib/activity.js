@@ -131,10 +131,14 @@ export function getActivityStatus(item) {
 export function normalizeActivityItem(item) {
   if (!item) return item;
   const status = getActivityStatus(item);
+  const txId = String(item.txId || item.id || item.reference || '');
+  const isSweep = txId.startsWith('SWEEP_');
+  const incoming = isSweep ? false : item.incoming;
   return {
     ...item,
     status,
     failed: status === 'failed',
+    incoming,
     typeLabel: item.typeLabel ?? getActivityTypeLabel(item.kind),
     reference: item.reference ?? item.id,
     txId: item.txId ?? (['wallet_topup', 'wallet_send', 'wallet_receive', 'wallet_withdraw', 'wallet_fee'].includes(item.kind)
@@ -149,14 +153,18 @@ export function normalizeActivityItems(items = []) {
 
 export function isWalletActivity(item) {
   if (!item || isFeeItem(item)) return false;
+  const txId = String(item.txId || item.id || item.reference || '');
+  if (txId.startsWith('CD') || txId.startsWith('CW') || item.kind === 'card_spend') return false;
   if (item.kind === 'card_topup') {
-    return item.incoming !== true;
+    return item.incoming !== true || txId.startsWith('SWEEP_');
   }
   return WALLET_KINDS.has(item.kind);
 }
 
 export function isCardActivity(item) {
   if (!item || isFeeItem(item)) return false;
+  const txId = String(item.txId || item.id || item.reference || '');
+  if (txId.startsWith('SWEEP_')) return false;
   if (item.kind === 'card_topup') {
     return item.incoming === true;
   }

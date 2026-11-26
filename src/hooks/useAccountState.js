@@ -394,7 +394,11 @@ export function useAccountState() {
   const activeActivityItems = useMemo(() => {
     let list = accountContext.activityItems || [];
     if (selectedCardTxs != null) {
-      list = [...selectedCardTxs, ...list];
+      const cleanSelected = selectedCardTxs.filter((item) => {
+        const id = String(item?.id || item?.txId || item?.reference || '');
+        return !id.startsWith('SWEEP_');
+      });
+      list = [...cleanSelected, ...list];
     }
 
     const dedupMap = new Map();
