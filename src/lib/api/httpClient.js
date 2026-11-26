@@ -169,10 +169,9 @@ export async function apiRequest(path, options = {}) {
 
     console.error(`[API Network Error] ${requestUrl}:`, fetchErr);
 
-    // 백엔드 서버 다운(Connection Refused, Timeout, Network Error) 시 세션 파기 후 메인 화면으로 리다이렉트
+    // 일시적인 네트워크 순단이나 탭 전환 시의 fetch 오류 시 세션을 파기하지 않고 보존
     if (!isLoginEndpoint && isNetworkError) {
-      console.warn(`[API Network Error] Server unreachable on ${requestUrl}. Clearing session and redirecting to main.`);
-      forceLogoutAndRedirect('server_unreachable');
+      console.warn(`[API Network Error] Temporary network issue on ${requestUrl}. Retaining session tokens.`);
     }
 
     const err = new Error(isAbort ? 'Request cancelled.' : 'System is under maintenance. Please try again later.');

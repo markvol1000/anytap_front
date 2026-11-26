@@ -392,28 +392,45 @@ export function useAccountState() {
   }, [currentCard?.cardNo, currentCard?.wasabiCardId, currentCard?.id, cardTxTick]);
 
   const activeActivityItems = useMemo(() => {
+    let list = accountContext.activityItems || [];
     if (selectedCardTxs != null) {
-      const localTxs = (accountContext.activityItems || []).filter((item) => item.kind !== 'card_spend' && item.kind !== 'refund');
-      const combined = [...localTxs, ...selectedCardTxs];
-      const dedupMap = new Map();
-      for (const item of combined) {
-        const rawId = String(item.id || item.txId || item.reference || '');
-        const cleanKey = rawId.replace(/^FEE_/, '').replace(/^RETRY_/, '').replace(/^RETRY_DEPOSIT_/, '').trim() || rawId;
-        const isCompleted = item.status === 'completed' || item.status === 'approved' || item.status === 'success';
+      list = [...selectedCardTxs, ...list];
+    }
 
-        if (!dedupMap.has(cleanKey)) {
-          dedupMap.set(cleanKey, item);
+    const dedupMap = new Map();
+    for (const item of list) {
+      if (!item) continue;
+      const k = item.kind || 'tx';
+
+      let groupKey;
+      if (k === 'card_topup') {
+        const rawCard = item.cardLast4 || item.last4 || (item.cardNo ? item.cardNo.slice(-4) : '') || '';
+        const amt = Math.round(Number(item.amount || 0));
+        if (item.wasabiTxId) {
+          groupKey = `topup_w_${rawCard}_${item.wasabiTxId}`;
         } else {
-          const existing = dedupMap.get(cleanKey);
-          const existingIsCompleted = existing.status === 'completed' || existing.status === 'approved' || existing.status === 'success';
-          if (isCompleted && !existingIsCompleted) {
-            dedupMap.set(cleanKey, item);
-          }
+          groupKey = `topup_${rawCard}_${amt}`;
+        }
+      } else {
+        groupKey = item.id || item.txId || item.hash || item.tradeNo || Math.random();
+      }
+
+      if (!dedupMap.has(groupKey)) {
+        dedupMap.set(groupKey, item);
+      } else {
+        const existing = dedupMap.get(groupKey);
+        // Prefer live card provider record (wasabi) over internal DB record, without hardcoding any currency
+        const itemIsWasabi = item.isWasabiCardRecord === true || Boolean(item.tradeNo || item.orderNo);
+        const existingIsWasabi = existing.isWasabiCardRecord === true || Boolean(existing.tradeNo || existing.orderNo);
+
+        if (itemIsWasabi && !existingIsWasabi) {
+          dedupMap.set(groupKey, item);
+        } else if (!existingIsWasabi && (item.at && (!existing.at || new Date(item.at) > new Date(existing.at)))) {
+          dedupMap.set(groupKey, item);
         }
       }
-      return Array.from(dedupMap.values());
     }
-    return accountContext.activityItems;
+    return Array.from(dedupMap.values());
   }, [accountContext.activityItems, selectedCardTxs]);
 
   // ?? Helpers ???????????????????????????????????????????????????????????????

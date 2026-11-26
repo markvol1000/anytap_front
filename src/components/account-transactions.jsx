@@ -758,17 +758,48 @@ export function TransactionsPage({ items = [], initialScope = 'wallet', initialC
   const activeItems = useMemo(() => {
     let list = items;
     if (liveCardTxs != null) {
-      const localTxs = items.filter((item) => item.kind !== 'card_spend' && item.kind !== 'refund' && item.kind !== 'reversal');
-      list = [...liveCardTxs, ...localTxs];
+      list = [...liveCardTxs, ...items];
     }
-    const seen = new Set();
-    return list.filter((item) => {
-      if (!item) return false;
-      const sig = `${item.id || ''}_${item.kind || ''}_${item.at || ''}_${item.amount || ''}_${item.txId || ''}`;
-      if (seen.has(sig)) return false;
-      seen.add(sig);
-      return true;
-    });
+
+    // Deduplicate strictly for card_topup between local DB record and Wasabi live record.
+    // Legitimate purchases/spends (card_spend, etc.) must NEVER be collapsed by amount,
+    // because each purchase has a distinct transaction ID / tradeNo.
+    const dedupMap = new Map();
+    for (const item of list) {
+      if (!item) continue;
+      const k = item.kind || 'tx';
+
+      let groupKey;
+      if (k === 'card_topup') {
+        const rawCard = item.cardLast4 || item.last4 || (item.cardNo ? item.cardNo.slice(-4) : '') || '';
+        const amt = Math.round(Number(item.amount || 0));
+        // Use wasabiTxId if available, or pair within card + amount
+        if (item.wasabiTxId) {
+          groupKey = `topup_w_${rawCard}_${item.wasabiTxId}`;
+        } else {
+          groupKey = `topup_${rawCard}_${amt}`;
+        }
+      } else {
+        // Any other transaction (card_spend, refund, transfer, etc.) retains unique identity
+        groupKey = item.id || item.txId || item.hash || item.tradeNo || Math.random();
+      }
+
+      if (!dedupMap.has(groupKey)) {
+        dedupMap.set(groupKey, item);
+      } else {
+        const existing = dedupMap.get(groupKey);
+        // Prefer live card provider record (wasabi) over internal DB record, without hardcoding any currency
+        const itemIsWasabi = item.isWasabiCardRecord === true || Boolean(item.tradeNo || item.orderNo);
+        const existingIsWasabi = existing.isWasabiCardRecord === true || Boolean(existing.tradeNo || existing.orderNo);
+
+        if (itemIsWasabi && !existingIsWasabi) {
+          dedupMap.set(groupKey, item);
+        } else if (!existingIsWasabi && (item.at && (!existing.at || new Date(item.at) > new Date(existing.at)))) {
+          dedupMap.set(groupKey, item);
+        }
+      }
+    }
+    return Array.from(dedupMap.values());
   }, [items, liveCardTxs]);
 
   // Reset page to 1 when any filter changes

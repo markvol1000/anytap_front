@@ -533,6 +533,7 @@ export async function fetchLocalTransactions(userId) {
         cardLast4: tx.cardLast4 || ((tx.cardNo || tx.cardId || tx.wasabiCardId || '').replace(/\D/g, '').slice(-4)) || '',
         cardId: tx.cardId || tx.cardNo || tx.wasabiCardId || '',
         wasabiCardId: tx.wasabiCardId || tx.cardId || tx.cardNo || '',
+        wasabiTxId: tx.wasabiTxId || '',
         reference: tx.txId ? tx.txId.slice(0, 10).toUpperCase() : '',
         currency: (typeof tx.currency === 'string' && (tx.currency.includes('TR7NH') || tx.currency.includes('TG3XX')) ? 'USDT' : (tx.currency || tx.originalCurrency || tx.coinType || '')),
         originalCurrency: tx.originalCurrency || tx.currency || '',
@@ -619,14 +620,30 @@ export async function fetchAccountContext(targetCardId = null) {
             ...tx, 
             cardNo: tx.cardNo || '', 
             cardLast4: tx.cardLast4 || tx.last4 || targetLast4 || '',
-            cardIncoming: true,
-            cardDisplayAmount: `+${Math.abs(Number(tx.amount || 0)).toFixed(2)} USDT`
+            incoming: false,
+            cardIncoming: false,
+            cardDisplayAmount: `-${Math.abs(Number(tx.amount || 0)).toFixed(2)} USDT`
           };
         }
         return tx;
       });
       // Wasabi API card transactions are primary source of truth — place them first!
-      const combined = [...cardTxs, ...normalizedLocalTxs];
+      const wasabiTxIds = new Set();
+      for (const cTx of cardTxs) {
+        const cId = String(cTx.id || cTx.txId || cTx.reference || cTx.orderNo || '').trim();
+        if (cId) wasabiTxIds.add(cId);
+      }
+
+      const combined = [...cardTxs];
+      for (const lTx of normalizedLocalTxs) {
+        if (lTx.kind === 'card_topup') {
+          const matchedWasabiId = String(lTx.wasabiTxId || '').trim();
+          if (matchedWasabiId && wasabiTxIds.has(matchedWasabiId)) {
+            continue;
+          }
+        }
+        combined.push(lTx);
+      }
       const dedupMap = new Map();
       for (const item of combined) {
         const rawId = String(item.id || item.txId || item.reference || '');
