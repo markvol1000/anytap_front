@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AdminDataTable, AdminMiniTable } from '../components/AdminDataTable.jsx';
 import { AdminFilterBar, AdminPageHeader, AdminPanel, AdminTableWrap } from '../components/AdminFilterBar.jsx';
 import {
@@ -136,6 +136,42 @@ export function WalletsPage() {
     }
   }, [confirm, detail, list, setDetail]);
 
+
+  const processedWalletTxs = useMemo(() => {
+    if (!Array.isArray(localTxs) || localTxs.length === 0) return [];
+
+    const wasabiTxIds = new Set();
+    localTxs.forEach((t) => {
+      if (t.wasabiTxId) wasabiTxIds.add(String(t.wasabiTxId).trim());
+    });
+
+    const filtered = localTxs.filter((t) => {
+      const type = String(t.txType || t.type || '').toUpperCase();
+      const curr = String(t.currency || t.transCurrency || '').toUpperCase();
+      const txId = String(t.txId || t.id || '').trim();
+
+      if (type === 'CARD_TRANSFER_OUT' || type === 'CARD_TRANSFER_IN' || type === 'CARD_TRANSFER' || type === 'CARD_WITHDRAW') {
+        return false;
+      }
+
+      // Relational dedup: exclude child card legs referenced by a parent wallet sweep
+      if (wasabiTxIds.has(txId)) {
+        return false;
+      }
+      return true;
+    });
+
+    const dedupMap = new Map();
+    filtered.forEach((t) => {
+      const rawId = String(t.txId || t.id || '').trim();
+      const baseId = rawId.replace(/^(FEE_|RETRY_|RETRY_DEPOSIT_)/i, '').trim() || rawId;
+      if (!dedupMap.has(baseId)) {
+        dedupMap.set(baseId, t);
+      }
+    });
+
+    return Array.from(dedupMap.values());
+  }, [localTxs]);
 
   return (
     <div className="admin-page">
@@ -330,7 +366,8 @@ export function WalletsPage() {
                         label: 'Transaction Amount', 
                         render: (r) => {
                           const curr = String(r.transCurrency || r.originalCurrency || r.currency || r.authorizedCurrency || r.settleCurrency || '').toUpperCase();
-                          const formattedAmt = formatAmountWithCurrency(r.transAmount ?? r.amount ?? 0, curr);
+                          const rawAmt = Math.abs(Number(r.transAmount ?? r.amount ?? 0));
+                          const formattedAmt = formatAmountWithCurrency(rawAmt, curr);
                           const formattedGross = formatAmountWithCurrency(r.rawAmount ?? 0, curr);
 
                           const isPlus = r.incoming || r.cardIncoming;
@@ -373,7 +410,7 @@ export function WalletsPage() {
                       },
                       { key: 'at', label: 'Date', render: (r) => r.at ? new Date(r.at).toLocaleString('ko-KR') : '-' }
                     ]}
-                    rows={localTxs ?? []}
+                    rows={processedWalletTxs}
                   />
                 </AdminDetailSection>
               </>
